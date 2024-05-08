@@ -1,0 +1,76 @@
+name: mola_gemini_flutter_template
+description: "A new Flutter project with Gemini."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.1 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  google_generative_ai: ^0.3.2
+  provider: ^6.1.2
+  freezed: ^2.1.0
+  path_provider: ^2.0.2
+  flutter_state_notifier:
+  freezed_annotation: ^2.2.0
+
+  #AppIcon
+  flutter_launcher_icons: ^0.13.1
+
+  #Splash
+  flutter_native_splash: ^2.4.0
+
+  #Http通信
+  chopper: ^6.1.0
+
+  # logger
+  simple_logger: ^1.8.0+1
+
+  # 環境変数
+  flutter_dotenv: ^5.1.0
+
+  #lottie
+  lottie: 1.1.0
+
+  #画像選択
+  image_picker: 1.0.0
+
+  url_launcher: ^6.2.6
+
+  #　同期
+  rxdart: ^0.27.2
+  synchronized: ^3.0.0
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.0.4
+  chopper_generator: ^6.0.0
+
+
+  # Serializer
+  json_serializable: ^6.5.4
+  json_annotation: ^4.8.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/sake_icon.jpg"
+
+flutter_native_splash:
+  image: "assets/images/sake_logo.png"
+  color: "#1D3567"
+  android_gravity: fill
