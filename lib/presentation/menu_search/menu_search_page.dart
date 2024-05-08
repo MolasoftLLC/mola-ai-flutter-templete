@@ -98,17 +98,27 @@ class MenuSearchPage extends StatelessWidget {
                       //     child: Text('AIに質問'),
                       //   ),
                       // ),
-                      const SizedBox(
-                        height: 40,
-                      ),
-                      if (geminiResponse != null)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            style: TextStyle(color: Colors.white),
-                            geminiResponse,
-                          ),
-                        ),
+
+                      // if (geminiResponse != null)
+                      //   SizedBox(
+                      //     height: 200,
+                      //     width: 200,
+                      //     child: Image(
+                      //       image: Assets.sakeLogo,
+                      //       fit: BoxFit.contain,
+                      //     ),
+                      //   ),
+                      // const SizedBox(
+                      //   height: 40,
+                      // ),
+                      // if (geminiResponse != null)
+                      //   Padding(
+                      //     padding: const EdgeInsets.all(24),
+                      //     child: Text(
+                      //       style: TextStyle(color: Colors.white),
+                      //       geminiResponse,
+                      //     ),
+                      //   ),
                     ],
                   ),
                 ),

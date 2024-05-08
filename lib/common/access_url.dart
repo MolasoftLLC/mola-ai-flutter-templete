@@ -4,7 +4,7 @@
 ///developUrlがデバックビルドの時に参照されます。
 
 ///今後はここを変えて
-const url = 'https://molasoft-ai.okinawa/api';
+const url = 'molasoft-ai.okinawa';
 
 const developUrl = url;
 

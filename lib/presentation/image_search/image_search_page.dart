@@ -3,6 +3,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/assets.dart';
 import 'image_search_page_notifier.dart';
 
 class ImageSearchPage extends StatelessWidget {
@@ -44,6 +45,26 @@ class ImageSearchPage extends StatelessWidget {
                       SizedBox(
                         height: sakeImage != null ? 120 : 240,
                       ),
+                      if (geminiResponse != null)
+                        SizedBox(
+                          height: 200,
+                          width: 200,
+                          child: Image(
+                            image: Assets.sakeLogo,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      if (geminiResponse != null)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            style: TextStyle(color: Colors.white),
+                            geminiResponse,
+                          ),
+                        ),
                       if (sakeImage != null)
                         Stack(
                           children: [
@@ -130,7 +151,7 @@ class ImageSearchPage extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         child: Text(
                           textAlign: TextAlign.center,
-                          '酒瓶などから問い合わせ！\n手書きなどは解析が難しいかも?',
+                          '酒瓶などから問い合わせ！\nはっきり映ってないと難しい、、、。\n特に手書きなどは解析が難しいかも?',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -172,17 +193,6 @@ class ImageSearchPage extends StatelessWidget {
                           child: Text('AIに質問'),
                         ),
                       ),
-                      const SizedBox(
-                        height: 40,
-                      ),
-                      if (geminiResponse != null)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            style: TextStyle(color: Colors.white),
-                            geminiResponse,
-                          ),
-                        ),
                     ],
                   ),
                 ),
