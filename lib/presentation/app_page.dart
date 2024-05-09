@@ -4,7 +4,6 @@ import 'package:mola_gemini_flutter_template/presentation/main_search/main_searc
 import 'package:provider/provider.dart';
 
 import '../common/assets.dart';
-import '../common/logger.dart';
 import 'app_page_notifier.dart';
 import 'image_search/image_search_page.dart';
 import 'menu_search/menu_search_page.dart';
@@ -31,7 +30,6 @@ class AppPage extends StatelessWidget {
     final notifier = context.watch<AppPageNotifier>();
     final selectedNavIndex =
         context.select((AppPageState state) => state.selectedNavIndex);
-    logger.shout(selectedNavIndex);
     final pages = [
       MainSearchPage.wrapped(),
       ImageSearchPage.wrapped(),
@@ -91,3 +89,23 @@ class AppPage extends StatelessWidget {
         ));
   }
 }
+
+//ATT対応時に利用する
+// Future<void> showCustomTrackingDialog(BuildContext context) async =>
+//     await showDialog<void>(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: const Text('Dear User'),
+//         content: const Text(
+//           'We care about your privacy and data security. We keep this app free by showing ads. '
+//           'Can we continue to use your data to tailor ads for you?\n\nYou can change your choice anytime in the app settings. '
+//           'Our partners will collect data and use a unique identifier on your device to show you ads.',
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pop(context),
+//             child: const Text('Continue'),
+//           ),
+//         ],
+//       ),
+//     );

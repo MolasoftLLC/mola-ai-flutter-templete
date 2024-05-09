@@ -34,6 +34,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   @override
   Future<void> initState() async {
     super.initState();
+    //await initATT();
   }
 
   @override
@@ -51,4 +52,16 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   Future<void> onNavTapped(int index) async {
     state = state.copyWith(selectedNavIndex: index);
   }
+
+  //ATT対応時
+  //	<key>NSUserTrackingUsageDescription</key>
+  //     <string>This app uses tracking data to show you personalized ads.</string>
+  // Future<void> initATT() async {
+  //   if (await AppTrackingTransparency.trackingAuthorizationStatus ==
+  //       TrackingStatus.notDetermined) {
+  //     await showCustomTrackingDialog(context);
+  //     await Future.delayed(const Duration(milliseconds: 200));
+  //     await AppTrackingTransparency.requestTrackingAuthorization();
+  //   }
+  // }
 }

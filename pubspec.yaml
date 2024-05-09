@@ -43,6 +43,8 @@ dependencies:
   rxdart: ^0.27.2
   synchronized: ^3.0.0
 
+  app_tracking_transparency: ^2.0.5
+
 
 
 dev_dependencies:

@@ -4,7 +4,7 @@
 ///developUrlがデバックビルドの時に参照されます。
 
 ///今後はここを変えて
-const url = 'molasoft-ai.okinawa';
+const url = '127.0.0.1';
 
 const developUrl = url;
 
@@ -21,7 +21,7 @@ const developUrl = url;
 //const developUrl = '';
 
 ///本番環境
-const productionUrl = 'https://molasoft-ai.okinawa/api';
+const productionUrl = 'molasoft-ai.okinawa';
 
 ///no-image
 const noImageUrl = 'https://rockjoint.link/images/joint_main_pc.jpg';
