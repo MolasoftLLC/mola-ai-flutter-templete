@@ -54,4 +54,17 @@ class _$ApiClient extends ApiClient {
     );
     return client.send<dynamic, dynamic>($request);
   }
+
+  @override
+  Future<Response<dynamic>> promptWithFavorite(FavoriteBody body) {
+    final Uri $url = Uri.parse('/prompt_with_favorite');
+    final $body = body;
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
 }

@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.4+4
+version: 1.0.5+5
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -37,6 +37,9 @@ dependencies:
   #画像選択
   image_picker: 1.0.0
 
+  #Slider
+  syncfusion_flutter_sliders: ^25.2.3
+
   url_launcher: ^6.2.6
 
   #　同期
@@ -53,7 +56,6 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.0.4
   chopper_generator: ^6.0.0
-
 
   # Serializer
   json_serializable: ^6.5.4

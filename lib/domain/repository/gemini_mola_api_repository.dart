@@ -8,6 +8,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
 import '../../infrastructure/api_client/api_client.dart';
+import '../eintities/request/favorite_body.dart';
 
 class GeminiMolaApiRepository {
   GeminiMolaApiRepository(this._apiClient);
@@ -35,7 +36,6 @@ class GeminiMolaApiRepository {
     final response = await _apiClient.promptWithText({'text': text});
     if (response.isSuccessful) {
       final responseBodyJson = response.body as String;
-      logger.shout(responseBodyJson);
       return responseBodyJson;
     } else {
       logger.shout(response.error);
@@ -50,6 +50,48 @@ class GeminiMolaApiRepository {
     if (response.isSuccessful) {
       final responseBodyJson = response.body as String;
       logger.shout(responseBodyJson);
+      return responseBodyJson;
+    } else {
+      logger.shout(response.error);
+      return '';
+    }
+  }
+
+  Future<String> promptWithFavorite(
+      {List<String>? flavors,
+      List<String>? designs,
+      List<String>? tastes,
+      String? prefecture}) async {
+    if (prefecture == '指定なし') {
+      prefecture = null;
+    }
+    if (designs != null) {
+      if (designs.isEmpty) {
+        designs = null;
+      }
+    }
+    if (flavors != null) {
+      if (flavors.isEmpty) {
+        flavors = null;
+      }
+    }
+    if (tastes != null) {
+      if (tastes.isEmpty) {
+        tastes = null;
+      }
+    }
+    if (prefecture == '指定なし') {
+      prefecture = null;
+    }
+    final body = FavoriteBody(
+      flavors: flavors,
+      designs: designs,
+      tastes: tastes,
+      prefecture: prefecture,
+    );
+    final response = await _apiClient.promptWithFavorite(body);
+    if (response.isSuccessful) {
+      final responseBodyJson = response.body as String;
       return responseBodyJson;
     } else {
       logger.shout(response.error);

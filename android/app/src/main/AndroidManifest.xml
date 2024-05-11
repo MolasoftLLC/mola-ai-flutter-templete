@@ -1,6 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="okinawa.molasoft_ai.sake">
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <application
-        android:label="mola_gemini_flutter_template"
+        android:label="SakePedia"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

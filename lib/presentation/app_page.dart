@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../common/assets.dart';
 import 'app_page_notifier.dart';
+import 'favorite_search/favorite_search_page.dart';
 import 'image_search/image_search_page.dart';
-import 'menu_search/menu_search_page.dart';
 import 'my_page/my_page.dart';
 
 class AppPage extends StatelessWidget {
@@ -32,8 +32,8 @@ class AppPage extends StatelessWidget {
         context.select((AppPageState state) => state.selectedNavIndex);
     final pages = [
       MainSearchPage.wrapped(),
+      FavoriteSearchPage.wrapped(),
       ImageSearchPage.wrapped(),
-      MenuSearchPage.wrapped(),
       MyPage.wrapped(),
     ];
     return Scaffold(
@@ -58,21 +58,21 @@ class AppPage extends StatelessWidget {
                   width: 30,
                   height: 30,
                   child: Image(
-                    image: Assets.imageNav,
+                    image: Assets.menuNav,
                     fit: BoxFit.contain,
                   ),
                 ),
-                label: '画像検索'),
+                label: '好み検索'),
             BottomNavigationBarItem(
                 icon: SizedBox(
                   width: 30,
                   height: 30,
                   child: Image(
-                    image: Assets.menuNav,
+                    image: Assets.imageNav,
                     fit: BoxFit.contain,
                   ),
                 ),
-                label: 'メニュー検索'),
+                label: '画像検索'),
             BottomNavigationBarItem(
                 icon: SizedBox(
                   width: 30,

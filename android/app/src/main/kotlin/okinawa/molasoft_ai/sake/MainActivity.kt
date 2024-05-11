@@ -1,4 +1,4 @@
-package com.example.mola_gemini_flutter_template
+package okinawa.molasoft_ai.sake
 
 import io.flutter.embedding.android.FlutterActivity
 
