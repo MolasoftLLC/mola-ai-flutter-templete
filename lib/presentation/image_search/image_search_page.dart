@@ -29,6 +29,7 @@ class ImageSearchPage extends StatelessWidget {
         context.select((ImageSearchPageState state) => state.isLoading);
     final sakeImage =
         context.select((ImageSearchPageState state) => state.sakeImage);
+    final canUse = context.select((ImageSearchPageState state) => state.canUse);
     final geminiResponse =
         context.select((ImageSearchPageState state) => state.geminiResponse);
     return Scaffold(
@@ -43,7 +44,7 @@ class ImageSearchPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        height: sakeImage != null ? 120 : 240,
+                        height: sakeImage != null ? 120 : 200,
                       ),
                       if (geminiResponse != null)
                         SizedBox(
@@ -183,7 +184,7 @@ class ImageSearchPage extends StatelessWidget {
                         width: 220,
                         child: FilledButton(
                           onPressed: () async {
-                            await notifier.promptWithImage();
+                            await notifier.promptWithImage(false);
                           },
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
@@ -192,6 +193,56 @@ class ImageSearchPage extends StatelessWidget {
                           ),
                           child: Text('AIに質問'),
                         ),
+                      ),
+                      const SizedBox(
+                        height: 30,
+                      ),
+                      SizedBox(
+                        width: 220,
+                        child: FilledButton(
+                          onPressed: () async {
+                            if (canUse) {
+                              await notifier.promptWithImage(true);
+                            }
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                canUse ? Color(0xFFD33227) : Color(0xFFA6A6A6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.star_border_purple500,
+                                color: Colors.white,
+                              ), // キラキラマークのアイコン
+                              SizedBox(width: 2), // アイコンとテキストの間のスペース
+                              Text(
+                                '優秀なAIに質問',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 4,
+                      ),
+                      Center(
+                          child: Text(
+                        '※利用状況に応じて優秀な方が使えない場合(灰色)があります。',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      )),
+                      const SizedBox(
+                        height: 40,
                       ),
                     ],
                   ),
@@ -215,15 +266,19 @@ Future<void> showImagePickerBottomSheet(
             ListTile(
               onTap: () async {
                 await notifier.pickImageFromGallery();
-                Navigator.pop(context);
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
               },
               leading: const Icon(Icons.photo),
               title: const Text('ライブラリから選択'),
             ),
             ListTile(
               onTap: () async {
-                final pickedFile = await notifier.pickImageFromCamera();
-                Navigator.pop(context);
+                await notifier.pickImageFromCamera();
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
               },
               leading: const Icon(Icons.camera),
               title: const Text('撮影する'),

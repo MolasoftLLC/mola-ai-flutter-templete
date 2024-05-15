@@ -32,6 +32,17 @@ class GeminiMolaApiRepository {
     logger.info(response.error);
   }
 
+  Future<int> checkApiUseCount() async {
+    final response = await _apiClient.checkApiUseCount();
+    if (response.isSuccessful) {
+      final responseBodyJson = response.body as int;
+      return responseBodyJson;
+    } else {
+      logger.shout(response.error);
+      return 0;
+    }
+  }
+
   Future<String> promptWithText(String text) async {
     final response = await _apiClient.promptWithText({'text': text});
     if (response.isSuccessful) {
@@ -45,11 +56,22 @@ class GeminiMolaApiRepository {
 
   Future<String> promptWithImage(File file, String? hint) async {
     final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
-    logger.shout(baseFile);
     final response = await _apiClient.promptWithImage(baseFile, hint ?? '');
     if (response.isSuccessful) {
       final responseBodyJson = response.body as String;
-      logger.shout(responseBodyJson);
+      return responseBodyJson;
+    } else {
+      logger.shout(response.error);
+      return '';
+    }
+  }
+
+  Future<String> promptWithImageByOpenAI(File file, String? hint) async {
+    final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    final response =
+        await _apiClient.promptWithImageByOpenAI(baseFile, hint ?? '');
+    if (response.isSuccessful) {
+      final responseBodyJson = response.body as String;
       return responseBodyJson;
     } else {
       logger.shout(response.error);

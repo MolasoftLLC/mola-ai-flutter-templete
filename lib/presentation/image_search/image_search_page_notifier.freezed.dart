@@ -20,6 +20,7 @@ mixin _$ImageSearchPageState {
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
+  bool get canUse => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ImageSearchPageStateCopyWith<ImageSearchPageState> get copyWith =>
@@ -33,7 +34,11 @@ abstract class $ImageSearchPageStateCopyWith<$Res> {
       _$ImageSearchPageStateCopyWithImpl<$Res, ImageSearchPageState>;
   @useResult
   $Res call(
-      {bool isLoading, String? hint, File? sakeImage, String? geminiResponse});
+      {bool isLoading,
+      String? hint,
+      File? sakeImage,
+      String? geminiResponse,
+      bool canUse});
 }
 
 /// @nodoc
@@ -54,6 +59,7 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? canUse = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -72,6 +78,10 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      canUse: null == canUse
+          ? _value.canUse
+          : canUse // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -85,7 +95,11 @@ abstract class _$$ImageSearchPageStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {bool isLoading, String? hint, File? sakeImage, String? geminiResponse});
+      {bool isLoading,
+      String? hint,
+      File? sakeImage,
+      String? geminiResponse,
+      bool canUse});
 }
 
 /// @nodoc
@@ -103,6 +117,7 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? canUse = null,
   }) {
     return _then(_$ImageSearchPageStateImpl(
       isLoading: null == isLoading
@@ -121,6 +136,10 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      canUse: null == canUse
+          ? _value.canUse
+          : canUse // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -129,7 +148,11 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
 
 class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
   const _$ImageSearchPageStateImpl(
-      {this.isLoading = false, this.hint, this.sakeImage, this.geminiResponse});
+      {this.isLoading = false,
+      this.hint,
+      this.sakeImage,
+      this.geminiResponse,
+      this.canUse = true});
 
   @override
   @JsonKey()
@@ -140,10 +163,13 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
   final File? sakeImage;
   @override
   final String? geminiResponse;
+  @override
+  @JsonKey()
+  final bool canUse;
 
   @override
   String toString() {
-    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse)';
+    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, canUse: $canUse)';
   }
 
   @override
@@ -157,12 +183,13 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
             (identical(other.sakeImage, sakeImage) ||
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
-                other.geminiResponse == geminiResponse));
+                other.geminiResponse == geminiResponse) &&
+            (identical(other.canUse, canUse) || other.canUse == canUse));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, isLoading, hint, sakeImage, geminiResponse);
+  int get hashCode => Object.hash(
+      runtimeType, isLoading, hint, sakeImage, geminiResponse, canUse);
 
   @JsonKey(ignore: true)
   @override
@@ -178,7 +205,8 @@ abstract class _ImageSearchPageState implements ImageSearchPageState {
       {final bool isLoading,
       final String? hint,
       final File? sakeImage,
-      final String? geminiResponse}) = _$ImageSearchPageStateImpl;
+      final String? geminiResponse,
+      final bool canUse}) = _$ImageSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -188,6 +216,8 @@ abstract class _ImageSearchPageState implements ImageSearchPageState {
   File? get sakeImage;
   @override
   String? get geminiResponse;
+  @override
+  bool get canUse;
   @override
   @JsonKey(ignore: true)
   _$$ImageSearchPageStateImplCopyWith<_$ImageSearchPageStateImpl>

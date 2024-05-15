@@ -12,12 +12,12 @@ part 'image_search_page_notifier.freezed.dart';
 
 @freezed
 abstract class ImageSearchPageState with _$ImageSearchPageState {
-  const factory ImageSearchPageState({
-    @Default(false) bool isLoading,
-    String? hint,
-    File? sakeImage,
-    String? geminiResponse,
-  }) = _ImageSearchPageState;
+  const factory ImageSearchPageState(
+      {@Default(false) bool isLoading,
+      String? hint,
+      File? sakeImage,
+      String? geminiResponse,
+      @Default(true) bool canUse}) = _ImageSearchPageState;
 }
 
 class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
@@ -34,10 +34,10 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
   @override
   Future<void> initState() async {
     super.initState();
-    // final prompt2 = '今から質問をします。「日本酒のみむろ杉の特徴を教えて」';
-    // final prompt =
-    //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
-    // await requestGemini(prompt2);
+    final count = await geminiMolaApiRepository.checkApiUseCount();
+    if (count > 100) {
+      state = state.copyWith(canUse: false);
+    }
   }
 
   @override
@@ -52,7 +52,7 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
     if (state == AppLifecycleState.resumed) {}
   }
 
-  Future<void> promptWithImage() async {
+  Future<void> promptWithImage(bool isOpenAi) async {
     if (state.sakeImage == null) {
       return;
     }
@@ -61,10 +61,19 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
     }
     state = state.copyWith(isLoading: true);
     if (state.sakeImage != null) {
-      final response = await geminiMolaApiRepository.promptWithImage(
-        state.sakeImage!,
-        state.hint,
-      );
+      var response = '';
+      if (isOpenAi) {
+        /// TODO:最終的に課金した人のみにしよう
+        response = await geminiMolaApiRepository.promptWithImageByOpenAI(
+          state.sakeImage!,
+          state.hint,
+        );
+      } else {
+        response = await geminiMolaApiRepository.promptWithImage(
+          state.sakeImage!,
+          state.hint,
+        );
+      }
       state = state.copyWith(
         isLoading: false,
         sakeImage: null,
