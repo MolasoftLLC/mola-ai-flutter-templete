@@ -64,7 +64,9 @@ class MainSearchPage extends StatelessWidget {
                       ),
                       if (openAIResponseList != null)
                         SizedBox(
-                          height: openAIResponseList.length * 500,
+                          height: openAIResponseList.length *
+                              MediaQuery.of(context).size.height *
+                              0.68,
                           child: ListView.builder(
                             physics: NeverScrollableScrollPhysics(),
                             itemCount: openAIResponseList.length,
@@ -165,6 +167,9 @@ class MainSearchPage extends StatelessWidget {
                                           )
                                         ],
                                       ),
+                                      SizedBox(
+                                        height: 20,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -172,6 +177,21 @@ class MainSearchPage extends StatelessWidget {
                             },
                           ),
                         ),
+                      SizedBox(
+                        height: 30,
+                      ),
+                      Center(
+                        child: Text(
+                          '日本酒の名前から検索',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
                       Padding(
                         padding: const EdgeInsets.all(12),
                         child: TextFormField(
@@ -227,7 +247,7 @@ class MainSearchPage extends StatelessWidget {
                 '$key: '),
             Expanded(
               child: Text(
-                description[key]!,
+                description[key] ?? '不明です',
                 style: TextStyle(fontSize: 16),
               ),
             ),

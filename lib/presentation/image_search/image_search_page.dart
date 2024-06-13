@@ -43,6 +43,7 @@ class ImageSearchPage extends StatelessWidget {
     final canUse = context.select((ImageSearchPageState state) => state.canUse);
     final geminiResponse =
         context.select((ImageSearchPageState state) => state.geminiResponse);
+    final deviceHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -61,7 +62,9 @@ class ImageSearchPage extends StatelessWidget {
                       if (openAIResponseList != null)
                         SizedBox(
                           height: openAIResponseList.length *
-                              (searchCategory == '酒瓶' ? 440 : 550),
+                              (searchCategory == '酒瓶'
+                                  ? deviceHeight * 0.62
+                                  : deviceHeight * 0.82),
                           child: ListView.builder(
                             physics: NeverScrollableScrollPhysics(),
                             itemCount: openAIResponseList.length,
@@ -111,67 +114,70 @@ class ImageSearchPage extends StatelessWidget {
                                         ),
                                       Stack(
                                         children: [
-                                          Card(
-                                            child: ListTile(
-                                              title: Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 16,
-                                                  bottom: 16,
+                                          SingleChildScrollView(
+                                            child: Card(
+                                              child: ListTile(
+                                                title: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    top: 16,
+                                                    bottom: 16,
+                                                  ),
+                                                  child: Text(
+                                                    response.title!,
+                                                    style: const TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
                                                 ),
-                                                child: Text(
-                                                  response.title!,
-                                                  style: const TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                              ),
-                                              subtitle: response.title != '不明'
-                                                  ? Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            '特徴'),
-                                                        if (response.description![
-                                                                'おすすめ理由'] !=
-                                                            null)
+                                                subtitle: response.title != '不明'
+                                                    ? Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
                                                           descriptionBody(
                                                               response
                                                                   .description!,
-                                                              'おすすめ理由'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            '辛口か甘口か'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            '酒造情報'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            '日本酒度合い'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            '使用米'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            'バリエーション'),
-                                                        descriptionBody(
-                                                            response
-                                                                .description!,
-                                                            'アルコール度'),
-                                                      ],
-                                                    )
-                                                  : Text(
-                                                      'ごめんなさい。ご指定の日本酒はまだ私の情報にはありません、、、。'),
+                                                              '特徴'),
+                                                          if (response.description![
+                                                                  'おすすめ理由'] !=
+                                                              null)
+                                                            descriptionBody(
+                                                                response
+                                                                    .description!,
+                                                                'おすすめ理由'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              '辛口か甘口か'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              '酒造情報'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              '日本酒度合い'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              '使用米'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              'バリエーション'),
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              'アルコール度'),
+                                                        ],
+                                                      )
+                                                    : Text(
+                                                        'ごめんなさい。ご指定の日本酒はまだ私の情報にはありません、、、。'),
+                                              ),
                                             ),
                                           ),
                                           Positioned(
@@ -380,7 +386,9 @@ class ImageSearchPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      SizedBox(height: 40,),
+                      SizedBox(
+                        height: 40,
+                      ),
 
                       // Padding(
                       //   padding: const EdgeInsets.all(12),
