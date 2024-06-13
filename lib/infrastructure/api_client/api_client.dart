@@ -16,6 +16,11 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, String> text,
   );
 
+  @Get(path: 'open_ai/prompt_with_text')
+  Future<Response> promptWithTextByOpenAI(
+    @Body() Map<String, String> text,
+  );
+
   @Post(path: 'prompt_with_image')
   @Multipart()
   Future<Response> promptWithImage(
@@ -23,11 +28,18 @@ abstract class ApiClient extends ChopperService {
     @Part() String hint,
   );
 
-  @Post(path: 'prompt_with_image_by_open_ai')
+  @Post(path: 'open_ai/prompt_with_image')
   @Multipart()
   Future<Response> promptWithImageByOpenAI(
     @Part() String image,
     @Part() String hint,
+  );
+
+  @Post(path: 'open_ai/prompt_with_menu')
+  @Multipart()
+  Future<Response> promptWithMenuByOpenAI(
+    @Part() String image,
+    @Part() List<String> favorites,
   );
 
   @Get(path: 'prompt_with_favorite')
@@ -35,4 +47,7 @@ abstract class ApiClient extends ChopperService {
   Future<Response> promptWithFavorite(
     @Body() FavoriteBody body,
   );
+
+  @Get(path: 'get_latest_version')
+  Future<Response> getLatestVersion();
 }

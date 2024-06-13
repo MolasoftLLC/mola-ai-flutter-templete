@@ -7,39 +7,37 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
 
-import '../../domain/eintities/response/open_ai_response/open_ai_response.dart';
-import '../../domain/repository/mola_api_repository.dart';
-
-part 'main_search_page_notifier.freezed.dart';
+part 'my_favorite_page_notifier.freezed.dart';
 
 @freezed
-abstract class MainSearchPageState with _$MainSearchPageState {
-  const factory MainSearchPageState({
+abstract class MyFavoritePageState with _$MyFavoritePageState {
+  const factory MyFavoritePageState({
     @Default(false) bool isLoading,
     String? sakeName,
     String? hint,
     File? sakeImage,
     String? geminiResponse,
-    List<OpenAIResponse>? openAiResponseList,
-  }) = _MainSearchPageState;
+  }) = _MyFavoritePageState;
 }
 
-class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
+class MyFavoritePageNotifier extends StateNotifier<MyFavoritePageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MainSearchPageNotifier({
+  MyFavoritePageNotifier({
     required this.context,
-  }) : super(const MainSearchPageState());
+  }) : super(const MyFavoritePageState());
 
   final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
 
-  MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
-
   @override
   Future<void> initState() async {
     super.initState();
+    // final prompt2 = '今から質問をします。「日本酒のみむろ杉の特徴を教えて」';
+    // final prompt =
+    //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
+    // await requestGemini(prompt2);
   }
 
   @override
@@ -63,14 +61,14 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
     state = state.copyWith(isLoading: true);
     if (state.sakeName != null) {
-      final response = await molaApiRepository.promptWithTextByOpenAI(
+      final response = await geminiMolaApiRepository.promptWithText(
         state.sakeName!,
       );
       state = state.copyWith(
         isLoading: false,
         sakeName: null,
       );
-      state = state.copyWith(openAiResponseList: response);
+      state = state.copyWith(geminiResponse: response);
     }
   }
 

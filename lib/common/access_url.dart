@@ -25,3 +25,8 @@ const productionUrl = 'molasoft-ai.okinawa';
 
 ///no-image
 const noImageUrl = 'https://rockjoint.link/images/joint_main_pc.jpg';
+
+const APP_STORE_URL = 'https://apps.apple.com/app/sakepedia/id6502377200';
+
+const PLAY_STORE_URL =
+    'https://play.google.com/store/apps/details?id=okinawa.molasoft_ai.sake';

@@ -17,6 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$AppPageState {
   int get selectedNavIndex => throw _privateConstructorUsedError;
+  bool get needUpDate => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $AppPageStateCopyWith<AppPageState> get copyWith =>
@@ -29,7 +30,7 @@ abstract class $AppPageStateCopyWith<$Res> {
           AppPageState value, $Res Function(AppPageState) then) =
       _$AppPageStateCopyWithImpl<$Res, AppPageState>;
   @useResult
-  $Res call({int selectedNavIndex});
+  $Res call({int selectedNavIndex, bool needUpDate});
 }
 
 /// @nodoc
@@ -46,12 +47,17 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
   @override
   $Res call({
     Object? selectedNavIndex = null,
+    Object? needUpDate = null,
   }) {
     return _then(_value.copyWith(
       selectedNavIndex: null == selectedNavIndex
           ? _value.selectedNavIndex
           : selectedNavIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      needUpDate: null == needUpDate
+          ? _value.needUpDate
+          : needUpDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -64,7 +70,7 @@ abstract class _$$AppPageStateImplCopyWith<$Res>
       __$$AppPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int selectedNavIndex});
+  $Res call({int selectedNavIndex, bool needUpDate});
 }
 
 /// @nodoc
@@ -79,12 +85,17 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? selectedNavIndex = null,
+    Object? needUpDate = null,
   }) {
     return _then(_$AppPageStateImpl(
       selectedNavIndex: null == selectedNavIndex
           ? _value.selectedNavIndex
           : selectedNavIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      needUpDate: null == needUpDate
+          ? _value.needUpDate
+          : needUpDate // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -92,15 +103,19 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$AppPageStateImpl implements _AppPageState {
-  const _$AppPageStateImpl({this.selectedNavIndex = 0});
+  const _$AppPageStateImpl(
+      {this.selectedNavIndex = 0, this.needUpDate = false});
 
   @override
   @JsonKey()
   final int selectedNavIndex;
+  @override
+  @JsonKey()
+  final bool needUpDate;
 
   @override
   String toString() {
-    return 'AppPageState(selectedNavIndex: $selectedNavIndex)';
+    return 'AppPageState(selectedNavIndex: $selectedNavIndex, needUpDate: $needUpDate)';
   }
 
   @override
@@ -109,11 +124,13 @@ class _$AppPageStateImpl implements _AppPageState {
         (other.runtimeType == runtimeType &&
             other is _$AppPageStateImpl &&
             (identical(other.selectedNavIndex, selectedNavIndex) ||
-                other.selectedNavIndex == selectedNavIndex));
+                other.selectedNavIndex == selectedNavIndex) &&
+            (identical(other.needUpDate, needUpDate) ||
+                other.needUpDate == needUpDate));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, selectedNavIndex);
+  int get hashCode => Object.hash(runtimeType, selectedNavIndex, needUpDate);
 
   @JsonKey(ignore: true)
   @override
@@ -123,11 +140,13 @@ class _$AppPageStateImpl implements _AppPageState {
 }
 
 abstract class _AppPageState implements AppPageState {
-  const factory _AppPageState({final int selectedNavIndex}) =
-      _$AppPageStateImpl;
+  const factory _AppPageState(
+      {final int selectedNavIndex, final bool needUpDate}) = _$AppPageStateImpl;
 
   @override
   int get selectedNavIndex;
+  @override
+  bool get needUpDate;
   @override
   @JsonKey(ignore: true)
   _$$AppPageStateImplCopyWith<_$AppPageStateImpl> get copyWith =>

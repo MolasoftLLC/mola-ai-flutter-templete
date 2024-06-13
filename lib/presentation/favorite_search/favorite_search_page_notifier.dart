@@ -7,6 +7,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
 
+import '../../domain/eintities/response/open_ai_response/open_ai_response.dart';
+
 part 'favorite_search_page_notifier.freezed.dart';
 
 @freezed
@@ -22,6 +24,7 @@ abstract class FavoriteSearchPageState with _$FavoriteSearchPageState {
     List<String>? selectedTastes,
     List<String>? selectedDesigns,
     String? geminiResponse,
+    List<OpenAIResponse>? openAiResponseList,
   }) = _FavoriteSearchPageState;
 }
 

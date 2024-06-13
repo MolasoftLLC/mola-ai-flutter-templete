@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'common/access_url.dart';
+import 'domain/notifier/favorite/favorite_notifier.dart';
 import 'domain/repository/gemini_mola_api_repository.dart';
+import 'domain/repository/mola_api_repository.dart';
 import 'infrastructure/api_client/api_client.dart';
 import 'infrastructure/api_client/client_creator.dart';
+import 'infrastructure/local_database/shared_preference.dart';
 
 Future<List<SingleChildWidget>> get providers async {
   return <SingleChildWidget>[
@@ -32,9 +36,14 @@ List<SingleChildWidget> get _repositoryProviders {
         ApiClient.create(chopperClient(url: apiURL())),
       ),
     ),
-    // Provider<SharedPreference>(
-    //   create: (_) => SharedPreferenceImpl(),
-    // ),
+    Provider<MolaApiRepository>(
+      create: (_) => MolaApiRepository(
+        ApiClient.create(chopperClient(url: apiURL())),
+      ),
+    ),
+    Provider<SharedPreference>(
+      create: (_) => SharedPreference(),
+    ),
   ];
 }
 
@@ -51,8 +60,8 @@ List<SingleChildWidget> get _applicationProviders {
 /// Singletonのように扱いたい場合はここに追加する
 Future<List<SingleChildWidget>> get _notifierProviders async {
   return <SingleChildWidget>[
-    // StateNotifierProvider<AuthNotifier, AuthState>(
-    //   create: (_) => AuthNotifier(),
-    // ),
+    StateNotifierProvider<FavoriteNotifier, FavoriteState>(
+      create: (_) => FavoriteNotifier(),
+    ),
   ];
 }

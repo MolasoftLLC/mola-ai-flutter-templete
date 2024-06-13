@@ -3,7 +3,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/assets.dart';
+import '../../domain/notifier/favorite/favorite_notifier.dart';
 import 'image_search_page_notifier.dart';
 
 class ImageSearchPage extends StatelessWidget {
@@ -25,8 +25,19 @@ class ImageSearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<ImageSearchPageNotifier>();
+    final favNotifier = context.watch<FavoriteNotifier>();
+    final myFavoriteList =
+        context.select((FavoriteState state) => state.myFavoriteList);
+
+    final openAIResponseList = context
+        .select((ImageSearchPageState state) => state.openAiResponseList);
+
     final isLoading =
         context.select((ImageSearchPageState state) => state.isLoading);
+    final hint = context.select((ImageSearchPageState state) => state.hint);
+    final searchCategory =
+        context.select((ImageSearchPageState state) => state.searchCategory);
+
     final sakeImage =
         context.select((ImageSearchPageState state) => state.sakeImage);
     final canUse = context.select((ImageSearchPageState state) => state.canUse);
@@ -41,31 +52,251 @@ class ImageSearchPage extends StatelessWidget {
               ? const AILoading(loadingText: 'AIに問い合わせています')
               : Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       SizedBox(
-                        height: sakeImage != null ? 120 : 200,
+                        height: 50,
                       ),
-                      if (geminiResponse != null)
+
+                      if (openAIResponseList != null)
                         SizedBox(
-                          height: 200,
-                          width: 200,
-                          child: Image(
-                            image: Assets.sakeLogo,
-                            fit: BoxFit.contain,
+                          height: openAIResponseList.length *
+                              (searchCategory == '酒瓶' ? 440 : 550),
+                          child: ListView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: openAIResponseList.length,
+                            itemBuilder: (context, index) {
+                              final response = openAIResponseList[index];
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: IntrinsicHeight(
+                                  child: Column(
+                                    children: [
+                                      if (index == 0 && searchCategory == '酒瓶')
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              top: 12, bottom: 12),
+                                          child: Text(
+                                            '〜画像の日本酒情報〜',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      if (index == 1 && searchCategory == '酒瓶')
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              top: 12, bottom: 12),
+                                          child: Text(
+                                            '〜こういうのも好きかも？〜',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      if (index == 0 &&
+                                          searchCategory == 'メニュー')
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              top: 12, bottom: 12),
+                                          child: Text(
+                                            '〜メニューの中であなたにオススメ〜',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      Stack(
+                                        children: [
+                                          Card(
+                                            child: ListTile(
+                                              title: Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 16,
+                                                  bottom: 16,
+                                                ),
+                                                child: Text(
+                                                  response.title!,
+                                                  style: const TextStyle(
+                                                      color: Colors.black,
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                              ),
+                                              subtitle: response.title != '不明'
+                                                  ? Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            '特徴'),
+                                                        if (response.description![
+                                                                'おすすめ理由'] !=
+                                                            null)
+                                                          descriptionBody(
+                                                              response
+                                                                  .description!,
+                                                              'おすすめ理由'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            '辛口か甘口か'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            '酒造情報'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            '日本酒度合い'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            '使用米'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            'バリエーション'),
+                                                        descriptionBody(
+                                                            response
+                                                                .description!,
+                                                            'アルコール度'),
+                                                      ],
+                                                    )
+                                                  : Text(
+                                                      'ごめんなさい。ご指定の日本酒はまだ私の情報にはありません、、、。'),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: InkWell(
+                                              onTap: () {
+                                                favNotifier.addOrRemoveString(
+                                                    response.title!);
+                                              },
+                                              child: Icon(
+                                                Icons.favorite,
+                                                size: 32,
+                                                color: myFavoriteList.contains(
+                                                        response.title)
+                                                    ? Colors.redAccent
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      ),
+                                      SizedBox(
+                                        height: 28,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      const SizedBox(
-                        height: 20,
+                      SizedBox(
+                        height: 30,
                       ),
-                      if (geminiResponse != null)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            style: TextStyle(color: Colors.white),
-                            geminiResponse,
-                          ),
+                      Center(
+                        child: Text(
+                          'メニューか酒瓶で画像検索！',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
                         ),
+                      ),
+                      SizedBox(
+                        height: 40,
+                      ),
+                      SizedBox(
+                        height: 100,
+                        width: 300,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                notifier.setText('メニュー');
+                              },
+                              child: Container(
+                                height: 50,
+                                width: 120,
+                                decoration: BoxDecoration(
+                                  color: hint == 'メニュー'
+                                      ? Colors.cyan
+                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                child: Center(
+                                  child: Text(
+                                    'メニュー',
+                                    style: TextStyle(
+                                      color: hint == 'メニュー'
+                                          ? Colors.white
+                                          : Colors.white60,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 40,
+                              child: Center(
+                                child: Text(
+                                  'or',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                notifier.setText('酒瓶');
+                              },
+                              child: Container(
+                                height: 50,
+                                width: 120,
+                                decoration: BoxDecoration(
+                                  color:
+                                      hint == '酒瓶' ? Colors.cyan : Colors.grey,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                child: Center(
+                                  child: Text(
+                                    ' 酒　瓶 ',
+                                    style: TextStyle(
+                                      color: hint == '酒瓶'
+                                          ? Colors.white
+                                          : Colors.white60,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 40,
+                      ),
                       if (sakeImage != null)
                         Stack(
                           children: [
@@ -100,13 +331,14 @@ class ImageSearchPage extends StatelessWidget {
                             ),
                           ],
                         ),
+
                       if (sakeImage == null)
                         InkWell(
                           onTap: () async {
                             await showImagePickerBottomSheet(context, notifier);
                           },
                           child: Container(
-                            width: 120,
+                            width: 300,
                             height: 120,
                             decoration: BoxDecoration(
                               boxShadow: [
@@ -116,7 +348,7 @@ class ImageSearchPage extends StatelessWidget {
                                   spreadRadius: 2, // 影の広がり具合
                                 ),
                               ],
-                              borderRadius: BorderRadius.circular(80),
+                              borderRadius: BorderRadius.circular(20),
                               color:
                                   Color(0xFF0360A4), // Set the background color
                             ),
@@ -148,52 +380,40 @@ class ImageSearchPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          textAlign: TextAlign.center,
-                          '酒瓶などから問い合わせ！\nはっきり映ってないと難しい、、、。\n特に手書きなどは解析が難しいかも?',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: TextFormField(
-                          maxLength: 30,
-                          decoration: const InputDecoration(
-                            fillColor: Colors.white,
-                            filled: true,
-                            hintStyle: TextStyle(fontSize: 12),
-                            hintText: '(任意)画像に対しての補足 「右下に書いてる」とか',
-                            border: OutlineInputBorder(),
-                            counterStyle: TextStyle(color: Colors.white),
-                          ),
-                          maxLines: 1,
-                          onChanged: (String text) {
-                            notifier.setText(text);
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        width: 220,
-                        child: FilledButton(
-                          onPressed: () async {
-                            await notifier.promptWithImage(false);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Text('AIに質問'),
-                        ),
-                      ),
+                      SizedBox(height: 40,),
+
+                      // Padding(
+                      //   padding: const EdgeInsets.all(12),
+                      //   child: TextFormField(
+                      //     maxLength: 30,
+                      //     decoration: const InputDecoration(
+                      //       fillColor: Colors.white,
+                      //       filled: true,
+                      //       hintStyle: TextStyle(fontSize: 12),
+                      //       hintText: '(任意)画像に対しての補足 「右下に書いてる」とか',
+                      //       border: OutlineInputBorder(),
+                      //       counterStyle: TextStyle(color: Colors.white),
+                      //     ),
+                      //     maxLines: 1,
+                      //     onChanged: (String text) {
+                      //       notifier.setText(text);
+                      //     },
+                      //   ),
+                      // ),
+                      // SizedBox(
+                      //   width: 220,
+                      //   child: FilledButton(
+                      //     onPressed: () async {
+                      //       await notifier.promptWithImage(false);
+                      //     },
+                      //     style: OutlinedButton.styleFrom(
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(16),
+                      //       ),
+                      //     ),
+                      //     child: Text('AIに質問'),
+                      //   ),
+                      // ),
                       const SizedBox(
                         height: 30,
                       ),
@@ -206,8 +426,6 @@ class ImageSearchPage extends StatelessWidget {
                             }
                           },
                           style: FilledButton.styleFrom(
-                            backgroundColor:
-                                canUse ? Color(0xFFD33227) : Color(0xFFA6A6A6),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -221,9 +439,11 @@ class ImageSearchPage extends StatelessWidget {
                               ), // キラキラマークのアイコン
                               SizedBox(width: 2), // アイコンとテキストの間のスペース
                               Text(
-                                '優秀なAIに質問',
+                                'AIに質問',
                                 style: TextStyle(
                                   color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
                                 ),
                               ),
                             ],
@@ -247,6 +467,29 @@ class ImageSearchPage extends StatelessWidget {
                     ],
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+
+  Widget descriptionBody(Map<String, String> description, String key) {
+    return SizedBox(
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                '$key: '),
+            Expanded(
+              child: Text(
+                description[key]!,
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
         ),
       ),
     );

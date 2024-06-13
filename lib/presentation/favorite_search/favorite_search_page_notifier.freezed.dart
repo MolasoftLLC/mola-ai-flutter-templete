@@ -26,6 +26,8 @@ mixin _$FavoriteSearchPageState {
   List<String>? get selectedTastes => throw _privateConstructorUsedError;
   List<String>? get selectedDesigns => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
+  List<OpenAIResponse>? get openAiResponseList =>
+      throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $FavoriteSearchPageStateCopyWith<FavoriteSearchPageState> get copyWith =>
@@ -48,7 +50,8 @@ abstract class $FavoriteSearchPageStateCopyWith<$Res> {
       List<String>? selectedFlavors,
       List<String>? selectedTastes,
       List<String>? selectedDesigns,
-      String? geminiResponse});
+      String? geminiResponse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
@@ -75,6 +78,7 @@ class _$FavoriteSearchPageStateCopyWithImpl<$Res,
     Object? selectedTastes = freezed,
     Object? selectedDesigns = freezed,
     Object? geminiResponse = freezed,
+    Object? openAiResponseList = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -117,6 +121,10 @@ class _$FavoriteSearchPageStateCopyWithImpl<$Res,
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value.openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
     ) as $Val);
   }
 }
@@ -140,7 +148,8 @@ abstract class _$$FavoriteSearchPageStateImplCopyWith<$Res>
       List<String>? selectedFlavors,
       List<String>? selectedTastes,
       List<String>? selectedDesigns,
-      String? geminiResponse});
+      String? geminiResponse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
@@ -166,6 +175,7 @@ class __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>
     Object? selectedTastes = freezed,
     Object? selectedDesigns = freezed,
     Object? geminiResponse = freezed,
+    Object? openAiResponseList = freezed,
   }) {
     return _then(_$FavoriteSearchPageStateImpl(
       isLoading: null == isLoading
@@ -208,6 +218,10 @@ class __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value._openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
     ));
   }
 }
@@ -225,10 +239,12 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
       final List<String>? selectedFlavors,
       final List<String>? selectedTastes,
       final List<String>? selectedDesigns,
-      this.geminiResponse})
+      this.geminiResponse,
+      final List<OpenAIResponse>? openAiResponseList})
       : _selectedFlavors = selectedFlavors,
         _selectedTastes = selectedTastes,
-        _selectedDesigns = selectedDesigns;
+        _selectedDesigns = selectedDesigns,
+        _openAiResponseList = openAiResponseList;
 
   @override
   @JsonKey()
@@ -275,10 +291,20 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
 
   @override
   final String? geminiResponse;
+  final List<OpenAIResponse>? _openAiResponseList;
+  @override
+  List<OpenAIResponse>? get openAiResponseList {
+    final value = _openAiResponseList;
+    if (value == null) return null;
+    if (_openAiResponseList is EqualUnmodifiableListView)
+      return _openAiResponseList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'FavoriteSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, nihonshudo: $nihonshudo, selectedPrefecture: $selectedPrefecture, selectedFlavors: $selectedFlavors, selectedTastes: $selectedTastes, selectedDesigns: $selectedDesigns, geminiResponse: $geminiResponse)';
+    return 'FavoriteSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, nihonshudo: $nihonshudo, selectedPrefecture: $selectedPrefecture, selectedFlavors: $selectedFlavors, selectedTastes: $selectedTastes, selectedDesigns: $selectedDesigns, geminiResponse: $geminiResponse, openAiResponseList: $openAiResponseList)';
   }
 
   @override
@@ -304,7 +330,9 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
             const DeepCollectionEquality()
                 .equals(other._selectedDesigns, _selectedDesigns) &&
             (identical(other.geminiResponse, geminiResponse) ||
-                other.geminiResponse == geminiResponse));
+                other.geminiResponse == geminiResponse) &&
+            const DeepCollectionEquality()
+                .equals(other._openAiResponseList, _openAiResponseList));
   }
 
   @override
@@ -319,7 +347,8 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
       const DeepCollectionEquality().hash(_selectedFlavors),
       const DeepCollectionEquality().hash(_selectedTastes),
       const DeepCollectionEquality().hash(_selectedDesigns),
-      geminiResponse);
+      geminiResponse,
+      const DeepCollectionEquality().hash(_openAiResponseList));
 
   @JsonKey(ignore: true)
   @override
@@ -331,16 +360,18 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
 
 abstract class _FavoriteSearchPageState implements FavoriteSearchPageState {
   const factory _FavoriteSearchPageState(
-      {final bool isLoading,
-      final String? sakeName,
-      final String? hint,
-      final File? sakeImage,
-      final double? nihonshudo,
-      final String? selectedPrefecture,
-      final List<String>? selectedFlavors,
-      final List<String>? selectedTastes,
-      final List<String>? selectedDesigns,
-      final String? geminiResponse}) = _$FavoriteSearchPageStateImpl;
+          {final bool isLoading,
+          final String? sakeName,
+          final String? hint,
+          final File? sakeImage,
+          final double? nihonshudo,
+          final String? selectedPrefecture,
+          final List<String>? selectedFlavors,
+          final List<String>? selectedTastes,
+          final List<String>? selectedDesigns,
+          final String? geminiResponse,
+          final List<OpenAIResponse>? openAiResponseList}) =
+      _$FavoriteSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -362,6 +393,8 @@ abstract class _FavoriteSearchPageState implements FavoriteSearchPageState {
   List<String>? get selectedDesigns;
   @override
   String? get geminiResponse;
+  @override
+  List<OpenAIResponse>? get openAiResponseList;
   @override
   @JsonKey(ignore: true)
   _$$FavoriteSearchPageStateImplCopyWith<_$FavoriteSearchPageStateImpl>

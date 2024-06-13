@@ -22,6 +22,9 @@ dependencies:
   #Splash
   flutter_native_splash: ^2.4.0
 
+  #ローカルDB
+  shared_preferences: ^2.2.3
+
   #Http通信
   chopper: ^6.1.0
 
@@ -48,6 +51,8 @@ dependencies:
 
   app_tracking_transparency: ^2.0.5
 
+  package_info_plus: ^8.0.0
+  version: ^3.0.2
 
 
 dev_dependencies:

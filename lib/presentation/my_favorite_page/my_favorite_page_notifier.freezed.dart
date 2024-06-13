@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'main_search_page_notifier.dart';
+part of 'my_favorite_page_notifier.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -15,39 +15,36 @@ final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
-mixin _$MainSearchPageState {
+mixin _$MyFavoritePageState {
   bool get isLoading => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
-  List<OpenAIResponse>? get openAiResponseList =>
-      throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
-  $MainSearchPageStateCopyWith<MainSearchPageState> get copyWith =>
+  $MyFavoritePageStateCopyWith<MyFavoritePageState> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $MainSearchPageStateCopyWith<$Res> {
-  factory $MainSearchPageStateCopyWith(
-          MainSearchPageState value, $Res Function(MainSearchPageState) then) =
-      _$MainSearchPageStateCopyWithImpl<$Res, MainSearchPageState>;
+abstract class $MyFavoritePageStateCopyWith<$Res> {
+  factory $MyFavoritePageStateCopyWith(
+          MyFavoritePageState value, $Res Function(MyFavoritePageState) then) =
+      _$MyFavoritePageStateCopyWithImpl<$Res, MyFavoritePageState>;
   @useResult
   $Res call(
       {bool isLoading,
       String? sakeName,
       String? hint,
       File? sakeImage,
-      String? geminiResponse,
-      List<OpenAIResponse>? openAiResponseList});
+      String? geminiResponse});
 }
 
 /// @nodoc
-class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
-    implements $MainSearchPageStateCopyWith<$Res> {
-  _$MainSearchPageStateCopyWithImpl(this._value, this._then);
+class _$MyFavoritePageStateCopyWithImpl<$Res, $Val extends MyFavoritePageState>
+    implements $MyFavoritePageStateCopyWith<$Res> {
+  _$MyFavoritePageStateCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -62,7 +59,6 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
-    Object? openAiResponseList = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -85,20 +81,16 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
-      openAiResponseList: freezed == openAiResponseList
-          ? _value.openAiResponseList
-          : openAiResponseList // ignore: cast_nullable_to_non_nullable
-              as List<OpenAIResponse>?,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$MainSearchPageStateImplCopyWith<$Res>
-    implements $MainSearchPageStateCopyWith<$Res> {
-  factory _$$MainSearchPageStateImplCopyWith(_$MainSearchPageStateImpl value,
-          $Res Function(_$MainSearchPageStateImpl) then) =
-      __$$MainSearchPageStateImplCopyWithImpl<$Res>;
+abstract class _$$MyFavoritePageStateImplCopyWith<$Res>
+    implements $MyFavoritePageStateCopyWith<$Res> {
+  factory _$$MyFavoritePageStateImplCopyWith(_$MyFavoritePageStateImpl value,
+          $Res Function(_$MyFavoritePageStateImpl) then) =
+      __$$MyFavoritePageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -106,16 +98,15 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
       String? sakeName,
       String? hint,
       File? sakeImage,
-      String? geminiResponse,
-      List<OpenAIResponse>? openAiResponseList});
+      String? geminiResponse});
 }
 
 /// @nodoc
-class __$$MainSearchPageStateImplCopyWithImpl<$Res>
-    extends _$MainSearchPageStateCopyWithImpl<$Res, _$MainSearchPageStateImpl>
-    implements _$$MainSearchPageStateImplCopyWith<$Res> {
-  __$$MainSearchPageStateImplCopyWithImpl(_$MainSearchPageStateImpl _value,
-      $Res Function(_$MainSearchPageStateImpl) _then)
+class __$$MyFavoritePageStateImplCopyWithImpl<$Res>
+    extends _$MyFavoritePageStateCopyWithImpl<$Res, _$MyFavoritePageStateImpl>
+    implements _$$MyFavoritePageStateImplCopyWith<$Res> {
+  __$$MyFavoritePageStateImplCopyWithImpl(_$MyFavoritePageStateImpl _value,
+      $Res Function(_$MyFavoritePageStateImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -126,9 +117,8 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
-    Object? openAiResponseList = freezed,
   }) {
-    return _then(_$MainSearchPageStateImpl(
+    return _then(_$MyFavoritePageStateImpl(
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
@@ -149,25 +139,19 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
-      openAiResponseList: freezed == openAiResponseList
-          ? _value._openAiResponseList
-          : openAiResponseList // ignore: cast_nullable_to_non_nullable
-              as List<OpenAIResponse>?,
     ));
   }
 }
 
 /// @nodoc
 
-class _$MainSearchPageStateImpl implements _MainSearchPageState {
-  const _$MainSearchPageStateImpl(
+class _$MyFavoritePageStateImpl implements _MyFavoritePageState {
+  const _$MyFavoritePageStateImpl(
       {this.isLoading = false,
       this.sakeName,
       this.hint,
       this.sakeImage,
-      this.geminiResponse,
-      final List<OpenAIResponse>? openAiResponseList})
-      : _openAiResponseList = openAiResponseList;
+      this.geminiResponse});
 
   @override
   @JsonKey()
@@ -180,27 +164,17 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   final File? sakeImage;
   @override
   final String? geminiResponse;
-  final List<OpenAIResponse>? _openAiResponseList;
-  @override
-  List<OpenAIResponse>? get openAiResponseList {
-    final value = _openAiResponseList;
-    if (value == null) return null;
-    if (_openAiResponseList is EqualUnmodifiableListView)
-      return _openAiResponseList;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, openAiResponseList: $openAiResponseList)';
+    return 'MyFavoritePageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$MainSearchPageStateImpl &&
+            other is _$MyFavoritePageStateImpl &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
             (identical(other.sakeName, sakeName) ||
@@ -209,38 +183,28 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
             (identical(other.sakeImage, sakeImage) ||
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
-                other.geminiResponse == geminiResponse) &&
-            const DeepCollectionEquality()
-                .equals(other._openAiResponseList, _openAiResponseList));
+                other.geminiResponse == geminiResponse));
   }
 
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      isLoading,
-      sakeName,
-      hint,
-      sakeImage,
-      geminiResponse,
-      const DeepCollectionEquality().hash(_openAiResponseList));
+      runtimeType, isLoading, sakeName, hint, sakeImage, geminiResponse);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>
-      __$$MainSearchPageStateImplCopyWithImpl<_$MainSearchPageStateImpl>(
+  _$$MyFavoritePageStateImplCopyWith<_$MyFavoritePageStateImpl> get copyWith =>
+      __$$MyFavoritePageStateImplCopyWithImpl<_$MyFavoritePageStateImpl>(
           this, _$identity);
 }
 
-abstract class _MainSearchPageState implements MainSearchPageState {
-  const factory _MainSearchPageState(
-          {final bool isLoading,
-          final String? sakeName,
-          final String? hint,
-          final File? sakeImage,
-          final String? geminiResponse,
-          final List<OpenAIResponse>? openAiResponseList}) =
-      _$MainSearchPageStateImpl;
+abstract class _MyFavoritePageState implements MyFavoritePageState {
+  const factory _MyFavoritePageState(
+      {final bool isLoading,
+      final String? sakeName,
+      final String? hint,
+      final File? sakeImage,
+      final String? geminiResponse}) = _$MyFavoritePageStateImpl;
 
   @override
   bool get isLoading;
@@ -253,9 +217,7 @@ abstract class _MainSearchPageState implements MainSearchPageState {
   @override
   String? get geminiResponse;
   @override
-  List<OpenAIResponse>? get openAiResponseList;
-  @override
   @JsonKey(ignore: true)
-  _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>
+  _$$MyFavoritePageStateImplCopyWith<_$MyFavoritePageStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

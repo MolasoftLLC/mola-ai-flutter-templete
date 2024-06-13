@@ -5,19 +5,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
+
+import '../../common/logger.dart';
+import '../../domain/eintities/response/open_ai_response/open_ai_response.dart';
+import '../../domain/repository/mola_api_repository.dart';
 
 part 'image_search_page_notifier.freezed.dart';
 
 @freezed
 abstract class ImageSearchPageState with _$ImageSearchPageState {
-  const factory ImageSearchPageState(
-      {@Default(false) bool isLoading,
-      String? hint,
-      File? sakeImage,
-      String? geminiResponse,
-      @Default(true) bool canUse}) = _ImageSearchPageState;
+  const factory ImageSearchPageState({
+    @Default(false) bool isLoading,
+    @Default('メニュー') String hint,
+    @Default('メニュー') String searchCategory,
+    File? sakeImage,
+    String? geminiResponse,
+    @Default(true) bool canUse,
+    List<OpenAIResponse>? openAiResponseList,
+  }) = _ImageSearchPageState;
 }
 
 class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
@@ -30,7 +38,9 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
+  MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
 
+  FavoriteNotifier get favoriteNotifier => read<FavoriteNotifier>();
   @override
   Future<void> initState() async {
     super.initState();
@@ -63,22 +73,35 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
     if (state.sakeImage != null) {
       var response = '';
       if (isOpenAi) {
-        /// TODO:最終的に課金した人のみにしよう
-        response = await geminiMolaApiRepository.promptWithImageByOpenAI(
-          state.sakeImage!,
-          state.hint,
-        );
+        state = state.copyWith(searchCategory: state.hint);
+        if (state.hint == 'メニュー') {
+          logger.shout('メニュー検索');
+
+          /// TODO:最終的に課金した人のみにしよう
+          final openAIRes = await molaApiRepository.promptWithMenuByOpenAI(
+            state.sakeImage!,
+            favoriteNotifier.state.myFavoriteList,
+          );
+          state = state.copyWith(openAiResponseList: openAIRes);
+        } else {
+          /// TODO:最終的に課金した人のみにしよう
+          final openAIRes = await molaApiRepository.promptWithImageByOpenAI(
+            state.sakeImage!,
+            state.hint,
+          );
+          state = state.copyWith(openAiResponseList: openAIRes);
+        }
       } else {
         response = await geminiMolaApiRepository.promptWithImage(
           state.sakeImage!,
           state.hint,
         );
+        state = state.copyWith(geminiResponse: response);
       }
       state = state.copyWith(
         isLoading: false,
         sakeImage: null,
       );
-      state = state.copyWith(geminiResponse: response);
     }
   }
 

@@ -17,10 +17,13 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$ImageSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
-  String? get hint => throw _privateConstructorUsedError;
+  String get hint => throw _privateConstructorUsedError;
+  String get searchCategory => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
   bool get canUse => throw _privateConstructorUsedError;
+  List<OpenAIResponse>? get openAiResponseList =>
+      throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ImageSearchPageStateCopyWith<ImageSearchPageState> get copyWith =>
@@ -35,10 +38,12 @@ abstract class $ImageSearchPageStateCopyWith<$Res> {
   @useResult
   $Res call(
       {bool isLoading,
-      String? hint,
+      String hint,
+      String searchCategory,
       File? sakeImage,
       String? geminiResponse,
-      bool canUse});
+      bool canUse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
@@ -56,20 +61,26 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
   @override
   $Res call({
     Object? isLoading = null,
-    Object? hint = freezed,
+    Object? hint = null,
+    Object? searchCategory = null,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? canUse = null,
+    Object? openAiResponseList = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      hint: freezed == hint
+      hint: null == hint
           ? _value.hint
           : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
+              as String,
+      searchCategory: null == searchCategory
+          ? _value.searchCategory
+          : searchCategory // ignore: cast_nullable_to_non_nullable
+              as String,
       sakeImage: freezed == sakeImage
           ? _value.sakeImage
           : sakeImage // ignore: cast_nullable_to_non_nullable
@@ -82,6 +93,10 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
           ? _value.canUse
           : canUse // ignore: cast_nullable_to_non_nullable
               as bool,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value.openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
     ) as $Val);
   }
 }
@@ -96,10 +111,12 @@ abstract class _$$ImageSearchPageStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {bool isLoading,
-      String? hint,
+      String hint,
+      String searchCategory,
       File? sakeImage,
       String? geminiResponse,
-      bool canUse});
+      bool canUse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
@@ -114,20 +131,26 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? isLoading = null,
-    Object? hint = freezed,
+    Object? hint = null,
+    Object? searchCategory = null,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? canUse = null,
+    Object? openAiResponseList = freezed,
   }) {
     return _then(_$ImageSearchPageStateImpl(
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      hint: freezed == hint
+      hint: null == hint
           ? _value.hint
           : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
+              as String,
+      searchCategory: null == searchCategory
+          ? _value.searchCategory
+          : searchCategory // ignore: cast_nullable_to_non_nullable
+              as String,
       sakeImage: freezed == sakeImage
           ? _value.sakeImage
           : sakeImage // ignore: cast_nullable_to_non_nullable
@@ -140,6 +163,10 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
           ? _value.canUse
           : canUse // ignore: cast_nullable_to_non_nullable
               as bool,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value._openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
     ));
   }
 }
@@ -149,16 +176,23 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
 class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
   const _$ImageSearchPageStateImpl(
       {this.isLoading = false,
-      this.hint,
+      this.hint = 'メニュー',
+      this.searchCategory = 'メニュー',
       this.sakeImage,
       this.geminiResponse,
-      this.canUse = true});
+      this.canUse = true,
+      final List<OpenAIResponse>? openAiResponseList})
+      : _openAiResponseList = openAiResponseList;
 
   @override
   @JsonKey()
   final bool isLoading;
   @override
-  final String? hint;
+  @JsonKey()
+  final String hint;
+  @override
+  @JsonKey()
+  final String searchCategory;
   @override
   final File? sakeImage;
   @override
@@ -166,10 +200,20 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
   @override
   @JsonKey()
   final bool canUse;
+  final List<OpenAIResponse>? _openAiResponseList;
+  @override
+  List<OpenAIResponse>? get openAiResponseList {
+    final value = _openAiResponseList;
+    if (value == null) return null;
+    if (_openAiResponseList is EqualUnmodifiableListView)
+      return _openAiResponseList;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, canUse: $canUse)';
+    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, searchCategory: $searchCategory, sakeImage: $sakeImage, geminiResponse: $geminiResponse, canUse: $canUse, openAiResponseList: $openAiResponseList)';
   }
 
   @override
@@ -180,16 +224,27 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
             (identical(other.hint, hint) || other.hint == hint) &&
+            (identical(other.searchCategory, searchCategory) ||
+                other.searchCategory == searchCategory) &&
             (identical(other.sakeImage, sakeImage) ||
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
-            (identical(other.canUse, canUse) || other.canUse == canUse));
+            (identical(other.canUse, canUse) || other.canUse == canUse) &&
+            const DeepCollectionEquality()
+                .equals(other._openAiResponseList, _openAiResponseList));
   }
 
   @override
   int get hashCode => Object.hash(
-      runtimeType, isLoading, hint, sakeImage, geminiResponse, canUse);
+      runtimeType,
+      isLoading,
+      hint,
+      searchCategory,
+      sakeImage,
+      geminiResponse,
+      canUse,
+      const DeepCollectionEquality().hash(_openAiResponseList));
 
   @JsonKey(ignore: true)
   @override
@@ -202,22 +257,29 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
 
 abstract class _ImageSearchPageState implements ImageSearchPageState {
   const factory _ImageSearchPageState(
-      {final bool isLoading,
-      final String? hint,
-      final File? sakeImage,
-      final String? geminiResponse,
-      final bool canUse}) = _$ImageSearchPageStateImpl;
+          {final bool isLoading,
+          final String hint,
+          final String searchCategory,
+          final File? sakeImage,
+          final String? geminiResponse,
+          final bool canUse,
+          final List<OpenAIResponse>? openAiResponseList}) =
+      _$ImageSearchPageStateImpl;
 
   @override
   bool get isLoading;
   @override
-  String? get hint;
+  String get hint;
+  @override
+  String get searchCategory;
   @override
   File? get sakeImage;
   @override
   String? get geminiResponse;
   @override
   bool get canUse;
+  @override
+  List<OpenAIResponse>? get openAiResponseList;
   @override
   @JsonKey(ignore: true)
   _$$ImageSearchPageStateImplCopyWith<_$ImageSearchPageStateImpl>

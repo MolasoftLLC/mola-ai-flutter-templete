@@ -41,6 +41,19 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> promptWithTextByOpenAI(Map<String, String> text) {
+    final Uri $url = Uri.parse('/open_ai/prompt_with_text');
+    final $body = text;
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> promptWithImage(
     String image,
     String hint,
@@ -71,7 +84,7 @@ class _$ApiClient extends ApiClient {
     String image,
     String hint,
   ) {
-    final Uri $url = Uri.parse('/prompt_with_image_by_open_ai');
+    final Uri $url = Uri.parse('/open_ai/prompt_with_image');
     final List<PartValue> $parts = <PartValue>[
       PartValue<String>(
         'image',
@@ -93,6 +106,32 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> promptWithMenuByOpenAI(
+    String image,
+    List<String> favorites,
+  ) {
+    final Uri $url = Uri.parse('/open_ai/prompt_with_menu');
+    final List<PartValue> $parts = <PartValue>[
+      PartValue<String>(
+        'image',
+        image,
+      ),
+      PartValue<List<String>>(
+        'favorites',
+        favorites,
+      ),
+    ];
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      parts: $parts,
+      multipart: true,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> promptWithFavorite(FavoriteBody body) {
     final Uri $url = Uri.parse('/prompt_with_favorite');
     final $body = body;
@@ -101,6 +140,17 @@ class _$ApiClient extends ApiClient {
       $url,
       client.baseUrl,
       body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> getLatestVersion() {
+    final Uri $url = Uri.parse('/get_latest_version');
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
     );
     return client.send<dynamic, dynamic>($request);
   }
