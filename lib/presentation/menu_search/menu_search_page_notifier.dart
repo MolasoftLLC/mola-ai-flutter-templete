@@ -18,10 +18,13 @@ part 'menu_search_page_notifier.freezed.dart';
 abstract class MenuSearchPageState with _$MenuSearchPageState {
   const factory MenuSearchPageState({
     @Default(false) bool isLoading,
+    @Default(false) bool isExtractingInfo,
+    @Default(false) bool isGettingDetails,
     String? sakeName,
     String? hint,
     File? sakeImage,
     String? geminiResponse,
+    List<Map<String, dynamic>>? extractedSakes,
     SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
   }) = _MenuSearchPageState;
 }
@@ -91,6 +94,51 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     if (state.isLoading == true) {
       return;
     }
+    
+    // 画像から日本酒情報を抽出
+    state = state.copyWith(isLoading: true, isExtractingInfo: true);
+    
+    final extractResponse = await sakeMenuRecognitionRepository.extractSakeInfo(
+      state.sakeImage!,
+    );
+    
+    if (extractResponse == null) {
+      state = state.copyWith(
+        isLoading: false,
+        isExtractingInfo: false,
+      );
+      return;
+    }
+    
+    final extractedSakes = (extractResponse['sakes'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    
+    state = state.copyWith(
+      isExtractingInfo: false,
+      isGettingDetails: true,
+      extractedSakes: extractedSakes,
+    );
+    
+    // 抽出した日本酒情報から詳細情報を取得
+    final detailsResponse = await sakeMenuRecognitionRepository.getSakeInfoBatch(
+      extractedSakes,
+    );
+    
+    state = state.copyWith(
+      isLoading: false,
+      isGettingDetails: false,
+      sakeMenuRecognitionResponse: detailsResponse,
+    );
+  }
+  
+  // 従来のメソッド（バックアップ用）
+  Future<void> recognizeMenuLegacy() async {
+    if (state.sakeImage == null) {
+      return;
+    }
+    if (state.isLoading == true) {
+      return;
+    }
     state = state.copyWith(isLoading: true);
 
     logger.shout(state.sakeImage);
@@ -121,6 +169,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   void clearImage() {
-    state = state.copyWith(sakeImage: null);
+    state = state.copyWith(
+      sakeImage: null,
+      extractedSakes: null,
+      sakeMenuRecognitionResponse: null,
+    );
   }
 }

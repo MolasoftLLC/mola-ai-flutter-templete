@@ -27,17 +27,31 @@ class MenuSearchPage extends StatelessWidget {
     final notifier = context.watch<MenuSearchPageNotifier>();
     final isLoading =
         context.select((MenuSearchPageState state) => state.isLoading);
+    final isExtractingInfo =
+        context.select((MenuSearchPageState state) => state.isExtractingInfo);
+    final isGettingDetails =
+        context.select((MenuSearchPageState state) => state.isGettingDetails);
     final sakeImage =
         context.select((MenuSearchPageState state) => state.sakeImage);
+    final extractedSakes =
+        context.select((MenuSearchPageState state) => state.extractedSakes);
     final sakeMenuRecognitionResponse =
         context.select((MenuSearchPageState state) => state.sakeMenuRecognitionResponse);
+    
+    String loadingText = 'AIに問い合わせています';
+    if (isExtractingInfo) {
+      loadingText = '画像から日本酒を認識しています...';
+    } else if (isGettingDetails) {
+      loadingText = '日本酒の詳細情報を取得しています...';
+    }
+    
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
         color: const Color(0xFF1D3567),
         child: SingleChildScrollView(
           child: isLoading
-              ? const AILoading(loadingText: 'AIに問い合わせています')
+              ? AILoading(loadingText: loadingText)
               : Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -64,6 +78,57 @@ class MenuSearchPage extends StatelessWidget {
                         ),
                       ),
                       
+                      // 抽出された日本酒情報（詳細取得中の表示）
+                      if (extractedSakes != null && sakeMenuRecognitionResponse == null)
+                        Column(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              margin: EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '画像から以下の日本酒を認識しました',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 12),
+                                  ...extractedSakes.map((sake) => Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.local_bar, color: Colors.blue),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '${sake['name']} (${sake['type']})',
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )).toList(),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    '詳細情報を取得しています...',
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      
+                      // 詳細情報の表示
                       if (sakeMenuRecognitionResponse != null)
                         SizedBox(
                           height: sakeMenuRecognitionResponse.sakes.length * 300,
@@ -192,7 +257,7 @@ class MenuSearchPage extends StatelessWidget {
                         height: 30,
                       ),
                       
-                      if (sakeImage != null)
+                      if (sakeImage != null && !isLoading)
                         SizedBox(
                           width: 220,
                           child: FilledButton(
