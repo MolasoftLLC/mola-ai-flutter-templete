@@ -21,6 +21,8 @@ mixin _$MenuSearchPageState {
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
+  SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse =>
+      throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MenuSearchPageStateCopyWith<MenuSearchPageState> get copyWith =>
@@ -38,7 +40,10 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
       String? sakeName,
       String? hint,
       File? sakeImage,
-      String? geminiResponse});
+      String? geminiResponse,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
 
 /// @nodoc
@@ -59,6 +64,7 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? sakeMenuRecognitionResponse = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -81,7 +87,24 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+          ? _value.sakeMenuRecognitionResponse
+          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+              as SakeMenuRecognitionResponse?,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse {
+    if (_value.sakeMenuRecognitionResponse == null) {
+      return null;
+    }
+
+    return $SakeMenuRecognitionResponseCopyWith<$Res>(
+        _value.sakeMenuRecognitionResponse!, (value) {
+      return _then(_value.copyWith(sakeMenuRecognitionResponse: value) as $Val);
+    });
   }
 }
 
@@ -98,7 +121,11 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
       String? sakeName,
       String? hint,
       File? sakeImage,
-      String? geminiResponse});
+      String? geminiResponse,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+
+  @override
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
 
 /// @nodoc
@@ -117,6 +144,7 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? sakeMenuRecognitionResponse = freezed,
   }) {
     return _then(_$MenuSearchPageStateImpl(
       isLoading: null == isLoading
@@ -139,6 +167,10 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+          ? _value.sakeMenuRecognitionResponse
+          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+              as SakeMenuRecognitionResponse?,
     ));
   }
 }
@@ -151,7 +183,8 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       this.sakeName,
       this.hint,
       this.sakeImage,
-      this.geminiResponse});
+      this.geminiResponse,
+      this.sakeMenuRecognitionResponse});
 
   @override
   @JsonKey()
@@ -164,10 +197,12 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
   final File? sakeImage;
   @override
   final String? geminiResponse;
+  @override
+  final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse;
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse)';
+    return 'MenuSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse)';
   }
 
   @override
@@ -183,12 +218,16 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
             (identical(other.sakeImage, sakeImage) ||
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
-                other.geminiResponse == geminiResponse));
+                other.geminiResponse == geminiResponse) &&
+            (identical(other.sakeMenuRecognitionResponse,
+                    sakeMenuRecognitionResponse) ||
+                other.sakeMenuRecognitionResponse ==
+                    sakeMenuRecognitionResponse));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, isLoading, sakeName, hint, sakeImage, geminiResponse);
+  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
+      sakeImage, geminiResponse, sakeMenuRecognitionResponse);
 
   @JsonKey(ignore: true)
   @override
@@ -200,11 +239,13 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 
 abstract class _MenuSearchPageState implements MenuSearchPageState {
   const factory _MenuSearchPageState(
-      {final bool isLoading,
-      final String? sakeName,
-      final String? hint,
-      final File? sakeImage,
-      final String? geminiResponse}) = _$MenuSearchPageStateImpl;
+          {final bool isLoading,
+          final String? sakeName,
+          final String? hint,
+          final File? sakeImage,
+          final String? geminiResponse,
+          final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse}) =
+      _$MenuSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -216,6 +257,8 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   File? get sakeImage;
   @override
   String? get geminiResponse;
+  @override
+  SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse;
   @override
   @JsonKey(ignore: true)
   _$$MenuSearchPageStateImplCopyWith<_$MenuSearchPageStateImpl> get copyWith =>

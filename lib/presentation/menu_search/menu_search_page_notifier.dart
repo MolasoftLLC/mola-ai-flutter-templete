@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
 
+import '../../common/logger.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 
@@ -91,11 +92,12 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       return;
     }
     state = state.copyWith(isLoading: true);
-    
+
+    logger.shout(state.sakeImage);
     final response = await sakeMenuRecognitionRepository.recognizeMenu(
       state.sakeImage!,
     );
-    
+
     state = state.copyWith(
       isLoading: false,
       sakeMenuRecognitionResponse: response,

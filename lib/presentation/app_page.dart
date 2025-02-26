@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/access_url.dart';
 import 'package:mola_gemini_flutter_template/presentation/main_search/main_search_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page.dart';
 import 'package:provider/provider.dart';
 
 import '../common/assets.dart';
 import 'app_page_notifier.dart';
 import 'favorite_search/favorite_search_page.dart';
-import 'image_search/image_search_page.dart';
 import 'my_page/my_page.dart';
 
 class AppPage extends StatelessWidget {
@@ -38,7 +38,7 @@ class AppPage extends StatelessWidget {
     final pages = [
       MainSearchPage.wrapped(),
       FavoriteSearchPage.wrapped(),
-      ImageSearchPage.wrapped(),
+      MenuSearchPage.wrapped(),
       MyPage.wrapped(),
     ];
 

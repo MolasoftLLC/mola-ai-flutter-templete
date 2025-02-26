@@ -33,6 +33,7 @@ class SakeMenuRecognitionRepository {
 
   Future<SakeMenuRecognitionResponse?> recognizeMenu(File file) async {
     final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    logger.shout(baseFile);
     final response = await _apiClient.recognizeMenu(baseFile);
     if (response.isSuccessful) {
       logger.shout(response.body);

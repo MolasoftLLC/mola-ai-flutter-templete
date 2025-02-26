@@ -24,6 +24,8 @@ mixin _$ImageSearchPageState {
   bool get canUse => throw _privateConstructorUsedError;
   List<OpenAIResponse>? get openAiResponseList =>
       throw _privateConstructorUsedError;
+  SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse =>
+      throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ImageSearchPageStateCopyWith<ImageSearchPageState> get copyWith =>
@@ -43,7 +45,10 @@ abstract class $ImageSearchPageStateCopyWith<$Res> {
       File? sakeImage,
       String? geminiResponse,
       bool canUse,
-      List<OpenAIResponse>? openAiResponseList});
+      List<OpenAIResponse>? openAiResponseList,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
 
 /// @nodoc
@@ -67,6 +72,7 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
     Object? geminiResponse = freezed,
     Object? canUse = null,
     Object? openAiResponseList = freezed,
+    Object? sakeMenuRecognitionResponse = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -97,7 +103,24 @@ class _$ImageSearchPageStateCopyWithImpl<$Res,
           ? _value.openAiResponseList
           : openAiResponseList // ignore: cast_nullable_to_non_nullable
               as List<OpenAIResponse>?,
+      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+          ? _value.sakeMenuRecognitionResponse
+          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+              as SakeMenuRecognitionResponse?,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse {
+    if (_value.sakeMenuRecognitionResponse == null) {
+      return null;
+    }
+
+    return $SakeMenuRecognitionResponseCopyWith<$Res>(
+        _value.sakeMenuRecognitionResponse!, (value) {
+      return _then(_value.copyWith(sakeMenuRecognitionResponse: value) as $Val);
+    });
   }
 }
 
@@ -116,7 +139,11 @@ abstract class _$$ImageSearchPageStateImplCopyWith<$Res>
       File? sakeImage,
       String? geminiResponse,
       bool canUse,
-      List<OpenAIResponse>? openAiResponseList});
+      List<OpenAIResponse>? openAiResponseList,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+
+  @override
+  $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
 
 /// @nodoc
@@ -137,6 +164,7 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
     Object? geminiResponse = freezed,
     Object? canUse = null,
     Object? openAiResponseList = freezed,
+    Object? sakeMenuRecognitionResponse = freezed,
   }) {
     return _then(_$ImageSearchPageStateImpl(
       isLoading: null == isLoading
@@ -167,6 +195,10 @@ class __$$ImageSearchPageStateImplCopyWithImpl<$Res>
           ? _value._openAiResponseList
           : openAiResponseList // ignore: cast_nullable_to_non_nullable
               as List<OpenAIResponse>?,
+      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+          ? _value.sakeMenuRecognitionResponse
+          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+              as SakeMenuRecognitionResponse?,
     ));
   }
 }
@@ -181,7 +213,8 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
       this.sakeImage,
       this.geminiResponse,
       this.canUse = true,
-      final List<OpenAIResponse>? openAiResponseList})
+      final List<OpenAIResponse>? openAiResponseList,
+      this.sakeMenuRecognitionResponse})
       : _openAiResponseList = openAiResponseList;
 
   @override
@@ -212,8 +245,11 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
   }
 
   @override
+  final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse;
+
+  @override
   String toString() {
-    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, searchCategory: $searchCategory, sakeImage: $sakeImage, geminiResponse: $geminiResponse, canUse: $canUse, openAiResponseList: $openAiResponseList)';
+    return 'ImageSearchPageState(isLoading: $isLoading, hint: $hint, searchCategory: $searchCategory, sakeImage: $sakeImage, geminiResponse: $geminiResponse, canUse: $canUse, openAiResponseList: $openAiResponseList, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse)';
   }
 
   @override
@@ -232,7 +268,11 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
                 other.geminiResponse == geminiResponse) &&
             (identical(other.canUse, canUse) || other.canUse == canUse) &&
             const DeepCollectionEquality()
-                .equals(other._openAiResponseList, _openAiResponseList));
+                .equals(other._openAiResponseList, _openAiResponseList) &&
+            (identical(other.sakeMenuRecognitionResponse,
+                    sakeMenuRecognitionResponse) ||
+                other.sakeMenuRecognitionResponse ==
+                    sakeMenuRecognitionResponse));
   }
 
   @override
@@ -244,7 +284,8 @@ class _$ImageSearchPageStateImpl implements _ImageSearchPageState {
       sakeImage,
       geminiResponse,
       canUse,
-      const DeepCollectionEquality().hash(_openAiResponseList));
+      const DeepCollectionEquality().hash(_openAiResponseList),
+      sakeMenuRecognitionResponse);
 
   @JsonKey(ignore: true)
   @override
@@ -263,7 +304,8 @@ abstract class _ImageSearchPageState implements ImageSearchPageState {
           final File? sakeImage,
           final String? geminiResponse,
           final bool canUse,
-          final List<OpenAIResponse>? openAiResponseList}) =
+          final List<OpenAIResponse>? openAiResponseList,
+          final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse}) =
       _$ImageSearchPageStateImpl;
 
   @override
@@ -280,6 +322,8 @@ abstract class _ImageSearchPageState implements ImageSearchPageState {
   bool get canUse;
   @override
   List<OpenAIResponse>? get openAiResponseList;
+  @override
+  SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse;
   @override
   @JsonKey(ignore: true)
   _$$ImageSearchPageStateImplCopyWith<_$ImageSearchPageStateImpl>
