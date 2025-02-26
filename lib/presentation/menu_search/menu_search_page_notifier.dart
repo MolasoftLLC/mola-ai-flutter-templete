@@ -4,8 +4,12 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
+
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/repository/sake_menu_recognition_repository.dart';
 
 part 'menu_search_page_notifier.freezed.dart';
 
@@ -17,6 +21,7 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     String? hint,
     File? sakeImage,
     String? geminiResponse,
+    SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
   }) = _MenuSearchPageState;
 }
 
@@ -30,6 +35,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
+  SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
+      read<SakeMenuRecognitionRepository>();
 
   @override
   Future<void> initState() async {
@@ -74,5 +81,44 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   void setText(String text) {
     state = state.copyWith(sakeName: text);
+  }
+
+  Future<void> recognizeMenu() async {
+    if (state.sakeImage == null) {
+      return;
+    }
+    if (state.isLoading == true) {
+      return;
+    }
+    state = state.copyWith(isLoading: true);
+    
+    final response = await sakeMenuRecognitionRepository.recognizeMenu(
+      state.sakeImage!,
+    );
+    
+    state = state.copyWith(
+      isLoading: false,
+      sakeMenuRecognitionResponse: response,
+    );
+  }
+
+  Future<void> pickImageFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      state = state.copyWith(sakeImage: File(pickedFile.path));
+    }
+  }
+
+  Future<void> pickImageFromCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      state = state.copyWith(sakeImage: File(pickedFile.path));
+    }
+  }
+
+  void clearImage() {
+    state = state.copyWith(sakeImage: null);
   }
 }

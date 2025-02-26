@@ -7,8 +7,11 @@ import 'common/access_url.dart';
 import 'domain/notifier/favorite/favorite_notifier.dart';
 import 'domain/repository/gemini_mola_api_repository.dart';
 import 'domain/repository/mola_api_repository.dart';
+import 'domain/repository/sake_menu_recognition_repository.dart';
 import 'infrastructure/api_client/api_client.dart';
 import 'infrastructure/api_client/client_creator.dart';
+import 'infrastructure/api_client/sake_menu_recognition_api_client.dart';
+import 'infrastructure/api_client/sake_menu_recognition_client_creator.dart';
 import 'infrastructure/local_database/shared_preference.dart';
 
 Future<List<SingleChildWidget>> get providers async {
@@ -43,6 +46,16 @@ List<SingleChildWidget> get _repositoryProviders {
     ),
     Provider<SharedPreference>(
       create: (_) => SharedPreference(),
+    ),
+    Provider<SakeMenuRecognitionApiClient>(
+      create: (_) => SakeMenuRecognitionApiClient.create(
+        sakeMenuRecognitionChopperClient(),
+      ),
+    ),
+    Provider<SakeMenuRecognitionRepository>(
+      create: (context) => SakeMenuRecognitionRepository(
+        context.read<SakeMenuRecognitionApiClient>(),
+      ),
     ),
   ];
 }

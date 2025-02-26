@@ -11,7 +11,9 @@ import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
 import '../../domain/eintities/response/open_ai_response/open_ai_response.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/mola_api_repository.dart';
+import '../../domain/repository/sake_menu_recognition_repository.dart';
 
 part 'image_search_page_notifier.freezed.dart';
 
@@ -25,6 +27,7 @@ abstract class ImageSearchPageState with _$ImageSearchPageState {
     String? geminiResponse,
     @Default(true) bool canUse,
     List<OpenAIResponse>? openAiResponseList,
+    SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
   }) = _ImageSearchPageState;
 }
 
@@ -39,6 +42,8 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
+  SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
+      read<SakeMenuRecognitionRepository>();
 
   FavoriteNotifier get favoriteNotifier => read<FavoriteNotifier>();
   @override
@@ -77,12 +82,39 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
         if (state.hint == 'メニュー') {
           logger.shout('メニュー検索');
 
-          /// TODO:最終的に課金した人のみにしよう
-          final openAIRes = await molaApiRepository.promptWithMenuByOpenAI(
+          // Use the new repository for menu image uploads
+          final sakeMenuRecognitionResponse = await sakeMenuRecognitionRepository.recognizeMenu(
             state.sakeImage!,
-            favoriteNotifier.state.myFavoriteList,
           );
-          state = state.copyWith(openAiResponseList: openAIRes);
+          if (sakeMenuRecognitionResponse != null) {
+            // Convert the SakeMenuRecognitionResponse to OpenAIResponse for compatibility
+            final openAIRes = sakeMenuRecognitionResponse.sakes.map((sake) {
+              final description = <String, String>{
+                '特徴': sake.taste,
+                '辛口か甘口か': sake.sakeMeterValue > 0 ? '辛口' : '甘口',
+                '酒造情報': sake.brewery,
+                '日本酒度合い': sake.sakeMeterValue.toString(),
+                '使用米': '',
+                'バリエーション': sake.types.join(', '),
+                'アルコール度': '',
+              };
+              return OpenAIResponse(
+                title: sake.name,
+                description: description,
+              );
+            }).toList();
+            state = state.copyWith(
+              openAiResponseList: openAIRes,
+              sakeMenuRecognitionResponse: sakeMenuRecognitionResponse,
+            );
+          } else {
+            // Fallback to the old API if the new one fails
+            final openAIRes = await molaApiRepository.promptWithMenuByOpenAI(
+              state.sakeImage!,
+              favoriteNotifier.state.myFavoriteList,
+            );
+            state = state.copyWith(openAiResponseList: openAIRes);
+          }
         } else {
           /// TODO:最終的に課金した人のみにしよう
           final openAIRes = await molaApiRepository.promptWithImageByOpenAI(
