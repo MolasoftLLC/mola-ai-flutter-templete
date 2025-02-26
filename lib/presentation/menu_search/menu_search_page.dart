@@ -27,8 +27,10 @@ class MenuSearchPage extends StatelessWidget {
     final notifier = context.watch<MenuSearchPageNotifier>();
     final isLoading =
         context.select((MenuSearchPageState state) => state.isLoading);
-    final geminiResponse =
-        context.select((MenuSearchPageState state) => state.geminiResponse);
+    final sakeImage =
+        context.select((MenuSearchPageState state) => state.sakeImage);
+    final sakeMenuRecognitionResponse =
+        context.select((MenuSearchPageState state) => state.sakeMenuRecognitionResponse);
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -41,7 +43,7 @@ class MenuSearchPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        height: 240,
+                        height: 50,
                       ),
                       SizedBox(
                         height: 200,
@@ -54,71 +56,178 @@ class MenuSearchPage extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Comming Soon!',
+                          'メニューの中からオススメの日本酒を教えてくれる機能',
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          'メニューの中からオススメの日本酒を教えてくれるありがた機能！',
-                          style: TextStyle(color: Colors.white),
+                      
+                      if (sakeMenuRecognitionResponse != null)
+                        SizedBox(
+                          height: sakeMenuRecognitionResponse.sakes.length * 300,
+                          child: ListView.builder(
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: sakeMenuRecognitionResponse.sakes.length,
+                            itemBuilder: (context, index) {
+                              final sake = sakeMenuRecognitionResponse.sakes[index];
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          sake.name,
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text('種類: ${sake.type}'),
+                                        Text('酒蔵: ${sake.brewery}'),
+                                        Text('味わい: ${sake.taste}'),
+                                        Text('日本酒度: ${sake.sakeMeterValue}'),
+                                        Text('タイプ: ${sake.types.join(', ')}'),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
+                      
+                      SizedBox(
+                        height: 40,
                       ),
-                      // Padding(
-                      //   padding: const EdgeInsets.all(12),
-                      //   child: TextFormField(
-                      //     maxLength: 30,
-                      //     decoration: const InputDecoration(
-                      //       fillColor: Colors.white,
-                      //       filled: true,
-                      //       hintText: '日本酒の銘柄(例 田酒、仙禽...)',
-                      //       border: OutlineInputBorder(),
-                      //     ),
-                      //     maxLines: 1,
-                      //     onChanged: (String text) {
-                      //       notifier.setText(text);
-                      //     },
-                      //   ),
-                      // ),
-                      // SizedBox(
-                      //   width: 220,
-                      //   child: FilledButton(
-                      //     onPressed: () async {
-                      //       await notifier.promptWithText();
-                      //     },
-                      //     style: OutlinedButton.styleFrom(
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(16),
-                      //       ),
-                      //     ),
-                      //     child: Text('AIに質問'),
-                      //   ),
-                      // ),
+                      
+                      if (sakeImage != null)
+                        Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: MediaQuery.of(context).size.width,
+                                child: Image.file(sakeImage),
+                              ),
+                            ),
+                            Positioned(
+                              top: 0,
+                              right: 1,
+                              child: InkWell(
+                                onTap: () {
+                                  notifier.clearImage();
+                                },
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
 
-                      // if (geminiResponse != null)
-                      //   SizedBox(
-                      //     height: 200,
-                      //     width: 200,
-                      //     child: Image(
-                      //       image: Assets.sakeLogo,
-                      //       fit: BoxFit.contain,
-                      //     ),
-                      //   ),
-                      // const SizedBox(
-                      //   height: 40,
-                      // ),
-                      // if (geminiResponse != null)
-                      //   Padding(
-                      //     padding: const EdgeInsets.all(24),
-                      //     child: Text(
-                      //       style: TextStyle(color: Colors.white),
-                      //       geminiResponse,
-                      //     ),
-                      //   ),
+                      if (sakeImage == null)
+                        InkWell(
+                          onTap: () async {
+                            await showImagePickerBottomSheet(context, notifier);
+                          },
+                          child: Container(
+                            width: 300,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF014772),
+                                  offset: Offset(1, 3),
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                              borderRadius: BorderRadius.circular(20),
+                              color: Color(0xFF0360A4),
+                            ),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(height: 4),
+                                Icon(
+                                  size: 40,
+                                  Icons.photo_camera,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'メニュー画像を選ぶ',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Icon(
+                                  size: 20,
+                                  Icons.add,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      
+                      SizedBox(
+                        height: 30,
+                      ),
+                      
+                      if (sakeImage != null)
+                        SizedBox(
+                          width: 220,
+                          child: FilledButton(
+                            onPressed: () async {
+                              await notifier.recognizeMenu();
+                            },
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.star_border_purple500,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 2),
+                                Text(
+                                  'メニューを解析',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      
+                      const SizedBox(
+                        height: 40,
+                      ),
                     ],
                   ),
                 ),
@@ -136,3 +245,40 @@ final ButtonStyle flatButtonStyle = TextButton.styleFrom(
     borderRadius: BorderRadius.all(Radius.circular(2)),
   ),
 );
+
+Future<void> showImagePickerBottomSheet(
+    BuildContext context, MenuSearchPageNotifier notifier) async {
+  showModalBottomSheet(
+    context: context,
+    builder: (BuildContext context) {
+      return Container(
+        height: 200,
+        color: Colors.white,
+        child: Column(
+          children: [
+            ListTile(
+              onTap: () async {
+                await notifier.pickImageFromGallery();
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+              leading: const Icon(Icons.photo),
+              title: const Text('ライブラリから選択'),
+            ),
+            ListTile(
+              onTap: () async {
+                await notifier.pickImageFromCamera();
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              },
+              leading: const Icon(Icons.camera),
+              title: const Text('撮影する'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
