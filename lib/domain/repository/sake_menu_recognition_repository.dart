@@ -7,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
+import '../../common/utils/image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
@@ -33,7 +34,7 @@ class SakeMenuRecognitionRepository {
   }
 
   Future<SakeMenuRecognitionResponse?> recognizeMenu(File file) async {
-    final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    final baseFile = await ImageUtils.compressAndEncodeImage(file);
     logger.shout(baseFile);
     final response = await _apiClient.recognizeMenu(baseFile);
     if (response.isSuccessful) {
@@ -48,7 +49,7 @@ class SakeMenuRecognitionRepository {
 
   /// メニュー画像から日本酒名と種類のみを抽出する
   Future<List<Sake>?> extractSakeInfo(File file) async {
-    final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    final baseFile = await ImageUtils.compressAndEncodeImage(file);
     final response = await _apiClient.extractSakeInfo(baseFile);
     if (response.isSuccessful) {
       logger.shout(response.body);
@@ -147,7 +148,7 @@ class SakeMenuRecognitionRepository {
   // 酒瓶画像を認識する
   Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
     try {
-      final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+      final baseFile = await ImageUtils.compressAndEncodeImage(file);
       final response = await _apiClient.recognizeSakeBottle(
         baseFile,
       );

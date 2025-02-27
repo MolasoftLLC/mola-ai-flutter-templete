@@ -8,6 +8,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
+import '../../common/utils/image_utils.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/request/favorite_body.dart';
 
@@ -60,7 +61,7 @@ class MolaApiRepository {
 
   Future<List<OpenAIResponse>> promptWithImageByOpenAI(
       File file, String? hint) async {
-    final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    final baseFile = await ImageUtils.compressAndEncodeImage(file);
     final response =
         await _apiClient.promptWithImageByOpenAI(baseFile, hint ?? '');
     if (response.isSuccessful) {
@@ -122,7 +123,7 @@ class MolaApiRepository {
     File file,
     List<String> favorite,
   ) async {
-    final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+    final baseFile = await ImageUtils.compressAndEncodeImage(file);
     final response =
         await _apiClient.promptWithMenuByOpenAI(baseFile, favorite ?? []);
     if (response.isSuccessful) {
