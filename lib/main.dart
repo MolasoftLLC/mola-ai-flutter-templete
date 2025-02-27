@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'app_config.dart';
 import 'common/access_url.dart';
+import 'common/utils/ad_utils.dart';
 import 'config/di_container.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -29,6 +30,9 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  // AdMobの初期化
+  await AdUtils.initialize();
 
   ///各種アプリの設定を読み取り
   HttpOverrides.global = MyHttpOverrides();
