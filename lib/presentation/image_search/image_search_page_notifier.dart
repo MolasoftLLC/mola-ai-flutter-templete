@@ -83,19 +83,20 @@ class ImageSearchPageNotifier extends StateNotifier<ImageSearchPageState>
           logger.shout('メニュー検索');
 
           // Use the new repository for menu image uploads
-          final sakeMenuRecognitionResponse = await sakeMenuRecognitionRepository.recognizeMenu(
+          final sakeMenuRecognitionResponse =
+              await sakeMenuRecognitionRepository.recognizeMenu(
             state.sakeImage!,
           );
           if (sakeMenuRecognitionResponse != null) {
             // Convert the SakeMenuRecognitionResponse to OpenAIResponse for compatibility
-            final openAIRes = sakeMenuRecognitionResponse.sakes.map((sake) {
+            final openAIRes = sakeMenuRecognitionResponse.sakes!.map((sake) {
               final description = <String, String>{
-                '特徴': sake.taste,
-                '辛口か甘口か': sake.sakeMeterValue > 0 ? '辛口' : '甘口',
-                '酒造情報': sake.brewery,
+                '特徴': sake.taste!,
+                '辛口か甘口か': sake.sakeMeterValue! > 0 ? '辛口' : '甘口',
+                '酒造情報': sake.brewery!,
                 '日本酒度合い': sake.sakeMeterValue.toString(),
                 '使用米': '',
-                'バリエーション': sake.types.join(', '),
+                'バリエーション': sake.types!.join(', '),
                 'アルコール度': '',
               };
               return OpenAIResponse(

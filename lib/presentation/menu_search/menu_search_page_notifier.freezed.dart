@@ -17,12 +17,22 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$MenuSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
+  bool get isExtractingInfo => throw _privateConstructorUsedError;
+  bool get isGettingDetails => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
+  List<Sake> get extractedSakes => throw _privateConstructorUsedError;
   SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse =>
       throw _privateConstructorUsedError;
+  String? get errorMessage => throw _privateConstructorUsedError;
+  List<Sake>? get sakes => throw _privateConstructorUsedError;
+  Map<String, bool> get sakeLoadingStatus =>
+      throw _privateConstructorUsedError; // 元の名前と取得した詳細情報の名前のマッピング
+  Map<String, String> get nameMapping =>
+      throw _privateConstructorUsedError; // ユーザーの好み
+  String? get preferences => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MenuSearchPageStateCopyWith<MenuSearchPageState> get copyWith =>
@@ -37,11 +47,19 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
   @useResult
   $Res call(
       {bool isLoading,
+      bool isExtractingInfo,
+      bool isGettingDetails,
       String? sakeName,
       String? hint,
       File? sakeImage,
       String? geminiResponse,
-      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+      List<Sake> extractedSakes,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+      String? errorMessage,
+      List<Sake>? sakes,
+      Map<String, bool> sakeLoadingStatus,
+      Map<String, String> nameMapping,
+      String? preferences});
 
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
@@ -60,16 +78,32 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isExtractingInfo = null,
+    Object? isGettingDetails = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? extractedSakes = null,
     Object? sakeMenuRecognitionResponse = freezed,
+    Object? errorMessage = freezed,
+    Object? sakes = freezed,
+    Object? sakeLoadingStatus = null,
+    Object? nameMapping = null,
+    Object? preferences = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isExtractingInfo: null == isExtractingInfo
+          ? _value.isExtractingInfo
+          : isExtractingInfo // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isGettingDetails: null == isGettingDetails
+          ? _value.isGettingDetails
+          : isGettingDetails // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -87,10 +121,34 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      extractedSakes: null == extractedSakes
+          ? _value.extractedSakes
+          : extractedSakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>,
       sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
           ? _value.sakeMenuRecognitionResponse
           : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
               as SakeMenuRecognitionResponse?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakes: freezed == sakes
+          ? _value.sakes
+          : sakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>?,
+      sakeLoadingStatus: null == sakeLoadingStatus
+          ? _value.sakeLoadingStatus
+          : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
+              as Map<String, bool>,
+      nameMapping: null == nameMapping
+          ? _value.nameMapping
+          : nameMapping // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      preferences: freezed == preferences
+          ? _value.preferences
+          : preferences // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -118,11 +176,19 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {bool isLoading,
+      bool isExtractingInfo,
+      bool isGettingDetails,
       String? sakeName,
       String? hint,
       File? sakeImage,
       String? geminiResponse,
-      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse});
+      List<Sake> extractedSakes,
+      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+      String? errorMessage,
+      List<Sake>? sakes,
+      Map<String, bool> sakeLoadingStatus,
+      Map<String, String> nameMapping,
+      String? preferences});
 
   @override
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
@@ -140,16 +206,32 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isExtractingInfo = null,
+    Object? isGettingDetails = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
+    Object? extractedSakes = null,
     Object? sakeMenuRecognitionResponse = freezed,
+    Object? errorMessage = freezed,
+    Object? sakes = freezed,
+    Object? sakeLoadingStatus = null,
+    Object? nameMapping = null,
+    Object? preferences = freezed,
   }) {
     return _then(_$MenuSearchPageStateImpl(
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isExtractingInfo: null == isExtractingInfo
+          ? _value.isExtractingInfo
+          : isExtractingInfo // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isGettingDetails: null == isGettingDetails
+          ? _value.isGettingDetails
+          : isGettingDetails // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -167,10 +249,34 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
           ? _value.geminiResponse
           : geminiResponse // ignore: cast_nullable_to_non_nullable
               as String?,
+      extractedSakes: null == extractedSakes
+          ? _value._extractedSakes
+          : extractedSakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>,
       sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
           ? _value.sakeMenuRecognitionResponse
           : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
               as SakeMenuRecognitionResponse?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakes: freezed == sakes
+          ? _value._sakes
+          : sakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>?,
+      sakeLoadingStatus: null == sakeLoadingStatus
+          ? _value._sakeLoadingStatus
+          : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
+              as Map<String, bool>,
+      nameMapping: null == nameMapping
+          ? _value._nameMapping
+          : nameMapping // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      preferences: freezed == preferences
+          ? _value.preferences
+          : preferences // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -180,15 +286,33 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
 class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
   const _$MenuSearchPageStateImpl(
       {this.isLoading = false,
+      this.isExtractingInfo = false,
+      this.isGettingDetails = false,
       this.sakeName,
       this.hint,
       this.sakeImage,
       this.geminiResponse,
-      this.sakeMenuRecognitionResponse});
+      final List<Sake> extractedSakes = const [],
+      this.sakeMenuRecognitionResponse,
+      this.errorMessage,
+      final List<Sake>? sakes,
+      final Map<String, bool> sakeLoadingStatus = const {},
+      final Map<String, String> nameMapping = const {},
+      this.preferences})
+      : _extractedSakes = extractedSakes,
+        _sakes = sakes,
+        _sakeLoadingStatus = sakeLoadingStatus,
+        _nameMapping = nameMapping;
 
   @override
   @JsonKey()
   final bool isLoading;
+  @override
+  @JsonKey()
+  final bool isExtractingInfo;
+  @override
+  @JsonKey()
+  final bool isGettingDetails;
   @override
   final String? sakeName;
   @override
@@ -197,12 +321,57 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
   final File? sakeImage;
   @override
   final String? geminiResponse;
+  final List<Sake> _extractedSakes;
+  @override
+  @JsonKey()
+  List<Sake> get extractedSakes {
+    if (_extractedSakes is EqualUnmodifiableListView) return _extractedSakes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_extractedSakes);
+  }
+
   @override
   final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse;
+  @override
+  final String? errorMessage;
+  final List<Sake>? _sakes;
+  @override
+  List<Sake>? get sakes {
+    final value = _sakes;
+    if (value == null) return null;
+    if (_sakes is EqualUnmodifiableListView) return _sakes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final Map<String, bool> _sakeLoadingStatus;
+  @override
+  @JsonKey()
+  Map<String, bool> get sakeLoadingStatus {
+    if (_sakeLoadingStatus is EqualUnmodifiableMapView)
+      return _sakeLoadingStatus;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_sakeLoadingStatus);
+  }
+
+// 元の名前と取得した詳細情報の名前のマッピング
+  final Map<String, String> _nameMapping;
+// 元の名前と取得した詳細情報の名前のマッピング
+  @override
+  @JsonKey()
+  Map<String, String> get nameMapping {
+    if (_nameMapping is EqualUnmodifiableMapView) return _nameMapping;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_nameMapping);
+  }
+
+// ユーザーの好み
+  @override
+  final String? preferences;
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse)';
+    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences)';
   }
 
   @override
@@ -212,6 +381,10 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
             other is _$MenuSearchPageStateImpl &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
+            (identical(other.isExtractingInfo, isExtractingInfo) ||
+                other.isExtractingInfo == isExtractingInfo) &&
+            (identical(other.isGettingDetails, isGettingDetails) ||
+                other.isGettingDetails == isGettingDetails) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
             (identical(other.hint, hint) || other.hint == hint) &&
@@ -219,15 +392,40 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
+            const DeepCollectionEquality()
+                .equals(other._extractedSakes, _extractedSakes) &&
             (identical(other.sakeMenuRecognitionResponse,
                     sakeMenuRecognitionResponse) ||
                 other.sakeMenuRecognitionResponse ==
-                    sakeMenuRecognitionResponse));
+                    sakeMenuRecognitionResponse) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage) &&
+            const DeepCollectionEquality().equals(other._sakes, _sakes) &&
+            const DeepCollectionEquality()
+                .equals(other._sakeLoadingStatus, _sakeLoadingStatus) &&
+            const DeepCollectionEquality()
+                .equals(other._nameMapping, _nameMapping) &&
+            (identical(other.preferences, preferences) ||
+                other.preferences == preferences));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
-      sakeImage, geminiResponse, sakeMenuRecognitionResponse);
+  int get hashCode => Object.hash(
+      runtimeType,
+      isLoading,
+      isExtractingInfo,
+      isGettingDetails,
+      sakeName,
+      hint,
+      sakeImage,
+      geminiResponse,
+      const DeepCollectionEquality().hash(_extractedSakes),
+      sakeMenuRecognitionResponse,
+      errorMessage,
+      const DeepCollectionEquality().hash(_sakes),
+      const DeepCollectionEquality().hash(_sakeLoadingStatus),
+      const DeepCollectionEquality().hash(_nameMapping),
+      preferences);
 
   @JsonKey(ignore: true)
   @override
@@ -239,16 +437,27 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 
 abstract class _MenuSearchPageState implements MenuSearchPageState {
   const factory _MenuSearchPageState(
-          {final bool isLoading,
-          final String? sakeName,
-          final String? hint,
-          final File? sakeImage,
-          final String? geminiResponse,
-          final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse}) =
-      _$MenuSearchPageStateImpl;
+      {final bool isLoading,
+      final bool isExtractingInfo,
+      final bool isGettingDetails,
+      final String? sakeName,
+      final String? hint,
+      final File? sakeImage,
+      final String? geminiResponse,
+      final List<Sake> extractedSakes,
+      final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+      final String? errorMessage,
+      final List<Sake>? sakes,
+      final Map<String, bool> sakeLoadingStatus,
+      final Map<String, String> nameMapping,
+      final String? preferences}) = _$MenuSearchPageStateImpl;
 
   @override
   bool get isLoading;
+  @override
+  bool get isExtractingInfo;
+  @override
+  bool get isGettingDetails;
   @override
   String? get sakeName;
   @override
@@ -258,7 +467,19 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   @override
   String? get geminiResponse;
   @override
+  List<Sake> get extractedSakes;
+  @override
   SakeMenuRecognitionResponse? get sakeMenuRecognitionResponse;
+  @override
+  String? get errorMessage;
+  @override
+  List<Sake>? get sakes;
+  @override
+  Map<String, bool> get sakeLoadingStatus;
+  @override // 元の名前と取得した詳細情報の名前のマッピング
+  Map<String, String> get nameMapping;
+  @override // ユーザーの好み
+  String? get preferences;
   @override
   @JsonKey(ignore: true)
   _$$MenuSearchPageStateImplCopyWith<_$MenuSearchPageStateImpl> get copyWith =>

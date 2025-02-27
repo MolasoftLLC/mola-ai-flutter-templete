@@ -4,6 +4,7 @@ import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_load
 import 'package:provider/provider.dart';
 
 import '../../common/assets.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import 'menu_search_page_notifier.dart';
 
 class MenuSearchPage extends StatelessWidget {
@@ -35,20 +36,34 @@ class MenuSearchPage extends StatelessWidget {
         context.select((MenuSearchPageState state) => state.sakeImage);
     final extractedSakes =
         context.select((MenuSearchPageState state) => state.extractedSakes);
-    final sakeMenuRecognitionResponse =
-        context.select((MenuSearchPageState state) => state.sakeMenuRecognitionResponse);
-    
+    final sakes = context.select((MenuSearchPageState state) => state.sakes);
+    final errorMessage =
+        context.select((MenuSearchPageState state) => state.errorMessage);
+
+    // 詳細情報が取得された日本酒の名前リスト
+    final detailedSakeNames = sakes?.map((sake) => sake.name).toList() ?? [];
+
+    // 各日本酒の読み込み状態
+    final sakeLoadingStatus =
+        context.select((MenuSearchPageState state) => state.sakeLoadingStatus);
+
+    // 名前のマッピング（元の名前 -> 取得した詳細情報の名前）
+    final nameMapping =
+        context.select((MenuSearchPageState state) => state.nameMapping);
+
     String loadingText = 'AIに問い合わせています';
     if (isExtractingInfo) {
       loadingText = '画像から日本酒を認識しています...';
     } else if (isGettingDetails) {
       loadingText = '日本酒の詳細情報を取得しています...';
     }
-    
+
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
-        color: const Color(0xFF1D3567),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1D3567),
+        ),
         child: SingleChildScrollView(
           child: isLoading
               ? AILoading(loadingText: loadingText)
@@ -56,243 +71,438 @@ class MenuSearchPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(
-                        height: 50,
-                      ),
-                      SizedBox(
-                        height: 200,
-                        width: 200,
+                      const SizedBox(height: 50),
+                      Container(
+                        height: 180,
+                        width: 180,
+                        padding: const EdgeInsets.all(20),
                         child: Image(
                           image: Assets.sakeLogo,
                           fit: BoxFit.contain,
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
+                      const Padding(
+                        padding: EdgeInsets.all(24),
                         child: Text(
-                          'メニューの中からオススメの日本酒を教えてくれる機能',
+                          'メニュー検索',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black54,
+                                blurRadius: 5,
+                                offset: Offset(1, 1),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      
-                      // 抽出された日本酒情報（詳細取得中の表示）
-                      if (extractedSakes != null && sakeMenuRecognitionResponse == null)
-                        Column(
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
                           children: [
-                            Container(
-                              padding: EdgeInsets.all(16),
-                              margin: EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(12),
+                            const Text(
+                              'メニューの写真をアップロードして日本酒を検索',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1D3567),
                               ),
-                              child: Column(
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            if (sakeImage != null)
+                              Stack(
                                 children: [
-                                  Text(
-                                    '画像から以下の日本酒を認識しました',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                  Container(
+                                    height: 200,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
+                                        width: 2,
+                                      ),
+                                      image: DecorationImage(
+                                        image: FileImage(sakeImage),
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
-                                  SizedBox(height: 12),
-                                  ...extractedSakes.map((sake) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.local_bar, color: Colors.blue),
-                                        SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            '${sake['name']} (${sake['type']})',
-                                            style: TextStyle(fontSize: 16),
-                                          ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: InkWell(
+                                      onTap: () {
+                                        notifier.clearImage();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.8),
+                                          shape: BoxShape.circle,
                                         ),
-                                      ],
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Color(0xFF1D3567),
+                                          size: 20,
+                                        ),
+                                      ),
                                     ),
-                                  )).toList(),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    '詳細情報を取得しています...',
-                                    style: TextStyle(
-                                      fontStyle: FontStyle.italic,
-                                      color: Colors.grey[700],
+                                  ),
+                                ],
+                              )
+                            else
+                              Column(
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      notifier.pickImageFromGallery();
+                                    },
+                                    child: Container(
+                                      height: 150,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: const Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.image_search,
+                                            size: 48,
+                                            color: Color(0xFF1D3567),
+                                          ),
+                                          SizedBox(height: 12),
+                                          Text(
+                                            'タップして画像を選択',
+                                            style: TextStyle(
+                                              color: Color(0xFF1D3567),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      notifier.pickImageFromCamera();
+                                    },
+                                    icon: const Icon(Icons.camera_alt),
+                                    label: const Text('カメラで撮影'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1D3567),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                      
-                      // 詳細情報の表示
-                      if (sakeMenuRecognitionResponse != null)
-                        SizedBox(
-                          height: sakeMenuRecognitionResponse.sakes.length * 300,
-                          child: ListView.builder(
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: sakeMenuRecognitionResponse.sakes.length,
-                            itemBuilder: (context, index) {
-                              final sake = sakeMenuRecognitionResponse.sakes[index];
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          sake.name,
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text('種類: ${sake.type}'),
-                                        Text('酒蔵: ${sake.brewery}'),
-                                        Text('味わい: ${sake.taste}'),
-                                        Text('日本酒度: ${sake.sakeMeterValue}'),
-                                        Text('タイプ: ${sake.types.join(', ')}'),
-                                      ],
+                            const SizedBox(height: 20),
+                            if (sakeImage != null)
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  notifier.extractAndFetchSakeInfo(sakeImage);
+                                },
+                                icon: const Icon(Icons.search),
+                                label: const Text('日本酒を検索'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1D3567),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            if (errorMessage != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.red.shade300,
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      
-                      SizedBox(
-                        height: 40,
-                      ),
-                      
-                      if (sakeImage != null)
-                        Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: MediaQuery.of(context).size.width,
-                                child: Image.file(sakeImage),
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 1,
-                              child: InkWell(
-                                onTap: () {
-                                  notifier.clearImage();
-                                },
-                                child: Container(
-                                  width: 30,
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  child: Icon(
-                                    Icons.close,
-                                    color: Colors.white,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red.shade700,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          errorMessage,
+                                          style: TextStyle(
+                                            color: Colors.red.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ),
+                            if (extractedSakes.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '検出された日本酒',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1D3567),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: extractedSakes.length,
+                                      itemBuilder: (context, index) {
+                                        final sake = extractedSakes[index];
+                                        
+                                        // 元の名前から取得した詳細情報の名前を取得
+                                        final mappedName =
+                                            nameMapping[sake.name] ?? sake.name;
+
+                                        // 詳細情報が取得された日本酒を探す
+                                        final detailedSake = sakes?.firstWhere(
+                                          (s) => s.name == mappedName,
+                                          orElse: () =>
+                                              Sake(name: sake.name, type: sake.type),
+                                        );
+
+                                        // この日本酒が現在読み込み中かどうか
+                                        final isItemLoading =
+                                            sakeLoadingStatus[sake.name] ?? false;
+
+                                        // 詳細情報があるかどうか
+                                        final hasDetails = sakes != null &&
+                                            sakes.any((s) => s.name == mappedName);
+
+                                        // 詳細情報の取得に失敗したかどうか
+                                        final hasFailed = !isItemLoading &&
+                                            !hasDetails &&
+                                            sakeLoadingStatus
+                                                .containsKey(sake.name);
+
+                                        // 推薦スコア
+                                        final recommendationScore =
+                                            detailedSake?.recommendationScore;
+                                        
+                                        // 超おすすめかどうか（スコアが8以上）
+                                        final isHighlyRecommended = 
+                                            recommendationScore != null && 
+                                            recommendationScore >= 8;
+
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 8.0),
+                                          child: Card(
+                                            elevation: 2,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: ExpansionTile(
+                                              title: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    hasDetails
+                                                        ? detailedSake!.name ??
+                                                            'Unknown'
+                                                        : sake.name ?? 'Unknown',
+                                                    style: const TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  if (isHighlyRecommended)
+                                                    Container(
+                                                      margin: const EdgeInsets.only(top: 4),
+                                                      padding: const EdgeInsets.symmetric(
+                                                          horizontal: 8, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.red.shade100,
+                                                        borderRadius: BorderRadius.circular(4),
+                                                        border: Border.all(
+                                                          color: Colors.red.shade300,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.star,
+                                                            color: Colors.red.shade700,
+                                                            size: 16,
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            recommendationScore! >= 9
+                                                                ? '超おすすめ！'
+                                                                : 'おすすめ！',
+                                                            style: TextStyle(
+                                                              color: Colors.red.shade700,
+                                                              fontWeight: FontWeight.bold,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              subtitle: Text(
+                                                sake.type ?? '種類不明',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                              trailing: hasDetails
+                                                  ? const Icon(Icons.expand_more,
+                                                      color: Color(0xFF1D3567))
+                                                  : isItemLoading
+                                                      ? const SizedBox(
+                                                          width: 20,
+                                                          height: 20,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Color(0xFF1D3567),
+                                                          ),
+                                                        )
+                                                      : Icon(Icons.error_outline,
+                                                          color: Colors.red.shade700),
+                                              children: [
+                                                if (hasDetails)
+                                                  Padding(
+                                                    padding: const EdgeInsets.all(16.0),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        if (detailedSake!
+                                                                .brewery !=
+                                                            null)
+                                                          _buildInfoRow(
+                                                            '蔵元',
+                                                            detailedSake.brewery!,
+                                                            Icons.home_work,
+                                                          ),
+                                                        if (detailedSake.taste !=
+                                                            null)
+                                                          _buildInfoRow(
+                                                            '味わい',
+                                                            detailedSake.taste!,
+                                                            Icons.restaurant,
+                                                          ),
+                                                        if (detailedSake
+                                                                .sakeMeterValue !=
+                                                            null)
+                                                          _buildInfoRow(
+                                                            '日本酒度',
+                                                            '${detailedSake.sakeMeterValue}',
+                                                            Icons.science,
+                                                          ),
+                                                        if (detailedSake.types !=
+                                                                null &&
+                                                            detailedSake
+                                                                .types!.isNotEmpty)
+                                                          _buildTypesRow(
+                                                              detailedSake.types!),
+                                                      ],
+                                                    ),
+                                                  )
+                                                else
+                                                  Padding(
+                                                    padding: const EdgeInsets.all(16.0),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          isItemLoading
+                                                              ? Icons.hourglass_top
+                                                              : Icons
+                                                                  .error_outline,
+                                                          color: isItemLoading
+                                                              ? const Color(
+                                                                  0xFF1D3567)
+                                                              : Colors
+                                                                  .red.shade700,
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Expanded(
+                                                          child: Text(
+                                                            isItemLoading
+                                                                ? '詳細情報を取得中...'
+                                                                : '詳細情報を取得できませんでした',
+                                                            style: TextStyle(
+                                                              color: isItemLoading
+                                                                  ? const Color(
+                                                                      0xFF1D3567)
+                                                                  : Colors
+                                                                      .red.shade700,
+                                                              fontStyle: isItemLoading
+                                                                  ? FontStyle.italic
+                                                                  : FontStyle.normal,
+                                                              fontWeight:
+                                                                  isItemLoading
+                                                                      ? FontWeight
+                                                                          .normal
+                                                                      : FontWeight
+                                                                          .bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
-
-                      if (sakeImage == null)
-                        InkWell(
-                          onTap: () async {
-                            await showImagePickerBottomSheet(context, notifier);
-                          },
-                          child: Container(
-                            width: 300,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0xFF014772),
-                                  offset: Offset(1, 3),
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                              borderRadius: BorderRadius.circular(20),
-                              color: Color(0xFF0360A4),
-                            ),
-                            child: const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(height: 4),
-                                Icon(
-                                  size: 40,
-                                  Icons.photo_camera,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(height: 2),
-                                Text(
-                                  'メニュー画像を選ぶ',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Icon(
-                                  size: 20,
-                                  Icons.add,
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      
-                      SizedBox(
-                        height: 30,
                       ),
-                      
-                      if (sakeImage != null && !isLoading)
-                        SizedBox(
-                          width: 220,
-                          child: FilledButton(
-                            onPressed: () async {
-                              await notifier.recognizeMenu();
-                            },
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.star_border_purple500,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 2),
-                                Text(
-                                  'メニューを解析',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      
-                      const SizedBox(
-                        height: 40,
-                      ),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -300,50 +510,90 @@ class MenuSearchPage extends StatelessWidget {
       ),
     );
   }
-}
 
-final ButtonStyle flatButtonStyle = TextButton.styleFrom(
-  foregroundColor: Colors.black,
-  minimumSize: Size(88, 36),
-  padding: EdgeInsets.symmetric(horizontal: 16),
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(2)),
-  ),
-);
+  Widget _buildInfoRow(String key, String value, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF1D3567), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  key,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Color(0xFF1D3567),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-Future<void> showImagePickerBottomSheet(
-    BuildContext context, MenuSearchPageNotifier notifier) async {
-  showModalBottomSheet(
-    context: context,
-    builder: (BuildContext context) {
-      return Container(
-        height: 200,
-        color: Colors.white,
-        child: Column(
-          children: [
-            ListTile(
-              onTap: () async {
-                await notifier.pickImageFromGallery();
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-              },
-              leading: const Icon(Icons.photo),
-              title: const Text('ライブラリから選択'),
-            ),
-            ListTile(
-              onTap: () async {
-                await notifier.pickImageFromCamera();
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
-              },
-              leading: const Icon(Icons.camera),
-              title: const Text('撮影する'),
-            ),
-          ],
-        ),
-      );
-    },
-  );
+  Widget _buildTypesRow(List<String> types) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_bar, color: const Color(0xFF1D3567), size: 20),
+              const SizedBox(width: 12),
+              const Text(
+                'タイプ',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF1D3567),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: types.map((type) {
+              return Chip(
+                label: Text(type),
+                backgroundColor: const Color(0xFF1D3567).withOpacity(0.1),
+                labelStyle: const TextStyle(
+                  color: Color(0xFF1D3567),
+                  fontWeight: FontWeight.bold,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -1,0 +1,244 @@
+// Flutter App Expert .cursorrules
+
+// Flexibility Notice
+
+// Note: This is a recommended project structure, but be flexible and adapt to existing project structures.
+// Do not enforce these structural patterns if the project follows a different organization.
+// Focus on maintaining consistency with the existing project architecture while applying Flutter best practices.
+
+
+//　実装条件
+Http通信はchopperを使ってください。
+指定してないのにも関わらず勝手にデザインを変えないでください。
+作成したメソッドには日本語でどういうメソッドなのか簡単にコメントを残しておくこと
+①StateNotifie+Providerのみを使用してください。StatefulWidgetは使用しないでください。
+②StateNotifierProviderを使用する場合は、StateNotifierProviderの型はStateNotifierProvider<Notifier, State>である必要があります。
+③各UIページの実装は以下のようにWrapしてください。
+class SamplePage extends StatelessWidget {
+  const SamplePage({Key? key}) : super(key: key);
+
+  static Widget wrapped() {
+    return MultiProvider(
+      providers: [
+        StateNotifierProvider<ChatSettingsNotifier, ChatSettingsState>(
+          create: (context) => ChatSettingsNotifier(),
+        ),
+        StateNotifierProvider<AIChatNotifier, AIChatState>(
+          create: (context) => AIChatNotifier(context),
+        ),
+      ],
+      child: const ChatSettingsPage(),
+    );
+  }
+④基本的にMultiProviderを使用します。
+⑤コード修正時は極力コードを変更しないようにしてください。
+⑥重複したファイルや似た意味のファイルやフォルダは生成しないでください。
+⑦NotifierではLocatorMixinを使用するためコンストラクターではなくinitStateで初期化してください。
+notifierのファイルは基本的に以下のようになるはずです。
+part 'sample_page_notifier.freezed.dart';
+
+@freezed
+abstract class SamplePageState with _$SamplePageState {
+  const factory SamplePageState({int? count}) = _SamplePageState;
+}
+
+class SamplePageNotifier extends StateNotifier<SamplePageState>
+    with LocatorMixin {
+  SamplePageNotifier({
+    required this.context,
+  }) : super(const SamplePageState());
+
+  final BuildContext context;
+
+  //DIしたものを利用する場合は以下のようにしてください。
+  SharedPreference get _prefs => read<SharedPreference>();
+
+  @override
+  Future<void> initState() async {
+    super.initState();
+  }
+}
+
+以下はアンチパターンです。疎結合を心掛けnotifier側でreadによって取得してください。
+  static Widget wrapped() {
+    return MultiProvider(
+      providers: [
+        StateNotifierProvider<VideoPageNotifier, VideoPageState>(
+          create: (context) => VideoPageNotifier(
+            context.read<WhisperRepository>(), //するべきではない
+            context.read<TranslationRepository>(), //するべきではない
+            context.read<WordRepository>(), //するべきではない
+          ),
+        ),
+      ],
+      child: const VideoPage(),
+    );
+  }
+
+⑧ChatGptへのプロンプト変更の指示を受けた場合は、コードを基本的に変更しないでください。
+⑨新しいメソッドやパッケージ、Widgetを利用する場合は、importを追加してください。
+10.クラスやwidget、メソッドを新しく作った際に引数や戻り値を考えてください。
+11.すでに完成している機能については明確な指示がない限りは変更を加えないでください。
+12.importを追加する場合は、package:palette/から始まる絶対パスを利用してください。ただしdartなどはその限りではありません。
+13.修正する場合は不要になったコードやファイルを削除してください。
+14.デザインに言及されない場合はデザインを変更しないでください。
+15.di_containerの実装例です
+
+Future<List<SingleChildWidget>> get providers async {
+  return <SingleChildWidget>[
+    Provider(create: (context) => GlobalKey<NavigatorState>()),
+    ..._repositoryProviders,
+    ..._applicationProviders,
+    ...await _notifierProviders,
+  ];
+}
+
+/// DI repository
+List<SingleChildWidget> get _repositoryProviders {
+  return <SingleChildWidget>[
+    Provider<SharedPreference>(
+      create: (_) => SharedPreference(),
+    ),
+  ];
+}
+
+/// DI application
+List<SingleChildWidget> get _applicationProviders {
+  return <SingleChildWidget>[
+    Provider<AnalyticsLogger>(
+      create: (_) => AnalyticsLoggerImpl(FirebaseAnalytics.instance),
+    ),
+  ];
+}
+
+このファイルをrunAppで流し込みます。
+  runApp(
+    FlavorProvider(
+      flavor: Flavor.development,
+      child: MultiProvider(
+        providers: await providers,
+        child: App(),
+      ),
+    ),
+  );
+
+DIに登録するNotifierは必ずdomain層のnotifierとします。課金状態の管理などstate含めて全体で共通して使いたい場合に利用します。
+
+/// DI state notifier
+/// Singletonのように扱いたい場合はここに追加する
+Future<List<SingleChildWidget>> get _notifierProviders async {
+  final packageInfoPlus = await PackageInfo.fromPlatform();
+  return <SingleChildWidget>[
+    StateNotifierProvider<AppInfoNotifier, AppInfoState>(
+      create: (_) => AppInfoNotifier(packageInfoPlus),
+    ),
+    StateNotifierProvider<UsageLimitNotifier, UsageLimitState>(
+      create: (_) => UsageLimitNotifier(),
+    ),
+  ];
+}
+16.stateを利用する場合は!notifier.state.showTranslationの取り方は非推奨のため、 ちゃんとfinal state = context.watch<VideoPageState>()でstateを取得してください。
+17.riverpodやchangeNotifierなど違う状態管理を使用は厳禁とし、どうしても必要な場合のみ許可をもらってください。
+上記に違反するコードを見つけた場合は常に修正をかけてください。
+
+// Project Structure
+以下の構造に従ってファイル生成を行ってください。
+
+lib/
+├── app.dart
+├── main.dart (メインエントリーポイント)
+├── common/
+│   ├── constants/
+│   │   └── design/rules.dart(TextStyleやcolor、グラデーションなどの定義は全てここに)
+│   └──helper/
+│
+├── config/
+│   ├── app_config.dart
+│   ├── di_container.dart (依存性注入の設定)
+│   └── analytics_logger.dart
+├── core/
+│   ├── domain/
+│   │   ├── enums/(配下にはファイルを直接おかず機能ごとにフォルダを分けること。)
+│   │   ├── notifier/(配下にはファイルを直接おかず機能ごとにフォルダを分けること。このNotifier層は複数ページから参照されるメソッドを書く。このnotifierのdartにはstateのクラスも記入する。このstate層は複数ページから参照される。また値を共通のものとするならばnotifierとセットでdi_containerに登録する)
+│   │   └── repositories/(配下にはファイルを直接おかず機能ごとにフォルダを分けること。)
+│   │   
+│   └── infrastracture/
+│       └── wrappers/
+│
+│
+└── presentation/
+    ├── app/
+    └── sample/
+          ├── sample_page.dart (presentation層のページUIファイルにはpageを必ずつける)
+          ├── sample_page_notifier.dart(stateNotifier+freezed locatorMixInを使う)
+          └── freezed自動生成ファイル
+
+// Note: This is a reference structure. Adapt to the project's existing organization
+
+// Flutter Best Practices
+
+const flutterBestPractices = [
+    "Adapt to existing project architecture while maintaining clean code principles",
+    "Use Flutter 3.x features and Material 3 design",
+    "Implement clean architecture with BLoC pattern",
+    "Follow proper state management principles",
+    "Use proper dependency injection",
+    "Implement proper error handling",
+    "Follow platform-specific design guidelines",
+    "Use proper localization techniques",
+];
+
+
+
+
+// Coding Guidelines
+
+const codingGuidelines = `
+1. Use proper null safety practices
+2. Implement proper error handling with Either type
+3. Follow proper naming conventions
+4. Use proper widget composition
+5. Implement proper routing using GoRouter
+6. Use proper form validation
+7. Follow proper state management with BLoC
+8. Implement proper dependency injection using GetIt
+9. Use proper asset management
+10. Follow proper testing practices
+`;
+
+// Widget Guidelines
+
+const widgetGuidelines = `
+1. Keep widgets small and focused
+2. Use const constructors when possible
+3. Implement proper widget keys
+4. Follow proper layout principles
+5. Use proper widget lifecycle methods
+6. Implement proper error boundaries
+7. Use proper performance optimization techniques
+8. Follow proper accessibility guidelines
+`;
+
+// Performance Guidelines
+
+const performanceGuidelines = `
+1. Use proper image caching
+2. Implement proper list view optimization
+3. Use proper build methods optimization
+4. Follow proper state management patterns
+5. Implement proper memory management
+6. Use proper platform channels when needed
+7. Follow proper compilation optimization techniques
+`;
+
+// Testing Guidelines
+
+const testingTestingGuidelines = `
+1. Write unit tests for business logic
+2. Implement widget tests for UI components
+3. Use integration tests for feature testing
+4. Implement proper mocking strategies
+5. Use proper test coverage tools
+6. Follow proper test naming conventions
+7. Implement proper CI/CD testing
+`;

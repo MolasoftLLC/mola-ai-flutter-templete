@@ -6,7 +6,7 @@ part 'sake_menu_recognition_response.g.dart';
 @freezed
 class SakeMenuRecognitionResponse with _$SakeMenuRecognitionResponse {
   const factory SakeMenuRecognitionResponse({
-    required List<Sake> sakes,
+    List<Sake>? sakes,
   }) = _SakeMenuRecognitionResponse;
 
   factory SakeMenuRecognitionResponse.fromJson(Map<String, dynamic> json) =>
@@ -16,12 +16,15 @@ class SakeMenuRecognitionResponse with _$SakeMenuRecognitionResponse {
 @freezed
 class Sake with _$Sake {
   const factory Sake({
-    required String name,
-    required String type,
-    required String brewery,
-    required List<String> types,
-    required String taste,
-    required int sakeMeterValue,
+    String? name,
+    String? brewery,
+    List<String>? types,
+    String? taste,
+    int? sakeMeterValue,
+    String? type,
+    String? price,
+    String? description,
+    int? recommendationScore,
   }) = _Sake;
 
   factory Sake.fromJson(Map<String, dynamic> json) => _$SakeFromJson(json);

@@ -12,15 +12,25 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
   Future<Response> recognizeMenu(
     @Part() String file,
   );
-  
+
   @Post(path: 'extract')
   @Multipart()
   Future<Response> extractSakeInfo(
     @Part() String file,
   );
-  
+
   @Post(path: 'extract')
   Future<Response> extractSakeInfoJson(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: '/perplexity/sake-info-batch')
+  Future<Response> getSakeInfoBatch(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: '/perplexity/sake-info')
+  Future<Response> getSakeInfo(
     @Body() Map<String, dynamic> body,
   );
 }

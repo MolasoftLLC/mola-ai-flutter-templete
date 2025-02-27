@@ -44,38 +44,98 @@ class SakeMenuRecognitionRepository {
       return null;
     }
   }
-  
+
   /// メニュー画像から日本酒名と種類のみを抽出する
-  Future<Map<String, dynamic>?> extractSakeInfo(File file) async {
+  Future<List<Sake>?> extractSakeInfo(File file) async {
     final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
     final response = await _apiClient.extractSakeInfo(baseFile);
     if (response.isSuccessful) {
       logger.shout(response.body);
-      return response.body as Map<String, dynamic>;
+      final responseBodyJson = response.body as Map<String, dynamic>;
+
+      // 'sakes'キーから日本酒リストを取得
+      final sakesList = (responseBodyJson['sakes'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+
+      // 各日本酒情報をSakeオブジェクトに変換
+      return sakesList.map((sakeMap) => Sake.fromJson(sakeMap)).toList();
     } else {
       logger.shout(response.error);
       return null;
     }
   }
-  
+
   /// 日本酒名と種類のリストから詳細情報を取得する
-  Future<SakeMenuRecognitionResponse?> getSakeInfoBatch(List<Map<String, dynamic>> sakes) async {
-    // 新しいAPIクライアントを作成する必要があるが、一時的にここで実装
-    final url = '/api/perplexity/sake-info-batch';
+  Future<SakeMenuRecognitionResponse?> getSakeInfoBatch(
+      List<Map<String, dynamic>> sakes) async {
     final body = {'sakes': sakes};
-    
-    final request = Request(
-      'POST',
-      Uri.parse(url),
-      body,
-    );
-    
-    final response = await _apiClient.client.send(request);
-    
+
+    final response = await _apiClient.getSakeInfoBatch(body);
+
     if (response.isSuccessful) {
       logger.shout(response.body);
       final responseBodyJson = response.body as Map<String, dynamic>;
       return SakeMenuRecognitionResponse.fromJson(responseBodyJson);
+    } else {
+      logger.shout(response.error);
+      return null;
+    }
+  }
+
+  /// 日本酒名から詳細情報を取得する
+  Future<Sake?> getSakeInfo(String sakeName, {String? type, String? preferences}) async {
+    if (sakeName.isEmpty) {
+      return null;
+    }
+
+    final Map<String, dynamic> body = {'sakeName': sakeName};
+
+    // 種類（タイプ）が指定されている場合は追加
+    if (type != null && type.isNotEmpty) {
+      body['type'] = type;
+    }
+    
+    // 好みが指定されている場合は追加
+    if (preferences != null && preferences.isNotEmpty) {
+      body['preferences'] = preferences;
+    }
+
+    final response = await _apiClient.getSakeInfo(body);
+
+    if (response.isSuccessful) {
+      logger.shout(response.body);
+      final responseBodyJson = response.body as Map<String, dynamic>;
+
+      // エラーメッセージがある場合はnullを返す
+      if (responseBodyJson.containsKey('error')) {
+        logger.info('日本酒情報の取得に失敗: ${responseBodyJson['error']}');
+        return null;
+      }
+
+      // APIレスポンスの構造に応じて適切に変換
+      Map<String, dynamic> sakeJson;
+      if (responseBodyJson.containsKey('sake')) {
+        sakeJson = responseBodyJson['sake'] as Map<String, dynamic>;
+      } else {
+        sakeJson = responseBodyJson;
+      }
+
+      // sakeMeterValueが文字列の場合は数値に変換
+      if (sakeJson.containsKey('sakeMeterValue') &&
+          sakeJson['sakeMeterValue'] is String) {
+        try {
+          final valueStr = sakeJson['sakeMeterValue'] as String;
+          // +4のような形式の場合は+を除去
+          final cleanValue = valueStr.replaceAll('+', '');
+          sakeJson['sakeMeterValue'] = int.tryParse(cleanValue);
+        } catch (e) {
+          // 変換できない場合はnullに
+          sakeJson['sakeMeterValue'] = null;
+        }
+      }
+
+      return Sake.fromJson(sakeJson);
     } else {
       logger.shout(response.error);
       return null;

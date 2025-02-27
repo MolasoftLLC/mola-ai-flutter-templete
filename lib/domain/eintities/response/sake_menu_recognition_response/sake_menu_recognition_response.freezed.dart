@@ -21,7 +21,7 @@ SakeMenuRecognitionResponse _$SakeMenuRecognitionResponseFromJson(
 
 /// @nodoc
 mixin _$SakeMenuRecognitionResponse {
-  List<Sake> get sakes => throw _privateConstructorUsedError;
+  List<Sake>? get sakes => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -37,7 +37,7 @@ abstract class $SakeMenuRecognitionResponseCopyWith<$Res> {
       _$SakeMenuRecognitionResponseCopyWithImpl<$Res,
           SakeMenuRecognitionResponse>;
   @useResult
-  $Res call({List<Sake> sakes});
+  $Res call({List<Sake>? sakes});
 }
 
 /// @nodoc
@@ -54,13 +54,13 @@ class _$SakeMenuRecognitionResponseCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? sakes = null,
+    Object? sakes = freezed,
   }) {
     return _then(_value.copyWith(
-      sakes: null == sakes
+      sakes: freezed == sakes
           ? _value.sakes
           : sakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>,
+              as List<Sake>?,
     ) as $Val);
   }
 }
@@ -74,7 +74,7 @@ abstract class _$$SakeMenuRecognitionResponseImplCopyWith<$Res>
       __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<Sake> sakes});
+  $Res call({List<Sake>? sakes});
 }
 
 /// @nodoc
@@ -90,13 +90,13 @@ class __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? sakes = null,
+    Object? sakes = freezed,
   }) {
     return _then(_$SakeMenuRecognitionResponseImpl(
-      sakes: null == sakes
+      sakes: freezed == sakes
           ? _value._sakes
           : sakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>,
+              as List<Sake>?,
     ));
   }
 }
@@ -105,19 +105,21 @@ class __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SakeMenuRecognitionResponseImpl
     implements _SakeMenuRecognitionResponse {
-  const _$SakeMenuRecognitionResponseImpl({required final List<Sake> sakes})
+  const _$SakeMenuRecognitionResponseImpl({final List<Sake>? sakes})
       : _sakes = sakes;
 
   factory _$SakeMenuRecognitionResponseImpl.fromJson(
           Map<String, dynamic> json) =>
       _$$SakeMenuRecognitionResponseImplFromJson(json);
 
-  final List<Sake> _sakes;
+  final List<Sake>? _sakes;
   @override
-  List<Sake> get sakes {
+  List<Sake>? get sakes {
+    final value = _sakes;
+    if (value == null) return null;
     if (_sakes is EqualUnmodifiableListView) return _sakes;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_sakes);
+    return EqualUnmodifiableListView(value);
   }
 
   @override
@@ -155,14 +157,14 @@ class _$SakeMenuRecognitionResponseImpl
 
 abstract class _SakeMenuRecognitionResponse
     implements SakeMenuRecognitionResponse {
-  const factory _SakeMenuRecognitionResponse(
-      {required final List<Sake> sakes}) = _$SakeMenuRecognitionResponseImpl;
+  const factory _SakeMenuRecognitionResponse({final List<Sake>? sakes}) =
+      _$SakeMenuRecognitionResponseImpl;
 
   factory _SakeMenuRecognitionResponse.fromJson(Map<String, dynamic> json) =
       _$SakeMenuRecognitionResponseImpl.fromJson;
 
   @override
-  List<Sake> get sakes;
+  List<Sake>? get sakes;
   @override
   @JsonKey(ignore: true)
   _$$SakeMenuRecognitionResponseImplCopyWith<_$SakeMenuRecognitionResponseImpl>
@@ -175,12 +177,15 @@ Sake _$SakeFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$Sake {
-  String get name => throw _privateConstructorUsedError;
-  String get type => throw _privateConstructorUsedError;
-  String get brewery => throw _privateConstructorUsedError;
-  List<String> get types => throw _privateConstructorUsedError;
-  String get taste => throw _privateConstructorUsedError;
-  int get sakeMeterValue => throw _privateConstructorUsedError;
+  String? get name => throw _privateConstructorUsedError;
+  String? get brewery => throw _privateConstructorUsedError;
+  List<String>? get types => throw _privateConstructorUsedError;
+  String? get taste => throw _privateConstructorUsedError;
+  int? get sakeMeterValue => throw _privateConstructorUsedError;
+  String? get type => throw _privateConstructorUsedError;
+  String? get price => throw _privateConstructorUsedError;
+  String? get description => throw _privateConstructorUsedError;
+  int? get recommendationScore => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -193,12 +198,15 @@ abstract class $SakeCopyWith<$Res> {
       _$SakeCopyWithImpl<$Res, Sake>;
   @useResult
   $Res call(
-      {String name,
-      String type,
-      String brewery,
-      List<String> types,
-      String taste,
-      int sakeMeterValue});
+      {String? name,
+      String? brewery,
+      List<String>? types,
+      String? taste,
+      int? sakeMeterValue,
+      String? type,
+      String? price,
+      String? description,
+      int? recommendationScore});
 }
 
 /// @nodoc
@@ -214,38 +222,53 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? name = null,
-    Object? type = null,
-    Object? brewery = null,
-    Object? types = null,
-    Object? taste = null,
-    Object? sakeMeterValue = null,
+    Object? name = freezed,
+    Object? brewery = freezed,
+    Object? types = freezed,
+    Object? taste = freezed,
+    Object? sakeMeterValue = freezed,
+    Object? type = freezed,
+    Object? price = freezed,
+    Object? description = freezed,
+    Object? recommendationScore = freezed,
   }) {
     return _then(_value.copyWith(
-      name: null == name
+      name: freezed == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      brewery: null == brewery
+              as String?,
+      brewery: freezed == brewery
           ? _value.brewery
           : brewery // ignore: cast_nullable_to_non_nullable
-              as String,
-      types: null == types
+              as String?,
+      types: freezed == types
           ? _value.types
           : types // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      taste: null == taste
+              as List<String>?,
+      taste: freezed == taste
           ? _value.taste
           : taste // ignore: cast_nullable_to_non_nullable
-              as String,
-      sakeMeterValue: null == sakeMeterValue
+              as String?,
+      sakeMeterValue: freezed == sakeMeterValue
           ? _value.sakeMeterValue
           : sakeMeterValue // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      recommendationScore: freezed == recommendationScore
+          ? _value.recommendationScore
+          : recommendationScore // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -258,12 +281,15 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
   @override
   @useResult
   $Res call(
-      {String name,
-      String type,
-      String brewery,
-      List<String> types,
-      String taste,
-      int sakeMeterValue});
+      {String? name,
+      String? brewery,
+      List<String>? types,
+      String? taste,
+      int? sakeMeterValue,
+      String? type,
+      String? price,
+      String? description,
+      int? recommendationScore});
 }
 
 /// @nodoc
@@ -276,38 +302,53 @@ class __$$SakeImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? name = null,
-    Object? type = null,
-    Object? brewery = null,
-    Object? types = null,
-    Object? taste = null,
-    Object? sakeMeterValue = null,
+    Object? name = freezed,
+    Object? brewery = freezed,
+    Object? types = freezed,
+    Object? taste = freezed,
+    Object? sakeMeterValue = freezed,
+    Object? type = freezed,
+    Object? price = freezed,
+    Object? description = freezed,
+    Object? recommendationScore = freezed,
   }) {
     return _then(_$SakeImpl(
-      name: null == name
+      name: freezed == name
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as String,
-      brewery: null == brewery
+              as String?,
+      brewery: freezed == brewery
           ? _value.brewery
           : brewery // ignore: cast_nullable_to_non_nullable
-              as String,
-      types: null == types
+              as String?,
+      types: freezed == types
           ? _value._types
           : types // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      taste: null == taste
+              as List<String>?,
+      taste: freezed == taste
           ? _value.taste
           : taste // ignore: cast_nullable_to_non_nullable
-              as String,
-      sakeMeterValue: null == sakeMeterValue
+              as String?,
+      sakeMeterValue: freezed == sakeMeterValue
           ? _value.sakeMeterValue
           : sakeMeterValue // ignore: cast_nullable_to_non_nullable
-              as int,
+              as int?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      recommendationScore: freezed == recommendationScore
+          ? _value.recommendationScore
+          : recommendationScore // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -316,39 +357,50 @@ class __$$SakeImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SakeImpl implements _Sake {
   const _$SakeImpl(
-      {required this.name,
-      required this.type,
-      required this.brewery,
-      required final List<String> types,
-      required this.taste,
-      required this.sakeMeterValue})
+      {this.name,
+      this.brewery,
+      final List<String>? types,
+      this.taste,
+      this.sakeMeterValue,
+      this.type,
+      this.price,
+      this.description,
+      this.recommendationScore})
       : _types = types;
 
   factory _$SakeImpl.fromJson(Map<String, dynamic> json) =>
       _$$SakeImplFromJson(json);
 
   @override
-  final String name;
+  final String? name;
   @override
-  final String type;
+  final String? brewery;
+  final List<String>? _types;
   @override
-  final String brewery;
-  final List<String> _types;
-  @override
-  List<String> get types {
+  List<String>? get types {
+    final value = _types;
+    if (value == null) return null;
     if (_types is EqualUnmodifiableListView) return _types;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_types);
+    return EqualUnmodifiableListView(value);
   }
 
   @override
-  final String taste;
+  final String? taste;
   @override
-  final int sakeMeterValue;
+  final int? sakeMeterValue;
+  @override
+  final String? type;
+  @override
+  final String? price;
+  @override
+  final String? description;
+  @override
+  final int? recommendationScore;
 
   @override
   String toString() {
-    return 'Sake(name: $name, type: $type, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue)';
+    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore)';
   }
 
   @override
@@ -357,18 +409,32 @@ class _$SakeImpl implements _Sake {
         (other.runtimeType == runtimeType &&
             other is _$SakeImpl &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.type, type) || other.type == type) &&
             (identical(other.brewery, brewery) || other.brewery == brewery) &&
             const DeepCollectionEquality().equals(other._types, _types) &&
             (identical(other.taste, taste) || other.taste == taste) &&
             (identical(other.sakeMeterValue, sakeMeterValue) ||
-                other.sakeMeterValue == sakeMeterValue));
+                other.sakeMeterValue == sakeMeterValue) &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.price, price) || other.price == price) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.recommendationScore, recommendationScore) ||
+                other.recommendationScore == recommendationScore));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, name, type, brewery,
-      const DeepCollectionEquality().hash(_types), taste, sakeMeterValue);
+  int get hashCode => Object.hash(
+      runtimeType,
+      name,
+      brewery,
+      const DeepCollectionEquality().hash(_types),
+      taste,
+      sakeMeterValue,
+      type,
+      price,
+      description,
+      recommendationScore);
 
   @JsonKey(ignore: true)
   @override
@@ -386,27 +452,36 @@ class _$SakeImpl implements _Sake {
 
 abstract class _Sake implements Sake {
   const factory _Sake(
-      {required final String name,
-      required final String type,
-      required final String brewery,
-      required final List<String> types,
-      required final String taste,
-      required final int sakeMeterValue}) = _$SakeImpl;
+      {final String? name,
+      final String? brewery,
+      final List<String>? types,
+      final String? taste,
+      final int? sakeMeterValue,
+      final String? type,
+      final String? price,
+      final String? description,
+      final int? recommendationScore}) = _$SakeImpl;
 
   factory _Sake.fromJson(Map<String, dynamic> json) = _$SakeImpl.fromJson;
 
   @override
-  String get name;
+  String? get name;
   @override
-  String get type;
+  String? get brewery;
   @override
-  String get brewery;
+  List<String>? get types;
   @override
-  List<String> get types;
+  String? get taste;
   @override
-  String get taste;
+  int? get sakeMeterValue;
   @override
-  int get sakeMeterValue;
+  String? get type;
+  @override
+  String? get price;
+  @override
+  String? get description;
+  @override
+  int? get recommendationScore;
   @override
   @JsonKey(ignore: true)
   _$$SakeImplCopyWith<_$SakeImpl> get copyWith =>

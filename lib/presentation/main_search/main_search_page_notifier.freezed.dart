@@ -18,11 +18,9 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$MainSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
-  String? get hint => throw _privateConstructorUsedError;
-  File? get sakeImage => throw _privateConstructorUsedError;
-  String? get geminiResponse => throw _privateConstructorUsedError;
-  List<OpenAIResponse>? get openAiResponseList =>
-      throw _privateConstructorUsedError;
+  String? get sakeType => throw _privateConstructorUsedError;
+  Sake? get sakeInfo => throw _privateConstructorUsedError;
+  String? get errorMessage => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MainSearchPageStateCopyWith<MainSearchPageState> get copyWith =>
@@ -38,10 +36,11 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
   $Res call(
       {bool isLoading,
       String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? geminiResponse,
-      List<OpenAIResponse>? openAiResponseList});
+      String? sakeType,
+      Sake? sakeInfo,
+      String? errorMessage});
+
+  $SakeCopyWith<$Res>? get sakeInfo;
 }
 
 /// @nodoc
@@ -59,10 +58,9 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
   $Res call({
     Object? isLoading = null,
     Object? sakeName = freezed,
-    Object? hint = freezed,
-    Object? sakeImage = freezed,
-    Object? geminiResponse = freezed,
-    Object? openAiResponseList = freezed,
+    Object? sakeType = freezed,
+    Object? sakeInfo = freezed,
+    Object? errorMessage = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -73,23 +71,31 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
               as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
+      sakeType: freezed == sakeType
+          ? _value.sakeType
+          : sakeType // ignore: cast_nullable_to_non_nullable
               as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
+      sakeInfo: freezed == sakeInfo
+          ? _value.sakeInfo
+          : sakeInfo // ignore: cast_nullable_to_non_nullable
+              as Sake?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
-      openAiResponseList: freezed == openAiResponseList
-          ? _value.openAiResponseList
-          : openAiResponseList // ignore: cast_nullable_to_non_nullable
-              as List<OpenAIResponse>?,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $SakeCopyWith<$Res>? get sakeInfo {
+    if (_value.sakeInfo == null) {
+      return null;
+    }
+
+    return $SakeCopyWith<$Res>(_value.sakeInfo!, (value) {
+      return _then(_value.copyWith(sakeInfo: value) as $Val);
+    });
   }
 }
 
@@ -104,10 +110,12 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
   $Res call(
       {bool isLoading,
       String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? geminiResponse,
-      List<OpenAIResponse>? openAiResponseList});
+      String? sakeType,
+      Sake? sakeInfo,
+      String? errorMessage});
+
+  @override
+  $SakeCopyWith<$Res>? get sakeInfo;
 }
 
 /// @nodoc
@@ -123,10 +131,9 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
   $Res call({
     Object? isLoading = null,
     Object? sakeName = freezed,
-    Object? hint = freezed,
-    Object? sakeImage = freezed,
-    Object? geminiResponse = freezed,
-    Object? openAiResponseList = freezed,
+    Object? sakeType = freezed,
+    Object? sakeInfo = freezed,
+    Object? errorMessage = freezed,
   }) {
     return _then(_$MainSearchPageStateImpl(
       isLoading: null == isLoading
@@ -137,22 +144,18 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
               as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
+      sakeType: freezed == sakeType
+          ? _value.sakeType
+          : sakeType // ignore: cast_nullable_to_non_nullable
               as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
+      sakeInfo: freezed == sakeInfo
+          ? _value.sakeInfo
+          : sakeInfo // ignore: cast_nullable_to_non_nullable
+              as Sake?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
-      openAiResponseList: freezed == openAiResponseList
-          ? _value._openAiResponseList
-          : openAiResponseList // ignore: cast_nullable_to_non_nullable
-              as List<OpenAIResponse>?,
     ));
   }
 }
@@ -163,11 +166,9 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   const _$MainSearchPageStateImpl(
       {this.isLoading = false,
       this.sakeName,
-      this.hint,
-      this.sakeImage,
-      this.geminiResponse,
-      final List<OpenAIResponse>? openAiResponseList})
-      : _openAiResponseList = openAiResponseList;
+      this.sakeType,
+      this.sakeInfo,
+      this.errorMessage});
 
   @override
   @JsonKey()
@@ -175,25 +176,15 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   @override
   final String? sakeName;
   @override
-  final String? hint;
+  final String? sakeType;
   @override
-  final File? sakeImage;
+  final Sake? sakeInfo;
   @override
-  final String? geminiResponse;
-  final List<OpenAIResponse>? _openAiResponseList;
-  @override
-  List<OpenAIResponse>? get openAiResponseList {
-    final value = _openAiResponseList;
-    if (value == null) return null;
-    if (_openAiResponseList is EqualUnmodifiableListView)
-      return _openAiResponseList;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
+  final String? errorMessage;
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, openAiResponseList: $openAiResponseList)';
+    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage)';
   }
 
   @override
@@ -205,24 +196,17 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
                 other.isLoading == isLoading) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
-            (identical(other.hint, hint) || other.hint == hint) &&
-            (identical(other.sakeImage, sakeImage) ||
-                other.sakeImage == sakeImage) &&
-            (identical(other.geminiResponse, geminiResponse) ||
-                other.geminiResponse == geminiResponse) &&
-            const DeepCollectionEquality()
-                .equals(other._openAiResponseList, _openAiResponseList));
+            (identical(other.sakeType, sakeType) ||
+                other.sakeType == sakeType) &&
+            (identical(other.sakeInfo, sakeInfo) ||
+                other.sakeInfo == sakeInfo) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
   }
 
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      isLoading,
-      sakeName,
-      hint,
-      sakeImage,
-      geminiResponse,
-      const DeepCollectionEquality().hash(_openAiResponseList));
+      runtimeType, isLoading, sakeName, sakeType, sakeInfo, errorMessage);
 
   @JsonKey(ignore: true)
   @override
@@ -234,26 +218,22 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 
 abstract class _MainSearchPageState implements MainSearchPageState {
   const factory _MainSearchPageState(
-          {final bool isLoading,
-          final String? sakeName,
-          final String? hint,
-          final File? sakeImage,
-          final String? geminiResponse,
-          final List<OpenAIResponse>? openAiResponseList}) =
-      _$MainSearchPageStateImpl;
+      {final bool isLoading,
+      final String? sakeName,
+      final String? sakeType,
+      final Sake? sakeInfo,
+      final String? errorMessage}) = _$MainSearchPageStateImpl;
 
   @override
   bool get isLoading;
   @override
   String? get sakeName;
   @override
-  String? get hint;
+  String? get sakeType;
   @override
-  File? get sakeImage;
+  Sake? get sakeInfo;
   @override
-  String? get geminiResponse;
-  @override
-  List<OpenAIResponse>? get openAiResponseList;
+  String? get errorMessage;
   @override
   @JsonKey(ignore: true)
   _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>
