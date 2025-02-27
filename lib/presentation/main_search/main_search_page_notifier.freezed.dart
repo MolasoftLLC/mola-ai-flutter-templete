@@ -18,9 +18,13 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$MainSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
+  String? get hint => throw _privateConstructorUsedError;
+  File? get sakeImage => throw _privateConstructorUsedError;
   String? get sakeType => throw _privateConstructorUsedError;
   Sake? get sakeInfo => throw _privateConstructorUsedError;
   String? get errorMessage => throw _privateConstructorUsedError;
+  String? get geminiResponse => throw _privateConstructorUsedError;
+  SearchMode get searchMode => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MainSearchPageStateCopyWith<MainSearchPageState> get copyWith =>
@@ -36,9 +40,13 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
   $Res call(
       {bool isLoading,
       String? sakeName,
+      String? hint,
+      File? sakeImage,
       String? sakeType,
       Sake? sakeInfo,
-      String? errorMessage});
+      String? errorMessage,
+      String? geminiResponse,
+      SearchMode searchMode});
 
   $SakeCopyWith<$Res>? get sakeInfo;
 }
@@ -58,9 +66,13 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
   $Res call({
     Object? isLoading = null,
     Object? sakeName = freezed,
+    Object? hint = freezed,
+    Object? sakeImage = freezed,
     Object? sakeType = freezed,
     Object? sakeInfo = freezed,
     Object? errorMessage = freezed,
+    Object? geminiResponse = freezed,
+    Object? searchMode = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -71,6 +83,14 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
               as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
       sakeType: freezed == sakeType
           ? _value.sakeType
           : sakeType // ignore: cast_nullable_to_non_nullable
@@ -83,6 +103,14 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      searchMode: null == searchMode
+          ? _value.searchMode
+          : searchMode // ignore: cast_nullable_to_non_nullable
+              as SearchMode,
     ) as $Val);
   }
 
@@ -110,9 +138,13 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
   $Res call(
       {bool isLoading,
       String? sakeName,
+      String? hint,
+      File? sakeImage,
       String? sakeType,
       Sake? sakeInfo,
-      String? errorMessage});
+      String? errorMessage,
+      String? geminiResponse,
+      SearchMode searchMode});
 
   @override
   $SakeCopyWith<$Res>? get sakeInfo;
@@ -131,9 +163,13 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
   $Res call({
     Object? isLoading = null,
     Object? sakeName = freezed,
+    Object? hint = freezed,
+    Object? sakeImage = freezed,
     Object? sakeType = freezed,
     Object? sakeInfo = freezed,
     Object? errorMessage = freezed,
+    Object? geminiResponse = freezed,
+    Object? searchMode = null,
   }) {
     return _then(_$MainSearchPageStateImpl(
       isLoading: null == isLoading
@@ -144,6 +180,14 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
               as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
       sakeType: freezed == sakeType
           ? _value.sakeType
           : sakeType // ignore: cast_nullable_to_non_nullable
@@ -156,6 +200,14 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      searchMode: null == searchMode
+          ? _value.searchMode
+          : searchMode // ignore: cast_nullable_to_non_nullable
+              as SearchMode,
     ));
   }
 }
@@ -166,9 +218,13 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   const _$MainSearchPageStateImpl(
       {this.isLoading = false,
       this.sakeName,
+      this.hint,
+      this.sakeImage,
       this.sakeType,
       this.sakeInfo,
-      this.errorMessage});
+      this.errorMessage,
+      this.geminiResponse,
+      this.searchMode = SearchMode.name});
 
   @override
   @JsonKey()
@@ -176,15 +232,24 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   @override
   final String? sakeName;
   @override
+  final String? hint;
+  @override
+  final File? sakeImage;
+  @override
   final String? sakeType;
   @override
   final Sake? sakeInfo;
   @override
   final String? errorMessage;
+  @override
+  final String? geminiResponse;
+  @override
+  @JsonKey()
+  final SearchMode searchMode;
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage)';
+    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode)';
   }
 
   @override
@@ -196,17 +261,24 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
                 other.isLoading == isLoading) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
+            (identical(other.hint, hint) || other.hint == hint) &&
+            (identical(other.sakeImage, sakeImage) ||
+                other.sakeImage == sakeImage) &&
             (identical(other.sakeType, sakeType) ||
                 other.sakeType == sakeType) &&
             (identical(other.sakeInfo, sakeInfo) ||
                 other.sakeInfo == sakeInfo) &&
             (identical(other.errorMessage, errorMessage) ||
-                other.errorMessage == errorMessage));
+                other.errorMessage == errorMessage) &&
+            (identical(other.geminiResponse, geminiResponse) ||
+                other.geminiResponse == geminiResponse) &&
+            (identical(other.searchMode, searchMode) ||
+                other.searchMode == searchMode));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, isLoading, sakeName, sakeType, sakeInfo, errorMessage);
+  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
+      sakeImage, sakeType, sakeInfo, errorMessage, geminiResponse, searchMode);
 
   @JsonKey(ignore: true)
   @override
@@ -220,20 +292,32 @@ abstract class _MainSearchPageState implements MainSearchPageState {
   const factory _MainSearchPageState(
       {final bool isLoading,
       final String? sakeName,
+      final String? hint,
+      final File? sakeImage,
       final String? sakeType,
       final Sake? sakeInfo,
-      final String? errorMessage}) = _$MainSearchPageStateImpl;
+      final String? errorMessage,
+      final String? geminiResponse,
+      final SearchMode searchMode}) = _$MainSearchPageStateImpl;
 
   @override
   bool get isLoading;
   @override
   String? get sakeName;
   @override
+  String? get hint;
+  @override
+  File? get sakeImage;
+  @override
   String? get sakeType;
   @override
   Sake? get sakeInfo;
   @override
   String? get errorMessage;
+  @override
+  String? get geminiResponse;
+  @override
+  SearchMode get searchMode;
   @override
   @JsonKey(ignore: true)
   _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>

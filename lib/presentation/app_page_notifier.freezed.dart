@@ -16,8 +16,9 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$AppPageState {
-  int get selectedNavIndex => throw _privateConstructorUsedError;
+  int get currentIndex => throw _privateConstructorUsedError;
   bool get needUpDate => throw _privateConstructorUsedError;
+  bool get hasShownPreferencesDialog => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $AppPageStateCopyWith<AppPageState> get copyWith =>
@@ -30,7 +31,8 @@ abstract class $AppPageStateCopyWith<$Res> {
           AppPageState value, $Res Function(AppPageState) then) =
       _$AppPageStateCopyWithImpl<$Res, AppPageState>;
   @useResult
-  $Res call({int selectedNavIndex, bool needUpDate});
+  $Res call(
+      {int currentIndex, bool needUpDate, bool hasShownPreferencesDialog});
 }
 
 /// @nodoc
@@ -46,17 +48,22 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? selectedNavIndex = null,
+    Object? currentIndex = null,
     Object? needUpDate = null,
+    Object? hasShownPreferencesDialog = null,
   }) {
     return _then(_value.copyWith(
-      selectedNavIndex: null == selectedNavIndex
-          ? _value.selectedNavIndex
-          : selectedNavIndex // ignore: cast_nullable_to_non_nullable
+      currentIndex: null == currentIndex
+          ? _value.currentIndex
+          : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
       needUpDate: null == needUpDate
           ? _value.needUpDate
           : needUpDate // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasShownPreferencesDialog: null == hasShownPreferencesDialog
+          ? _value.hasShownPreferencesDialog
+          : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
               as bool,
     ) as $Val);
   }
@@ -70,7 +77,8 @@ abstract class _$$AppPageStateImplCopyWith<$Res>
       __$$AppPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int selectedNavIndex, bool needUpDate});
+  $Res call(
+      {int currentIndex, bool needUpDate, bool hasShownPreferencesDialog});
 }
 
 /// @nodoc
@@ -84,17 +92,22 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? selectedNavIndex = null,
+    Object? currentIndex = null,
     Object? needUpDate = null,
+    Object? hasShownPreferencesDialog = null,
   }) {
     return _then(_$AppPageStateImpl(
-      selectedNavIndex: null == selectedNavIndex
-          ? _value.selectedNavIndex
-          : selectedNavIndex // ignore: cast_nullable_to_non_nullable
+      currentIndex: null == currentIndex
+          ? _value.currentIndex
+          : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
       needUpDate: null == needUpDate
           ? _value.needUpDate
           : needUpDate // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasShownPreferencesDialog: null == hasShownPreferencesDialog
+          ? _value.hasShownPreferencesDialog
+          : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -104,18 +117,23 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
 
 class _$AppPageStateImpl implements _AppPageState {
   const _$AppPageStateImpl(
-      {this.selectedNavIndex = 0, this.needUpDate = false});
+      {this.currentIndex = 0,
+      this.needUpDate = false,
+      this.hasShownPreferencesDialog = false});
 
   @override
   @JsonKey()
-  final int selectedNavIndex;
+  final int currentIndex;
   @override
   @JsonKey()
   final bool needUpDate;
+  @override
+  @JsonKey()
+  final bool hasShownPreferencesDialog;
 
   @override
   String toString() {
-    return 'AppPageState(selectedNavIndex: $selectedNavIndex, needUpDate: $needUpDate)';
+    return 'AppPageState(currentIndex: $currentIndex, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog)';
   }
 
   @override
@@ -123,14 +141,18 @@ class _$AppPageStateImpl implements _AppPageState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$AppPageStateImpl &&
-            (identical(other.selectedNavIndex, selectedNavIndex) ||
-                other.selectedNavIndex == selectedNavIndex) &&
+            (identical(other.currentIndex, currentIndex) ||
+                other.currentIndex == currentIndex) &&
             (identical(other.needUpDate, needUpDate) ||
-                other.needUpDate == needUpDate));
+                other.needUpDate == needUpDate) &&
+            (identical(other.hasShownPreferencesDialog,
+                    hasShownPreferencesDialog) ||
+                other.hasShownPreferencesDialog == hasShownPreferencesDialog));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, selectedNavIndex, needUpDate);
+  int get hashCode => Object.hash(
+      runtimeType, currentIndex, needUpDate, hasShownPreferencesDialog);
 
   @JsonKey(ignore: true)
   @override
@@ -141,12 +163,16 @@ class _$AppPageStateImpl implements _AppPageState {
 
 abstract class _AppPageState implements AppPageState {
   const factory _AppPageState(
-      {final int selectedNavIndex, final bool needUpDate}) = _$AppPageStateImpl;
+      {final int currentIndex,
+      final bool needUpDate,
+      final bool hasShownPreferencesDialog}) = _$AppPageStateImpl;
 
   @override
-  int get selectedNavIndex;
+  int get currentIndex;
   @override
   bool get needUpDate;
+  @override
+  bool get hasShownPreferencesDialog;
   @override
   @JsonKey(ignore: true)
   _$$AppPageStateImplCopyWith<_$AppPageStateImpl> get copyWith =>

@@ -55,17 +55,22 @@ class FavoriteSearchPage extends StatelessWidget {
                       height: 100,
                     ),
                     Text(
-                      'お好み検索',
+                      '産地で検索',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white),
                     ),
-                    SizedBox(height: 4,),
+                    SizedBox(
+                      height: 4,
+                    ),
                     Text(
                       '産地や味わいから好きな日本酒を見つけよう！',
-                      style: TextStyle(color: Colors.white,fontSize: 12,),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
                     ),
                     SizedBox(
                       height: 40,

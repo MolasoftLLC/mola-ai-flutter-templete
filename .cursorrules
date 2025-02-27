@@ -141,6 +141,110 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
 17.riverpodやchangeNotifierなど違う状態管理を使用は厳禁とし、どうしても必要な場合のみ許可をもらってください。
 上記に違反するコードを見つけた場合は常に修正をかけてください。
 
+// TextFormField実装ガイドライン
+// StateNotifierパターンでTextEditingControllerを適切に管理する方法
+
+// 1. StateNotifierでTextEditingControllerを管理する
+// TextEditingControllerはfreezedで管理できないため、Notifier内で直接管理します
+class SampleNotifier extends StateNotifier<SampleState> with LocatorMixin {
+  SampleNotifier({required this.context}) : super(const SampleState()) {
+    // コンストラクタでTextEditingControllerを初期化
+    _textController = TextEditingController(text: state.text);
+    // リスナーを追加して、コントローラーの変更をStateに反映
+    _textController.addListener(_updateTextFromController);
+  }
+
+  final BuildContext context;
+  
+  // TextEditingControllerをNotifier内で管理
+  late final TextEditingController _textController;
+  
+  // コントローラーを外部から取得するためのゲッター
+  TextEditingController get textController => _textController;
+
+  // コントローラーの変更をStateに反映するリスナー
+  void _updateTextFromController() {
+    if (_textController.text != state.text) {
+      state = state.copyWith(text: _textController.text);
+    }
+  }
+
+  @override
+  void dispose() {
+    // コントローラーのリスナーを削除してからdispose
+    _textController.removeListener(_updateTextFromController);
+    _textController.dispose();
+    super.dispose();
+  }
+
+  // Stateの値を更新する場合は、コントローラーも同時に更新
+  void setText(String text) {
+    // Stateを更新
+    state = state.copyWith(text: text);
+    
+    // コントローラーのテキストも更新（カーソル位置を維持するため、
+    // 現在のテキストと異なる場合のみ更新）
+    if (_textController.text != text) {
+      final currentPosition = _textController.selection.baseOffset;
+      _textController.text = text;
+      
+      // カーソル位置を復元（テキストの長さを超えないように）
+      if (currentPosition >= 0 && currentPosition <= text.length) {
+        _textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: currentPosition),
+        );
+      }
+    }
+  }
+}
+
+// 2. UIでTextEditingControllerを使用する
+// StatelessWidgetでTextEditingControllerを使用する場合は、
+// Notifierから取得したコントローラーを使用します
+class SamplePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final notifier = context.watch<SampleNotifier>();
+    
+    // Notifierから取得したTextEditingControllerを使用
+    final textController = notifier.textController;
+    
+    return GestureDetector(
+      // キーボード外タップでキーボードを閉じる
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        body: SingleChildScrollView(
+          // キーボードが表示されたときにスクロール可能にする
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: TextField(
+            controller: textController,
+            // onChangedは不要（コントローラーのリスナーで処理）
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 3. 保存処理などでキーボードを閉じる
+ElevatedButton(
+  onPressed: () {
+    // キーボードを閉じる
+    FocusScope.of(context).unfocus();
+    // 保存処理
+    notifier.saveText();
+  },
+  child: const Text('保存'),
+),
+
+// 4. 注意点
+// - TextEditingControllerはfreezedで管理できないため、Notifier内で直接管理する
+// - コントローラーの変更をStateに反映するリスナーを追加する
+// - Stateの値を更新する場合は、コントローラーも同時に更新する
+// - コントローラーを更新する際は、カーソル位置を維持する
+// - disposeでコントローラーを適切に破棄する
+// - StatefulWidgetは使用せず、StateNotifierパターンを維持する
+
 // Project Structure
 以下の構造に従ってファイル生成を行ってください。
 

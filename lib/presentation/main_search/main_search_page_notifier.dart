@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
 
@@ -13,14 +14,23 @@ import '../../domain/repository/sake_menu_recognition_repository.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
+enum SearchMode {
+  name,
+  bottle,
+}
+
 @freezed
 abstract class MainSearchPageState with _$MainSearchPageState {
   const factory MainSearchPageState({
     @Default(false) bool isLoading,
     String? sakeName,
+    String? hint,
+    File? sakeImage,
     String? sakeType,
     Sake? sakeInfo,
     String? errorMessage,
+    String? geminiResponse,
+    @Default(SearchMode.name) SearchMode searchMode,
   }) = _MainSearchPageState;
 }
 
@@ -143,6 +153,118 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       state = state.copyWith(
         isLoading: false,
         errorMessage: '日本酒情報の取得に失敗しました',
+      );
+    }
+  }
+
+  // 検索モードを切り替える
+  void setSearchMode(SearchMode mode) {
+    state = state.copyWith(searchMode: mode);
+  }
+
+  Future<void> promptWithText() async {
+    if (state.sakeName == null) {
+      return;
+    }
+    if (state.isLoading == true) {
+      return;
+    }
+    state = state.copyWith(isLoading: true);
+    if (state.sakeName != null) {
+      final response = await geminiMolaApiRepository.promptWithText(
+        state.sakeName!,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        sakeName: null,
+      );
+      state = state.copyWith(geminiResponse: response);
+    }
+  }
+
+  void setText(String text) {
+    state = state.copyWith(sakeName: text);
+  }
+
+  // 画像を選択する
+  Future<void> pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      final imageFile = File(pickedFile.path);
+      state = state.copyWith(sakeImage: imageFile);
+    }
+  }
+
+  // 画像をクリアする
+  void clearImage() {
+    state = state.copyWith(sakeImage: null);
+  }
+
+  // 酒瓶画像を解析する
+  Future<void> analyzeSakeBottle() async {
+    if (state.sakeImage == null) {
+      logger.info('酒瓶解析: 画像がnullです');
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      final response = await sakeMenuRecognitionRepository
+          .recognizeSakeBottle(state.sakeImage!);
+
+      if (response == null) {
+        logger.shout('酒瓶解析: APIレスポンスがnullです');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '酒瓶の認識に失敗しました',
+        );
+        return;
+      }
+
+      if (response.sakeName == null) {
+        logger.shout('酒瓶解析: 日本酒名が認識できませんでした');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '酒瓶から日本酒名を認識できませんでした',
+        );
+        return;
+      }
+
+      logger
+          .info('酒瓶解析: 認識成功 - 日本酒名=${response.sakeName}, タイプ=${response.type}');
+
+      // 認識された日本酒情報を取得
+      logger.info('酒瓶解析: 日本酒情報取得開始');
+      final sakeInfo = await sakeMenuRecognitionRepository.getSakeInfo(
+        response.sakeName!,
+        type: response.type,
+      );
+
+      if (sakeInfo == null) {
+        logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '日本酒情報が見つかりませんでした',
+        );
+        return;
+      }
+
+      logger.info('酒瓶解析: 日本酒情報取得成功');
+
+      // 結果を更新
+      state = state.copyWith(
+        isLoading: false,
+        sakeInfo: sakeInfo,
+      );
+    } catch (e, stackTrace) {
+      logger.shout('酒瓶解析に失敗: $e');
+      logger.shout('スタックトレース: $stackTrace');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '酒瓶解析に失敗しました: ${e.toString()}',
       );
     }
   }

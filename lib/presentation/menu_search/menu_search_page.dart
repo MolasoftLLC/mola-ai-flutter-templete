@@ -186,7 +186,8 @@ class MenuSearchPage extends StatelessWidget {
                                         ),
                                       ),
                                       child: const Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.image_search,
@@ -290,11 +291,12 @@ class MenuSearchPage extends StatelessWidget {
                                     const SizedBox(height: 16),
                                     ListView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       itemCount: extractedSakes.length,
                                       itemBuilder: (context, index) {
                                         final sake = extractedSakes[index];
-                                        
+
                                         // 元の名前から取得した詳細情報の名前を取得
                                         final mappedName =
                                             nameMapping[sake.name] ?? sake.name;
@@ -302,17 +304,19 @@ class MenuSearchPage extends StatelessWidget {
                                         // 詳細情報が取得された日本酒を探す
                                         final detailedSake = sakes?.firstWhere(
                                           (s) => s.name == mappedName,
-                                          orElse: () =>
-                                              Sake(name: sake.name, type: sake.type),
+                                          orElse: () => Sake(
+                                              name: sake.name, type: sake.type),
                                         );
 
                                         // この日本酒が現在読み込み中かどうか
                                         final isItemLoading =
-                                            sakeLoadingStatus[sake.name] ?? false;
+                                            sakeLoadingStatus[sake.name] ??
+                                                false;
 
                                         // 詳細情報があるかどうか
                                         final hasDetails = sakes != null &&
-                                            sakes.any((s) => s.name == mappedName);
+                                            sakes.any(
+                                                (s) => s.name == mappedName);
 
                                         // 詳細情報の取得に失敗したかどうか
                                         final hasFailed = !isItemLoading &&
@@ -323,61 +327,81 @@ class MenuSearchPage extends StatelessWidget {
                                         // 推薦スコア
                                         final recommendationScore =
                                             detailedSake?.recommendationScore;
-                                        
+
                                         // 超おすすめかどうか（スコアが8以上）
-                                        final isHighlyRecommended = 
-                                            recommendationScore != null && 
-                                            recommendationScore >= 8;
+                                        final isHighlyRecommended =
+                                            recommendationScore != null &&
+                                                recommendationScore >= 8;
 
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 8.0),
+                                          padding: const EdgeInsets.only(
+                                              bottom: 8.0),
                                           child: Card(
                                             elevation: 2,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
                                             child: ExpansionTile(
                                               title: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     hasDetails
                                                         ? detailedSake!.name ??
                                                             'Unknown'
-                                                        : sake.name ?? 'Unknown',
+                                                        : sake.name ??
+                                                            'Unknown',
                                                     style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       fontSize: 16,
                                                     ),
                                                   ),
                                                   if (isHighlyRecommended)
                                                     Container(
-                                                      margin: const EdgeInsets.only(top: 4),
-                                                      padding: const EdgeInsets.symmetric(
-                                                          horizontal: 8, vertical: 2),
+                                                      margin:
+                                                          const EdgeInsets.only(
+                                                              top: 4),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.red.shade100,
-                                                        borderRadius: BorderRadius.circular(4),
+                                                        color:
+                                                            Colors.red.shade100,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(4),
                                                         border: Border.all(
-                                                          color: Colors.red.shade300,
+                                                          color: Colors
+                                                              .red.shade300,
                                                         ),
                                                       ),
                                                       child: Row(
-                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
                                                         children: [
                                                           Icon(
                                                             Icons.star,
-                                                            color: Colors.red.shade700,
+                                                            color: Colors
+                                                                .red.shade700,
                                                             size: 16,
                                                           ),
-                                                          const SizedBox(width: 4),
+                                                          const SizedBox(
+                                                              width: 4),
                                                           Text(
-                                                            recommendationScore! >= 9
+                                                            recommendationScore! >=
+                                                                    9
                                                                 ? '超おすすめ！'
                                                                 : 'おすすめ！',
                                                             style: TextStyle(
-                                                              color: Colors.red.shade700,
-                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors
+                                                                  .red.shade700,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               fontSize: 12,
                                                             ),
                                                           ),
@@ -394,7 +418,8 @@ class MenuSearchPage extends StatelessWidget {
                                                 ),
                                               ),
                                               trailing: hasDetails
-                                                  ? const Icon(Icons.expand_more,
+                                                  ? const Icon(
+                                                      Icons.expand_more,
                                                       color: Color(0xFF1D3567))
                                                   : isItemLoading
                                                       ? const SizedBox(
@@ -403,27 +428,36 @@ class MenuSearchPage extends StatelessWidget {
                                                           child:
                                                               CircularProgressIndicator(
                                                             strokeWidth: 2,
-                                                            color: Color(0xFF1D3567),
+                                                            color: Color(
+                                                                0xFF1D3567),
                                                           ),
                                                         )
-                                                      : Icon(Icons.error_outline,
-                                                          color: Colors.red.shade700),
+                                                      : Icon(
+                                                          Icons.error_outline,
+                                                          color: Colors
+                                                              .red.shade700),
                                               children: [
                                                 if (hasDetails)
                                                   Padding(
-                                                    padding: const EdgeInsets.all(16.0),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
                                                     child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
                                                         if (detailedSake!
                                                                 .brewery !=
                                                             null)
                                                           _buildInfoRow(
                                                             '蔵元',
-                                                            detailedSake.brewery!,
+                                                            detailedSake
+                                                                .brewery!,
                                                             Icons.home_work,
                                                           ),
-                                                        if (detailedSake.taste !=
+                                                        if (detailedSake
+                                                                .taste !=
                                                             null)
                                                           _buildInfoRow(
                                                             '味わい',
@@ -438,23 +472,28 @@ class MenuSearchPage extends StatelessWidget {
                                                             '${detailedSake.sakeMeterValue}',
                                                             Icons.science,
                                                           ),
-                                                        if (detailedSake.types !=
+                                                        if (detailedSake
+                                                                    .types !=
                                                                 null &&
-                                                            detailedSake
-                                                                .types!.isNotEmpty)
+                                                            detailedSake.types!
+                                                                .isNotEmpty)
                                                           _buildTypesRow(
-                                                              detailedSake.types!),
+                                                              detailedSake
+                                                                  .types!),
                                                       ],
                                                     ),
                                                   )
                                                 else
                                                   Padding(
-                                                    padding: const EdgeInsets.all(16.0),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
                                                     child: Row(
                                                       children: [
                                                         Icon(
                                                           isItemLoading
-                                                              ? Icons.hourglass_top
+                                                              ? Icons
+                                                                  .hourglass_top
                                                               : Icons
                                                                   .error_outline,
                                                           color: isItemLoading
@@ -463,7 +502,8 @@ class MenuSearchPage extends StatelessWidget {
                                                               : Colors
                                                                   .red.shade700,
                                                         ),
-                                                        const SizedBox(width: 8),
+                                                        const SizedBox(
+                                                            width: 8),
                                                         Expanded(
                                                           child: Text(
                                                             isItemLoading
@@ -473,11 +513,14 @@ class MenuSearchPage extends StatelessWidget {
                                                               color: isItemLoading
                                                                   ? const Color(
                                                                       0xFF1D3567)
-                                                                  : Colors
-                                                                      .red.shade700,
-                                                              fontStyle: isItemLoading
-                                                                  ? FontStyle.italic
-                                                                  : FontStyle.normal,
+                                                                  : Colors.red
+                                                                      .shade700,
+                                                              fontStyle:
+                                                                  isItemLoading
+                                                                      ? FontStyle
+                                                                          .italic
+                                                                      : FontStyle
+                                                                          .normal,
                                                               fontWeight:
                                                                   isItemLoading
                                                                       ? FontWeight

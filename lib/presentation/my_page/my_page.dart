@@ -1,27 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import 'how_to_use/how_to_use_page.dart';
-import 'my_page_notifier.dart';
 
 class MyPage extends StatelessWidget {
   const MyPage._({Key? key}) : super(key: key);
 
   static Widget wrapped() {
-    return MultiProvider(
-      providers: [
-        StateNotifierProvider<MyPageNotifier, MyPageState>(
-          create: (context) => MyPageNotifier(
-            context: context,
-          ),
-        ),
-      ],
-      child: const MyPage._(),
-    );
+    return const MyPage._();
   }
 
   @override
@@ -33,139 +23,347 @@ class MyPage extends StatelessWidget {
     final myFavoriteSakeList =
         context.select((FavoriteState state) => state.myFavoriteList);
     final favNotifier = context.watch<FavoriteNotifier>();
-    return Scaffold(
+    final preferences =
+        context.select((MyPageState state) => state.preferences);
+
+    // Notifierから取得したTextEditingControllerを使用
+    final preferencesController = notifier.preferencesController;
+
+    return GestureDetector(
+      // キーボード外タップでキーボードを閉じる
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1D3567),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          title: const Text(
+            'マイページ',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            // 歯車アイコンを追加
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                _showSettingsMenu(context);
+              },
+            ),
+          ],
+        ),
         body: Container(
-      height: MediaQuery.of(context).size.height,
-      color: const Color(0xFF1D3567),
-      child: SingleChildScrollView(
-        child: Center(
-          child: Column(mainAxisAlignment: MainAxisAlignment.start, children: [
-            SizedBox(
-              height: 80,
+          height: MediaQuery.of(context).size.height,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1D3567), Color(0xFF0A1428)],
             ),
-            Container(
-              width: MediaQuery.of(context).size.width,
-              color: Colors.black,
-              padding: EdgeInsets.only(top: 34),
-              child: Center(
-                child: Text(
-                  '〜お気に入りのお酒〜',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            if (myFavoriteSakeList.isEmpty)
-              Container(
-                width: MediaQuery.of(context).size.width,
-                color: Colors.black,
-                padding: EdgeInsets.only(top: 12, bottom: 43),
-                child: const Center(
-                  child: Text(
-                    'まだお気に入りはありません。',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
+          ),
+          child: SingleChildScrollView(
+            // キーボードが表示されたときにスクロール可能にする
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // お気に入りのお酒セクション
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                ),
-              ),
-            if (myFavoriteSakeList.isNotEmpty)
-              Container(
-                  height: 400,
-                  color: Colors.black,
-                  child: ListView.builder(
-                      itemCount: myFavoriteSakeList.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          height: 80,
-                          width: 300,
-                          padding: const EdgeInsets.all(8.0),
-                          child: Card(
-                            child: ListTile(
-                              title: SizedBox(
-                                  width: 200,
-                                  child: Text(myFavoriteSakeList[index])),
-                              trailing: SizedBox(
-                                width: 80,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // InkWell(
-                                    //   onTap: () {
-                                    //     // 再検索処理をここに記述
-                                    //     ScaffoldMessenger.of(context)
-                                    //         .showSnackBar(
-                                    //       SnackBar(
-                                    //         content: Text(
-                                    //             '再検索: ${myFavoriteSakeList[index]}'),
-                                    //       ),
-                                    //     );
-                                    //   },
-                                    //   child: Icon(Icons.search),
-                                    // ),
-                                    SizedBox(width: 16),
-                                    InkWell(
-                                        onTap: () {
-                                          favNotifier.addOrRemoveString(
-                                              myFavoriteSakeList[index]);
-                                        },
-                                        child: Icon(
-                                          true
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color: true ? Colors.red : null,
-                                        )),
-                                  ],
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.favorite,
+                                color: Colors.redAccent,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'お気に入りのお酒',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${myFavoriteSakeList.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (myFavoriteSakeList.isEmpty)
+                          Container(
+                            width: MediaQuery.of(context).size.width,
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: const Center(
+                              child: Text(
+                                'まだお気に入りはありません。\n日本酒を検索して♡マークを押してみましょう！',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
                           ),
+                        if (myFavoriteSakeList.isNotEmpty)
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 300),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const ClampingScrollPhysics(),
+                              itemCount: myFavoriteSakeList.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    title: Text(
+                                      myFavoriteSakeList[index],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: const Icon(
+                                        Icons.favorite,
+                                        color: Colors.redAccent,
+                                      ),
+                                      onPressed: () {
+                                        favNotifier.addOrRemoveString(
+                                          myFavoriteSakeList[index],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // お酒診断ボタン
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // お酒診断機能（後で実装）
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('この機能は準備中です'),
+                            duration: Duration(seconds: 2),
+                          ),
                         );
-                      })),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: GestureDetector(
-                      onTap: () async => {
-                        await Navigator.of(context, rootNavigator: true)
-                            .push<void>(
-                          CupertinoPageRoute(builder: (_) => const HowToUse()),
-                        )
                       },
-                      child: Text(
-                        '利用規約',
-                        style: TextStyle(color: Colors.white),
+                      icon: const Icon(Icons.psychology),
+                      label: const Text('あなたにぴったりのお酒診断'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                  Divider(),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: GestureDetector(
-                      onTap: () async => {
-                        await launchUrl(Uri.parse('https://molasoft.jp')),
-                      },
-                      child: Text(
-                        '開発会社',
-                        style: TextStyle(color: Colors.white),
-                      ),
+
+                  // 好きなお酒の傾向入力フォーム
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.wine_bar,
+                              color: Colors.amber,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '好きなお酒の傾向',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '好みのお酒の特徴を入力すると、おすすめの日本酒を探しやすくなります。',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: preferencesController,
+                          maxLength: 100,
+                          maxLines: 3,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: '例: 甘口でフルーティな香りが好きです。辛すぎるのは苦手です。',
+                            hintStyle:
+                                TextStyle(color: Colors.white.withOpacity(0.5)),
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            counterStyle:
+                                const TextStyle(color: Colors.white70),
+                          ),
+                          // onChangedは不要になりました（コントローラーのリスナーで処理）
+                        ),
+                        const SizedBox(height: 12),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // キーボードを閉じる
+                              FocusScope.of(context).unfocus();
+                              // 保存処理
+                              notifier.savePreferences();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('好みを保存しました'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1D3567),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('保存する'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 40),
                 ],
               ),
-            )
-          ]),
+            ),
+          ),
         ),
       ),
-    ));
+    );
+  }
+
+  // 設定メニューを表示するメソッド
+  void _showSettingsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '設定',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1D3567),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading:
+                    const Icon(Icons.description, color: Color(0xFF1D3567)),
+                title: const Text('利用規約'),
+                onTap: () async {
+                  Navigator.pop(context); // 設定メニューを閉じる
+                  await Navigator.of(context, rootNavigator: true).push<void>(
+                    CupertinoPageRoute(builder: (_) => const HowToUse()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.business, color: Color(0xFF1D3567)),
+                title: const Text('開発会社'),
+                onTap: () async {
+                  Navigator.pop(context); // 設定メニューを閉じる
+                  await launchUrl(Uri.parse('https://molasoft.jp'));
+                },
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // 設定メニューを閉じる
+                },
+                child: const Text(
+                  'キャンセル',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

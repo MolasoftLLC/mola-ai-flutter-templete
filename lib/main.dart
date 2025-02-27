@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mola_gemini_flutter_template/presentation/app_page.dart';
 import 'package:provider/provider.dart';
 
 import 'app_config.dart';
 import 'common/access_url.dart';
-import 'di_container.dart';
+import 'config/di_container.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -22,14 +23,24 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-Future<void> main() async {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // 画面の向きを縦に固定
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
   ///各種アプリの設定を読み取り
   HttpOverrides.global = MyHttpOverrides();
   await dotenv.load(fileName: ".env");
   await configure();
+
+  // DIコンテナからプロバイダーを取得
+  final providerList = await providers;
+
   runApp(
     MultiProvider(
-      providers: await providers,
+      providers: providerList,
       child: const MyApp(),
     ),
   );

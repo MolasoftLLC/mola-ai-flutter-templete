@@ -3,16 +3,17 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
-import 'common/access_url.dart';
-import 'domain/notifier/favorite/favorite_notifier.dart';
-import 'domain/repository/gemini_mola_api_repository.dart';
-import 'domain/repository/mola_api_repository.dart';
-import 'domain/repository/sake_menu_recognition_repository.dart';
-import 'infrastructure/api_client/api_client.dart';
-import 'infrastructure/api_client/client_creator.dart';
-import 'infrastructure/api_client/sake_menu_recognition_api_client.dart';
-import 'infrastructure/api_client/sake_menu_recognition_client_creator.dart';
-import 'infrastructure/local_database/shared_preference.dart';
+import '../common/access_url.dart';
+import '../domain/notifier/favorite/favorite_notifier.dart';
+import '../domain/notifier/my_page/my_page_notifier.dart';
+import '../domain/repository/gemini_mola_api_repository.dart';
+import '../domain/repository/mola_api_repository.dart';
+import '../domain/repository/sake_menu_recognition_repository.dart';
+import '../infrastructure/api_client/api_client.dart';
+import '../infrastructure/api_client/client_creator.dart';
+import '../infrastructure/api_client/sake_menu_recognition_api_client.dart';
+import '../infrastructure/api_client/sake_menu_recognition_client_creator.dart';
+import '../infrastructure/local_database/shared_preference.dart';
 
 Future<List<SingleChildWidget>> get providers async {
   return <SingleChildWidget>[
@@ -75,6 +76,9 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
   return <SingleChildWidget>[
     StateNotifierProvider<FavoriteNotifier, FavoriteState>(
       create: (_) => FavoriteNotifier(),
+    ),
+    StateNotifierProvider<MyPageNotifier, MyPageState>(
+      create: (_) => MyPageNotifier(),
     ),
   ];
 }

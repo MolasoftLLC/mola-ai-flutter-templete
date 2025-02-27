@@ -9,6 +9,7 @@ import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
+import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
 
 class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
@@ -84,7 +85,8 @@ class SakeMenuRecognitionRepository {
   }
 
   /// 日本酒名から詳細情報を取得する
-  Future<Sake?> getSakeInfo(String sakeName, {String? type, String? preferences}) async {
+  Future<Sake?> getSakeInfo(String sakeName,
+      {String? type, String? preferences}) async {
     if (sakeName.isEmpty) {
       return null;
     }
@@ -95,7 +97,7 @@ class SakeMenuRecognitionRepository {
     if (type != null && type.isNotEmpty) {
       body['type'] = type;
     }
-    
+
     // 好みが指定されている場合は追加
     if (preferences != null && preferences.isNotEmpty) {
       body['preferences'] = preferences;
@@ -138,6 +140,41 @@ class SakeMenuRecognitionRepository {
       return Sake.fromJson(sakeJson);
     } else {
       logger.shout(response.error);
+      return null;
+    }
+  }
+
+  // 酒瓶画像を認識する
+  Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
+    try {
+      final baseFile = base64Encode(Io.File(file.path).readAsBytesSync());
+      final response = await _apiClient.recognizeSakeBottle(
+        baseFile,
+      );
+
+      if (response.isSuccessful) {
+        final body = response.body;
+        if (body == null) {
+          logger.shout('酒瓶認識API: レスポンスボディがnullです');
+          return null;
+        }
+
+        logger.info('酒瓶認識API成功: ${body.toString()}');
+
+        return SakeBottleRecognitionResponse(
+          sakeName: body['sakeName'] as String?,
+          type: body['type'] as String?,
+        );
+      } else {
+        // エラーレスポンスの詳細をログに出力
+        logger.shout(
+            '酒瓶認識API失敗: ステータスコード=${response.statusCode}, エラー=${response.error}');
+        return null;
+      }
+    } catch (e, stackTrace) {
+      // 例外の詳細をログに出力
+      logger.shout('酒瓶認識API例外: $e');
+      logger.shout('スタックトレース: $stackTrace');
       return null;
     }
   }

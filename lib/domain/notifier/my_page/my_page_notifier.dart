@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
+
+import '../../../domain/repository/gemini_mola_api_repository.dart';
 
 part 'my_page_notifier.freezed.dart';
 
@@ -25,9 +26,7 @@ abstract class MyPageState with _$MyPageState {
 
 class MyPageNotifier extends StateNotifier<MyPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MyPageNotifier({
-    required this.context,
-  }) : super(const MyPageState()) {
+  MyPageNotifier() : super(const MyPageState()) {
     _loadPreferences();
     // TextEditingControllerの初期化
     _preferencesController = TextEditingController(text: state.preferences);
@@ -35,7 +34,6 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     _preferencesController.addListener(_updatePreferencesFromController);
   }
 
-  final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
@@ -56,10 +54,6 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   @override
   Future<void> initState() async {
     super.initState();
-    // final prompt2 = '今から質問をします。「日本酒のみむろ杉の特徴を教えて」';
-    // final prompt =
-    //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
-    // await requestGemini(prompt2);
   }
 
   @override
@@ -139,4 +133,4 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       }
     }
   }
-}
+} 

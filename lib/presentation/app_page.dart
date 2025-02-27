@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/access_url.dart';
+import 'package:mola_gemini_flutter_template/presentation/favorite_search/favorite_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/main_search/main_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page.dart';
 import 'package:provider/provider.dart';
 
-import '../common/assets.dart';
 import 'app_page_notifier.dart';
-import 'favorite_search/favorite_search_page.dart';
 import 'my_page/my_page.dart';
 
 class AppPage extends StatelessWidget {
@@ -31,80 +30,51 @@ class AppPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<AppPageNotifier>();
-    final selectedNavIndex =
-        context.select((AppPageState state) => state.selectedNavIndex);
+    final currentIndex =
+        context.select((AppPageState state) => state.currentIndex);
     final needUpDate = context.select((AppPageState state) => state.needUpDate);
 
-    final pages = [
-      MainSearchPage.wrapped(),
-      FavoriteSearchPage.wrapped(),
-      MenuSearchPage.wrapped(),
-      MyPage.wrapped(),
-    ];
+    if (needUpDate) {
+      return RequireUpdate(notifier);
+    }
 
-    return needUpDate
-        ? RequireUpdate(notifier)
-        : Scaffold(
-            body: pages[selectedNavIndex],
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: selectedNavIndex,
-              onTap: notifier.onNavTapped,
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                  icon: SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: Image(
-                      image: Assets.sakeLogoColor,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  label: '銘柄検索',
-                ),
-                BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: Image(
-                        image: Assets.menuNav,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    label: '好み検索'),
-                BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: Image(
-                        image: Assets.imageNav,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    label: '画像検索'),
-                // BottomNavigationBarItem(
-                //     icon: SizedBox(
-                //       width: 30,
-                //       height: 30,
-                //       child: Image(
-                //         image: Assets.accountNav,
-                //         fit: BoxFit.contain,
-                //       ),
-                //     ),
-                //     label: 'お気に入り'),
-                BottomNavigationBarItem(
-                    icon: SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: Image(
-                        image: Assets.accountNav,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    label: 'お気に入り'),
-              ],
-              type: BottomNavigationBarType.fixed,
-              fixedColor: Color(0xFF1D3567),
-            ));
+    return Scaffold(
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          MainSearchPage.wrapped(),
+          MenuSearchPage.wrapped(),
+          FavoriteSearchPage.wrapped(),
+          MyPage.wrapped(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: notifier.onTabTapped,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF1D3567),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.5),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: '検索',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'メニュー解析',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: '産地検索',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'マイページ',
+          ),
+        ],
+      ),
+    );
   }
 }
 
