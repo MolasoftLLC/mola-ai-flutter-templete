@@ -184,13 +184,18 @@ class MyPage extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // お酒診断機能（後で実装）
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('この機能は準備中です'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        if (myFavoriteSakeList.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('お気に入りのお酒がありません。先にお気に入りを登録してください。'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        notifier.analyzeSakePreference(myFavoriteSakeList);
+                        _showSakePreferenceAnalysisDialog(context, notifier);
                       },
                       icon: const Icon(Icons.psychology),
                       label: const Text('あなたにぴったりのお酒診断'),
@@ -362,6 +367,89 @@ class MyPage extends StatelessWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // お酒診断結果ダイアログを表示するメソッド
+  void _showSakePreferenceAnalysisDialog(BuildContext context, MyPageNotifier notifier) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final isLoading = context.select((MyPageState state) => state.isLoading);
+            final sakePreferenceAnalysis = context.select((MyPageState state) => state.sakePreferenceAnalysis);
+            
+            return AlertDialog(
+              title: const Text(
+                'あなたにぴったりのお酒診断',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1D3567),
+                ),
+              ),
+              content: Container(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: SingleChildScrollView(
+                  child: isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : sakePreferenceAnalysis != null
+                          ? Text(
+                              sakePreferenceAnalysis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                            )
+                          : const Text(
+                              'お気に入りのお酒から診断できませんでした。別のお酒を登録してみてください。',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                            ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // ダイアログを閉じる
+                  },
+                  child: const Text(
+                    '閉じる',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (sakePreferenceAnalysis != null && !isLoading)
+                  ElevatedButton(
+                    onPressed: () {
+                      notifier.saveSakePreferenceAsPreferences();
+                      Navigator.pop(context); // ダイアログを閉じる
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('好みを保存しました'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1D3567),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('好きな傾向に保存して閉じる'),
+                  ),
+              ],
+            );
+          },
         );
       },
     );

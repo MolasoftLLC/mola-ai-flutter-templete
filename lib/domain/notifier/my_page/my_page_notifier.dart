@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../../domain/repository/gemini_mola_api_repository.dart';
+import '../../../domain/repository/mola_api_repository.dart';
+import '../favorite/favorite_notifier.dart';
 
 part 'my_page_notifier.freezed.dart';
 
@@ -20,6 +22,7 @@ abstract class MyPageState with _$MyPageState {
     File? sakeImage,
     String? geminiResponse,
     String? preferences,
+    String? sakePreferenceAnalysis,
     // TextEditingControllerはfreezedで管理できないため、別途保持
   }) = _MyPageState;
 }
@@ -37,6 +40,8 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
+  
+  MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
   
   // TextEditingControllerをNotifier内で管理
   late final TextEditingController _preferencesController;
@@ -133,4 +138,28 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       }
     }
   }
-} 
+
+  // お酒診断の結果を取得する
+  Future<void> analyzeSakePreference(List<FavoriteSake> sakes) async {
+    if (sakes.isEmpty) {
+      return;
+    }
+    
+    state = state.copyWith(isLoading: true);
+    
+    final preference = await molaApiRepository.analyzeSakePreference(sakes);
+    
+    state = state.copyWith(
+      isLoading: false,
+      sakePreferenceAnalysis: preference,
+    );
+  }
+  
+  // お酒診断の結果を好みの設定として保存する
+  void saveSakePreferenceAsPreferences() {
+    if (state.sakePreferenceAnalysis != null) {
+      setPreferences(state.sakePreferenceAnalysis!);
+      savePreferences();
+    }
+  }
+}        

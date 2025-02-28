@@ -11,6 +11,7 @@ import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/request/favorite_body.dart';
+import '../notifier/favorite/favorite_notifier.dart';
 
 class MolaApiRepository {
   MolaApiRepository(this._apiClient);
@@ -149,5 +150,29 @@ class MolaApiRepository {
       logger.shout(response.error);
     }
     return null;
+  }
+
+  Future<String?> analyzeSakePreference(List<FavoriteSake> sakes) async {
+    if (sakes.isEmpty) {
+      return null;
+    }
+    
+    final List<Map<String, dynamic>> sakesData = sakes.map((sake) => {
+      'sakeName': sake.name,
+      'type': sake.type ?? '',
+    }).toList();
+    
+    final body = {
+      'sakes': sakesData,
+    };
+    
+    final response = await _apiClient.analyzeSakePreference(body);
+    if (response.isSuccessful) {
+      final responseBodyJson = response.body as Map<String, dynamic>;
+      return responseBodyJson['preference'] as String?;
+    } else {
+      logger.shout(response.error);
+      return null;
+    }
   }
 }
