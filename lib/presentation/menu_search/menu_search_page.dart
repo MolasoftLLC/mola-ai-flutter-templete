@@ -11,6 +11,8 @@ import 'menu_search_page_notifier.dart';
 class MenuSearchPage extends StatelessWidget {
   const MenuSearchPage._({Key? key}) : super(key: key);
 
+  static final ScrollController _scrollController = ScrollController();
+
   static Widget wrapped() {
     return MultiProvider(
       providers: [
@@ -58,9 +60,15 @@ class MenuSearchPage extends StatelessWidget {
 
     String loadingText = 'AIに問い合わせています';
     if (isExtractingInfo) {
-      loadingText = '画像から日本酒を認識しています...';
+      loadingText = '解析中...広告表示にご協力ください...';
     } else if (isGettingDetails) {
       loadingText = '日本酒の詳細情報を取得しています...';
+    }
+
+    if (extractedSakes.isNotEmpty && !isLoading && !isExtractingInfo) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToResults();
+      });
     }
 
     return Scaffold(
@@ -70,6 +78,7 @@ class MenuSearchPage extends StatelessWidget {
           color: Color(0xFF1D3567),
         ),
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: isLoading
               ? AILoading(loadingText: loadingText)
               : Center(
@@ -586,6 +595,18 @@ class MenuSearchPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static void _scrollToResults() {
+    if (_scrollController.hasClients) {
+      final double targetPosition =
+          _scrollController.position.maxScrollExtent * 0.6;
+      _scrollController.animateTo(
+        targetPosition,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Widget _buildInfoRow(String key, String value, IconData icon) {

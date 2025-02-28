@@ -17,6 +17,10 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$MainSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
+  bool get isAdLoading => throw _privateConstructorUsedError;
+  bool get isAnalyzingInBackground => throw _privateConstructorUsedError;
+  int get searchButtonClickCount => throw _privateConstructorUsedError;
+  int get analyzeButtonClickCount => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
@@ -39,6 +43,10 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
   @useResult
   $Res call(
       {bool isLoading,
+      bool isAdLoading,
+      bool isAnalyzingInBackground,
+      int searchButtonClickCount,
+      int analyzeButtonClickCount,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -65,6 +73,10 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isAdLoading = null,
+    Object? isAnalyzingInBackground = null,
+    Object? searchButtonClickCount = null,
+    Object? analyzeButtonClickCount = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -79,6 +91,22 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
+      isAdLoading: null == isAdLoading
+          ? _value.isAdLoading
+          : isAdLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAnalyzingInBackground: null == isAnalyzingInBackground
+          ? _value.isAnalyzingInBackground
+          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+              as bool,
+      searchButtonClickCount: null == searchButtonClickCount
+          ? _value.searchButtonClickCount
+          : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      analyzeButtonClickCount: null == analyzeButtonClickCount
+          ? _value.analyzeButtonClickCount
+          : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
+              as int,
       sakeName: freezed == sakeName
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
@@ -137,6 +165,10 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {bool isLoading,
+      bool isAdLoading,
+      bool isAnalyzingInBackground,
+      int searchButtonClickCount,
+      int analyzeButtonClickCount,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -162,6 +194,10 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isAdLoading = null,
+    Object? isAnalyzingInBackground = null,
+    Object? searchButtonClickCount = null,
+    Object? analyzeButtonClickCount = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -176,6 +212,22 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
+      isAdLoading: null == isAdLoading
+          ? _value.isAdLoading
+          : isAdLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAnalyzingInBackground: null == isAnalyzingInBackground
+          ? _value.isAnalyzingInBackground
+          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+              as bool,
+      searchButtonClickCount: null == searchButtonClickCount
+          ? _value.searchButtonClickCount
+          : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      analyzeButtonClickCount: null == analyzeButtonClickCount
+          ? _value.analyzeButtonClickCount
+          : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
+              as int,
       sakeName: freezed == sakeName
           ? _value.sakeName
           : sakeName // ignore: cast_nullable_to_non_nullable
@@ -217,6 +269,10 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
 class _$MainSearchPageStateImpl implements _MainSearchPageState {
   const _$MainSearchPageStateImpl(
       {this.isLoading = false,
+      this.isAdLoading = false,
+      this.isAnalyzingInBackground = false,
+      this.searchButtonClickCount = 0,
+      this.analyzeButtonClickCount = 0,
       this.sakeName,
       this.hint,
       this.sakeImage,
@@ -229,6 +285,18 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   @override
   @JsonKey()
   final bool isLoading;
+  @override
+  @JsonKey()
+  final bool isAdLoading;
+  @override
+  @JsonKey()
+  final bool isAnalyzingInBackground;
+  @override
+  @JsonKey()
+  final int searchButtonClickCount;
+  @override
+  @JsonKey()
+  final int analyzeButtonClickCount;
   @override
   final String? sakeName;
   @override
@@ -249,7 +317,7 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode)';
+    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode)';
   }
 
   @override
@@ -259,6 +327,16 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
             other is _$MainSearchPageStateImpl &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
+            (identical(other.isAdLoading, isAdLoading) ||
+                other.isAdLoading == isAdLoading) &&
+            (identical(
+                    other.isAnalyzingInBackground, isAnalyzingInBackground) ||
+                other.isAnalyzingInBackground == isAnalyzingInBackground) &&
+            (identical(other.searchButtonClickCount, searchButtonClickCount) ||
+                other.searchButtonClickCount == searchButtonClickCount) &&
+            (identical(
+                    other.analyzeButtonClickCount, analyzeButtonClickCount) ||
+                other.analyzeButtonClickCount == analyzeButtonClickCount) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
             (identical(other.hint, hint) || other.hint == hint) &&
@@ -277,8 +355,21 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
-      sakeImage, sakeType, sakeInfo, errorMessage, geminiResponse, searchMode);
+  int get hashCode => Object.hash(
+      runtimeType,
+      isLoading,
+      isAdLoading,
+      isAnalyzingInBackground,
+      searchButtonClickCount,
+      analyzeButtonClickCount,
+      sakeName,
+      hint,
+      sakeImage,
+      sakeType,
+      sakeInfo,
+      errorMessage,
+      geminiResponse,
+      searchMode);
 
   @JsonKey(ignore: true)
   @override
@@ -291,6 +382,10 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 abstract class _MainSearchPageState implements MainSearchPageState {
   const factory _MainSearchPageState(
       {final bool isLoading,
+      final bool isAdLoading,
+      final bool isAnalyzingInBackground,
+      final int searchButtonClickCount,
+      final int analyzeButtonClickCount,
       final String? sakeName,
       final String? hint,
       final File? sakeImage,
@@ -302,6 +397,14 @@ abstract class _MainSearchPageState implements MainSearchPageState {
 
   @override
   bool get isLoading;
+  @override
+  bool get isAdLoading;
+  @override
+  bool get isAnalyzingInBackground;
+  @override
+  int get searchButtonClickCount;
+  @override
+  int get analyzeButtonClickCount;
   @override
   String? get sakeName;
   @override

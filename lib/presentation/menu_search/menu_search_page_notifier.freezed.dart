@@ -19,6 +19,8 @@ mixin _$MenuSearchPageState {
   bool get isLoading => throw _privateConstructorUsedError;
   bool get isExtractingInfo => throw _privateConstructorUsedError;
   bool get isGettingDetails => throw _privateConstructorUsedError;
+  bool get isAdLoading => throw _privateConstructorUsedError;
+  bool get isAnalyzingInBackground => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
@@ -49,6 +51,8 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
       {bool isLoading,
       bool isExtractingInfo,
       bool isGettingDetails,
+      bool isAdLoading,
+      bool isAnalyzingInBackground,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -80,6 +84,8 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? isLoading = null,
     Object? isExtractingInfo = null,
     Object? isGettingDetails = null,
+    Object? isAdLoading = null,
+    Object? isAnalyzingInBackground = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -104,6 +110,14 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
       isGettingDetails: null == isGettingDetails
           ? _value.isGettingDetails
           : isGettingDetails // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAdLoading: null == isAdLoading
+          ? _value.isAdLoading
+          : isAdLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAnalyzingInBackground: null == isAnalyzingInBackground
+          ? _value.isAnalyzingInBackground
+          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -178,6 +192,8 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
       {bool isLoading,
       bool isExtractingInfo,
       bool isGettingDetails,
+      bool isAdLoading,
+      bool isAnalyzingInBackground,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -208,6 +224,8 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? isLoading = null,
     Object? isExtractingInfo = null,
     Object? isGettingDetails = null,
+    Object? isAdLoading = null,
+    Object? isAnalyzingInBackground = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -232,6 +250,14 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
       isGettingDetails: null == isGettingDetails
           ? _value.isGettingDetails
           : isGettingDetails // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAdLoading: null == isAdLoading
+          ? _value.isAdLoading
+          : isAdLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAnalyzingInBackground: null == isAnalyzingInBackground
+          ? _value.isAnalyzingInBackground
+          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -288,6 +314,8 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       {this.isLoading = false,
       this.isExtractingInfo = false,
       this.isGettingDetails = false,
+      this.isAdLoading = false,
+      this.isAnalyzingInBackground = false,
       this.sakeName,
       this.hint,
       this.sakeImage,
@@ -313,6 +341,12 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
   @override
   @JsonKey()
   final bool isGettingDetails;
+  @override
+  @JsonKey()
+  final bool isAdLoading;
+  @override
+  @JsonKey()
+  final bool isAnalyzingInBackground;
   @override
   final String? sakeName;
   @override
@@ -371,7 +405,7 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences)';
+    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences)';
   }
 
   @override
@@ -385,6 +419,11 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
                 other.isExtractingInfo == isExtractingInfo) &&
             (identical(other.isGettingDetails, isGettingDetails) ||
                 other.isGettingDetails == isGettingDetails) &&
+            (identical(other.isAdLoading, isAdLoading) ||
+                other.isAdLoading == isAdLoading) &&
+            (identical(
+                    other.isAnalyzingInBackground, isAnalyzingInBackground) ||
+                other.isAnalyzingInBackground == isAnalyzingInBackground) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
             (identical(other.hint, hint) || other.hint == hint) &&
@@ -415,6 +454,8 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       isLoading,
       isExtractingInfo,
       isGettingDetails,
+      isAdLoading,
+      isAnalyzingInBackground,
       sakeName,
       hint,
       sakeImage,
@@ -440,6 +481,8 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
       {final bool isLoading,
       final bool isExtractingInfo,
       final bool isGettingDetails,
+      final bool isAdLoading,
+      final bool isAnalyzingInBackground,
       final String? sakeName,
       final String? hint,
       final File? sakeImage,
@@ -458,6 +501,10 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   bool get isExtractingInfo;
   @override
   bool get isGettingDetails;
+  @override
+  bool get isAdLoading;
+  @override
+  bool get isAnalyzingInBackground;
   @override
   String? get sakeName;
   @override

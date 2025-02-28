@@ -87,7 +87,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       );
       return;
     }
-
+    // 初期化
+    state = state.copyWith(sakeInfo: null);
     // Increment click count
     final newClickCount = state.searchButtonClickCount + 1;
     state = state.copyWith(
@@ -100,7 +101,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (newClickCount % 2 == 0) {
       // Show ad and perform search in background
       state = state.copyWith(isAdLoading: true);
-      
+
       // Load rewarded ad
       final rewardedAd = await AdUtils.loadRewardedAd(
         onAdLoaded: (ad) {
@@ -125,7 +126,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         // Start search in background
         state = state.copyWith(isAnalyzingInBackground: true);
         final searchFuture = _performSearch(sakeName);
-        
+
         // Show ad
         await AdUtils.showRewardedAd(
           rewardedAd,
@@ -133,7 +134,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
             logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
           },
         );
-        
+
         // Wait for search to complete if it hasn't already
         await searchFuture;
         state = state.copyWith(isAnalyzingInBackground: false);
@@ -282,7 +283,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (newClickCount % 2 == 0) {
       // Show ad and perform analysis in background
       state = state.copyWith(isAdLoading: true);
-      
+
       // Load rewarded ad
       final rewardedAd = await AdUtils.loadRewardedAd(
         onAdLoaded: (ad) {
@@ -307,7 +308,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         // Start analysis in background
         state = state.copyWith(isAnalyzingInBackground: true);
         final analysisFuture = _performBottleAnalysis();
-        
+
         // Show ad
         await AdUtils.showRewardedAd(
           rewardedAd,
@@ -315,7 +316,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
             logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
           },
         );
-        
+
         // Wait for analysis to complete if it hasn't already
         await analysisFuture;
         state = state.copyWith(isAnalyzingInBackground: false);
@@ -334,6 +335,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   // Helper method to perform the actual bottle analysis
   Future<void> _performBottleAnalysis() async {
     try {
+      // 初期化
+      state = state.copyWith(sakeInfo: null);
       final response = await sakeMenuRecognitionRepository
           .recognizeSakeBottle(state.sakeImage!);
 
@@ -374,12 +377,14 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
+      state = state.copyWith(
+        sakeInfo: sakeInfo,
+      );
       logger.info('酒瓶解析: 日本酒情報取得成功');
 
       // 結果を更新
       state = state.copyWith(
         isLoading: false,
-        sakeInfo: sakeInfo,
       );
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');

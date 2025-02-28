@@ -14,6 +14,8 @@ import 'main_search_page_notifier.dart';
 class MainSearchPage extends StatelessWidget {
   const MainSearchPage._({Key? key}) : super(key: key);
 
+  static final ScrollController _scrollController = ScrollController();
+
   static Widget wrapped() {
     return MultiProvider(
       providers: [
@@ -37,8 +39,8 @@ class MainSearchPage extends StatelessWidget {
         context.select((MainSearchPageState state) => state.isLoading);
     final isAdLoading =
         context.select((MainSearchPageState state) => state.isAdLoading);
-    final isAnalyzingInBackground =
-        context.select((MainSearchPageState state) => state.isAnalyzingInBackground);
+    final isAnalyzingInBackground = context
+        .select((MainSearchPageState state) => state.isAnalyzingInBackground);
     final sakeInfo =
         context.select((MainSearchPageState state) => state.sakeInfo);
     final errorMessage =
@@ -50,6 +52,12 @@ class MainSearchPage extends StatelessWidget {
     final sakeImage =
         context.select((MainSearchPageState state) => state.sakeImage);
 
+    if (sakeInfo != null && !isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToResults();
+      });
+    }
+
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -57,9 +65,10 @@ class MainSearchPage extends StatelessWidget {
           color: Color(0xFF1D3567),
         ),
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: isLoading || isAdLoading
               ? isAdLoading
-                  ? const AILoading(loadingText: '広告を読み込んでいます...')
+                  ? const AILoading(loadingText: '解析中...広告の表示にご協力ください...')
                   : isAnalyzingInBackground
                       ? const AILoading(loadingText: 'バックグラウンドで処理中...')
                       : const AILoading(loadingText: '日本酒情報を取得しています...')
@@ -880,6 +889,18 @@ class MainSearchPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static void _scrollToResults() {
+    if (_scrollController.hasClients) {
+      final double targetPosition =
+          _scrollController.position.maxScrollExtent * 0.6;
+      _scrollController.animateTo(
+        targetPosition,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 }
 
