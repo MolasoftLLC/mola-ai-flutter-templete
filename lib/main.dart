@@ -32,7 +32,13 @@ void main() async {
   ]);
 
   // AdMobの初期化
-  await AdUtils.initialize();
+  try {
+    await AdUtils.initialize();
+    print('AdMob initialized successfully');
+  } catch (e) {
+    print('Failed to initialize AdMob: $e');
+    // Continue with app initialization even if AdMob fails
+  }
 
   ///各種アプリの設定を読み取り
   HttpOverrides.global = MyHttpOverrides();

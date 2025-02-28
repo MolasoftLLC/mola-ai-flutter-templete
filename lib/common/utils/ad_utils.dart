@@ -10,7 +10,9 @@ class AdUtils {
   static Future<void> initialize() async {
     if (_initialized) return;
     
+    print('Initializing AdMob...');
     await MobileAds.instance.initialize();
+    print('AdMob initialization complete');
     _initialized = true;
   }
   
@@ -28,6 +30,7 @@ class AdUtils {
   }) async {
     // テスト用の広告ユニットID
     const adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // テスト用ID
+    print('Loading rewarded ad with ID: $adUnitId');
     
     final completer = Completer<RewardedAd?>();
     
@@ -63,6 +66,7 @@ class AdUtils {
   }) async {
     final completer = Completer<bool>();
     
+    print('Showing rewarded ad...');
     ad.show(
       onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
         onUserEarnedReward(reward);
