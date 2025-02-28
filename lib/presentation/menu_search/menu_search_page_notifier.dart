@@ -108,31 +108,25 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   /// バックグラウンド処理用のメニュー解析メソッド
+  /// 
+  /// このメソッドはフォアグラウンドで実行されるリポジトリメソッドを呼び出します
+  /// 実際のAPI処理はリポジトリクラスに委譲します
   static Future<List<Sake>?> _backgroundMenuAnalysis(File file) async {
     try {
-      // このメソッドはバックグラウンドで実行されるため、
-      // 直接リポジトリにアクセスできない。
-      // 簡易的な実装として、ファイルの存在確認のみを行い、
-      // モックデータを返す
-      
       if (!file.existsSync()) {
         print('File does not exist: ${file.path}');
         return null;
       }
       
-      // 処理時間をシミュレート
-      await Future.delayed(Duration(seconds: 2));
+      // 注意: このメソッドは実際にはバックグラウンドで実行されず、
+      // フォアグラウンドでのAPI処理を開始するためのプレースホルダーとして機能します
+      // 実際のAPI処理は_extractSakeInfoInForegroundメソッドで行われます
       
-      // モックデータを返す（実際の実装では、APIクライアントを直接使用するなどの対応が必要）
-      return [
-        Sake(
-          name: 'テスト日本酒',
-          taste: '辛口でキレのある味わい',
-          brewery: '架空酒造',
-          sakeMeterValue: 5,
-          types: ['純米大吟醸'],
-        ),
-      ];
+      // 処理中であることを示すためのダミー遅延
+      await Future.delayed(Duration(milliseconds: 100));
+      
+      // nullを返すことで、_extractSakeInfoInForegroundメソッドが呼び出されるようにします
+      return null;
     } catch (e) {
       print('Error in background menu analysis: $e');
       return null;
@@ -179,28 +173,60 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           // バックグラウンドでメニュー解析を開始
           state = state.copyWith(isAnalyzingInBackground: true);
           
-          // バックグラウンドで処理を実行
-          BackgroundService.compute<File, List<Sake>?>(
-            _backgroundMenuAnalysis,
-            imageFile,
-          ).then((result) {
-            if (result != null && result.isNotEmpty) {
-              // 結果を処理
+          // API処理を開始（広告表示と並行して実行）
+          // 注意: 広告表示中にAPI処理を行い、広告終了後に結果を表示します
+          final apiProcessing = sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
+          
+          // 広告表示と並行してAPI処理を実行
+          apiProcessing.then((extractedSakes) {
+            if (extractedSakes != null && extractedSakes.isNotEmpty) {
+              // 結果を処理（広告が閉じられた後に表示）
               state = state.copyWith(
-                extractedSakes: result,
+                extractedSakes: extractedSakes,
                 isAnalyzingInBackground: false,
                 isLoading: false,
                 isExtractingInfo: false,
-                isAdLoading: false,
               );
+              
+              // 各日本酒の読み込み状態を初期化
+              final Map<String, bool> initialLoadingStatus = {};
+              for (final sake in extractedSakes) {
+                if (sake.name != null) {
+                  initialLoadingStatus[sake.name!] = false; // false = まだ読み込んでいない
+                }
+              }
+              
+              state = state.copyWith(
+                sakeLoadingStatus: initialLoadingStatus,
+              );
+              
+              // 詳細情報の取得は広告が閉じられた後に開始
+              if (!state.isAdLoading) {
+                _fetchSakeDetails(extractedSakes);
+              }
             } else {
-              // 通常の処理を続行
-              _extractSakeInfoInForeground(imageFile);
+              // API処理に失敗した場合
+              if (!state.isAdLoading) {
+                // 広告が既に閉じられている場合はエラーメッセージを表示
+                state = state.copyWith(
+                  isLoading: false,
+                  isExtractingInfo: false,
+                  isAnalyzingInBackground: false,
+                  errorMessage: '日本酒情報を抽出できませんでした',
+                );
+              }
             }
           }).catchError((e) {
-            logger.shout('バックグラウンド処理でエラーが発生しました: $e');
-            // 通常の処理を続行
-            _extractSakeInfoInForeground(imageFile);
+            logger.shout('API処理でエラーが発生しました: $e');
+            if (!state.isAdLoading) {
+              // 広告が既に閉じられている場合はエラーメッセージを表示
+              state = state.copyWith(
+                isLoading: false,
+                isExtractingInfo: false,
+                isAnalyzingInBackground: false,
+                errorMessage: '日本酒情報の抽出に失敗しました: $e',
+              );
+            }
           });
           
           // 広告を表示
@@ -211,6 +237,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
               },
             );
+            
+            // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
+            if (!state.isAnalyzingInBackground && state.extractedSakes.isNotEmpty) {
+              _fetchSakeDetails(state.extractedSakes);
+            }
           } catch (e) {
             logger.shout('広告の表示に失敗しました: $e');
             // 広告の表示に失敗した場合も、バックグラウンド処理は続行
@@ -236,76 +267,44 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
   
-  /// フォアグラウンドでメニュー解析を実行する
-  Future<void> _extractSakeInfoInForeground(File imageFile) async {
+  /// 日本酒の詳細情報を取得する
+  Future<void> _fetchSakeDetails(List<Sake> extractedSakes) async {
+    if (extractedSakes.isEmpty) return;
+    
     try {
-      // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes =
-          await sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
-
-      if (extractedSakes == null || extractedSakes.isEmpty) {
-        state = state.copyWith(
-          isLoading: false,
-          isExtractingInfo: false,
-          isAdLoading: false,
-          errorMessage: '日本酒情報を抽出できませんでした',
-        );
-        return;
-      }
-
-      // 抽出した日本酒情報を表示用に保存し、ローディングを終了
-      // 各日本酒の読み込み状態を初期化
-      final Map<String, bool> initialLoadingStatus = {};
-      for (final sake in extractedSakes) {
-        if (sake.name != null) {
-          initialLoadingStatus[sake.name!] = false; // false = まだ読み込んでいない
-        }
-      }
-
-      state = state.copyWith(
-        isLoading: false,
-        isExtractingInfo: false,
-        isAdLoading: false,
-        extractedSakes: extractedSakes,
-        sakeLoadingStatus: initialLoadingStatus,
-      );
-
-      // バックグラウンドで詳細情報を順次取得
-      state = state.copyWith(
-        isGettingDetails: true,
-        isAdLoading: false,
-      );
-
+      // 詳細情報の取得を開始
+      state = state.copyWith(isGettingDetails: true);
+      
       for (final extractedSake in extractedSakes) {
         try {
           final sakeName = extractedSake.name;
           final sakeType = extractedSake.type;
-
+          
           if (sakeName != null && sakeName.isNotEmpty) {
             // この日本酒の読み込み状態を「読み込み中」に設定
             final updatedLoadingStatus =
                 Map<String, bool>.from(state.sakeLoadingStatus);
             updatedLoadingStatus[sakeName] = true; // true = 読み込み中
             state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
-
+            
             logger.info('日本酒情報を取得中: $sakeName');
             final sakeInfo = await sakeMenuRecognitionRepository.getSakeInfo(
               sakeName,
               type: sakeType,
-              preferences: '甘口でフルーティ',
+              preferences: state.preferences ?? '甘口でフルーティ',
             );
-
+            
             // 読み込み状態を更新（成功または失敗）
             final newLoadingStatus =
                 Map<String, bool>.from(state.sakeLoadingStatus);
             newLoadingStatus[sakeName] = false; // 読み込み完了
-
+            
             if (sakeInfo != null) {
               // 名前のマッピングを更新（元の名前 -> 取得した詳細情報の名前）
               final newNameMapping =
                   Map<String, String>.from(state.nameMapping);
               newNameMapping[sakeName] = sakeInfo.name ?? sakeName;
-
+              
               // 現在のsakesリストに新しい情報を追加
               final List<Sake> currentSakes = state.sakes ?? [];
               final List<Sake> updatedSakes = [...currentSakes, sakeInfo];
@@ -328,13 +327,61 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             updatedLoadingStatus[sakeName] = false; // 読み込み完了（エラー）
             state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
           }
-          print('日本酒情報の取得に失敗: ${extractedSake.name}, エラー: $e');
+          logger.shout('日本酒情報の取得に失敗: ${extractedSake.name}, エラー: $e');
         }
       }
-
+      
       // すべての詳細情報の取得が完了
       state = state.copyWith(isGettingDetails: false);
     } catch (e) {
+      logger.shout('詳細情報の取得中にエラーが発生しました: $e');
+      state = state.copyWith(
+        isGettingDetails: false,
+        errorMessage: '日本酒の詳細情報の取得に失敗しました',
+      );
+    }
+  }
+  
+  /// フォアグラウンドでメニュー解析を実行する
+  Future<void> _extractSakeInfoInForeground(File imageFile) async {
+    try {
+      // 画像から日本酒情報を抽出（直接List<Sake>を取得）
+      final extractedSakes =
+          await sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
+      
+      if (extractedSakes == null || extractedSakes.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          isExtractingInfo: false,
+          isAdLoading: false,
+          isAnalyzingInBackground: false,
+          errorMessage: '日本酒情報を抽出できませんでした',
+        );
+        return;
+      }
+      
+      // 抽出した日本酒情報を表示用に保存し、ローディングを終了
+      // 各日本酒の読み込み状態を初期化
+      final Map<String, bool> initialLoadingStatus = {};
+      for (final sake in extractedSakes) {
+        if (sake.name != null) {
+          initialLoadingStatus[sake.name!] = false; // false = まだ読み込んでいない
+        }
+      }
+      
+      state = state.copyWith(
+        isLoading: false,
+        isExtractingInfo: false,
+        isAdLoading: false,
+        isAnalyzingInBackground: false,
+        extractedSakes: extractedSakes,
+        sakeLoadingStatus: initialLoadingStatus,
+      );
+      
+      // 詳細情報を取得
+      await _fetchSakeDetails(extractedSakes);
+    } catch (e) {
+      logger.shout('メニュー解析中にエラーが発生しました: $e');
       state = state.copyWith(
         isLoading: false,
         isExtractingInfo: false,
