@@ -29,7 +29,7 @@ class AdUtils {
     required Function(RewardItem reward) onUserEarnedReward,
   }) async {
     // テスト用の広告ユニットID
-    const adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // テスト用ID
+    const adUnitId = 'ca-app-pub-1815956042591114/2538082740'; // テスト用ID
     print('Loading rewarded ad with ID: $adUnitId');
 
     final completer = Completer<RewardedAd?>();
