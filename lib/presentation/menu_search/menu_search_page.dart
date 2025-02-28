@@ -45,8 +45,6 @@ class MenuSearchPage extends StatelessWidget {
         context.select((FavoriteState state) => state.myFavoriteList);
     final errorMessage =
         context.select((MenuSearchPageState state) => state.errorMessage);
-
-    print(myFavoriteList);
     // 詳細情報が取得された日本酒の名前リスト
     final detailedSakeNames = sakes?.map((sake) => sake.name).toList() ?? [];
 

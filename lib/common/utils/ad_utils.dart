@@ -1,23 +1,23 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// AdMob広告の管理を行うユーティリティクラス
 class AdUtils {
   static bool _initialized = false;
-  
+
   /// AdMobの初期化
   static Future<void> initialize() async {
     if (_initialized) return;
-    
+
     print('Initializing AdMob...');
     await MobileAds.instance.initialize();
     print('AdMob initialization complete');
     _initialized = true;
   }
-  
+
   /// リワード広告をロードする
-  /// 
+  ///
   /// [onAdLoaded] 広告がロードされた時に呼ばれるコールバック
   /// [onAdDismissed] 広告が閉じられた時に呼ばれるコールバック
   /// [onAdFailedToLoad] 広告のロードに失敗した時に呼ばれるコールバック
@@ -31,9 +31,9 @@ class AdUtils {
     // テスト用の広告ユニットID
     const adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // テスト用ID
     print('Loading rewarded ad with ID: $adUnitId');
-    
+
     final completer = Completer<RewardedAd?>();
-    
+
     await RewardedAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
@@ -56,16 +56,17 @@ class AdUtils {
         },
       ),
     );
-    
+
     return completer.future;
   }
-  
+
   /// リワード広告を表示する
-  static Future<bool> showRewardedAd(RewardedAd ad, {
+  static Future<bool> showRewardedAd(
+    RewardedAd ad, {
     required Function(RewardItem reward) onUserEarnedReward,
   }) async {
     final completer = Completer<bool>();
-    
+
     print('Showing rewarded ad...');
     ad.show(
       onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
@@ -73,7 +74,7 @@ class AdUtils {
         completer.complete(true);
       },
     );
-    
+
     return completer.future;
   }
 }

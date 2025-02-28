@@ -185,10 +185,12 @@ class SakeMenuRecognitionRepository {
       return null;
     }
 
-    final List<Map<String, dynamic>> sakesData = sakes.map((sake) => {
-      'sakeName': sake.name,
-      'type': sake.type ?? '',
-    }).toList();
+    final List<Map<String, dynamic>> sakesData = sakes
+        .map((sake) => {
+              'sakeName': sake.name,
+              'type': sake.type ?? '',
+            })
+        .toList();
 
     final body = {
       'sakes': sakesData,
