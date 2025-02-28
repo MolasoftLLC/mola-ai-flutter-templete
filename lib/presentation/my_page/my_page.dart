@@ -152,7 +152,7 @@ class MyPage extends StatelessWidget {
                                   ),
                                   child: ListTile(
                                     title: Text(
-                                      myFavoriteSakeList[index],
+                                      myFavoriteSakeList[index].name,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w500,
@@ -164,7 +164,7 @@ class MyPage extends StatelessWidget {
                                         color: Colors.redAccent,
                                       ),
                                       onPressed: () {
-                                        favNotifier.addOrRemoveString(
+                                        favNotifier.addOrRemoveFavorite(
                                           myFavoriteSakeList[index],
                                         );
                                       },

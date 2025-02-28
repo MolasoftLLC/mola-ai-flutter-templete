@@ -527,9 +527,11 @@ class MainSearchPage extends StatelessWidget {
     MainSearchPageNotifier notifier,
     FavoriteNotifier favNotifier,
     Sake sakeInfo,
-    List<String> myFavoriteList,
+    List<FavoriteSake> myFavoriteList,
   ) {
-    final bool isFavorite = myFavoriteList.contains(sakeInfo.name);
+    // 日本酒名とタイプが一致するかどうかでお気に入り判定
+    final bool isFavorite = myFavoriteList.any(
+        (item) => item.name == sakeInfo.name && item.type == sakeInfo.type);
 
     // おすすめ度の表示を決定
     String recommendationText = '';
@@ -597,9 +599,12 @@ class MainSearchPage extends StatelessWidget {
                     color: isFavorite ? Colors.red : Colors.white,
                   ),
                   onPressed: () {
-                    if (isFavorite) {
-                      favNotifier.addOrRemoveString(sakeInfo.name!);
-                    }
+                    final favoriteSake = FavoriteSake(
+                      name: sakeInfo.name ?? '不明',
+                      type: sakeInfo.type,
+                    );
+
+                    favNotifier.addOrRemoveFavorite(favoriteSake);
                   },
                 ),
               ],
@@ -639,7 +644,7 @@ class MainSearchPage extends StatelessWidget {
                 ],
               ),
             ),
-          
+
           // 日本酒の詳細情報
           Padding(
             padding: const EdgeInsets.all(16),
@@ -654,7 +659,7 @@ class MainSearchPage extends StatelessWidget {
                     sakeInfo.taste!,
                     Icons.description,
                   ),
-                
+
                 // 蔵元情報（特徴の下に移動）
                 if (sakeInfo.brewery != null)
                   _buildInfoRow(
@@ -663,7 +668,7 @@ class MainSearchPage extends StatelessWidget {
                     sakeInfo.brewery!,
                     Icons.business,
                   ),
-                
+
                 // 日本酒度
                 if (sakeInfo.sakeMeterValue != null)
                   _buildInfoRow(
@@ -672,11 +677,12 @@ class MainSearchPage extends StatelessWidget {
                     '${sakeInfo.sakeMeterValue! > 0 ? '+' : ''}${sakeInfo.sakeMeterValue}',
                     Icons.scale,
                   ),
-                
+
                 // 甘口/辛口の表示
                 if (sakeInfo.sakeMeterValue != null)
-                  _buildSakeMeterScale(context, sakeInfo.sakeMeterValue!.toDouble()),
-                
+                  _buildSakeMeterScale(
+                      context, sakeInfo.sakeMeterValue!.toDouble()),
+
                 // タイプ別検索（甘口・辛口ゲージの下に移動）
                 if (sakeInfo.types != null && sakeInfo.types!.isNotEmpty)
                   _buildTypesRowEnhanced(context, notifier, sakeInfo),
@@ -780,7 +786,8 @@ class MainSearchPage extends StatelessWidget {
                     color: Color(0xFF1D3567),
                     fontWeight: FontWeight.bold,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   avatar: const Icon(
                     Icons.search,
                     size: 16,

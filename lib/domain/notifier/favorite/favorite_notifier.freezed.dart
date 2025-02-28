@@ -16,8 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$FavoriteState {
-  bool get isLoading => throw _privateConstructorUsedError;
-  List<String> get myFavoriteList => throw _privateConstructorUsedError;
+  List<FavoriteSake> get myFavoriteList => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $FavoriteStateCopyWith<FavoriteState> get copyWith =>
@@ -30,7 +29,7 @@ abstract class $FavoriteStateCopyWith<$Res> {
           FavoriteState value, $Res Function(FavoriteState) then) =
       _$FavoriteStateCopyWithImpl<$Res, FavoriteState>;
   @useResult
-  $Res call({bool isLoading, List<String> myFavoriteList});
+  $Res call({List<FavoriteSake> myFavoriteList});
 }
 
 /// @nodoc
@@ -46,18 +45,13 @@ class _$FavoriteStateCopyWithImpl<$Res, $Val extends FavoriteState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? isLoading = null,
     Object? myFavoriteList = null,
   }) {
     return _then(_value.copyWith(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
       myFavoriteList: null == myFavoriteList
           ? _value.myFavoriteList
           : myFavoriteList // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+              as List<FavoriteSake>,
     ) as $Val);
   }
 }
@@ -70,7 +64,7 @@ abstract class _$$FavoriteStateImplCopyWith<$Res>
       __$$FavoriteStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({bool isLoading, List<String> myFavoriteList});
+  $Res call({List<FavoriteSake> myFavoriteList});
 }
 
 /// @nodoc
@@ -84,18 +78,13 @@ class __$$FavoriteStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? isLoading = null,
     Object? myFavoriteList = null,
   }) {
     return _then(_$FavoriteStateImpl(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
       myFavoriteList: null == myFavoriteList
           ? _value._myFavoriteList
           : myFavoriteList // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+              as List<FavoriteSake>,
     ));
   }
 }
@@ -104,16 +93,13 @@ class __$$FavoriteStateImplCopyWithImpl<$Res>
 
 class _$FavoriteStateImpl implements _FavoriteState {
   const _$FavoriteStateImpl(
-      {this.isLoading = false, final List<String> myFavoriteList = const []})
+      {final List<FavoriteSake> myFavoriteList = const []})
       : _myFavoriteList = myFavoriteList;
 
+  final List<FavoriteSake> _myFavoriteList;
   @override
   @JsonKey()
-  final bool isLoading;
-  final List<String> _myFavoriteList;
-  @override
-  @JsonKey()
-  List<String> get myFavoriteList {
+  List<FavoriteSake> get myFavoriteList {
     if (_myFavoriteList is EqualUnmodifiableListView) return _myFavoriteList;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_myFavoriteList);
@@ -121,7 +107,7 @@ class _$FavoriteStateImpl implements _FavoriteState {
 
   @override
   String toString() {
-    return 'FavoriteState(isLoading: $isLoading, myFavoriteList: $myFavoriteList)';
+    return 'FavoriteState(myFavoriteList: $myFavoriteList)';
   }
 
   @override
@@ -129,15 +115,13 @@ class _$FavoriteStateImpl implements _FavoriteState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$FavoriteStateImpl &&
-            (identical(other.isLoading, isLoading) ||
-                other.isLoading == isLoading) &&
             const DeepCollectionEquality()
                 .equals(other._myFavoriteList, _myFavoriteList));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, isLoading,
-      const DeepCollectionEquality().hash(_myFavoriteList));
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_myFavoriteList));
 
   @JsonKey(ignore: true)
   @override
@@ -147,14 +131,11 @@ class _$FavoriteStateImpl implements _FavoriteState {
 }
 
 abstract class _FavoriteState implements FavoriteState {
-  const factory _FavoriteState(
-      {final bool isLoading,
-      final List<String> myFavoriteList}) = _$FavoriteStateImpl;
+  const factory _FavoriteState({final List<FavoriteSake> myFavoriteList}) =
+      _$FavoriteStateImpl;
 
   @override
-  bool get isLoading;
-  @override
-  List<String> get myFavoriteList;
+  List<FavoriteSake> get myFavoriteList;
   @override
   @JsonKey(ignore: true)
   _$$FavoriteStateImplCopyWith<_$FavoriteStateImpl> get copyWith =>
