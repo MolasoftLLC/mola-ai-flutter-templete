@@ -32,6 +32,8 @@
 	<string>AIに問い合わせるための画像を撮影できます</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>AIに問い合わせるための画像を選択できます</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>このアプリでは、より関連性の高い広告を表示するために、お客様のデータを使用します。</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

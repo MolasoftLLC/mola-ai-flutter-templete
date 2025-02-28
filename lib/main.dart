@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mola_gemini_flutter_template/presentation/app_page.dart';
 import 'package:provider/provider.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 import 'app_config.dart';
 import 'common/access_url.dart';
@@ -30,6 +31,10 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+
+  // ATT許可ダイアログを表示
+  final trackingStatus = await AppTrackingTransparency.requestTrackingAuthorization();
+  print('App Tracking Transparency status: $trackingStatus');
 
   // AdMobの初期化
   try {
