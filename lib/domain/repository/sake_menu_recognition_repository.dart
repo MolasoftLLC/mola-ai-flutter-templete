@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:io' as Io;
 import 'dart:io';
 
 import 'package:chopper/chopper.dart';
@@ -149,6 +147,7 @@ class SakeMenuRecognitionRepository {
   Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
     try {
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
+      logger.shout(baseFile.length);
       final response = await _apiClient.recognizeSakeBottle(
         baseFile,
       );

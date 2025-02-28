@@ -37,6 +37,6 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
   @Post(path: 'sake-bottle/recognize')
   @Multipart()
   Future<Response<Map<String, dynamic>>> recognizeSakeBottle(
-    @Body() String file,
+    @Part() String file,
   );
 }

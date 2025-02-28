@@ -521,7 +521,7 @@ class MainSearchPage extends StatelessWidget {
     );
   }
 
-  // 日本酒情報カード
+  // 日本酒情報カードを修正
   Widget _buildSakeInfoCard(
     BuildContext context,
     MainSearchPageNotifier notifier,
@@ -529,10 +529,31 @@ class MainSearchPage extends StatelessWidget {
     Sake sakeInfo,
     List<String> myFavoriteList,
   ) {
-    final isFavorite = myFavoriteList.contains(sakeInfo.name);
+    final bool isFavorite = myFavoriteList.contains(sakeInfo.name);
+
+    // おすすめ度の表示を決定
+    String recommendationText = '';
+    Color recommendationColor = Colors.orange;
+    IconData recommendationIcon = Icons.star;
+
+    if (sakeInfo.recommendationScore != null) {
+      if (sakeInfo.recommendationScore! >= 9) {
+        recommendationText = '超おすすめ！';
+        recommendationColor = Colors.red;
+        recommendationIcon = Icons.star;
+      } else if (sakeInfo.recommendationScore! >= 7) {
+        recommendationText = 'おすすめ！';
+        recommendationColor = Colors.orange;
+        recommendationIcon = Icons.star;
+      } else if (sakeInfo.recommendationScore! >= 5) {
+        recommendationText = '良い日本酒';
+        recommendationColor = Colors.amber;
+        recommendationIcon = Icons.star_half;
+      }
+    }
 
     return Container(
-      margin: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -540,32 +561,25 @@ class MainSearchPage extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ヘッダー部分
+          // ヘッダー部分（日本酒名）
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF1D3567),
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1D3567),
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.wine_bar,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     sakeInfo.name ?? '不明',
@@ -576,14 +590,15 @@ class MainSearchPage extends StatelessWidget {
                     ),
                   ),
                 ),
+                // お気に入りボタン
                 IconButton(
                   icon: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: isFavorite ? Colors.red : Colors.white,
                   ),
-                  onPressed: () async {
-                    if (sakeInfo.name != null) {
-                      await favNotifier.addOrRemoveString(sakeInfo.name!);
+                  onPressed: () {
+                    if (isFavorite) {
+                      favNotifier.addOrRemoveString(sakeInfo.name!);
                     }
                   },
                 ),
@@ -591,19 +606,80 @@ class MainSearchPage extends StatelessWidget {
             ),
           ),
 
-          // 詳細情報
+          // おすすめ度表示（スコアがある場合のみ）
+          if (recommendationText.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: recommendationColor.withOpacity(0.1),
+              child: Row(
+                children: [
+                  Icon(
+                    recommendationIcon,
+                    color: recommendationColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    recommendationText,
+                    style: TextStyle(
+                      color: recommendationColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (sakeInfo.recommendationScore != null)
+                    Text(
+                      '${sakeInfo.recommendationScore}/10',
+                      style: TextStyle(
+                        color: recommendationColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          
+          // 日本酒の詳細情報
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 特徴
+                if (sakeInfo.taste != null)
+                  _buildInfoRow(
+                    context,
+                    '特徴',
+                    sakeInfo.taste!,
+                    Icons.description,
+                  ),
+                
+                // 蔵元情報（特徴の下に移動）
                 if (sakeInfo.brewery != null)
-                  _buildInfoRowEnhanced('蔵元', sakeInfo.brewery!, Icons.home),
+                  _buildInfoRow(
+                    context,
+                    '蔵元',
+                    sakeInfo.brewery!,
+                    Icons.business,
+                  ),
+                
+                // 日本酒度
+                if (sakeInfo.sakeMeterValue != null)
+                  _buildInfoRow(
+                    context,
+                    '日本酒度',
+                    '${sakeInfo.sakeMeterValue! > 0 ? '+' : ''}${sakeInfo.sakeMeterValue}',
+                    Icons.scale,
+                  ),
+                
+                // 甘口/辛口の表示
+                if (sakeInfo.sakeMeterValue != null)
+                  _buildSakeMeterScale(context, sakeInfo.sakeMeterValue!.toDouble()),
+                
+                // タイプ別検索（甘口・辛口ゲージの下に移動）
                 if (sakeInfo.types != null && sakeInfo.types!.isNotEmpty)
                   _buildTypesRowEnhanced(context, notifier, sakeInfo),
-                if (sakeInfo.description != null)
-                  _buildInfoRowEnhanced(
-                      '説明', sakeInfo.description!, Icons.description),
               ],
             ),
           ),
@@ -612,47 +688,12 @@ class MainSearchPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRowEnhanced(String key, String value, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF1D3567), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  key,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Color(0xFF1D3567),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypesRowEnhanced(
-      BuildContext context, MainSearchPageNotifier notifier, Sake sakeInfo) {
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -666,10 +707,52 @@ class MainSearchPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.local_bar, color: const Color(0xFF1D3567), size: 20),
+              Icon(icon, color: const Color(0xFF1D3567), size: 20),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF1D3567),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade800,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // タイプ別検索の表示を修正
+  Widget _buildTypesRowEnhanced(
+      BuildContext context, MainSearchPageNotifier notifier, Sake sakeInfo) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16, bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.search, color: const Color(0xFF1D3567), size: 20),
               const SizedBox(width: 12),
               const Text(
-                'タイプ',
+                'タイプ別検索',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -697,8 +780,7 @@ class MainSearchPage extends StatelessWidget {
                     color: Color(0xFF1D3567),
                     fontWeight: FontWeight.bold,
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   avatar: const Icon(
                     Icons.search,
                     size: 16,
@@ -707,6 +789,78 @@ class MainSearchPage extends StatelessWidget {
                 ),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 日本酒度のスケール表示
+  Widget _buildSakeMeterScale(BuildContext context, double sakeMeterValue) {
+    // 日本酒度の範囲は一般的に-15〜+15程度
+    // UIでは-10〜+10の範囲で表示
+    final double normalizedValue = sakeMeterValue.clamp(-10.0, 10.0);
+    final double percentage = (normalizedValue + 10) / 20; // 0〜1の範囲に正規化
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '甘口',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.pink,
+                ),
+              ),
+              const Text(
+                '辛口',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 12,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.pink, Colors.white, Colors.blue],
+                stops: [0.0, 0.5, 1.0],
+              ),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Stack(
+              children: [
+                // インジケーター
+                Positioned(
+                  left: percentage *
+                      MediaQuery.of(context).size.width *
+                      0.7, // 親の幅の70%を使用
+                  child: Container(
+                    width: 12,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1D3567),
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
