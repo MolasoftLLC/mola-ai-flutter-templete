@@ -50,4 +50,9 @@ abstract class ApiClient extends ChopperService {
 
   @Get(path: 'get_latest_version')
   Future<Response> getLatestVersion();
+
+  @Post(path: 'api/sake-preference/analyze')
+  Future<Response> analyzeSakePreference(
+    @Body() Map<String, dynamic> body,
+  );
 }
