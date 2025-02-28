@@ -8,6 +8,7 @@ import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_r
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
+import '../../common/utils/ad_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
@@ -23,6 +24,10 @@ enum SearchMode {
 abstract class MainSearchPageState with _$MainSearchPageState {
   const factory MainSearchPageState({
     @Default(false) bool isLoading,
+    @Default(false) bool isAdLoading,
+    @Default(false) bool isAnalyzingInBackground,
+    @Default(0) int searchButtonClickCount,
+    @Default(0) int analyzeButtonClickCount,
     String? sakeName,
     String? hint,
     File? sakeImage,
@@ -83,12 +88,69 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return;
     }
 
+    // Increment click count
+    final newClickCount = state.searchButtonClickCount + 1;
     state = state.copyWith(
-      isLoading: true,
+      searchButtonClickCount: newClickCount,
       errorMessage: null,
       sakeInfo: null,
     );
 
+    // Check if we should show an ad (even-numbered clicks)
+    if (newClickCount % 2 == 0) {
+      // Show ad and perform search in background
+      state = state.copyWith(isAdLoading: true);
+      
+      // Load rewarded ad
+      final rewardedAd = await AdUtils.loadRewardedAd(
+        onAdLoaded: (ad) {
+          logger.info('リワード広告がロードされました');
+        },
+        onAdDismissed: () {
+          logger.info('リワード広告が閉じられました');
+          state = state.copyWith(isAdLoading: false);
+        },
+        onAdFailedToLoad: (error) {
+          logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+          state = state.copyWith(isAdLoading: false);
+          // Proceed with search if ad fails to load
+          _performSearch(sakeName);
+        },
+        onUserEarnedReward: (reward) {
+          logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+        },
+      );
+
+      if (rewardedAd != null) {
+        // Start search in background
+        state = state.copyWith(isAnalyzingInBackground: true);
+        final searchFuture = _performSearch(sakeName);
+        
+        // Show ad
+        await AdUtils.showRewardedAd(
+          rewardedAd,
+          onUserEarnedReward: (reward) {
+            logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+          },
+        );
+        
+        // Wait for search to complete if it hasn't already
+        await searchFuture;
+        state = state.copyWith(isAnalyzingInBackground: false);
+      } else {
+        // Ad failed to load, proceed with search
+        state = state.copyWith(isAdLoading: false);
+        await _performSearch(sakeName);
+      }
+    } else {
+      // Odd-numbered click, proceed directly to search
+      state = state.copyWith(isLoading: true);
+      await _performSearch(sakeName);
+    }
+  }
+
+  // Helper method to perform the actual search
+  Future<void> _performSearch(String sakeName) async {
     try {
       final sakeInfo = await sakeMenuRecognitionRepository.getSakeInfo(
         sakeName,
@@ -209,8 +271,68 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return;
     }
 
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    // Increment click count
+    final newClickCount = state.analyzeButtonClickCount + 1;
+    state = state.copyWith(
+      analyzeButtonClickCount: newClickCount,
+      errorMessage: null,
+    );
 
+    // Check if we should show an ad (even-numbered clicks)
+    if (newClickCount % 2 == 0) {
+      // Show ad and perform analysis in background
+      state = state.copyWith(isAdLoading: true);
+      
+      // Load rewarded ad
+      final rewardedAd = await AdUtils.loadRewardedAd(
+        onAdLoaded: (ad) {
+          logger.info('リワード広告がロードされました');
+        },
+        onAdDismissed: () {
+          logger.info('リワード広告が閉じられました');
+          state = state.copyWith(isAdLoading: false);
+        },
+        onAdFailedToLoad: (error) {
+          logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+          state = state.copyWith(isAdLoading: false);
+          // Proceed with analysis if ad fails to load
+          _performBottleAnalysis();
+        },
+        onUserEarnedReward: (reward) {
+          logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+        },
+      );
+
+      if (rewardedAd != null) {
+        // Start analysis in background
+        state = state.copyWith(isAnalyzingInBackground: true);
+        final analysisFuture = _performBottleAnalysis();
+        
+        // Show ad
+        await AdUtils.showRewardedAd(
+          rewardedAd,
+          onUserEarnedReward: (reward) {
+            logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+          },
+        );
+        
+        // Wait for analysis to complete if it hasn't already
+        await analysisFuture;
+        state = state.copyWith(isAnalyzingInBackground: false);
+      } else {
+        // Ad failed to load, proceed with analysis
+        state = state.copyWith(isAdLoading: false);
+        await _performBottleAnalysis();
+      }
+    } else {
+      // Odd-numbered click, proceed directly to analysis
+      state = state.copyWith(isLoading: true);
+      await _performBottleAnalysis();
+    }
+  }
+
+  // Helper method to perform the actual bottle analysis
+  Future<void> _performBottleAnalysis() async {
     try {
       final response = await sakeMenuRecognitionRepository
           .recognizeSakeBottle(state.sakeImage!);

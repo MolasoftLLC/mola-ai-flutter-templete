@@ -35,6 +35,10 @@ class MainSearchPage extends StatelessWidget {
         context.select((FavoriteState state) => state.myFavoriteList);
     final isLoading =
         context.select((MainSearchPageState state) => state.isLoading);
+    final isAdLoading =
+        context.select((MainSearchPageState state) => state.isAdLoading);
+    final isAnalyzingInBackground =
+        context.select((MainSearchPageState state) => state.isAnalyzingInBackground);
     final sakeInfo =
         context.select((MainSearchPageState state) => state.sakeInfo);
     final errorMessage =
@@ -53,8 +57,12 @@ class MainSearchPage extends StatelessWidget {
           color: Color(0xFF1D3567),
         ),
         child: SingleChildScrollView(
-          child: isLoading
-              ? const AILoading(loadingText: '日本酒情報を取得しています...')
+          child: isLoading || isAdLoading
+              ? isAdLoading
+                  ? const AILoading(loadingText: '広告を読み込んでいます...')
+                  : isAnalyzingInBackground
+                      ? const AILoading(loadingText: 'バックグラウンドで処理中...')
+                      : const AILoading(loadingText: '日本酒情報を取得しています...')
               : Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
