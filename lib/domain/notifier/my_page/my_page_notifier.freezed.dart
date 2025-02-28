@@ -22,6 +22,7 @@ mixin _$MyPageState {
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
   String? get preferences => throw _privateConstructorUsedError;
+  String? get sakePreferenceAnalysis => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MyPageStateCopyWith<MyPageState> get copyWith =>
@@ -40,7 +41,8 @@ abstract class $MyPageStateCopyWith<$Res> {
       String? hint,
       File? sakeImage,
       String? geminiResponse,
-      String? preferences});
+      String? preferences,
+      String? sakePreferenceAnalysis});
 }
 
 /// @nodoc
@@ -62,6 +64,7 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? preferences = freezed,
+    Object? sakePreferenceAnalysis = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -88,6 +91,10 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
               as String?,
+      sakePreferenceAnalysis: freezed == sakePreferenceAnalysis
+          ? _value.sakePreferenceAnalysis
+          : sakePreferenceAnalysis // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -106,7 +113,8 @@ abstract class _$$MyPageStateImplCopyWith<$Res>
       String? hint,
       File? sakeImage,
       String? geminiResponse,
-      String? preferences});
+      String? preferences,
+      String? sakePreferenceAnalysis});
 }
 
 /// @nodoc
@@ -126,6 +134,7 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? preferences = freezed,
+    Object? sakePreferenceAnalysis = freezed,
   }) {
     return _then(_$MyPageStateImpl(
       isLoading: null == isLoading
@@ -152,6 +161,10 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
               as String?,
+      sakePreferenceAnalysis: freezed == sakePreferenceAnalysis
+          ? _value.sakePreferenceAnalysis
+          : sakePreferenceAnalysis // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -165,7 +178,8 @@ class _$MyPageStateImpl implements _MyPageState {
       this.hint,
       this.sakeImage,
       this.geminiResponse,
-      this.preferences});
+      this.preferences,
+      this.sakePreferenceAnalysis});
 
   @override
   @JsonKey()
@@ -180,10 +194,12 @@ class _$MyPageStateImpl implements _MyPageState {
   final String? geminiResponse;
   @override
   final String? preferences;
+  @override
+  final String? sakePreferenceAnalysis;
 
   @override
   String toString() {
-    return 'MyPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, preferences: $preferences)';
+    return 'MyPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, preferences: $preferences, sakePreferenceAnalysis: $sakePreferenceAnalysis)';
   }
 
   @override
@@ -201,12 +217,14 @@ class _$MyPageStateImpl implements _MyPageState {
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
             (identical(other.preferences, preferences) ||
-                other.preferences == preferences));
+                other.preferences == preferences) &&
+            (identical(other.sakePreferenceAnalysis, sakePreferenceAnalysis) ||
+                other.sakePreferenceAnalysis == sakePreferenceAnalysis));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
-      sakeImage, geminiResponse, preferences);
+      sakeImage, geminiResponse, preferences, sakePreferenceAnalysis);
 
   @JsonKey(ignore: true)
   @override
@@ -222,7 +240,8 @@ abstract class _MyPageState implements MyPageState {
       final String? hint,
       final File? sakeImage,
       final String? geminiResponse,
-      final String? preferences}) = _$MyPageStateImpl;
+      final String? preferences,
+      final String? sakePreferenceAnalysis}) = _$MyPageStateImpl;
 
   @override
   bool get isLoading;
@@ -236,6 +255,8 @@ abstract class _MyPageState implements MyPageState {
   String? get geminiResponse;
   @override
   String? get preferences;
+  @override
+  String? get sakePreferenceAnalysis;
   @override
   @JsonKey(ignore: true)
   _$$MyPageStateImplCopyWith<_$MyPageStateImpl> get copyWith =>

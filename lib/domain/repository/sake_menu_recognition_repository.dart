@@ -9,6 +9,7 @@ import '../../common/utils/image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
+import '../notifier/favorite/favorite_notifier.dart';
 
 class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
@@ -175,6 +176,30 @@ class SakeMenuRecognitionRepository {
       // 例外の詳細をログに出力
       logger.shout('酒瓶認識API例外: $e');
       logger.shout('スタックトレース: $stackTrace');
+      return null;
+    }
+  }
+
+  Future<String?> analyzeSakePreference(List<FavoriteSake> sakes) async {
+    if (sakes.isEmpty) {
+      return null;
+    }
+
+    final List<Map<String, dynamic>> sakesData = sakes.map((sake) => {
+      'sakeName': sake.name,
+      'type': sake.type ?? '',
+    }).toList();
+
+    final body = {
+      'sakes': sakesData,
+    };
+
+    final response = await _apiClient.analyzeSakePreference(body);
+    if (response.isSuccessful) {
+      final responseBodyJson = response.body as Map<String, dynamic>;
+      return responseBodyJson['preference'] as String?;
+    } else {
+      logger.shout(response.error);
       return null;
     }
   }

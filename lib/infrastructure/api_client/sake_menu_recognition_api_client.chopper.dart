@@ -112,4 +112,17 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
     );
     return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
   }
+
+  @override
+  Future<Response<dynamic>> analyzeSakePreference(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/api/sake-preference/analyze');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
 }

@@ -88,8 +88,8 @@ class MyPage extends StatelessWidget {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.favorite,
-                                color: Colors.redAccent,
+                                Icons.wine_bar,
+                                color: Colors.amber,
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
@@ -102,21 +102,6 @@ class MyPage extends StatelessWidget {
                                 ),
                               ),
                               const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${myFavoriteSakeList.length}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -174,6 +159,9 @@ class MyPage extends StatelessWidget {
                               },
                             ),
                           ),
+                        SizedBox(
+                          height: 24,
+                        ),
                       ],
                     ),
                   ),
@@ -183,28 +171,34 @@ class MyPage extends StatelessWidget {
                     width: MediaQuery.of(context).size.width * 0.9,
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (myFavoriteSakeList.isEmpty) {
+                      onPressed: () async {
+                        // お気に入りの日本酒が2つ以上あるか確認
+                        if (myFavoriteSakeList.length >= 2) {
+                          // 2つ以上ある場合は診断を実行
+                          _showSakePreferenceAnalysisDialog(context, notifier);
+                          notifier.analyzeSakePreference(myFavoriteSakeList);
+                        } else {
+                          // 2つ未満の場合はトーストメッセージのみ表示
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('お気に入りのお酒がありません。先にお気に入りを登録してください。'),
+                              content: Text('もう少しお気に入りのお酒を登録してね！'),
                               duration: Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
-                          return;
                         }
-                        
-                        notifier.analyzeSakePreference(myFavoriteSakeList);
-                        _showSakePreferenceAnalysisDialog(context, notifier);
                       },
                       icon: const Icon(Icons.psychology),
                       label: const Text('あなたにぴったりのお酒診断'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade700,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -251,7 +245,7 @@ class MyPage extends StatelessWidget {
                         const SizedBox(height: 12),
                         TextField(
                           controller: preferencesController,
-                          maxLength: 100,
+                          maxLength: 200,
                           maxLines: 3,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
@@ -373,16 +367,19 @@ class MyPage extends StatelessWidget {
   }
 
   // お酒診断結果ダイアログを表示するメソッド
-  void _showSakePreferenceAnalysisDialog(BuildContext context, MyPageNotifier notifier) {
+  void _showSakePreferenceAnalysisDialog(
+      BuildContext context, MyPageNotifier notifier) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            final isLoading = context.select((MyPageState state) => state.isLoading);
-            final sakePreferenceAnalysis = context.select((MyPageState state) => state.sakePreferenceAnalysis);
-            
+            final isLoading =
+                context.select((MyPageState state) => state.isLoading);
+            final sakePreferenceAnalysis = context
+                .select((MyPageState state) => state.sakePreferenceAnalysis);
+
             return AlertDialog(
               title: const Text(
                 'あなたにぴったりのお酒診断',

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mola_gemini_flutter_template/domain/repository/sake_menu_recognition_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
@@ -40,12 +41,14 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
-  
+
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
-  
+  SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
+      read<SakeMenuRecognitionRepository>();
+
   // TextEditingControllerをNotifier内で管理
   late final TextEditingController _preferencesController;
-  
+
   // コントローラーを外部から取得するためのゲッター
   TextEditingController get preferencesController => _preferencesController;
 
@@ -123,13 +126,13 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   void setPreferences(String preferences) {
     // Stateを更新
     state = state.copyWith(preferences: preferences);
-    
+
     // コントローラーのテキストも更新（カーソル位置を維持するため、
     // 現在のテキストと異なる場合のみ更新）
     if (_preferencesController.text != preferences) {
       final currentPosition = _preferencesController.selection.baseOffset;
       _preferencesController.text = preferences;
-      
+
       // カーソル位置を復元（テキストの長さを超えないように）
       if (currentPosition >= 0 && currentPosition <= preferences.length) {
         _preferencesController.selection = TextSelection.fromPosition(
@@ -142,19 +145,22 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   // お酒診断の結果を取得する
   Future<void> analyzeSakePreference(List<FavoriteSake> sakes) async {
     if (sakes.isEmpty) {
+      print('ない');
       return;
     }
-    
+    print('発動');
+
     state = state.copyWith(isLoading: true);
-    
-    final preference = await molaApiRepository.analyzeSakePreference(sakes);
-    
+
+    final preference =
+        await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+
     state = state.copyWith(
       isLoading: false,
       sakePreferenceAnalysis: preference,
     );
   }
-  
+
   // お酒診断の結果を好みの設定として保存する
   void saveSakePreferenceAsPreferences() {
     if (state.sakePreferenceAnalysis != null) {
@@ -162,4 +168,4 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       savePreferences();
     }
   }
-}        
+}
