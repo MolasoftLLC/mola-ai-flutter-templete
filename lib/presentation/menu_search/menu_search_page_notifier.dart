@@ -159,6 +159,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           onAdDismissed: () {
             logger.info('リワード広告が閉じられました');
             state = state.copyWith(isAdLoading: false);
+            
+            // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
+            if (state.extractedSakes.isNotEmpty) {
+              _fetchSakeDetails(state.extractedSakes);
+            }
           },
           onAdFailedToLoad: (error) {
             logger.shout('リワード広告のロードに失敗しました: ${error.message}');
@@ -201,6 +206,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
               );
               
               // 詳細情報の取得は広告が閉じられた後に開始
+              // 注意: onAdDismissedでも同じチェックを行うため、ここでは広告がまだ表示中の場合のみ何もしない
               if (!state.isAdLoading) {
                 _fetchSakeDetails(extractedSakes);
               }
