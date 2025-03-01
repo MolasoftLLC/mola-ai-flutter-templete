@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -28,8 +29,15 @@ class AdUtils {
     required Function(LoadAdError error) onAdFailedToLoad,
     required Function(RewardItem reward) onUserEarnedReward,
   }) async {
-    // テスト用の広告ユニットID
-    const adUnitId = 'ca-app-pub-1815956042591114/2538082740'; // テスト用ID
+    // プラットフォーム別の広告ユニットID
+    final String adUnitId;
+    if (Platform.isAndroid) {
+      adUnitId = 'ca-app-pub-1815956042591114/4683295121'; // Android用
+    } else if (Platform.isIOS) {
+      adUnitId = 'ca-app-pub-1815956042591114/2538082740'; // iOS用
+    } else {
+      adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // その他のプラットフォーム用テストID
+    }
     print('Loading rewarded ad with ID: $adUnitId');
 
     final completer = Completer<RewardedAd?>();
