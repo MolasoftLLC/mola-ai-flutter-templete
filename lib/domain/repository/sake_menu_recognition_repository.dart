@@ -48,23 +48,41 @@ class SakeMenuRecognitionRepository {
 
   /// メニュー画像から日本酒名と種類のみを抽出する
   Future<List<Sake>?> extractSakeInfo(File file) async {
-    final baseFile = await ImageUtils.compressAndEncodeImage(file);
-    final response = await _apiClient.extractSakeInfo(baseFile);
-    if (response.isSuccessful) {
-      logger.shout(response.body);
-      final responseBodyJson = response.body as Map<String, dynamic>;
-
-      // 'sakes'キーから日本酒リストを取得
-      final sakesList = (responseBodyJson['sakes'] as List<dynamic>?)
-              ?.cast<Map<String, dynamic>>() ??
-          [];
-
-      // 各日本酒情報をSakeオブジェクトに変換
-      return sakesList.map((sakeMap) => Sake.fromJson(sakeMap)).toList();
-    } else {
-      logger.shout(response.error);
-      return null;
+    // リトライ回数
+    const maxRetries = 3;
+    int retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        final baseFile = await ImageUtils.compressAndEncodeImage(file);
+        final response = await _apiClient.extractSakeInfo(baseFile);
+        
+        if (response.isSuccessful) {
+          logger.shout(response.body);
+          final responseBodyJson = response.body as Map<String, dynamic>;
+          
+          // 'sakes'キーから日本酒リストを取得
+          final sakesList = (responseBodyJson['sakes'] as List<dynamic>?)
+                  ?.cast<Map<String, dynamic>>() ??
+              [];
+          
+          // 各日本酒情報をSakeオブジェクトに変換
+          return sakesList.map((sakeMap) => Sake.fromJson(sakeMap)).toList();
+        } else {
+          logger.shout('API呼び出しエラー: ${response.error}');
+          retryCount++;
+          // 少し待機してからリトライ
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
+        }
+      } catch (e) {
+        logger.shout('例外発生: $e');
+        retryCount++;
+        await Future.delayed(Duration(milliseconds: 500 * retryCount));
+      }
     }
+    
+    logger.shout('最大リトライ回数に達しました');
+    return null;
   }
 
   /// 日本酒名と種類のリストから詳細情報を取得する
