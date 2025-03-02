@@ -37,6 +37,8 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     @Default({}) Map<String, String> nameMapping,
     // ユーザーの好み
     String? preferences,
+    // 日本酒リストが表示された後にスクロールしたかどうか
+    @Default(false) bool hasScrolledToResults,
   }) = _MenuSearchPageState;
 }
 
@@ -147,6 +149,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       sakeLoadingStatus: {},
       nameMapping: {},
       isAdLoading: true,
+      hasScrolledToResults: false,
     );
 
     try {
@@ -382,6 +385,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isAnalyzingInBackground: false,
         extractedSakes: extractedSakes,
         sakeLoadingStatus: initialLoadingStatus,
+        hasScrolledToResults: false,
       );
       
       // 詳細情報を取得
@@ -397,5 +401,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         errorMessage: '日本酒情報の抽出に失敗しました: $e',
       );
     }
+  }
+  
+  // 日本酒リストが表示された後にスクロールしたかどうかを設定
+  void setHasScrolledToResults(bool value) {
+    state = state.copyWith(hasScrolledToResults: value);
   }
 }
