@@ -34,7 +34,9 @@ mixin _$MenuSearchPageState {
       throw _privateConstructorUsedError; // 元の名前と取得した詳細情報の名前のマッピング
   Map<String, String> get nameMapping =>
       throw _privateConstructorUsedError; // ユーザーの好み
-  String? get preferences => throw _privateConstructorUsedError;
+  String? get preferences =>
+      throw _privateConstructorUsedError; // 日本酒リストが表示された後にスクロールしたかどうか
+  bool get hasScrolledToResults => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MenuSearchPageStateCopyWith<MenuSearchPageState> get copyWith =>
@@ -63,7 +65,8 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
       List<Sake>? sakes,
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
-      String? preferences});
+      String? preferences,
+      bool hasScrolledToResults});
 
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
@@ -97,6 +100,7 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? sakeLoadingStatus = null,
     Object? nameMapping = null,
     Object? preferences = freezed,
+    Object? hasScrolledToResults = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -163,6 +167,10 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
               as String?,
+      hasScrolledToResults: null == hasScrolledToResults
+          ? _value.hasScrolledToResults
+          : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -204,7 +212,8 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
       List<Sake>? sakes,
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
-      String? preferences});
+      String? preferences,
+      bool hasScrolledToResults});
 
   @override
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
@@ -237,6 +246,7 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? sakeLoadingStatus = null,
     Object? nameMapping = null,
     Object? preferences = freezed,
+    Object? hasScrolledToResults = null,
   }) {
     return _then(_$MenuSearchPageStateImpl(
       isLoading: null == isLoading
@@ -303,6 +313,10 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
               as String?,
+      hasScrolledToResults: null == hasScrolledToResults
+          ? _value.hasScrolledToResults
+          : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -326,7 +340,8 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       final List<Sake>? sakes,
       final Map<String, bool> sakeLoadingStatus = const {},
       final Map<String, String> nameMapping = const {},
-      this.preferences})
+      this.preferences,
+      this.hasScrolledToResults = false})
       : _extractedSakes = extractedSakes,
         _sakes = sakes,
         _sakeLoadingStatus = sakeLoadingStatus,
@@ -402,10 +417,14 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 // ユーザーの好み
   @override
   final String? preferences;
+// 日本酒リストが表示された後にスクロールしたかどうか
+  @override
+  @JsonKey()
+  final bool hasScrolledToResults;
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences)';
+    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences, hasScrolledToResults: $hasScrolledToResults)';
   }
 
   @override
@@ -445,7 +464,9 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
             const DeepCollectionEquality()
                 .equals(other._nameMapping, _nameMapping) &&
             (identical(other.preferences, preferences) ||
-                other.preferences == preferences));
+                other.preferences == preferences) &&
+            (identical(other.hasScrolledToResults, hasScrolledToResults) ||
+                other.hasScrolledToResults == hasScrolledToResults));
   }
 
   @override
@@ -466,7 +487,8 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       const DeepCollectionEquality().hash(_sakes),
       const DeepCollectionEquality().hash(_sakeLoadingStatus),
       const DeepCollectionEquality().hash(_nameMapping),
-      preferences);
+      preferences,
+      hasScrolledToResults);
 
   @JsonKey(ignore: true)
   @override
@@ -493,7 +515,8 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
       final List<Sake>? sakes,
       final Map<String, bool> sakeLoadingStatus,
       final Map<String, String> nameMapping,
-      final String? preferences}) = _$MenuSearchPageStateImpl;
+      final String? preferences,
+      final bool hasScrolledToResults}) = _$MenuSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -527,6 +550,8 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   Map<String, String> get nameMapping;
   @override // ユーザーの好み
   String? get preferences;
+  @override // 日本酒リストが表示された後にスクロールしたかどうか
+  bool get hasScrolledToResults;
   @override
   @JsonKey(ignore: true)
   _$$MenuSearchPageStateImplCopyWith<_$MenuSearchPageStateImpl> get copyWith =>
