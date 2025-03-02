@@ -63,9 +63,13 @@ class MenuSearchPage extends StatelessWidget {
       loadingText = '日本酒の詳細情報を取得しています...';
     }
 
-    if (extractedSakes.isNotEmpty && !isLoading && !isExtractingInfo) {
+    final hasScrolledToResults =
+        context.select((MenuSearchPageState state) => state.hasScrolledToResults);
+    
+    if (extractedSakes.isNotEmpty && !isLoading && !isExtractingInfo && !hasScrolledToResults) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToResults();
+        notifier.setHasScrolledToResults(true);
       });
     }
 
