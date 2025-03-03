@@ -450,8 +450,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         // 日付の新しい順に並べ替え
         history.sort((a, b) => b.date.compareTo(a.date));
         
-        // 最大20件まで保存
-        final limitedHistory = history.length > 20 ? history.sublist(0, 20) : history;
+        // 最大20件まで保存（古いものから削除）
+        final limitedHistory = history.length > 20 
+            ? history.sublist(0, 20) 
+            : history;
         
         state = state.copyWith(menuAnalysisHistory: limitedHistory);
       }
@@ -497,7 +499,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         ...state.menuAnalysisHistory,
       ];
       
-      // 最大20件まで保存
+      // 日付の新しい順に並べ替え
+      updatedHistory.sort((a, b) => b.date.compareTo(a.date));
+      
+      // 最大20件まで保存（古いものから削除）
       final limitedHistory = updatedHistory.length > 20 
           ? updatedHistory.sublist(0, 20) 
           : updatedHistory;
