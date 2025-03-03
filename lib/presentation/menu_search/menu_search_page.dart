@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_section.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/assets.dart';
@@ -591,6 +592,9 @@ class MenuSearchPage extends StatelessWidget {
                             ],
                           ),
                         ),
+                      
+                      // メニュー解析履歴セクション
+                      const MenuHistorySection(),
                     ],
                   ),
                 ),

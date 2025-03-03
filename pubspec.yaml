@@ -59,6 +59,12 @@ dependencies:
   
   #広告
   google_mobile_ads: ^3.1.0
+  
+  #画像をギャラリーに保存
+  image_gallery_saver: ^2.0.3
+  
+  #日付フォーマット
+  intl: ^0.18.1
 
 
 dev_dependencies:
