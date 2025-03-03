@@ -10,6 +10,7 @@ import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
 import '../../common/utils/ad_utils.dart';
+import '../../common/utils/custom_image_picker.dart';
 import '../../common/services/background_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
@@ -82,18 +83,18 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   Future<void> pickImageFromGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      state = state.copyWith(sakeImage: File(pickedFile.path));
+    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
+    final imageFile = await CustomImagePicker.pickImage(source: ImageSource.gallery);
+    if (imageFile != null) {
+      state = state.copyWith(sakeImage: imageFile);
     }
   }
 
   Future<void> pickImageFromCamera() async {
-    final ImagePicker picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
-      state = state.copyWith(sakeImage: File(pickedFile.path));
+    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
+    final imageFile = await CustomImagePicker.pickImage(source: ImageSource.camera);
+    if (imageFile != null) {
+      state = state.copyWith(sakeImage: imageFile);
     }
   }
 
