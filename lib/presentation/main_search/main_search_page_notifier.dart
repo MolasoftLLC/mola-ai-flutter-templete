@@ -9,6 +9,7 @@ import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
 import '../../common/utils/ad_utils.dart';
+import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
@@ -251,11 +252,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
   // 画像を選択する
   Future<void> pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
+    final imageFile = await CustomImagePicker.pickImage(source: source);
 
-    if (pickedFile != null) {
-      final imageFile = File(pickedFile.path);
+    if (imageFile != null) {
       state = state.copyWith(sakeImage: imageFile);
     }
   }
