@@ -36,7 +36,13 @@ mixin _$MenuSearchPageState {
       throw _privateConstructorUsedError; // ユーザーの好み
   String? get preferences =>
       throw _privateConstructorUsedError; // 日本酒リストが表示された後にスクロールしたかどうか
-  bool get hasScrolledToResults => throw _privateConstructorUsedError;
+  bool get hasScrolledToResults =>
+      throw _privateConstructorUsedError; // メニュー解析履歴
+  List<MenuAnalysisHistoryItem> get menuAnalysisHistory =>
+      throw _privateConstructorUsedError; // 現在選択されている履歴項目のID
+  String? get selectedHistoryItemId =>
+      throw _privateConstructorUsedError; // 店舗名の編集中かどうか
+  bool get isEditingStoreName => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MenuSearchPageStateCopyWith<MenuSearchPageState> get copyWith =>
@@ -66,7 +72,10 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
       String? preferences,
-      bool hasScrolledToResults});
+      bool hasScrolledToResults,
+      List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+      String? selectedHistoryItemId,
+      bool isEditingStoreName});
 
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
@@ -101,6 +110,9 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? nameMapping = null,
     Object? preferences = freezed,
     Object? hasScrolledToResults = null,
+    Object? menuAnalysisHistory = null,
+    Object? selectedHistoryItemId = freezed,
+    Object? isEditingStoreName = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -171,6 +183,18 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
           ? _value.hasScrolledToResults
           : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
               as bool,
+      menuAnalysisHistory: null == menuAnalysisHistory
+          ? _value.menuAnalysisHistory
+          : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
+              as List<MenuAnalysisHistoryItem>,
+      selectedHistoryItemId: freezed == selectedHistoryItemId
+          ? _value.selectedHistoryItemId
+          : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isEditingStoreName: null == isEditingStoreName
+          ? _value.isEditingStoreName
+          : isEditingStoreName // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -213,7 +237,10 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
       String? preferences,
-      bool hasScrolledToResults});
+      bool hasScrolledToResults,
+      List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+      String? selectedHistoryItemId,
+      bool isEditingStoreName});
 
   @override
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
@@ -247,6 +274,9 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? nameMapping = null,
     Object? preferences = freezed,
     Object? hasScrolledToResults = null,
+    Object? menuAnalysisHistory = null,
+    Object? selectedHistoryItemId = freezed,
+    Object? isEditingStoreName = null,
   }) {
     return _then(_$MenuSearchPageStateImpl(
       isLoading: null == isLoading
@@ -317,6 +347,18 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
           ? _value.hasScrolledToResults
           : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
               as bool,
+      menuAnalysisHistory: null == menuAnalysisHistory
+          ? _value._menuAnalysisHistory
+          : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
+              as List<MenuAnalysisHistoryItem>,
+      selectedHistoryItemId: freezed == selectedHistoryItemId
+          ? _value.selectedHistoryItemId
+          : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isEditingStoreName: null == isEditingStoreName
+          ? _value.isEditingStoreName
+          : isEditingStoreName // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -341,11 +383,15 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       final Map<String, bool> sakeLoadingStatus = const {},
       final Map<String, String> nameMapping = const {},
       this.preferences,
-      this.hasScrolledToResults = false})
+      this.hasScrolledToResults = false,
+      final List<MenuAnalysisHistoryItem> menuAnalysisHistory = const [],
+      this.selectedHistoryItemId,
+      this.isEditingStoreName = false})
       : _extractedSakes = extractedSakes,
         _sakes = sakes,
         _sakeLoadingStatus = sakeLoadingStatus,
-        _nameMapping = nameMapping;
+        _nameMapping = nameMapping,
+        _menuAnalysisHistory = menuAnalysisHistory;
 
   @override
   @JsonKey()
@@ -421,10 +467,29 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
   @override
   @JsonKey()
   final bool hasScrolledToResults;
+// メニュー解析履歴
+  final List<MenuAnalysisHistoryItem> _menuAnalysisHistory;
+// メニュー解析履歴
+  @override
+  @JsonKey()
+  List<MenuAnalysisHistoryItem> get menuAnalysisHistory {
+    if (_menuAnalysisHistory is EqualUnmodifiableListView)
+      return _menuAnalysisHistory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_menuAnalysisHistory);
+  }
+
+// 現在選択されている履歴項目のID
+  @override
+  final String? selectedHistoryItemId;
+// 店舗名の編集中かどうか
+  @override
+  @JsonKey()
+  final bool isEditingStoreName;
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences, hasScrolledToResults: $hasScrolledToResults)';
+    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences, hasScrolledToResults: $hasScrolledToResults, menuAnalysisHistory: $menuAnalysisHistory, selectedHistoryItemId: $selectedHistoryItemId, isEditingStoreName: $isEditingStoreName)';
   }
 
   @override
@@ -466,29 +531,39 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
             (identical(other.preferences, preferences) ||
                 other.preferences == preferences) &&
             (identical(other.hasScrolledToResults, hasScrolledToResults) ||
-                other.hasScrolledToResults == hasScrolledToResults));
+                other.hasScrolledToResults == hasScrolledToResults) &&
+            const DeepCollectionEquality()
+                .equals(other._menuAnalysisHistory, _menuAnalysisHistory) &&
+            (identical(other.selectedHistoryItemId, selectedHistoryItemId) ||
+                other.selectedHistoryItemId == selectedHistoryItemId) &&
+            (identical(other.isEditingStoreName, isEditingStoreName) ||
+                other.isEditingStoreName == isEditingStoreName));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      isLoading,
-      isExtractingInfo,
-      isGettingDetails,
-      isAdLoading,
-      isAnalyzingInBackground,
-      sakeName,
-      hint,
-      sakeImage,
-      geminiResponse,
-      const DeepCollectionEquality().hash(_extractedSakes),
-      sakeMenuRecognitionResponse,
-      errorMessage,
-      const DeepCollectionEquality().hash(_sakes),
-      const DeepCollectionEquality().hash(_sakeLoadingStatus),
-      const DeepCollectionEquality().hash(_nameMapping),
-      preferences,
-      hasScrolledToResults);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        isLoading,
+        isExtractingInfo,
+        isGettingDetails,
+        isAdLoading,
+        isAnalyzingInBackground,
+        sakeName,
+        hint,
+        sakeImage,
+        geminiResponse,
+        const DeepCollectionEquality().hash(_extractedSakes),
+        sakeMenuRecognitionResponse,
+        errorMessage,
+        const DeepCollectionEquality().hash(_sakes),
+        const DeepCollectionEquality().hash(_sakeLoadingStatus),
+        const DeepCollectionEquality().hash(_nameMapping),
+        preferences,
+        hasScrolledToResults,
+        const DeepCollectionEquality().hash(_menuAnalysisHistory),
+        selectedHistoryItemId,
+        isEditingStoreName
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -516,7 +591,10 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
       final Map<String, bool> sakeLoadingStatus,
       final Map<String, String> nameMapping,
       final String? preferences,
-      final bool hasScrolledToResults}) = _$MenuSearchPageStateImpl;
+      final bool hasScrolledToResults,
+      final List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+      final String? selectedHistoryItemId,
+      final bool isEditingStoreName}) = _$MenuSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -552,6 +630,12 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   String? get preferences;
   @override // 日本酒リストが表示された後にスクロールしたかどうか
   bool get hasScrolledToResults;
+  @override // メニュー解析履歴
+  List<MenuAnalysisHistoryItem> get menuAnalysisHistory;
+  @override // 現在選択されている履歴項目のID
+  String? get selectedHistoryItemId;
+  @override // 店舗名の編集中かどうか
+  bool get isEditingStoreName;
   @override
   @JsonKey(ignore: true)
   _$$MenuSearchPageStateImplCopyWith<_$MenuSearchPageStateImpl> get copyWith =>

@@ -34,10 +34,6 @@ class MyFavoritePageNotifier extends StateNotifier<MyFavoritePageState>
   @override
   Future<void> initState() async {
     super.initState();
-    // final prompt2 = '今から質問をします。「日本酒のみむろ杉の特徴を教えて」';
-    // final prompt =
-    //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
-    // await requestGemini(prompt2);
   }
 
   @override
