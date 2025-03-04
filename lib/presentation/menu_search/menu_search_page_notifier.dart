@@ -342,9 +342,18 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                   Map<String, String>.from(state.nameMapping);
               newNameMapping[sakeName] = sakeInfo.name ?? sakeName;
 
-              // 現在のsakesリストに新しい情報を追加
+              // 現在のsakesリストに新しい情報を追加（重複チェック）
               final List<Sake> currentSakes = state.sakes ?? [];
-              final List<Sake> updatedSakes = [...currentSakes, sakeInfo];
+              
+              // 既に同じ名前の日本酒が存在するかチェック
+              bool isDuplicate = currentSakes.any((existingSake) => 
+                existingSake.name == sakeInfo.name);
+              
+              // 重複していない場合のみ追加
+              final List<Sake> updatedSakes = isDuplicate 
+                  ? currentSakes 
+                  : [...currentSakes, sakeInfo];
+                  
               state = state.copyWith(
                 sakes: updatedSakes,
                 sakeLoadingStatus: newLoadingStatus,
@@ -482,6 +491,27 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   // 現在の解析結果をメニュー解析履歴に追加する
   Future<void> addCurrentAnalysisToHistory() async {
     if (state.sakes == null || state.sakes!.isEmpty) return;
+    
+    // Check if we already have a history item with the same sakes to prevent duplication
+    if (state.menuAnalysisHistory.isNotEmpty) {
+      // Generate the list of sake names for comparison
+      final List<String> currentSakeNames = state.sakes!
+          .map((sake) => sake.name ?? '不明な日本酒')
+          .toList();
+      
+      // Check the most recent history item (which would be the one we might be duplicating)
+      final latestHistoryItem = state.menuAnalysisHistory.first;
+      final List<String> latestHistorySakeNames = latestHistoryItem.sakes
+          .map((sake) => sake.name)
+          .toList();
+      
+      // If the sake lists have the same length and contain the same items, it's likely a duplicate
+      if (currentSakeNames.length == latestHistorySakeNames.length &&
+          currentSakeNames.toSet().containsAll(latestHistorySakeNames.toSet())) {
+        logger.info('メニュー解析履歴の重複を防止しました');
+        return;
+      }
+    }
 
     try {
       // 現在の日本酒情報から保存用のデータを作成
