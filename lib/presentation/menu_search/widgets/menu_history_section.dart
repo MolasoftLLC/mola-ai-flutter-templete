@@ -8,6 +8,41 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/st
 class MenuHistorySection extends StatelessWidget {
   const MenuHistorySection({Key? key}) : super(key: key);
 
+  // 削除確認ダイアログを表示する
+  void showDeleteConfirmationDialog({
+    required BuildContext context,
+    required String historyId,
+    required Function onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('削除の確認'),
+          content: const Text('この解析履歴を削除してもよろしいですか？'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // ダイアログを閉じる
+              },
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () {
+                onConfirm(); // 削除を実行
+                Navigator.of(context).pop(); // ダイアログを閉じる
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('削除'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
@@ -108,6 +143,23 @@ class MenuHistorySection extends StatelessWidget {
                                 initialStoreName: historyItem.storeName,
                                 onSave: (storeName) {
                                   notifier.setStoreName(historyItem.id, storeName);
+                                },
+                              );
+                            },
+                          ),
+                          // 削除ボタン
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: Colors.red,
+                            ),
+                            onPressed: () {
+                              showDeleteConfirmationDialog(
+                                context: context,
+                                historyId: historyItem.id,
+                                onConfirm: () {
+                                  notifier.deleteHistoryItem(historyItem.id);
                                 },
                               );
                             },
