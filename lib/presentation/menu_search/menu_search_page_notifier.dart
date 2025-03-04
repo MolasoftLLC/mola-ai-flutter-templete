@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
+import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
+import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_preference.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
@@ -40,6 +46,12 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     String? preferences,
     // 日本酒リストが表示された後にスクロールしたかどうか
     @Default(false) bool hasScrolledToResults,
+    // メニュー解析履歴
+    @Default([]) List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+    // 現在選択されている履歴項目のID
+    String? selectedHistoryItemId,
+    // 店舗名の編集中かどうか
+    @Default(false) bool isEditingStoreName,
   }) = _MenuSearchPageState;
 }
 
@@ -63,6 +75,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     // final prompt =
     //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
     // await requestGemini(prompt2);
+    
+    // メニュー解析履歴を読み込む
+    await loadMenuAnalysisHistory();
   }
 
   @override
@@ -94,6 +109,14 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
     final imageFile = await CustomImagePicker.pickImage(source: ImageSource.camera);
     if (imageFile != null) {
+      // Save image to gallery
+      try {
+        await ImageGallerySaver.saveFile(imageFile.path);
+        logger.info('画像をギャラリーに保存しました: ${imageFile.path}');
+      } catch (e) {
+        logger.shout('ギャラリーへの画像保存に失敗しました: $e');
+      }
+      
       state = state.copyWith(sakeImage: imageFile);
     }
   }
@@ -343,6 +366,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       
       // すべての詳細情報の取得が完了
       state = state.copyWith(isGettingDetails: false);
+      
+      // 詳細情報の取得が完了したら、メニュー解析履歴に追加
+      if (state.sakes != null && state.sakes!.isNotEmpty) {
+        await addCurrentAnalysisToHistory();
+      }
     } catch (e) {
       logger.shout('詳細情報の取得中にエラーが発生しました: $e');
       state = state.copyWith(
@@ -407,5 +435,126 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   // 日本酒リストが表示された後にスクロールしたかどうかを設定
   void setHasScrolledToResults(bool value) {
     state = state.copyWith(hasScrolledToResults: value);
+  }
+  
+  // メニュー解析履歴を読み込む
+  Future<void> loadMenuAnalysisHistory() async {
+    try {
+      final historyJson = await SharedPreference.getString(MENU_ANALYSIS_HISTORY);
+      if (historyJson != null && historyJson.isNotEmpty) {
+        final List<dynamic> historyList = jsonDecode(historyJson);
+        final List<MenuAnalysisHistoryItem> history = historyList
+            .map((item) => MenuAnalysisHistoryItem.fromJson(item))
+            .toList();
+        
+        // 日付の新しい順に並べ替え
+        history.sort((a, b) => b.date.compareTo(a.date));
+        
+        // 最大20件まで保存（古いものから削除）
+        final limitedHistory = history.length > 20 
+            ? history.sublist(0, 20) 
+            : history;
+        
+        state = state.copyWith(menuAnalysisHistory: limitedHistory);
+      }
+    } catch (e) {
+      logger.shout('メニュー解析履歴の読み込みに失敗しました: $e');
+    }
+  }
+  
+  // メニュー解析履歴を保存する
+  Future<void> saveMenuAnalysisHistory() async {
+    try {
+      final historyJson = jsonEncode(
+        state.menuAnalysisHistory.map((item) => item.toJson()).toList(),
+      );
+      await SharedPreference.setString(MENU_ANALYSIS_HISTORY, historyJson);
+    } catch (e) {
+      logger.shout('メニュー解析履歴の保存に失敗しました: $e');
+    }
+  }
+  
+  // 現在の解析結果をメニュー解析履歴に追加する
+  Future<void> addCurrentAnalysisToHistory() async {
+    if (state.sakes == null || state.sakes!.isEmpty) return;
+    
+    try {
+      // 現在の日本酒情報から保存用のデータを作成
+      final List<SavedSake> savedSakes = state.sakes!.map((sake) => SavedSake(
+        name: sake.name ?? '不明な日本酒',
+        type: sake.type,
+        isRecommended: sake.isRecommended ?? false,
+      )).toList();
+      
+      // 新しい履歴項目を作成
+      final newHistoryItem = MenuAnalysisHistoryItem(
+        id: 'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}',
+        date: DateTime.now(),
+        sakes: savedSakes,
+      );
+      
+      // 現在の履歴に追加
+      final updatedHistory = [
+        newHistoryItem,
+        ...state.menuAnalysisHistory,
+      ];
+      
+      // 日付の新しい順に並べ替え
+      updatedHistory.sort((a, b) => b.date.compareTo(a.date));
+      
+      // 最大20件まで保存（古いものから削除）
+      final limitedHistory = updatedHistory.length > 20 
+          ? updatedHistory.sublist(0, 20) 
+          : updatedHistory;
+      
+      // 状態を更新
+      state = state.copyWith(menuAnalysisHistory: limitedHistory);
+      
+      // 永続化
+      await saveMenuAnalysisHistory();
+      
+      logger.info('メニュー解析履歴に追加しました: ${newHistoryItem.id}');
+    } catch (e) {
+      logger.shout('メニュー解析履歴への追加に失敗しました: $e');
+    }
+  }
+  
+  // 店舗名を設定する
+  Future<void> setStoreName(String historyId, String storeName) async {
+    try {
+      final updatedHistory = state.menuAnalysisHistory.map((item) {
+        if (item.id == historyId) {
+          return MenuAnalysisHistoryItem(
+            id: item.id,
+            date: item.date,
+            storeName: storeName,
+            sakes: item.sakes,
+          );
+        }
+        return item;
+      }).toList();
+      
+      state = state.copyWith(
+        menuAnalysisHistory: updatedHistory,
+        isEditingStoreName: false,
+      );
+      
+      // 永続化
+      await saveMenuAnalysisHistory();
+      
+      logger.info('店舗名を設定しました: $historyId, $storeName');
+    } catch (e) {
+      logger.shout('店舗名の設定に失敗しました: $e');
+    }
+  }
+  
+  // 履歴項目を選択する
+  void selectHistoryItem(String? historyId) {
+    state = state.copyWith(selectedHistoryItemId: historyId);
+  }
+  
+  // 店舗名の編集状態を設定する
+  void setEditingStoreName(bool isEditing) {
+    state = state.copyWith(isEditingStoreName: isEditing);
   }
 }
