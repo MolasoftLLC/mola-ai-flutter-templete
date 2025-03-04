@@ -564,4 +564,24 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   void setEditingStoreName(bool isEditing) {
     state = state.copyWith(isEditingStoreName: isEditing);
   }
+
+  // 履歴項目を削除する
+  Future<void> deleteHistoryItem(String historyId) async {
+    try {
+      // 削除対象の履歴項目を除外した新しいリストを作成
+      final updatedHistory = state.menuAnalysisHistory
+          .where((item) => item.id != historyId)
+          .toList();
+
+      // 状態を更新
+      state = state.copyWith(menuAnalysisHistory: updatedHistory);
+
+      // 永続化
+      await saveMenuAnalysisHistory();
+
+      logger.info('メニュー解析履歴を削除しました: $historyId');
+    } catch (e) {
+      logger.shout('メニュー解析履歴の削除に失敗しました: $e');
+    }
+  }
 }
