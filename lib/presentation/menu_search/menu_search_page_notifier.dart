@@ -19,6 +19,7 @@ import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../common/widgets/ad_consent_dialog.dart';
 
 part 'menu_search_page_notifier.freezed.dart';
 
@@ -178,120 +179,135 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     );
 
     try {
-      // 広告のロードを開始
-      try {
-        final rewardedAd = await AdUtils.loadRewardedAd(
-          onAdLoaded: (ad) {
-            logger.info('リワード広告がロードされました');
-          },
-          onAdDismissed: () {
-            logger.info('リワード広告が閉じられました');
-            state = state.copyWith(isAdLoading: false);
+      // 広告表示前に同意ダイアログを表示
+      final consent = await AdConsentDialog.show(
+        context,
+        title: '広告視聴の確認',
+        description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴に同意しますか？',
+        icon: Icons.menu_book,
+      );
 
-            // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
-            if (state.extractedSakes.isNotEmpty) {
-              _fetchSakeDetails(state.extractedSakes);
-            }
-          },
-          onAdFailedToLoad: (error) {
-            logger.shout('リワード広告のロードに失敗しました: ${error.message}');
-            state = state.copyWith(isAdLoading: false);
-          },
-          onUserEarnedReward: (reward) {
-            logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-          },
-        );
+      // ユーザーが同意した場合のみ広告を表示
+      if (consent == true) {
+        // 広告のロードを開始
+        try {
+          final rewardedAd = await AdUtils.loadRewardedAd(
+            onAdLoaded: (ad) {
+              logger.info('リワード広告がロードされました');
+            },
+            onAdDismissed: () {
+              logger.info('リワード広告が閉じられました');
+              state = state.copyWith(isAdLoading: false);
 
-        if (rewardedAd != null) {
-          // バックグラウンドでメニュー解析を開始
-          state = state.copyWith(isAnalyzingInBackground: true);
+              // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
+              if (state.extractedSakes.isNotEmpty) {
+                _fetchSakeDetails(state.extractedSakes);
+              }
+            },
+            onAdFailedToLoad: (error) {
+              logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+              state = state.copyWith(isAdLoading: false);
+            },
+            onUserEarnedReward: (reward) {
+              logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+            },
+          );
 
-          // API処理を開始（広告表示と並行して実行）
-          // 注意: 広告表示中にAPI処理を行い、広告終了後に結果を表示します
-          final apiProcessing =
-              sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
+          if (rewardedAd != null) {
+            // バックグラウンドでメニュー解析を開始
+            state = state.copyWith(isAnalyzingInBackground: true);
 
-          // 広告表示と並行してAPI処理を実行
-          apiProcessing.then((extractedSakes) {
-            if (extractedSakes != null && extractedSakes.isNotEmpty) {
-              // 結果を処理（広告が閉じられた後に表示）
-              state = state.copyWith(
-                extractedSakes: extractedSakes,
-                isAnalyzingInBackground: false,
-                isLoading: false,
-                isExtractingInfo: false,
-              );
+            // API処理を開始（広告表示と並行して実行）
+            // 注意: 広告表示中にAPI処理を行い、広告終了後に結果を表示します
+            final apiProcessing =
+                sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
 
-              // 各日本酒の読み込み状態を初期化
-              final Map<String, bool> initialLoadingStatus = {};
-              for (final sake in extractedSakes) {
-                if (sake.name != null) {
-                  initialLoadingStatus[sake.name!] =
-                      false; // false = まだ読み込んでいない
+            // 広告表示と並行してAPI処理を実行
+            apiProcessing.then((extractedSakes) {
+              if (extractedSakes != null && extractedSakes.isNotEmpty) {
+                // 結果を処理（広告が閉じられた後に表示）
+                state = state.copyWith(
+                  extractedSakes: extractedSakes,
+                  isAnalyzingInBackground: false,
+                  isLoading: false,
+                  isExtractingInfo: false,
+                );
+
+                // 各日本酒の読み込み状態を初期化
+                final Map<String, bool> initialLoadingStatus = {};
+                for (final sake in extractedSakes) {
+                  if (sake.name != null) {
+                    initialLoadingStatus[sake.name!] =
+                        false; // false = まだ読み込んでいない
+                  }
+                }
+
+                state = state.copyWith(
+                  sakeLoadingStatus: initialLoadingStatus,
+                );
+
+                // 詳細情報の取得は広告が閉じられた後に開始
+                // 注意: onAdDismissedでも同じチェックを行うため、ここでは広告がまだ表示中の場合のみ何もしない
+                if (!state.isAdLoading) {
+                  _fetchSakeDetails(extractedSakes);
+                }
+              } else {
+                // API処理に失敗した場合
+                if (!state.isAdLoading) {
+                  // 広告が既に閉じられている場合はエラーメッセージを表示
+                  state = state.copyWith(
+                    isLoading: false,
+                    isExtractingInfo: false,
+                    isAnalyzingInBackground: false,
+                    errorMessage: '日本酒情報を抽出できませんでした',
+                  );
                 }
               }
-
-              state = state.copyWith(
-                sakeLoadingStatus: initialLoadingStatus,
-              );
-
-              // 詳細情報の取得は広告が閉じられた後に開始
-              // 注意: onAdDismissedでも同じチェックを行うため、ここでは広告がまだ表示中の場合のみ何もしない
-              if (!state.isAdLoading) {
-                _fetchSakeDetails(extractedSakes);
-              }
-            } else {
-              // API処理に失敗した場合
+            }).catchError((e) {
+              logger.shout('API処理でエラーが発生しました: $e');
               if (!state.isAdLoading) {
                 // 広告が既に閉じられている場合はエラーメッセージを表示
                 state = state.copyWith(
                   isLoading: false,
                   isExtractingInfo: false,
                   isAnalyzingInBackground: false,
-                  errorMessage: '日本酒情報を抽出できませんでした',
+                  errorMessage: '日本酒情報の抽出に失敗しました: $e',
                 );
               }
-            }
-          }).catchError((e) {
-            logger.shout('API処理でエラーが発生しました: $e');
-            if (!state.isAdLoading) {
-              // 広告が既に閉じられている場合はエラーメッセージを表示
-              state = state.copyWith(
-                isLoading: false,
-                isExtractingInfo: false,
-                isAnalyzingInBackground: false,
-                errorMessage: '日本酒情報の抽出に失敗しました: $e',
+            });
+
+            // 広告を表示
+            try {
+              await AdUtils.showRewardedAd(
+                rewardedAd,
+                onUserEarnedReward: (reward) {
+                  logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+                },
               );
-            }
-          });
 
-          // 広告を表示
-          try {
-            await AdUtils.showRewardedAd(
-              rewardedAd,
-              onUserEarnedReward: (reward) {
-                logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-              },
-            );
-
-            // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
-            if (!state.isAnalyzingInBackground &&
-                state.extractedSakes.isNotEmpty) {
-              _fetchSakeDetails(state.extractedSakes);
+              // 広告が閉じられた後、APIの結果が既に取得されていれば詳細情報を取得
+              if (!state.isAnalyzingInBackground &&
+                  state.extractedSakes.isNotEmpty) {
+                _fetchSakeDetails(state.extractedSakes);
+              }
+            } catch (e) {
+              logger.shout('広告の表示に失敗しました: $e');
+              // 広告の表示に失敗した場合も、バックグラウンド処理は続行
             }
-          } catch (e) {
-            logger.shout('広告の表示に失敗しました: $e');
-            // 広告の表示に失敗した場合も、バックグラウンド処理は続行
+
+            return; // バックグラウンド処理を開始したので、ここで終了
           }
-
-          return; // バックグラウンド処理を開始したので、ここで終了
+        } catch (e) {
+          logger.shout('広告処理でエラーが発生しました: $e');
+          state = state.copyWith(isAdLoading: false);
         }
-      } catch (e) {
-        logger.shout('広告処理でエラーが発生しました: $e');
+      } else {
+        // ユーザーが広告視聴を拒否した場合
         state = state.copyWith(isAdLoading: false);
+        logger.info('ユーザーが広告視聴を拒否しました');
       }
 
-      // 広告のロードに失敗した場合や広告がnullの場合は、通常の処理を続行
+      // 広告のロードに失敗した場合や広告がnullの場合、またはユーザーが同意しなかった場合は、通常の処理を続行
       await _extractSakeInfoInForeground(imageFile);
     } catch (e) {
       state = state.copyWith(
