@@ -13,6 +13,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../common/widgets/ad_consent_dialog.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
@@ -100,48 +101,63 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
     // Check if we should show an ad (even-numbered clicks)
     if (newClickCount % 2 == 0) {
-      // Show ad and perform search in background
-      state = state.copyWith(isAdLoading: true);
-
-      // Load rewarded ad
-      final rewardedAd = await AdUtils.loadRewardedAd(
-        onAdLoaded: (ad) {
-          logger.info('リワード広告がロードされました');
-        },
-        onAdDismissed: () {
-          logger.info('リワード広告が閉じられました');
-          state = state.copyWith(isAdLoading: false);
-        },
-        onAdFailedToLoad: (error) {
-          logger.shout('リワード広告のロードに失敗しました: ${error.message}');
-          state = state.copyWith(isAdLoading: false);
-          // Proceed with search if ad fails to load
-          _performSearch(sakeName);
-        },
-        onUserEarnedReward: (reward) {
-          logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-        },
+      // Show consent dialog before ad
+      final consent = await AdConsentDialog.show(
+        context,
+        title: '広告視聴の確認',
+        description: '広告を視聴すると、日本酒情報の検索が可能になります。広告の視聴に同意しますか？',
+        icon: Icons.wine_bar,
       );
 
-      if (rewardedAd != null) {
-        // Start search in background
-        state = state.copyWith(isAnalyzingInBackground: true);
-        final searchFuture = _performSearch(sakeName);
+      // Only proceed with ad if user consents
+      if (consent == true) {
+        // Show ad and perform search in background
+        state = state.copyWith(isAdLoading: true);
 
-        // Show ad
-        await AdUtils.showRewardedAd(
-          rewardedAd,
+        // Load rewarded ad
+        final rewardedAd = await AdUtils.loadRewardedAd(
+          onAdLoaded: (ad) {
+            logger.info('リワード広告がロードされました');
+          },
+          onAdDismissed: () {
+            logger.info('リワード広告が閉じられました');
+            state = state.copyWith(isAdLoading: false);
+          },
+          onAdFailedToLoad: (error) {
+            logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+            state = state.copyWith(isAdLoading: false);
+            // Proceed with search if ad fails to load
+            _performSearch(sakeName);
+          },
           onUserEarnedReward: (reward) {
             logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
           },
         );
 
-        // Wait for search to complete if it hasn't already
-        await searchFuture;
-        state = state.copyWith(isAnalyzingInBackground: false);
+        if (rewardedAd != null) {
+          // Start search in background
+          state = state.copyWith(isAnalyzingInBackground: true);
+          final searchFuture = _performSearch(sakeName);
+
+          // Show ad
+          await AdUtils.showRewardedAd(
+            rewardedAd,
+            onUserEarnedReward: (reward) {
+              logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+            },
+          );
+
+          // Wait for search to complete if it hasn't already
+          await searchFuture;
+          state = state.copyWith(isAnalyzingInBackground: false);
+        } else {
+          // Ad failed to load, proceed with search
+          state = state.copyWith(isAdLoading: false);
+          await _performSearch(sakeName);
+        }
       } else {
-        // Ad failed to load, proceed with search
-        state = state.copyWith(isAdLoading: false);
+        // User declined ad, proceed with search without ad
+        state = state.copyWith(isLoading: true);
         await _performSearch(sakeName);
       }
     } else {
@@ -281,48 +297,63 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
     // Check if we should show an ad (even-numbered clicks)
     if (newClickCount % 2 == 0) {
-      // Show ad and perform analysis in background
-      state = state.copyWith(isAdLoading: true);
-
-      // Load rewarded ad
-      final rewardedAd = await AdUtils.loadRewardedAd(
-        onAdLoaded: (ad) {
-          logger.info('リワード広告がロードされました');
-        },
-        onAdDismissed: () {
-          logger.info('リワード広告が閉じられました');
-          state = state.copyWith(isAdLoading: false);
-        },
-        onAdFailedToLoad: (error) {
-          logger.shout('リワード広告のロードに失敗しました: ${error.message}');
-          state = state.copyWith(isAdLoading: false);
-          // Proceed with analysis if ad fails to load
-          _performBottleAnalysis();
-        },
-        onUserEarnedReward: (reward) {
-          logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-        },
+      // Show consent dialog before ad
+      final consent = await AdConsentDialog.show(
+        context,
+        title: '広告視聴の確認',
+        description: '広告を視聴すると、酒瓶の解析が可能になります。広告の視聴に同意しますか？',
+        icon: Icons.camera_alt,
       );
 
-      if (rewardedAd != null) {
-        // Start analysis in background
-        state = state.copyWith(isAnalyzingInBackground: true);
-        final analysisFuture = _performBottleAnalysis();
+      // Only proceed with ad if user consents
+      if (consent == true) {
+        // Show ad and perform analysis in background
+        state = state.copyWith(isAdLoading: true);
 
-        // Show ad
-        await AdUtils.showRewardedAd(
-          rewardedAd,
+        // Load rewarded ad
+        final rewardedAd = await AdUtils.loadRewardedAd(
+          onAdLoaded: (ad) {
+            logger.info('リワード広告がロードされました');
+          },
+          onAdDismissed: () {
+            logger.info('リワード広告が閉じられました');
+            state = state.copyWith(isAdLoading: false);
+          },
+          onAdFailedToLoad: (error) {
+            logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+            state = state.copyWith(isAdLoading: false);
+            // Proceed with analysis if ad fails to load
+            _performBottleAnalysis();
+          },
           onUserEarnedReward: (reward) {
             logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
           },
         );
 
-        // Wait for analysis to complete if it hasn't already
-        await analysisFuture;
-        state = state.copyWith(isAnalyzingInBackground: false);
+        if (rewardedAd != null) {
+          // Start analysis in background
+          state = state.copyWith(isAnalyzingInBackground: true);
+          final analysisFuture = _performBottleAnalysis();
+
+          // Show ad
+          await AdUtils.showRewardedAd(
+            rewardedAd,
+            onUserEarnedReward: (reward) {
+              logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+            },
+          );
+
+          // Wait for analysis to complete if it hasn't already
+          await analysisFuture;
+          state = state.copyWith(isAnalyzingInBackground: false);
+        } else {
+          // Ad failed to load, proceed with analysis
+          state = state.copyWith(isAdLoading: false);
+          await _performBottleAnalysis();
+        }
       } else {
-        // Ad failed to load, proceed with analysis
-        state = state.copyWith(isAdLoading: false);
+        // User declined ad, proceed with analysis without ad
+        state = state.copyWith(isLoading: true);
         await _performBottleAnalysis();
       }
     } else {
