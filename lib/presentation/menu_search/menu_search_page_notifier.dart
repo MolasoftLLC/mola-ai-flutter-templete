@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mola_gemini_flutter_template/common/utils/image_cropper_service.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
@@ -102,7 +103,12 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     final imageFile =
         await CustomImagePicker.pickImage(source: ImageSource.gallery);
     if (imageFile != null) {
-      state = state.copyWith(sakeImage: imageFile);
+      // Show cropping UI
+      final croppedFile = await ImageCropperService.cropAndRotateImage(imageFile.path);
+      
+      if (croppedFile != null) {
+        state = state.copyWith(sakeImage: croppedFile);
+      }
     }
   }
 
@@ -111,15 +117,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     final imageFile =
         await CustomImagePicker.pickImage(source: ImageSource.camera);
     if (imageFile != null) {
-      // Save image to gallery
-      try {
-        await ImageGallerySaver.saveFile(imageFile.path);
-        logger.info('画像をギャラリーに保存しました: ${imageFile.path}');
-      } catch (e) {
-        logger.shout('ギャラリーへの画像保存に失敗しました: $e');
-      }
+      // Show cropping UI
+      final croppedFile = await ImageCropperService.cropAndRotateImage(imageFile.path);
+      
+      if (croppedFile != null) {
+        // Save image to gallery
+        try {
+          await ImageGallerySaver.saveFile(croppedFile.path);
+          logger.info('画像をギャラリーに保存しました: ${croppedFile.path}');
+        } catch (e) {
+          logger.shout('ギャラリーへの画像保存に失敗しました: $e');
+        }
 
-      state = state.copyWith(sakeImage: imageFile);
+        state = state.copyWith(sakeImage: croppedFile);
+      }
     }
   }
 
@@ -530,6 +541,18 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
 
     try {
+      // Save the current image to app directory if available
+      String? imagePath;
+      if (state.sakeImage != null) {
+        final savedImage = await ImageCropperService.copyImageToAppDirectory(
+          state.sakeImage!,
+          'menu',
+        );
+        if (savedImage != null) {
+          imagePath = savedImage.path;
+        }
+      }
+      
       // 現在の日本酒情報から保存用のデータを作成
       final List<SavedSake> savedSakes = state.sakes!
           .map((sake) => SavedSake(
@@ -544,6 +567,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         id: 'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}',
         date: DateTime.now(),
         sakes: savedSakes,
+        imagePath: imagePath, // Add image path
       );
 
       // 現在の履歴に追加

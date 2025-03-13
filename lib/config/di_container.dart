@@ -8,6 +8,7 @@ import '../domain/notifier/favorite/favorite_notifier.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
 import '../domain/repository/gemini_mola_api_repository.dart';
 import '../domain/repository/mola_api_repository.dart';
+import '../domain/repository/sake_bottle_image_repository.dart';
 import '../domain/repository/sake_menu_recognition_repository.dart';
 import '../infrastructure/api_client/api_client.dart';
 import '../infrastructure/api_client/client_creator.dart';
@@ -57,6 +58,9 @@ List<SingleChildWidget> get _repositoryProviders {
       create: (context) => SakeMenuRecognitionRepository(
         context.read<SakeMenuRecognitionApiClient>(),
       ),
+    ),
+    Provider<SakeBottleImageRepository>(
+      create: (_) => SakeBottleImageRepository(),
     ),
   ];
 }

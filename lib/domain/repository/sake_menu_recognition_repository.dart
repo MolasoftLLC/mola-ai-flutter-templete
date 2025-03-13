@@ -6,6 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
+import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
@@ -165,7 +166,21 @@ class SakeMenuRecognitionRepository {
   // 酒瓶画像を認識する
   Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
     try {
-      final baseFile = await ImageUtils.compressAndEncodeImage(file);
+      // Show cropping UI
+      final croppedFile = await ImageCropperService.cropAndRotateImage(file.path);
+      
+      if (croppedFile == null) {
+        logger.info('ユーザーが画像のクロップをキャンセルしました');
+        return null; // User cancelled cropping
+      }
+      
+      // Save to gallery
+      final galleryPath = await ImageCropperService.saveImageToGallery(croppedFile);
+      if (galleryPath != null) {
+        logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
+      }
+      
+      final baseFile = await ImageUtils.compressAndEncodeImage(croppedFile);
       logger.shout(baseFile.length);
       final response = await _apiClient.recognizeSakeBottle(
         baseFile,
