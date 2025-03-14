@@ -10,8 +10,11 @@ import 'package:state_notifier/state_notifier.dart';
 import '../../common/logger.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
+import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/eintities/sake_bottle_image.dart';
 import '../../domain/repository/mola_api_repository.dart';
+import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 
@@ -55,6 +58,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
   SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
       read<SakeMenuRecognitionRepository>();
+  SakeBottleImageRepository get sakeBottleImageRepository =>
+      read<SakeBottleImageRepository>();
 
   @override
   Future<void> initState() async {
@@ -105,7 +110,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       final consent = await AdConsentDialog.show(
         context,
         title: '広告視聴の確認',
-        description: '広告を視聴すると、日本酒情報の検索が可能になります。広告の視聴に同意しますか？',
+        description: '広告を視聴すると、日本酒情報の検索が可能になります。広告の視聴にご協力ください！',
         icon: Icons.wine_bar,
       );
 
@@ -272,7 +277,20 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     final imageFile = await CustomImagePicker.pickImage(source: source);
 
     if (imageFile != null) {
-      state = state.copyWith(sakeImage: imageFile);
+      // Show cropping UI
+      final croppedFile =
+          await ImageCropperService.cropAndRotateImage(imageFile.path);
+
+      if (croppedFile != null) {
+        // Save to gallery
+        final galleryPath =
+            await ImageCropperService.saveImageToGallery(croppedFile);
+        if (galleryPath != null) {
+          logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
+        }
+
+        state = state.copyWith(sakeImage: croppedFile);
+      }
     }
   }
 
@@ -417,6 +435,14 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       state = state.copyWith(
         isLoading: false,
       );
+
+      // Save the bottle image with sake name and type
+      await sakeBottleImageRepository.saveSakeBottleImage(
+        state.sakeImage!,
+        sakeName: sakeInfo.name,
+        type: sakeInfo.type,
+      );
+      logger.info('酒瓶画像を保存しました: ${sakeInfo.name}');
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');
       logger.shout('スタックトレース: $stackTrace');

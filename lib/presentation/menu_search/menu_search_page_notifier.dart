@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
@@ -194,7 +193,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       final consent = await AdConsentDialog.show(
         context,
         title: '広告視聴の確認',
-        description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴に同意しますか？',
+        description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴をお願いします！',
         icon: Icons.menu_book,
       );
 

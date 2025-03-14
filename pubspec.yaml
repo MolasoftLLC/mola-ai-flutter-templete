@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 2.0.1+22
+version: 2.2.0+30
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -64,8 +64,8 @@ dependencies:
   image_gallery_saver: ^2.0.3
   
   #画像のクロップと回転
-  image_cropper: ^4.0.1
-  
+  image_cropper: ^8.0.1
+
   #日付フォーマット
   intl: ^0.18.1
 

@@ -62,6 +62,9 @@ PODS:
   - GoogleUtilities/Reachability (7.13.3):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - image_cropper (0.0.4):
+    - Flutter
+    - TOCropViewController (~> 2.7.4)
   - image_gallery_saver (2.0.2):
     - Flutter
   - image_picker_ios (0.0.1):
@@ -101,6 +104,7 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - TOCropViewController (2.7.4)
   - url_launcher_ios (0.0.1):
     - Flutter
   - webview_flutter_wkwebview (0.0.1):
@@ -112,6 +116,7 @@ DEPENDENCIES:
   - flutter_image_compress (from `.symlinks/plugins/flutter_image_compress/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
+  - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_gallery_saver (from `.symlinks/plugins/image_gallery_saver/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
@@ -132,6 +137,7 @@ SPEC REPOS:
     - PromisesObjC
     - SDWebImage
     - SDWebImageWebPCoder
+    - TOCropViewController
 
 EXTERNAL SOURCES:
   app_tracking_transparency:
@@ -144,6 +150,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   google_mobile_ads:
     :path: ".symlinks/plugins/google_mobile_ads/ios"
+  image_cropper:
+    :path: ".symlinks/plugins/image_cropper/ios"
   image_gallery_saver:
     :path: ".symlinks/plugins/image_gallery_saver/ios"
   image_picker_ios:
@@ -169,6 +177,7 @@ SPEC CHECKSUMS:
   GoogleAppMeasurement: f9de05ee17401e3355f68e8fc8b5064d429f5918
   GoogleUserMessagingPlatform: a8b56893477f67212fbc8411c139e61d463349f5
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
+  image_cropper: 5f162dcf988100dc1513f9c6b7eb42cd6fbf9156
   image_gallery_saver: 14711d79da40581063e8842a11acf1969d781ed7
   image_picker_ios: a768de0d44b0925de635738f5030f9f2727eb996
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -180,6 +189,7 @@ SPEC CHECKSUMS:
   SDWebImage: 73c6079366fea25fa4bb9640d5fb58f0893facd8
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
   url_launcher_ios: c14c42eb16c26cfb6c43c2e40ce35a4085431791
   webview_flutter_wkwebview: 45a041c7831641076618876de3ba75c712860c6b
 

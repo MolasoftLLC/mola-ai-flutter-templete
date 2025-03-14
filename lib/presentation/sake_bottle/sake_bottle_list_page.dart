@@ -1,16 +1,19 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../domain/eintities/sake_bottle_image.dart';
-import '../../domain/repository/sake_bottle_image_repository.dart';
 import 'sake_bottle_list_page_notifier.dart';
 
 class SakeBottleListPage extends StatelessWidget {
   const SakeBottleListPage._({Key? key}) : super(key: key);
 
   static Widget wrapped() {
-    return StateNotifierProvider<SakeBottleListPageNotifier, SakeBottleListPageState>(
+    return StateNotifierProvider<SakeBottleListPageNotifier,
+        SakeBottleListPageState>(
       create: (context) => SakeBottleListPageNotifier(
         context: context,
       ),
@@ -20,10 +23,13 @@ class SakeBottleListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = Provider.of<SakeBottleListPageNotifier>(context, listen: false);
-    final isLoading = context.select((SakeBottleListPageState state) => state.isLoading);
-    final sakeBottleImages = context.select((SakeBottleListPageState state) => state.sakeBottleImages);
-    final errorMessage = context.select((SakeBottleListPageState state) => state.errorMessage);
+    final notifier = context.read<SakeBottleListPageNotifier>();
+    final isLoading =
+        context.select((SakeBottleListPageState state) => state.isLoading);
+    final sakeBottleImages = context
+        .select((SakeBottleListPageState state) => state.sakeBottleImages);
+    final errorMessage =
+        context.select((SakeBottleListPageState state) => state.errorMessage);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,14 +49,6 @@ class SakeBottleListPage extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              notifier.refreshSakeBottleImages();
-            },
-          ),
-        ],
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -73,8 +71,33 @@ class SakeBottleListPage extends StatelessWidget {
                   ? _buildErrorState(errorMessage)
                   : sakeBottleImages.isEmpty
                       ? _buildEmptyState()
-                      : _buildGridView(context, sakeBottleImages, notifier),
+                      : _buildGridView(context, sakeBottleImages),
         ),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // カメラから追加ボタン
+          FloatingActionButton(
+            heroTag: 'camera',
+            onPressed: () {
+              notifier.pickImage(ImageSource.camera);
+            },
+            backgroundColor: const Color(0xFF1D3567),
+            child: const Icon(Icons.camera_alt),
+          ),
+          const SizedBox(height: 16),
+          // ギャラリーから追加ボタン
+          FloatingActionButton(
+            heroTag: 'gallery',
+            onPressed: () {
+              notifier.pickImage(ImageSource.gallery);
+            },
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1D3567),
+            child: const Icon(Icons.photo_library),
+          ),
+        ],
       ),
     );
   }
@@ -145,7 +168,6 @@ class SakeBottleListPage extends StatelessWidget {
   Widget _buildGridView(
     BuildContext context,
     List<SakeBottleImage> images,
-    SakeBottleListPageNotifier notifier,
   ) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
@@ -159,7 +181,7 @@ class SakeBottleListPage extends StatelessWidget {
         itemCount: images.length,
         itemBuilder: (context, index) {
           final image = images[index];
-          return _buildImageCard(context, image, notifier);
+          return _buildImageCard(context, image);
         },
       ),
     );
@@ -168,7 +190,6 @@ class SakeBottleListPage extends StatelessWidget {
   Widget _buildImageCard(
     BuildContext context,
     SakeBottleImage image,
-    SakeBottleListPageNotifier notifier,
   ) {
     return GestureDetector(
       onTap: () {
@@ -184,7 +205,8 @@ class SakeBottleListPage extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.file(
                   File(image.path),
                   fit: BoxFit.cover,
@@ -195,7 +217,8 @@ class SakeBottleListPage extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(12)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,9 +254,12 @@ class SakeBottleListPage extends StatelessWidget {
   }
 
   void _showSakeBottleDialog(BuildContext context, SakeBottleImage image) {
+    // 先にnotifierを取得しておく
+    final notifier = context.read<SakeBottleListPageNotifier>();
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -283,13 +309,13 @@ class SakeBottleListPage extends StatelessWidget {
                   children: [
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
+                        Navigator.of(dialogContext).pop();
                       },
                       child: const Text('閉じる'),
                     ),
                     TextButton(
                       onPressed: () {
-                        _confirmDeleteImage(context, image);
+                        _confirmDeleteImage(dialogContext, image, notifier);
                       },
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.red,
@@ -306,28 +332,26 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteImage(BuildContext context, SakeBottleImage image) {
+  void _confirmDeleteImage(BuildContext context, SakeBottleImage image,
+      SakeBottleListPageNotifier notifier) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('画像を削除'),
           content: const Text('この酒瓶画像を削除してもよろしいですか？'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // ダイアログを閉じる
+                Navigator.of(dialogContext).pop(); // ダイアログを閉じる
               },
               child: const Text('キャンセル'),
             ),
             TextButton(
               onPressed: () {
-                final notifier = Provider.of<SakeBottleListPageNotifier>(
-                  context,
-                  listen: false,
-                );
+                // 外部で取得したnotifierを使用
                 notifier.deleteSakeBottleImage(image.id);
-                Navigator.of(context).pop(); // 削除確認ダイアログを閉じる
+                Navigator.of(dialogContext).pop(); // 削除確認ダイアログを閉じる
                 Navigator.of(context).pop(); // 詳細ダイアログを閉じる
               },
               style: TextButton.styleFrom(

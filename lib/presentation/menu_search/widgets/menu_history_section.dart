@@ -44,11 +44,39 @@ class MenuHistorySection extends StatelessWidget {
     );
   }
 
+  // 画像を拡大表示するダイアログを表示する
+  void _showEnlargedImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(12),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).pop(); // タップでダイアログを閉じる
+            },
+            child: InteractiveViewer(
+              panEnabled: true,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.file(
+                File(imagePath),
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
-    final menuAnalysisHistory = context.select(
-        (MenuSearchPageState state) => state.menuAnalysisHistory);
+    final menuAnalysisHistory = context
+        .select((MenuSearchPageState state) => state.menuAnalysisHistory);
 
     return Container(
       padding: const EdgeInsets.only(top: 42, left: 12, right: 12, bottom: 24),
@@ -91,11 +119,11 @@ class MenuHistorySection extends StatelessWidget {
               itemCount: menuAnalysisHistory.length,
               itemBuilder: (context, index) {
                 final historyItem = menuAnalysisHistory[index];
-                
+
                 // 日付をフォーマット
                 final dateFormat = DateFormat('yyyy/MM/dd HH:mm');
                 final formattedDate = dateFormat.format(historyItem.date);
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Card(
@@ -105,18 +133,25 @@ class MenuHistorySection extends StatelessWidget {
                     ),
                     child: ExpansionTile(
                       leading: historyItem.imagePath != null
-                        ? Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              image: DecorationImage(
-                                image: FileImage(File(historyItem.imagePath!)),
-                                fit: BoxFit.cover,
+                          ? GestureDetector(
+                              onTap: () {
+                                _showEnlargedImage(
+                                    context, historyItem.imagePath!);
+                              },
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  image: DecorationImage(
+                                    image:
+                                        FileImage(File(historyItem.imagePath!)),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                               ),
-                            ),
-                          )
-                        : null,
+                            )
+                          : null,
                       title: Row(
                         children: [
                           Expanded(
@@ -134,10 +169,11 @@ class MenuHistorySection extends StatelessWidget {
                                 Text(
                                   formattedDate,
                                   style: TextStyle(
-                                    fontSize: historyItem.storeName != null ? 12 : 14,
+                                    fontSize:
+                                        historyItem.storeName != null ? 12 : 14,
                                     color: Colors.grey,
-                                    fontWeight: historyItem.storeName != null 
-                                        ? FontWeight.normal 
+                                    fontWeight: historyItem.storeName != null
+                                        ? FontWeight.normal
                                         : FontWeight.bold,
                                   ),
                                 ),
@@ -156,7 +192,8 @@ class MenuHistorySection extends StatelessWidget {
                                 context: context,
                                 initialStoreName: historyItem.storeName,
                                 onSave: (storeName) {
-                                  notifier.setStoreName(historyItem.id, storeName);
+                                  notifier.setStoreName(
+                                      historyItem.id, storeName);
                                 },
                               );
                             },
@@ -207,7 +244,8 @@ class MenuHistorySection extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             sake.name,
@@ -234,7 +272,8 @@ class MenuHistorySection extends StatelessWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.red.shade100,
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                           border: Border.all(
                                             color: Colors.red.shade300,
                                           ),
