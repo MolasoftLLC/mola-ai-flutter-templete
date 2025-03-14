@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
+import '../sake_bottle/sake_bottle_list_page.dart';
 import 'how_to_use/how_to_use_page.dart';
 
 class MyPage extends StatelessWidget {
@@ -73,6 +74,53 @@ class MyPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  // 酒瓶リストセクション
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SakeBottleListPage.wrapped(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.wine_bar,
+                              color: Colors.amber,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '酒瓶リスト',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
                   // お気に入りのお酒セクション
                   Container(
                     width: MediaQuery.of(context).size.width,

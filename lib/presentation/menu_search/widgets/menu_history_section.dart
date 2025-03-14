@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -103,6 +104,19 @@ class MenuHistorySection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ExpansionTile(
+                      leading: historyItem.imagePath != null
+                        ? Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: FileImage(File(historyItem.imagePath!)),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        : null,
                       title: Row(
                         children: [
                           Expanded(

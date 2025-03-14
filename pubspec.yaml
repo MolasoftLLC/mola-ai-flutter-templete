@@ -63,6 +63,9 @@ dependencies:
   #画像をギャラリーに保存
   image_gallery_saver: ^2.0.3
   
+  #画像のクロップと回転
+  image_cropper: ^4.0.1
+  
   #日付フォーマット
   intl: ^0.18.1
 
