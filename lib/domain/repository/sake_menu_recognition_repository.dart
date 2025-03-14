@@ -52,21 +52,21 @@ class SakeMenuRecognitionRepository {
     // リトライ回数
     const maxRetries = 3;
     int retryCount = 0;
-    
+
     while (retryCount < maxRetries) {
       try {
         final baseFile = await ImageUtils.compressAndEncodeImage(file);
         final response = await _apiClient.extractSakeInfo(baseFile);
-        
+
         if (response.isSuccessful) {
           logger.shout(response.body);
           final responseBodyJson = response.body as Map<String, dynamic>;
-          
+
           // 'sakes'キーから日本酒リストを取得
           final sakesList = (responseBodyJson['sakes'] as List<dynamic>?)
                   ?.cast<Map<String, dynamic>>() ??
               [];
-          
+
           // 各日本酒情報をSakeオブジェクトに変換
           return sakesList.map((sakeMap) => Sake.fromJson(sakeMap)).toList();
         } else {
@@ -81,7 +81,7 @@ class SakeMenuRecognitionRepository {
         await Future.delayed(Duration(milliseconds: 500 * retryCount));
       }
     }
-    
+
     logger.shout('最大リトライ回数に達しました');
     return null;
   }
@@ -166,21 +166,8 @@ class SakeMenuRecognitionRepository {
   // 酒瓶画像を認識する
   Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
     try {
-      // Show cropping UI
-      final croppedFile = await ImageCropperService.cropAndRotateImage(file.path);
-      
-      if (croppedFile == null) {
-        logger.info('ユーザーが画像のクロップをキャンセルしました');
-        return null; // User cancelled cropping
-      }
-      
-      // Save to gallery
-      final galleryPath = await ImageCropperService.saveImageToGallery(croppedFile);
-      if (galleryPath != null) {
-        logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
-      }
-      
-      final baseFile = await ImageUtils.compressAndEncodeImage(croppedFile);
+      // トリミング処理はmain_search_page_notifierで行うため、ここでは行わない
+      final baseFile = await ImageUtils.compressAndEncodeImage(file);
       logger.shout(baseFile.length);
       final response = await _apiClient.recognizeSakeBottle(
         baseFile,

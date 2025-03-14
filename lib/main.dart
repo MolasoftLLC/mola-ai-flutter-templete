@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:mola_gemini_flutter_template/presentation/app_page.dart';
 import 'package:provider/provider.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
@@ -33,8 +34,16 @@ void main() async {
   ]);
 
   // ATT許可ダイアログを表示
-  final trackingStatus = await AppTrackingTransparency.requestTrackingAuthorization();
+  final trackingStatus =
+      await AppTrackingTransparency.requestTrackingAuthorization();
   print('App Tracking Transparency status: $trackingStatus');
+
+  // AdMobのテストデバイス設定
+  MobileAds.instance.updateRequestConfiguration(
+    RequestConfiguration(
+      testDeviceIds: ['04654E8A84F896A7A68E5B1748584242'],
+    ),
+  );
 
   // AdMobの初期化
   try {
