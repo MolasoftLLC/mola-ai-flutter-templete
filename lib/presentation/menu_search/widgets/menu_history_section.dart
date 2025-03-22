@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page_notifier.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/store_name_dialog.dart';
@@ -61,8 +62,8 @@ class MenuHistorySection extends StatelessWidget {
               boundaryMargin: const EdgeInsets.all(20),
               minScale: 0.5,
               maxScale: 4,
-              child: Image.file(
-                File(imagePath),
+              child: Image(
+                image: FileUtils.safeLoadImage(imagePath),
                 fit: BoxFit.contain,
               ),
             ),
@@ -144,8 +145,7 @@ class MenuHistorySection extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   image: DecorationImage(
-                                    image:
-                                        FileImage(File(historyItem.imagePath!)),
+                                    image: FileUtils.safeLoadImage(historyItem.imagePath),
                                     fit: BoxFit.cover,
                                   ),
                                 ),

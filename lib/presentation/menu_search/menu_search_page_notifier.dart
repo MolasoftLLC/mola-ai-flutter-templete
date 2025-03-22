@@ -487,12 +487,22 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             .map((item) => MenuAnalysisHistoryItem.fromJson(item))
             .toList();
 
+        // Filter out items with non-existent image files
+        final List<MenuAnalysisHistoryItem> validHistory = [];
+        for (final item in history) {
+          if (item.imagePath == null || File(item.imagePath!).existsSync()) {
+            validHistory.add(item);
+          } else {
+            logger.warning('メニュー画像ファイルが見つかりません: ${item.imagePath}');
+          }
+        }
+
         // 日付の新しい順に並べ替え
-        history.sort((a, b) => b.date.compareTo(a.date));
+        validHistory.sort((a, b) => b.date.compareTo(a.date));
 
         // 最大20件まで保存（古いものから削除）
         final limitedHistory =
-            history.length > 20 ? history.sublist(0, 20) : history;
+            validHistory.length > 20 ? validHistory.sublist(0, 20) : validHistory;
 
         state = state.copyWith(menuAnalysisHistory: limitedHistory);
       }
