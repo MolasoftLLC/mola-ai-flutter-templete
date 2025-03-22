@@ -34,14 +34,26 @@ void main() async {
   ]);
 
   // ATT許可ダイアログを表示
-  final trackingStatus =
-      await AppTrackingTransparency.requestTrackingAuthorization();
+  final trackingStatus = await AppTrackingTransparency.requestTrackingAuthorization();
   print('App Tracking Transparency status: $trackingStatus');
+  
+  if (trackingStatus == TrackingStatus.notDetermined) {
+    print('User has not responded to tracking authorization dialog yet');
+  } else if (trackingStatus == TrackingStatus.restricted) {
+    print('Tracking restricted by parental controls or enterprise management');
+  } else if (trackingStatus == TrackingStatus.denied) {
+    print('User denied tracking authorization');
+  } else if (trackingStatus == TrackingStatus.authorized) {
+    print('User granted tracking authorization');
+  }
 
   // AdMobのテストデバイス設定
   MobileAds.instance.updateRequestConfiguration(
     RequestConfiguration(
-      testDeviceIds: ['04654E8A84F896A7A68E5B1748584242'],
+      testDeviceIds: [
+        '04654E8A84F896A7A68E5B1748584242', // Android test device
+        '00000000-0000-0000-0000-000000000000', // Replace with actual iOS test device ID
+      ],
     ),
   );
 
