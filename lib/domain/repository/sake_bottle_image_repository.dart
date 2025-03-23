@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:path_provider/path_provider.dart';
+
 import '../../common/logger.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../infrastructure/local_database/shared_key.dart';

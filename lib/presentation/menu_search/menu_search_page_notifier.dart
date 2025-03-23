@@ -12,6 +12,7 @@ import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_hist
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_preference.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';

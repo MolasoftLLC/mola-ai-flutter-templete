@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// AdMob広告の管理を行うユーティリティクラス
@@ -31,7 +32,7 @@ class AdUtils {
   }) async {
     // プラットフォーム別の広告ユニットID
     final String adUnitId;
-    const bool isDebug = true; // Set this to false for production builds
+    const bool isDebug = kDebugMode;
     
     if (isDebug) {
       // Use Google test ad units in debug mode
