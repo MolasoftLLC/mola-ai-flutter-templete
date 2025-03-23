@@ -32,7 +32,14 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
     required this.context,
   }) : super(const SakeBottleListPageState()) {
     _sakeBottleImageRepository = context.read<SakeBottleImageRepository>();
-    _loadSakeBottleImages();
+    _initializeWithMigration();
+  }
+  
+  Future<void> _initializeWithMigration() async {
+    // Migrate existing images first
+    await _sakeBottleImageRepository.migrateExistingImages();
+    // Then load the images
+    await _loadSakeBottleImages();
   }
 
   Future<void> pickImage(ImageSource source) async {

@@ -90,4 +90,23 @@ class ImageCropperService {
       return null;
     }
   }
+
+  /// Save an image permanently to the app's documents directory
+  static Future<String?> saveImagePermanently(File imageFile, [String? customPrefix]) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = path.basename(imageFile.path);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final prefix = customPrefix != null ? '${customPrefix}_' : '';
+      final newPath = path.join(appDir.path, '${prefix}${timestamp}_$fileName');
+
+      final savedImage = await imageFile.copy(newPath);
+      logger.info('画像を永続的に保存しました: ${savedImage.path}');
+
+      return savedImage.path;
+    } catch (e) {
+      logger.shout('永続的な画像の保存に失敗しました: $e');
+      return null;
+    }
+  }
 }
