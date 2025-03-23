@@ -157,7 +157,10 @@ class MenuSearchPage extends StatelessWidget {
                                         width: 2,
                                       ),
                                       image: DecorationImage(
-                                        image: FileUtils.safeLoadImage(sakeImage.path),
+                                        image: FileUtils.safeLoadImage(
+                                          sakeImage.path,
+                                          base64Image: null, // Current image doesn't have base64 yet
+                                        ),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
