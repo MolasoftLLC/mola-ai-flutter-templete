@@ -35,7 +35,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   #lottie
-  lottie: 1.1.0
+  lottie: ^2.7.0
 
   #画像選択
   image_picker: 1.0.0

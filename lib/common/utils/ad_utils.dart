@@ -31,14 +31,28 @@ class AdUtils {
   }) async {
     // プラットフォーム別の広告ユニットID
     final String adUnitId;
-    if (Platform.isAndroid) {
-      adUnitId = 'ca-app-pub-1815956042591114/4683295121'; // Android用
-    } else if (Platform.isIOS) {
-      adUnitId = 'ca-app-pub-1815956042591114/2538082740'; // iOS用
+    const bool isDebug = true; // Set this to false for production builds
+    
+    if (isDebug) {
+      // Use Google test ad units in debug mode
+      if (Platform.isAndroid) {
+        adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // Android test ID
+      } else if (Platform.isIOS) {
+        adUnitId = 'ca-app-pub-3940256099942544/1712485313'; // iOS test ID
+      } else {
+        adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // General test ID
+      }
     } else {
-      adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // その他のプラットフォーム用テストID
+      // Use real ad units in production
+      if (Platform.isAndroid) {
+        adUnitId = 'ca-app-pub-1815956042591114/4683295121'; // Android用
+      } else if (Platform.isIOS) {
+        adUnitId = 'ca-app-pub-1815956042591114/2538082740'; // iOS用
+      } else {
+        adUnitId = 'ca-app-pub-3940256099942544/5224354917'; // その他のプラットフォーム用テストID
+      }
     }
-    print('Loading rewarded ad with ID: $adUnitId');
+    print('Loading rewarded ad with ID: $adUnitId on ${Platform.isIOS ? "iOS" : "Android"}');
 
     final completer = Completer<RewardedAd?>();
 
@@ -47,18 +61,26 @@ class AdUtils {
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (RewardedAd ad) {
+          print('Rewarded ad loaded successfully on ${Platform.isIOS ? "iOS" : "Android"}');
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
+              print('Ad dismissed');
               onAdDismissed();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
+              print('Ad failed to show: ${error.message}');
               ad.dispose();
+            },
+            onAdShowedFullScreenContent: (ad) {
+              print('Ad showed fullscreen content');
             },
           );
           onAdLoaded(ad);
           completer.complete(ad);
         },
         onAdFailedToLoad: (LoadAdError error) {
+          print('Ad failed to load: ${error.code} - ${error.message}');
+          print('Error details: domain=${error.domain}, responseInfo=${error.responseInfo}');
           onAdFailedToLoad(error);
           completer.complete(null);
         },
