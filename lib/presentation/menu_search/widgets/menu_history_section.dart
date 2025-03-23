@@ -63,7 +63,10 @@ class MenuHistorySection extends StatelessWidget {
               minScale: 0.5,
               maxScale: 4,
               child: Image(
-                image: FileUtils.safeLoadImage(imagePath),
+                image: FileUtils.safeLoadImage(
+                  imagePath,
+                  base64Image: historyItem.base64Image,
+                ),
                 fit: BoxFit.contain,
               ),
             ),
@@ -145,7 +148,10 @@ class MenuHistorySection extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   image: DecorationImage(
-                                    image: FileUtils.safeLoadImage(historyItem.imagePath),
+                                    image: FileUtils.safeLoadImage(
+                                      historyItem.imagePath,
+                                      base64Image: historyItem.base64Image,
+                                    ),
                                     fit: BoxFit.cover,
                                   ),
                                 ),

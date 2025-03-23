@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 
 import '../../common/logger.dart';
 import '../../common/utils/image_cropper_service.dart';
+import '../../common/utils/image_utils.dart';
 import '../../infrastructure/local_database/shared_key.dart';
 import '../../infrastructure/local_database/shared_preference.dart';
 import '../eintities/sake_bottle_image.dart';
@@ -14,11 +17,10 @@ class SakeBottleImageRepository {
   // Save a sake bottle image
   Future<SakeBottleImage?> saveSakeBottleImage(File imageFile, {String? sakeName, String? type}) async {
     try {
-      // Save to gallery
-      final galleryPath = await ImageCropperService.saveImageToGallery(imageFile);
-      if (galleryPath == null) {
-        logger.shout('ギャラリーへの保存に失敗しました');
-        return null;
+      // Save to gallery if not from gallery already
+      String? galleryPath;
+      if (!imageFile.path.contains('DCIM')) {
+        galleryPath = await ImageCropperService.saveImageToGallery(imageFile);
       }
       
       // Save to permanent storage
@@ -29,10 +31,18 @@ class SakeBottleImageRepository {
         return null;
       }
       
+      // Compress and encode to base64
+      final base64Image = await ImageUtils.compressAndEncodeImage(
+        imageFile,
+        quality: 55,
+        format: CompressFormat.webp,
+      );
+      
       // Create sake bottle image object
       final sakeBottleImage = SakeBottleImage(
         id: 'sake_bottle_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}',
         path: permanentPath,
+        base64Image: base64Image,
         capturedAt: DateTime.now(),
         sakeName: sakeName,
         type: type,
@@ -160,6 +170,12 @@ class SakeBottleImageRepository {
       final updatedImages = <SakeBottleImage>[];
       
       for (final image in images) {
+        // Skip if image already has base64 data
+        if (image.base64Image != null && image.base64Image!.isNotEmpty) {
+          updatedImages.add(image);
+          continue;
+        }
+        
         final file = File(image.path);
         if (file.existsSync()) {
           // Check if the image is already in the documents directory
@@ -172,18 +188,53 @@ class SakeBottleImageRepository {
             );
             
             if (permanentPath != null) {
-              // Create updated image with new path
-              final updatedImage = image.copyWith(path: permanentPath);
-              updatedImages.add(updatedImage);
-              hasChanges = true;
-              logger.info('酒瓶画像を永続的なストレージに移行しました: ${image.id}');
+              try {
+                // Compress and encode to base64
+                final base64Image = await ImageUtils.compressAndEncodeImage(
+                  file,
+                  quality: 55,
+                  format: CompressFormat.webp,
+                );
+                
+                // Create updated image with new path and base64 data
+                final updatedImage = image.copyWith(
+                  path: permanentPath,
+                  base64Image: base64Image,
+                );
+                updatedImages.add(updatedImage);
+                hasChanges = true;
+                logger.info('酒瓶画像を永続的なストレージに移行しました: ${image.id}');
+              } catch (e) {
+                // If encoding fails, keep original with new path
+                final updatedImage = image.copyWith(path: permanentPath);
+                updatedImages.add(updatedImage);
+                hasChanges = true;
+                logger.warning('酒瓶画像のbase64エンコードに失敗しました: ${image.id} - $e');
+              }
             } else {
               // Couldn't migrate, but file exists, so keep original
               updatedImages.add(image);
             }
           } else {
-            // Already in permanent storage
-            updatedImages.add(image);
+            // Already in permanent storage, but need to add base64
+            try {
+              // Compress and encode to base64
+              final base64Image = await ImageUtils.compressAndEncodeImage(
+                file,
+                quality: 55,
+                format: CompressFormat.webp,
+              );
+              
+              // Create updated image with base64 data
+              final updatedImage = image.copyWith(base64Image: base64Image);
+              updatedImages.add(updatedImage);
+              hasChanges = true;
+              logger.info('酒瓶画像をbase64エンコードしました: ${image.id}');
+            } catch (e) {
+              // If encoding fails, keep original
+              logger.warning('酒瓶画像のbase64エンコードに失敗しました: ${image.id} - $e');
+              updatedImages.add(image);
+            }
           }
         } else {
           // File doesn't exist, image will be filtered out

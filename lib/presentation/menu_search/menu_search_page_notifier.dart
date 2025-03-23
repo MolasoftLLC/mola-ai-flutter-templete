@@ -5,9 +5,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:mola_gemini_flutter_template/common/utils/image_cropper_service.dart';
+import 'package:mola_gemini_flutter_template/common/utils/image_utils.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
@@ -560,11 +563,22 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     try {
       // Save the current image permanently if available
       String? imagePath;
+      String? base64Image;
       if (state.sakeImage != null) {
+        // Save to permanent storage
         imagePath = await ImageCropperService.saveImagePermanently(
           state.sakeImage!,
           'menu'
         );
+        
+        // Compress and encode to base64
+        base64Image = await ImageUtils.compressAndEncodeImage(
+          state.sakeImage!,
+          quality: 55,
+          format: CompressFormat.webp,
+        );
+        
+        logger.info('メニュー画像をbase64エンコードしました');
       }
       
       // 現在の日本酒情報から保存用のデータを作成
@@ -581,7 +595,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         id: 'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}',
         date: DateTime.now(),
         sakes: savedSakes,
-        imagePath: imagePath, // Add image path
+        imagePath: imagePath,
+        base64Image: base64Image, // Add base64 encoded image
       );
 
       // 現在の履歴に追加
@@ -610,7 +625,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
 
-  /// Migrate existing menu analysis images to permanent storage
+  /// Migrate existing menu analysis images to permanent storage and encode to base64
   Future<void> migrateMenuAnalysisImages() async {
     try {
       final historyJson =
@@ -625,37 +640,60 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         final updatedHistory = <MenuAnalysisHistoryItem>[];
         
         for (final item in history) {
+          // Skip if item already has base64 data
+          if (item.base64Image != null && item.base64Image!.isNotEmpty) {
+            updatedHistory.add(item);
+            continue;
+          }
+          
           if (item.imagePath != null) {
             final file = File(item.imagePath!);
             if (file.existsSync()) {
               // Check if the image is already in the documents directory
               final appDir = await getApplicationDocumentsDirectory();
+              String? permanentPath = item.imagePath;
+              
               if (!item.imagePath!.startsWith(appDir.path)) {
-                // Need to migrate this image
-                final permanentPath = await ImageCropperService.saveImagePermanently(
+                // Need to migrate this image to permanent storage
+                permanentPath = await ImageCropperService.saveImagePermanently(
                   file,
                   'menu'
                 );
+              }
+              
+              // Encode to base64 regardless of path migration
+              try {
+                // Compress and encode to base64
+                final base64Image = await ImageUtils.compressAndEncodeImage(
+                  file,
+                  quality: 55,
+                  format: CompressFormat.webp,
+                );
                 
-                if (permanentPath != null) {
-                  // Create a new history item with the updated path
-                  final updatedItem = MenuAnalysisHistoryItem(
-                    id: item.id,
-                    date: item.date,
-                    storeName: item.storeName,
-                    sakes: item.sakes,
-                    imagePath: permanentPath,
-                  );
-                  updatedHistory.add(updatedItem);
-                  hasChanges = true;
-                  logger.info('メニュー解析履歴の画像を永続的なストレージに移行しました: ${item.id}');
-                } else {
-                  // Couldn't migrate, but file exists, so keep original
-                  updatedHistory.add(item);
-                }
-              } else {
-                // Already in permanent storage
-                updatedHistory.add(item);
+                // Create a new history item with the updated path and base64 data
+                final updatedItem = MenuAnalysisHistoryItem(
+                  id: item.id,
+                  date: item.date,
+                  storeName: item.storeName,
+                  sakes: item.sakes,
+                  imagePath: permanentPath,
+                  base64Image: base64Image,
+                );
+                updatedHistory.add(updatedItem);
+                hasChanges = true;
+                logger.info('メニュー解析履歴の画像をbase64エンコードしました: ${item.id}');
+              } catch (e) {
+                // If encoding fails, keep original with permanent path if available
+                final updatedItem = MenuAnalysisHistoryItem(
+                  id: item.id,
+                  date: item.date,
+                  storeName: item.storeName,
+                  sakes: item.sakes,
+                  imagePath: permanentPath,
+                );
+                updatedHistory.add(updatedItem);
+                hasChanges = permanentPath != item.imagePath;
+                logger.warning('メニュー解析履歴の画像のbase64エンコードに失敗しました: ${item.id} - $e');
               }
             } else {
               // File doesn't exist

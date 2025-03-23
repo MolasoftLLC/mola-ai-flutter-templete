@@ -3,6 +3,7 @@ import 'dart:convert';
 class SakeBottleImage {
   final String id;
   final String path;
+  final String? base64Image; // Add base64 encoded image data
   final DateTime capturedAt;
   final String? sakeName;
   final String? type;
@@ -10,6 +11,7 @@ class SakeBottleImage {
   SakeBottleImage({
     required this.id,
     required this.path,
+    this.base64Image, // Add this parameter
     required this.capturedAt,
     this.sakeName,
     this.type,
@@ -19,6 +21,7 @@ class SakeBottleImage {
     return SakeBottleImage(
       id: json['id'] as String,
       path: json['path'] as String,
+      base64Image: json['base64Image'] as String?, // Add this field
       capturedAt: DateTime.parse(json['capturedAt'] as String),
       sakeName: json['sakeName'] as String?,
       type: json['type'] as String?,
@@ -29,6 +32,7 @@ class SakeBottleImage {
     return {
       'id': id,
       'path': path,
+      'base64Image': base64Image, // Add this field
       'capturedAt': capturedAt.toIso8601String(),
       'sakeName': sakeName,
       'type': type,
@@ -39,6 +43,7 @@ class SakeBottleImage {
   SakeBottleImage copyWith({
     String? id,
     String? path,
+    String? base64Image, // Add this parameter
     DateTime? capturedAt,
     String? sakeName,
     String? type,
@@ -46,6 +51,7 @@ class SakeBottleImage {
     return SakeBottleImage(
       id: id ?? this.id,
       path: path ?? this.path,
+      base64Image: base64Image ?? this.base64Image, // Add this field
       capturedAt: capturedAt ?? this.capturedAt,
       sakeName: sakeName ?? this.sakeName,
       type: type ?? this.type,

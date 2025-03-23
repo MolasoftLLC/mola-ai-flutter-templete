@@ -5,14 +5,16 @@ class MenuAnalysisHistoryItem {
   final DateTime date;
   final String? storeName;
   final List<SavedSake> sakes;
-  final String? imagePath; // Add this field
+  final String? imagePath;
+  final String? base64Image; // Add base64 encoded image data
 
   MenuAnalysisHistoryItem({
     required this.id,
     required this.date,
     this.storeName,
     required this.sakes,
-    this.imagePath, // Add this parameter
+    this.imagePath,
+    this.base64Image, // Add this parameter
   });
 
   factory MenuAnalysisHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -23,7 +25,8 @@ class MenuAnalysisHistoryItem {
       sakes: (json['sakes'] as List<dynamic>)
           .map((e) => SavedSake.fromJson(e as Map<String, dynamic>))
           .toList(),
-      imagePath: json['imagePath'] as String?, // Add this field
+      imagePath: json['imagePath'] as String?,
+      base64Image: json['base64Image'] as String?, // Add this field
     );
   }
 
@@ -33,7 +36,8 @@ class MenuAnalysisHistoryItem {
       'date': date.toIso8601String(),
       'storeName': storeName,
       'sakes': sakes.map((e) => e.toJson()).toList(),
-      'imagePath': imagePath, // Add this field
+      'imagePath': imagePath,
+      'base64Image': base64Image, // Add this field
     };
   }
 }
