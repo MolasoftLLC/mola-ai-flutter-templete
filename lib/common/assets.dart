@@ -11,4 +11,6 @@ class Assets {
       AssetImage('assets/images/sakabin_nav_icon.png');
   static const AssetImage sakeLogoColor =
       AssetImage('assets/images/sake_logo_color.png');
+  // Add placeholder image for missing files
+  static const AssetImage sakePlaceholder = AssetImage('assets/images/sake_placeholder.png');
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 
 import '../../domain/eintities/sake_bottle_image.dart';
 import 'sake_bottle_list_page_notifier.dart';
@@ -207,8 +208,8 @@ class SakeBottleListPage extends StatelessWidget {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.file(
-                  File(image.path),
+                child: Image(
+                  image: FileUtils.safeLoadImage(image.path),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -271,8 +272,8 @@ class SakeBottleListPage extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(image.path),
+                  child: Image(
+                    image: FileUtils.safeLoadImage(image.path),
                     height: 200,
                     fit: BoxFit.cover,
                   ),

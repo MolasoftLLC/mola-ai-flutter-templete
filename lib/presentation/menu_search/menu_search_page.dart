@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
+import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_section.dart';
 import 'package:provider/provider.dart';
@@ -156,7 +157,7 @@ class MenuSearchPage extends StatelessWidget {
                                         width: 2,
                                       ),
                                       image: DecorationImage(
-                                        image: FileImage(sakeImage),
+                                        image: FileUtils.safeLoadImage(sakeImage.path),
                                         fit: BoxFit.cover,
                                       ),
                                     ),

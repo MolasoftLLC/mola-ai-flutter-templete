@@ -62,10 +62,20 @@ class SakeBottleImageRepository {
           .map((json) => SakeBottleImage.fromJson(json))
           .toList();
       
-      // Sort by date (newest first)
-      images.sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
+      // Filter out images with non-existent files
+      final List<SakeBottleImage> validImages = [];
+      for (final image in images) {
+        if (File(image.path).existsSync()) {
+          validImages.add(image);
+        } else {
+          logger.warning('酒瓶画像ファイルが見つかりません: ${image.path}');
+        }
+      }
       
-      return images;
+      // Sort by date (newest first)
+      validImages.sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
+      
+      return validImages;
     } catch (e) {
       logger.shout('酒瓶画像の取得に失敗しました: $e');
       return [];
