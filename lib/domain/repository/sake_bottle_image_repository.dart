@@ -19,21 +19,18 @@ class SakeBottleImageRepository {
         return null;
       }
       
-      // Copy to app directory
-      final savedImage = await ImageCropperService.copyImageToAppDirectory(
-        imageFile,
-        'sake_bottle',
-      );
+      // Save to permanent storage
+      final permanentPath = await ImageCropperService.saveImagePermanently(imageFile, 'sake_bottle');
       
-      if (savedImage == null) {
-        logger.shout('アプリディレクトリへのコピーに失敗しました');
+      if (permanentPath == null) {
+        logger.shout('永続的な画像の保存に失敗しました');
         return null;
       }
       
       // Create sake bottle image object
       final sakeBottleImage = SakeBottleImage(
         id: 'sake_bottle_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}',
-        path: savedImage.path,
+        path: permanentPath,
         capturedAt: DateTime.now(),
         sakeName: sakeName,
         type: type,
@@ -142,5 +139,63 @@ class SakeBottleImageRepository {
       key: SAKE_BOTTLE_IMAGES,
       value: jsonString,
     );
+  }
+
+  /// Migrate existing images to permanent storage
+  Future<void> migrateExistingImages() async {
+    try {
+      final jsonString = await SharedPreference.staticGetString(
+        key: SAKE_BOTTLE_IMAGES,
+        defaultValue: '[]',
+      );
+      
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      final List<SakeBottleImage> images = jsonList
+          .map((json) => SakeBottleImage.fromJson(json))
+          .toList();
+      
+      bool hasChanges = false;
+      final updatedImages = <SakeBottleImage>[];
+      
+      for (final image in images) {
+        final file = File(image.path);
+        if (file.existsSync()) {
+          // Check if the image is already in the documents directory
+          final appDir = await getApplicationDocumentsDirectory();
+          if (!image.path.startsWith(appDir.path)) {
+            // Need to migrate this image
+            final permanentPath = await ImageCropperService.saveImagePermanently(
+              file,
+              'sake_bottle'
+            );
+            
+            if (permanentPath != null) {
+              // Create updated image with new path
+              final updatedImage = image.copyWith(path: permanentPath);
+              updatedImages.add(updatedImage);
+              hasChanges = true;
+              logger.info('酒瓶画像を永続的なストレージに移行しました: ${image.id}');
+            } else {
+              // Couldn't migrate, but file exists, so keep original
+              updatedImages.add(image);
+            }
+          } else {
+            // Already in permanent storage
+            updatedImages.add(image);
+          }
+        } else {
+          // File doesn't exist, image will be filtered out
+          logger.warning('存在しない酒瓶画像をスキップしました: ${image.id} at ${image.path}');
+          hasChanges = true;
+        }
+      }
+      
+      if (hasChanges) {
+        await _saveSakeBottleImagesList(updatedImages);
+        logger.info('酒瓶画像の移行が完了しました。${images.length - updatedImages.length} 個の無効な画像が削除されました。');
+      }
+    } catch (e) {
+      logger.shout('既存の酒瓶画像の移行に失敗しました: $e');
+    }
   }
 }

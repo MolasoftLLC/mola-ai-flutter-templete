@@ -76,6 +76,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     //     '田所酒っていう日本酒の特徴を教えてください。もしそんな日本酒が存在しないなら「該当の日本酒は存在しないようです。」と言ってください。その後似たような名前の日本酒の候補がほしいです。';
     // await requestGemini(prompt2);
 
+    // 初期化と移行を実行
+    await _initializeWithMigration();
+  }
+  
+  Future<void> _initializeWithMigration() async {
+    // 既存の画像を永続的なストレージに移行
+    await migrateMenuAnalysisImages();
     // メニュー解析履歴を読み込む
     await loadMenuAnalysisHistory();
   }
@@ -550,16 +557,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
 
     try {
-      // Save the current image to app directory if available
+      // Save the current image permanently if available
       String? imagePath;
       if (state.sakeImage != null) {
-        final savedImage = await ImageCropperService.copyImageToAppDirectory(
+        imagePath = await ImageCropperService.saveImagePermanently(
           state.sakeImage!,
-          'menu',
+          'menu'
         );
-        if (savedImage != null) {
-          imagePath = savedImage.path;
-        }
       }
       
       // 現在の日本酒情報から保存用のデータを作成
@@ -602,6 +606,84 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       logger.info('メニュー解析履歴に追加しました: ${newHistoryItem.id}');
     } catch (e) {
       logger.shout('メニュー解析履歴への追加に失敗しました: $e');
+    }
+  }
+
+  /// Migrate existing menu analysis images to permanent storage
+  Future<void> migrateMenuAnalysisImages() async {
+    try {
+      final historyJson =
+          await SharedPreference.staticGetString(key: MENU_ANALYSIS_HISTORY);
+      if (historyJson != null && historyJson.isNotEmpty) {
+        final List<dynamic> historyList = jsonDecode(historyJson);
+        final List<MenuAnalysisHistoryItem> history = historyList
+            .map((item) => MenuAnalysisHistoryItem.fromJson(item))
+            .toList();
+        
+        bool hasChanges = false;
+        final updatedHistory = <MenuAnalysisHistoryItem>[];
+        
+        for (final item in history) {
+          if (item.imagePath != null) {
+            final file = File(item.imagePath!);
+            if (file.existsSync()) {
+              // Check if the image is already in the documents directory
+              final appDir = await getApplicationDocumentsDirectory();
+              if (!item.imagePath!.startsWith(appDir.path)) {
+                // Need to migrate this image
+                final permanentPath = await ImageCropperService.saveImagePermanently(
+                  file,
+                  'menu'
+                );
+                
+                if (permanentPath != null) {
+                  // Create a new history item with the updated path
+                  final updatedItem = MenuAnalysisHistoryItem(
+                    id: item.id,
+                    date: item.date,
+                    storeName: item.storeName,
+                    sakes: item.sakes,
+                    imagePath: permanentPath,
+                  );
+                  updatedHistory.add(updatedItem);
+                  hasChanges = true;
+                  logger.info('メニュー解析履歴の画像を永続的なストレージに移行しました: ${item.id}');
+                } else {
+                  // Couldn't migrate, but file exists, so keep original
+                  updatedHistory.add(item);
+                }
+              } else {
+                // Already in permanent storage
+                updatedHistory.add(item);
+              }
+            } else {
+              // File doesn't exist
+              // Create a new history item without the image path
+              final updatedItem = MenuAnalysisHistoryItem(
+                id: item.id,
+                date: item.date,
+                storeName: item.storeName,
+                sakes: item.sakes,
+                imagePath: null, // Remove invalid path
+              );
+              updatedHistory.add(updatedItem);
+              hasChanges = true;
+              logger.warning('存在しないメニュー解析履歴の画像をnullに設定しました: ${item.id}');
+            }
+          } else {
+            // No image path, keep as is
+            updatedHistory.add(item);
+          }
+        }
+        
+        if (hasChanges) {
+          state = state.copyWith(menuAnalysisHistory: updatedHistory);
+          await saveMenuAnalysisHistory();
+          logger.info('メニュー解析履歴の画像の移行が完了しました');
+        }
+      }
+    } catch (e) {
+      logger.shout('メニュー解析履歴の画像の移行に失敗しました: $e');
     }
   }
 
