@@ -209,7 +209,10 @@ class SakeBottleListPage extends StatelessWidget {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image(
-                  image: FileUtils.safeLoadImage(image.path),
+                  image: FileUtils.safeLoadImage(
+                    image.path,
+                    base64Image: image.base64Image,
+                  ),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -273,7 +276,10 @@ class SakeBottleListPage extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image(
-                    image: FileUtils.safeLoadImage(image.path),
+                    image: FileUtils.safeLoadImage(
+                      image.path,
+                      base64Image: image.base64Image,
+                    ),
                     height: 200,
                     fit: BoxFit.cover,
                   ),
