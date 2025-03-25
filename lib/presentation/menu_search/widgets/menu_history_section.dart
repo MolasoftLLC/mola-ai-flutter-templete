@@ -46,7 +46,7 @@ class MenuHistorySection extends StatelessWidget {
   }
 
   // 画像を拡大表示するダイアログを表示する
-  void _showEnlargedImage(BuildContext context, String imagePath) {
+  void _showEnlargedImage(BuildContext context, MenuAnalysisHistoryItem historyItem) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -64,7 +64,7 @@ class MenuHistorySection extends StatelessWidget {
               maxScale: 4,
               child: Image(
                 image: FileUtils.safeLoadImage(
-                  imagePath,
+                  historyItem.imagePath,
                   base64Image: historyItem.base64Image,
                 ),
                 fit: BoxFit.contain,
@@ -136,11 +136,11 @@ class MenuHistorySection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ExpansionTile(
-                      leading: historyItem.imagePath != null
+                      leading: (historyItem.imagePath != null || (historyItem.base64Image != null && historyItem.base64Image!.isNotEmpty))
                           ? GestureDetector(
                               onTap: () {
                                 _showEnlargedImage(
-                                    context, historyItem.imagePath!);
+                                    context, historyItem);
                               },
                               child: Container(
                                 width: 50,

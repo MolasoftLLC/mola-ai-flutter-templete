@@ -17,6 +17,7 @@ import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/widgets/ad_consent_dialog.dart';
+import '../../common/utils/snack_bar_utils.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
@@ -140,30 +141,40 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         );
 
         if (rewardedAd != null) {
-          // Start search in background
-          state = state.copyWith(isAnalyzingInBackground: true);
-          final searchFuture = _performSearch(sakeName);
+          // 広告を表示し、視聴後に検索を開始
+          state = state.copyWith(isAdLoading: true);
 
-          // Show ad
+          // 広告を表示
           await AdUtils.showRewardedAd(
             rewardedAd,
             onUserEarnedReward: (reward) {
               logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
             },
           );
-
-          // Wait for search to complete if it hasn't already
-          await searchFuture;
-          state = state.copyWith(isAnalyzingInBackground: false);
+          
+          // 広告視聴後に検索を開始
+          state = state.copyWith(isAdLoading: false, isLoading: true);
+          await _performSearch(sakeName);
         } else {
           // Ad failed to load, proceed with search
           state = state.copyWith(isAdLoading: false);
           await _performSearch(sakeName);
         }
       } else {
-        // User declined ad, proceed with search without ad
-        state = state.copyWith(isLoading: true);
-        await _performSearch(sakeName);
+        // User declined ad, cancel search completely
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '検索をキャンセルしました。検索機能向上のため、次回は広告視聴にご協力ください。',
+          duration: const Duration(seconds: 4),
+        );
+        
+        // Reset loading state and do not perform search
+        // Also revert the click count increment
+        state = state.copyWith(
+          isLoading: false,
+          searchButtonClickCount: newClickCount - 1,
+        );
+        return;
       }
     } else {
       // Odd-numbered click, proceed directly to search
@@ -349,30 +360,40 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         );
 
         if (rewardedAd != null) {
-          // Start analysis in background
-          state = state.copyWith(isAnalyzingInBackground: true);
-          final analysisFuture = _performBottleAnalysis();
+          // 広告を表示し、視聴後に解析を開始
+          state = state.copyWith(isAdLoading: true);
 
-          // Show ad
+          // 広告を表示
           await AdUtils.showRewardedAd(
             rewardedAd,
             onUserEarnedReward: (reward) {
               logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
             },
           );
-
-          // Wait for analysis to complete if it hasn't already
-          await analysisFuture;
-          state = state.copyWith(isAnalyzingInBackground: false);
+          
+          // 広告視聴後に解析を開始
+          state = state.copyWith(isAdLoading: false, isLoading: true);
+          await _performBottleAnalysis();
         } else {
           // Ad failed to load, proceed with analysis
           state = state.copyWith(isAdLoading: false);
           await _performBottleAnalysis();
         }
       } else {
-        // User declined ad, proceed with analysis without ad
-        state = state.copyWith(isLoading: true);
-        await _performBottleAnalysis();
+        // User declined ad, cancel analysis completely
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
+          duration: const Duration(seconds: 4),
+        );
+        
+        // Reset loading state and do not perform analysis
+        // Also revert the click count increment
+        state = state.copyWith(
+          isLoading: false,
+          analyzeButtonClickCount: newClickCount - 1,
+        );
+        return;
       }
     } else {
       // Odd-numbered click, proceed directly to analysis
@@ -437,12 +458,17 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       );
 
       // Save the bottle image with sake name and type
-      await sakeBottleImageRepository.saveSakeBottleImage(
-        state.sakeImage!,
-        sakeName: sakeInfo.name,
-        type: sakeInfo.type,
-      );
-      logger.info('酒瓶画像を保存しました: ${sakeInfo.name}');
+      try {
+        await sakeBottleImageRepository.saveSakeBottleImage(
+          state.sakeImage!,
+          sakeName: sakeInfo.name,
+          type: sakeInfo.type,
+        );
+        logger.info('酒瓶画像を保存しました: ${sakeInfo.name}');
+      } catch (e) {
+        // 画像保存に失敗しても解析結果の表示には影響させない
+        logger.warning('酒瓶画像の保存に失敗しましたが、解析結果は表示されます: $e');
+      }
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');
       logger.shout('スタックトレース: $stackTrace');

@@ -75,31 +75,6 @@ class SakeBottleListPage extends StatelessWidget {
                       : _buildGridView(context, sakeBottleImages),
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // カメラから追加ボタン
-          FloatingActionButton(
-            heroTag: 'camera',
-            onPressed: () {
-              notifier.pickImage(ImageSource.camera);
-            },
-            backgroundColor: const Color(0xFF1D3567),
-            child: const Icon(Icons.camera_alt),
-          ),
-          const SizedBox(height: 16),
-          // ギャラリーから追加ボタン
-          FloatingActionButton(
-            heroTag: 'gallery',
-            onPressed: () {
-              notifier.pickImage(ImageSource.gallery);
-            },
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF1D3567),
-            child: const Icon(Icons.photo_library),
-          ),
-        ],
-      ),
     );
   }
 

@@ -17,26 +17,32 @@ class SakeBottleImageRepository {
   // Save a sake bottle image
   Future<SakeBottleImage?> saveSakeBottleImage(File imageFile, {String? sakeName, String? type}) async {
     try {
-      // Save to gallery if not from gallery already
-      String? galleryPath;
-      if (!imageFile.path.contains('DCIM')) {
-        galleryPath = await ImageCropperService.saveImageToGallery(imageFile);
-      }
-      
-      // Save to permanent storage
-      final permanentPath = await ImageCropperService.saveImagePermanently(imageFile, 'sake_bottle');
-      
-      if (permanentPath == null) {
-        logger.shout('永続的な画像の保存に失敗しました');
-        return null;
-      }
-      
-      // Compress and encode to base64
+      // Compress and encode to base64 first (最も重要な処理を先に実行)
       final base64Image = await ImageUtils.compressAndEncodeImage(
         imageFile,
         quality: 55,
         format: CompressFormat.webp,
       );
+      
+      // Save to gallery if not from gallery already (非重要な処理はtry-catchで囲む)
+      String? galleryPath;
+      try {
+        if (!imageFile.path.contains('DCIM')) {
+          galleryPath = await ImageCropperService.saveImageToGallery(imageFile);
+        }
+      } catch (e) {
+        logger.warning('ギャラリーへの保存に失敗しましたが処理を続行します: $e');
+      }
+      
+      // Save to permanent storage (失敗してもbase64があれば続行)
+      String permanentPath;
+      try {
+        final savedPath = await ImageCropperService.saveImagePermanently(imageFile, 'sake_bottle');
+        permanentPath = savedPath ?? imageFile.path;
+      } catch (e) {
+        logger.warning('永続的な画像の保存に失敗しましたが、base64データがあるため処理を続行します: $e');
+        permanentPath = imageFile.path;
+      }
       
       // Create sake bottle image object
       final sakeBottleImage = SakeBottleImage(
@@ -71,9 +77,16 @@ class SakeBottleImageRepository {
           .map((json) => SakeBottleImage.fromJson(json))
           .toList();
       
-      // Filter out images with non-existent files
+      // Filter out images with non-existent files unless they have base64 data
       final List<SakeBottleImage> validImages = [];
       for (final image in images) {
+        // base64データがある場合は有効とみなす
+        if (image.base64Image != null && image.base64Image!.isNotEmpty) {
+          validImages.add(image);
+          continue;
+        }
+        
+        // base64データがない場合はファイルの存在チェック
         if (File(image.path).existsSync()) {
           validImages.add(image);
         } else {
