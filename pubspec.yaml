@@ -9,27 +9,27 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
-  google_generative_ai: ^0.3.2
+  google_generative_ai: ^0.3.3
   provider: ^6.1.2
-  freezed: ^2.1.0
-  path_provider: ^2.0.2
-  flutter_state_notifier:
-  freezed_annotation: ^2.2.0
+  freezed: ^2.4.0
+  path_provider: ^2.1.1
+  flutter_state_notifier: ^0.7.3
+  freezed_annotation: ^2.4.1
 
   #AppIcon
   flutter_launcher_icons: ^0.13.1
 
   #Splash
-  flutter_native_splash: ^2.4.0
+  flutter_native_splash: ^2.3.8
 
   #ローカルDB
   shared_preferences: ^2.2.3
 
   #Http通信
-  chopper: ^6.1.0
+  chopper: ^7.0.0
 
   # logger
-  simple_logger: ^1.8.0+1
+  simple_logger: ^1.9.0
 
   # 環境変数
   flutter_dotenv: ^5.1.0
@@ -38,33 +38,33 @@ dependencies:
   lottie: ^2.7.0
 
   #画像選択
-  image_picker: 1.0.0
+  image_picker: ^1.0.4
 
   #Slider
-  syncfusion_flutter_sliders: ^25.2.3
+  syncfusion_flutter_sliders: ^25.2.7
 
   url_launcher: ^6.2.6
 
   #　同期
-  rxdart: ^0.27.2
-  synchronized: ^3.0.0
+  rxdart: ^0.27.7
+  synchronized: ^3.1.0
 
-  app_tracking_transparency: ^2.0.5
+  app_tracking_transparency: ^2.0.6
 
   package_info_plus: ^8.0.0
   version: ^3.0.2
   
   #画像圧縮
-  flutter_image_compress: ^1.1.3
+  flutter_image_compress: ^2.0.0
   
   #広告
-  google_mobile_ads: ^3.1.0
+  google_mobile_ads: ^4.0.0
   
   #画像をギャラリーに保存
   image_gallery_saver: ^2.0.3
   
   #画像のクロップと回転
-  image_cropper: ^8.0.1
+  image_cropper: ^8.0.3
 
   #日付フォーマット
   intl: ^0.18.1
@@ -75,7 +75,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.0.4
-  chopper_generator: ^6.0.0
+  chopper_generator: ^7.4.0
 
   # Serializer
   json_serializable: ^6.5.4
