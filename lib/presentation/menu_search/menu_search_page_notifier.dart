@@ -243,16 +243,30 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             },
             onAdDismissed: () {
               logger.info('リワード広告が閉じられました');
-              state = state.copyWith(isAdLoading: false);
-
+              
               // 広告が閉じられた時の処理
               if (state.isAnalyzingInBackground) {
                 // まだ解析中の場合は、解析中の表示を継続
                 logger.info('広告が閉じられましたが、まだ解析中です');
+                state = state.copyWith(
+                  isAdLoading: false,
+                  isLoading: true,
+                  isExtractingInfo: true,
+                );
               } else if (state.extractedSakes.isNotEmpty) {
                 // 解析が完了している場合は、詳細情報を取得
                 logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
+                state = state.copyWith(
+                  isAdLoading: false,
+                  isLoading: false,
+                );
                 _fetchSakeDetails(state.extractedSakes);
+              } else {
+                // 解析結果がない場合（エラーなど）
+                state = state.copyWith(
+                  isAdLoading: false,
+                  isLoading: false,
+                );
               }
             },
             onAdFailedToLoad: (error) {
@@ -495,6 +509,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         state = state.copyWith(
+          isLoading: false,
           isExtractingInfo: false,
           isAnalyzingInBackground: false,
           errorMessage: '日本酒情報を抽出できませんでした',
@@ -513,27 +528,37 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
       logger.info('バックグラウンド解析が完了しました: ${extractedSakes.length}件の日本酒情報を抽出');
       
-      // 解析結果を保存し、バックグラウンド解析フラグをオフに
-      state = state.copyWith(
-        isExtractingInfo: false,
-        isAnalyzingInBackground: false,
-        extractedSakes: extractedSakes,
-        sakeLoadingStatus: initialLoadingStatus,
-        hasScrolledToResults: false,
-      );
-
       // 広告が表示中かどうかをチェック
       if (state.isAdLoading) {
-        // 広告表示中の場合は、詳細情報の取得は広告終了後に行う
-        logger.info('広告表示中のため、詳細情報の取得は広告終了後に行います');
+        // 広告表示中の場合は、解析結果を保存するが、ローディング表示は維持
+        // 広告終了時のコールバックで適切な表示に切り替える
+        logger.info('広告表示中のため、解析結果を保存し広告終了を待ちます');
+        state = state.copyWith(
+          isExtractingInfo: false,
+          isAnalyzingInBackground: false,
+          extractedSakes: extractedSakes,
+          sakeLoadingStatus: initialLoadingStatus,
+          hasScrolledToResults: false,
+        );
       } else {
-        // 広告が既に終了している場合は、すぐに詳細情報を取得
-        logger.info('広告が既に終了しているため、すぐに詳細情報を取得します');
+        // 広告が既に終了している場合は、ローディング表示を終了し結果を表示
+        logger.info('広告が既に終了しているため、結果を表示します');
+        state = state.copyWith(
+          isLoading: false,
+          isExtractingInfo: false,
+          isAnalyzingInBackground: false,
+          extractedSakes: extractedSakes,
+          sakeLoadingStatus: initialLoadingStatus,
+          hasScrolledToResults: false,
+        );
+        
+        // 詳細情報を取得
         await _fetchSakeDetails(extractedSakes);
       }
     } catch (e) {
       logger.shout('バックグラウンド解析中にエラーが発生しました: $e');
       state = state.copyWith(
+        isLoading: false,
         isExtractingInfo: false,
         isAnalyzingInBackground: false,
         errorMessage: '日本酒情報の抽出に失敗しました: $e',
