@@ -60,7 +60,7 @@ class MenuSearchPage extends StatelessWidget {
 
     String loadingText = 'AIに問い合わせています';
     if (isExtractingInfo) {
-      loadingText = '解析中...広告表示にご協力ください...';
+      loadingText = '解析中...時々ある広告表示にご協力ください...';
     } else if (isGettingDetails) {
       loadingText = '日本酒の詳細情報を取得しています...';
     }
