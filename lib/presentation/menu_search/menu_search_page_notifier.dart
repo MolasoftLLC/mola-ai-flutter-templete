@@ -18,6 +18,8 @@ import 'package:mola_gemini_flutter_template/infrastructure/local_database/share
 import 'package:path_provider/path_provider.dart';
 import 'package:state_notifier/state_notifier.dart';
 
+import '../../common/services/ad_counter_service.dart';
+
 import '../../common/logger.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
@@ -225,16 +227,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     );
 
     try {
-      // 広告表示前に同意ダイアログを表示
-      final consent = await AdConsentDialog.show(
-        context,
-        title: '広告視聴の確認',
-        description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴をお願いします！',
-        icon: Icons.menu_book,
-      );
+      // Check if we should show an ad using shared counter (3-search cycle)
+      final shouldShowAd = await AdCounterService.shouldShowAd();
+      
+      if (shouldShowAd) {
+        // 広告表示前に同意ダイアログを表示
+        final consent = await AdConsentDialog.show(
+          context,
+          title: '広告視聴の確認',
+          description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴をお願いします！',
+          icon: Icons.menu_book,
+        );
 
-      // ユーザーが同意した場合のみ広告を表示
-      if (consent == true) {
+        // ユーザーが同意した場合のみ広告を表示
+        if (consent == true) {
         // 広告のロードを開始
         try {
           final rewardedAd = await AdUtils.loadRewardedAd(
@@ -320,25 +326,30 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             isAnalyzingInBackground: false,
           );
         }
+        } else {
+          // ユーザーが広告視聴を拒否した場合
+          logger.info('ユーザーが広告視聴を拒否しました');
+          
+          // SnackBarで通知
+          SnackBarUtils.showWarningSnackBar(
+            context,
+            message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
+            duration: const Duration(seconds: 4),
+          );
+          
+          // 解析をキャンセルして処理を終了
+          state = state.copyWith(
+            isLoading: false,
+            isExtractingInfo: false,
+            isGettingDetails: false,
+            isAdLoading: false,
+            isAnalyzingInBackground: false,
+          );
+          return;
+        }
       } else {
-        // ユーザーが広告視聴を拒否した場合
-        logger.info('ユーザーが広告視聴を拒否しました');
-        
-        // SnackBarで通知
-        SnackBarUtils.showWarningSnackBar(
-          context,
-          message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
-          duration: const Duration(seconds: 4),
-        );
-        
-        // 解析をキャンセルして処理を終了
-        state = state.copyWith(
-          isLoading: false,
-          isExtractingInfo: false,
-          isGettingDetails: false,
-          isAdLoading: false,
-          isAnalyzingInBackground: false,
-        );
+        // No ad needed, proceed directly to analysis
+        await _extractSakeInfoInForeground(imageFile);
         return;
       }
 
