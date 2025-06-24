@@ -8,6 +8,7 @@ import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_r
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
+import '../../common/services/ad_counter_service.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
@@ -105,8 +106,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       sakeInfo: null,
     );
 
-    // Check if we should show an ad (even-numbered clicks)
-    if (newClickCount % 2 == 0) {
+    // Check if we should show an ad using shared counter (3-search cycle)
+    final shouldShowAd = await AdCounterService.shouldShowAd();
+    if (shouldShowAd) {
       // Show consent dialog before ad
       final consent = await AdConsentDialog.show(
         context,
@@ -324,8 +326,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       errorMessage: null,
     );
 
-    // Check if we should show an ad (even-numbered clicks)
-    if (newClickCount % 2 == 0) {
+    // Check if we should show an ad using shared counter (3-search cycle)
+    final shouldShowAd = await AdCounterService.shouldShowAd();
+    if (shouldShowAd) {
       // Show consent dialog before ad
       final consent = await AdConsentDialog.show(
         context,
