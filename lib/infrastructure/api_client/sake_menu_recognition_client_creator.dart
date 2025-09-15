@@ -1,8 +1,10 @@
 import 'package:chopper/chopper.dart';
 import 'package:http/http.dart' as http;
 
+import '../../common/access_url.dart';
+
 ChopperClient sakeMenuRecognitionChopperClient({http.Client? client}) {
-  const String baseUrl = 'https://molasoft-ai-central.com/';
+  const String baseUrl = sakeMenuUrl;
   // baseUrl: Uri.parse('https://molasoft-ai-central.com/'),
   return ChopperClient(
     baseUrl: Uri.parse(baseUrl),

@@ -3,6 +3,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_section.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sake_result_tile.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/assets.dart';
@@ -350,10 +351,6 @@ class MenuSearchPage extends StatelessWidget {
                                   final recommendationScore =
                                       detailedSake?.recommendationScore;
 
-                                  // 超おすすめかどうか（スコアが8以上）
-                                  final isHighlyRecommended =
-                                      recommendationScore != null &&
-                                          recommendationScore >= 8;
                                   final isFavorited = myFavoriteList.any(
                                       (favorite) =>
                                           favorite.name ==
@@ -365,231 +362,24 @@ class MenuSearchPage extends StatelessWidget {
                                                   ? detailedSake!.type
                                                   : sake.type));
 
-                                  return Padding(
-                                    padding: const EdgeInsets.only(
-                                        bottom: 8.0, top: 0),
-                                    child: Card(
-                                      elevation: 2,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: ExpansionTile(
-                                        title: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    hasDetails
-                                                        ? detailedSake!.name ??
-                                                            'Unknown'
-                                                        : sake.name ??
-                                                            'Unknown',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          top: 12),
-                                                  child: IconButton(
-                                                    icon: Icon(
-                                                      isFavorited
-                                                          ? Icons.favorite
-                                                          : Icons
-                                                              .favorite_border,
-                                                      color: isFavorited
-                                                          ? Colors.red
-                                                          : Colors.grey,
-                                                      size: 24,
-                                                    ),
-                                                    onPressed: () {
-                                                      final favoriteSake =
-                                                          FavoriteSake(
-                                                        name: detailedSake!
-                                                                .name ??
-                                                            'Unknown',
-                                                        type: detailedSake.type,
-                                                      );
-                                                      favNotifier
-                                                          .addOrRemoveFavorite(
-                                                              favoriteSake);
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (isHighlyRecommended)
-                                              Container(
-                                                margin: const EdgeInsets.only(
-                                                    top: 4),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.red.shade100,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                  border: Border.all(
-                                                    color: Colors.red.shade300,
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.star,
-                                                      color:
-                                                          Colors.red.shade700,
-                                                      size: 16,
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Text(
-                                                      recommendationScore >= 9
-                                                          ? '超おすすめ！'
-                                                          : 'おすすめ！',
-                                                      style: TextStyle(
-                                                        color:
-                                                            Colors.red.shade700,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        subtitle: Text(
-                                          sake.type ?? '種類不明',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        trailing: hasDetails
-                                            ? const Icon(
-                                                size: 30,
-                                                Icons.expand_circle_down,
-                                                color: Color(0xFF1D3567))
-                                            : !hasFailed
-                                                ? const SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Color(0xFF1D3567),
-                                                    ),
-                                                  )
-                                                : isLoading
-                                                    ? const SizedBox(
-                                                        width: 20,
-                                                        height: 20,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color:
-                                                              Color(0xFF1D3567),
-                                                        ),
-                                                      )
-                                                    : Icon(Icons.error_outline,
-                                                        color: Colors
-                                                            .red.shade700),
-                                        children: [
-                                          if (hasDetails)
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.all(16.0),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  if (detailedSake!.brewery !=
-                                                      null)
-                                                    _buildInfoRow(
-                                                      '蔵元',
-                                                      detailedSake.brewery!,
-                                                      Icons.home_work,
-                                                    ),
-                                                  if (detailedSake.taste !=
-                                                      null)
-                                                    _buildInfoRow(
-                                                      '味わい',
-                                                      detailedSake.taste!,
-                                                      Icons.restaurant,
-                                                    ),
-                                                  if (detailedSake
-                                                          .sakeMeterValue !=
-                                                      null)
-                                                    _buildInfoRow(
-                                                      '日本酒度',
-                                                      '${detailedSake.sakeMeterValue}',
-                                                      Icons.science,
-                                                    ),
-                                                  if (detailedSake.types !=
-                                                          null &&
-                                                      detailedSake
-                                                          .types!.isNotEmpty)
-                                                    _buildTypesRow(
-                                                        detailedSake.types!),
-                                                ],
-                                              ),
-                                            )
-                                          else
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.all(16.0),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    isItemLoading
-                                                        ? Icons.hourglass_top
-                                                        : Icons.error_outline,
-                                                    color: isItemLoading
-                                                        ? const Color(
-                                                            0xFF1D3567)
-                                                        : Colors.red.shade700,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      isItemLoading
-                                                          ? '詳細情報を取得中...'
-                                                          : '詳細情報を取得できませんでした',
-                                                      style: TextStyle(
-                                                        color: isItemLoading
-                                                            ? const Color(
-                                                                0xFF1D3567)
-                                                            : Colors
-                                                                .red.shade700,
-                                                        fontStyle: isItemLoading
-                                                            ? FontStyle.italic
-                                                            : FontStyle.normal,
-                                                        fontWeight:
-                                                            isItemLoading
-                                                                ? FontWeight
-                                                                    .normal
-                                                                : FontWeight
-                                                                    .bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
+                                  return SakeResultTile(
+                                    sake: sake,
+                                    detailedSake: detailedSake,
+                                    hasDetails: hasDetails,
+                                    isItemLoading: isItemLoading,
+                                    hasFailed: hasFailed,
+                                    isFavorited: isFavorited,
+                                    isLoading: isLoading,
+                                    recommendationScore: recommendationScore,
+                                    onToggleFavorite: () {
+                                      final favoriteSake = FavoriteSake(
+                                        name: detailedSake!.name ?? 'Unknown',
+                                        type: detailedSake!.type,
+                                      );
+                                      favNotifier.addOrRemoveFavorite(favoriteSake);
+                                    },
+                                    buildInfoRow: (key, value, icon) => _buildInfoRow(key, value, icon),
+                                    buildTypesRow: (types) => _buildTypesRow(types),
                                   );
                                 },
                               ),

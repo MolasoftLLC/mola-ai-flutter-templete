@@ -5,6 +5,7 @@
 
 ///今後はここを変えて
 const url = 'molasoft-ai.okinawa';
+const sakeMenuUrl = 'https://molasoft-ai-central.com/';
 
 const developUrl = url;
 

@@ -687,7 +687,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           .map((sake) => SavedSake(
                 name: sake.name ?? '不明な日本酒',
                 type: sake.type,
-                isRecommended: (sake.recommendationScore ?? 0) > 6,
+                isRecommended: (sake.recommendationScore ?? 0) >= 7,
               ))
           .toList();
 
