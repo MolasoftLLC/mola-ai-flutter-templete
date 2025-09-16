@@ -378,6 +378,11 @@ class MenuSearchPage extends StatelessWidget {
                                       );
                                       favNotifier.addOrRemoveFavorite(favoriteSake);
                                     },
+                                    onSave: () {
+                                      // 保存ボタンが押されたことをログ出力
+                                      // ignore: avoid_print
+                                      print('保存が押されました: \'${(detailedSake?.name ?? sake.name) ?? 'Unknown'}\'');
+                                    },
                                     buildInfoRow: (key, value, icon) => _buildInfoRow(key, value, icon),
                                     buildTypesRow: (types) => _buildTypesRow(types),
                                   );
