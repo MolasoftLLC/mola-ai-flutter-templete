@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
+import '../../../common/utils/snack_bar_utils.dart';
+
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
   const SakeResultTile({
@@ -144,7 +146,16 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                 : Colors.grey,
                             size: 22,
                           ),
-                          onPressed: widget.onSave,
+                          onPressed: () {
+                            final wasSaved = widget.isSaved;
+                            widget.onSave();
+                            if (!wasSaved) {
+                              SnackBarUtils.showInfoSnackBar(
+                                context,
+                                message: 'マイページに保存しました！',
+                              );
+                            }
+                          },
                         ),
                         const SizedBox(width: 4),
                         IconButton(

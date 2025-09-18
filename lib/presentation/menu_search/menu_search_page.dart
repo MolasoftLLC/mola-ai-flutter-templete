@@ -6,11 +6,11 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/me
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sake_result_tile.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/assets.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../common/logger.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../common/help/help_guide_dialog.dart';
 import 'menu_search_page_notifier.dart';
 
 class MenuSearchPage extends StatelessWidget {
@@ -98,29 +98,47 @@ class MenuSearchPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 50),
-                      Container(
-                        height: 180,
-                        width: 180,
-                        padding: const EdgeInsets.all(20),
-                        child: Image(
-                          image: Assets.sakeLogo,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          'メニュー検索',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black54,
-                                blurRadius: 5,
-                                offset: Offset(1, 1),
+                      const SizedBox(height: 70),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: SizedBox(
+                          height: 48,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Center(
+                                child: Text(
+                                  'メニュー検索',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        blurRadius: 5,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                child: IconButton(
+                                  tooltip: '使い方ガイド',
+                                  icon: const Icon(
+                                    Icons.help_outline,
+                                    color: Color(0xFFFFD54F),
+                                  ),
+                                  onPressed: () {
+                                    HelpGuideDialog.showForType(
+                                      context,
+                                      type: HelpGuideType.menuSearch,
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),

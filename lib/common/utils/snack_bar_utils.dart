@@ -10,17 +10,34 @@ class SnackBarUtils {
     Color backgroundColor = Colors.black87,
     Color textColor = Colors.white,
     SnackBarAction? action,
+    IconData? leadingIcon,
   }) {
     // 既存のSnackBarを閉じる
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
+
     // 新しいSnackBarを表示
+    final content = leadingIcon == null
+        ? Text(
+            message,
+            style: TextStyle(color: textColor),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(leadingIcon, color: textColor, size: 20),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  message,
+                  style: TextStyle(color: textColor),
+                ),
+              ),
+            ],
+          );
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(color: textColor),
-        ),
+        content: content,
         duration: duration,
         backgroundColor: backgroundColor,
         action: action,
@@ -56,7 +73,8 @@ class SnackBarUtils {
     showSnackBar(
       context,
       message: message,
-      backgroundColor: Colors.blue.shade800,
+      backgroundColor: const Color(0xFF1D3567),
+      leadingIcon: Icons.check_circle,
       duration: duration,
     );
   }
@@ -74,4 +92,4 @@ class SnackBarUtils {
       duration: duration,
     );
   }
-} 
+}

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,6 +12,7 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../common/help/help_guide_dialog.dart';
 import '../sake_bottle/sake_bottle_list_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
@@ -48,6 +50,35 @@ class MyPage extends StatelessWidget {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _promptAppReview(BuildContext context) async {
+    const appStoreUrl = 'https://apps.apple.com/jp/app/sakepedia/id6502377200';
+    final inAppReview = InAppReview.instance;
+
+    try {
+      if (await inAppReview.isAvailable()) {
+        await inAppReview.requestReview();
+        return;
+      }
+    } catch (_) {
+      // In-app review not available; fall back to Store link.
+    }
+
+    final uri = Uri.parse(appStoreUrl);
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('App Storeを開けませんでした。後ほどお試しください。'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   bool _isValidText(String? value) {
@@ -104,6 +135,7 @@ class MyPage extends StatelessWidget {
           backgroundColor: const Color(0xFF1D3567),
           elevation: 0,
           automaticallyImplyLeading: false,
+          centerTitle: true,
           title: const Text(
             'マイページ',
             style: TextStyle(
@@ -113,7 +145,19 @@ class MyPage extends StatelessWidget {
             ),
           ),
           actions: [
-            // 歯車アイコンを追加
+            IconButton(
+              tooltip: '使い方ガイド',
+              icon: const Icon(
+                Icons.help_outline,
+                color: Color(0xFFFFD54F),
+              ),
+              onPressed: () {
+                HelpGuideDialog.showForType(
+                  context,
+                  type: HelpGuideType.myPage,
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings, color: Colors.white),
               onPressed: () {
@@ -589,6 +633,75 @@ class MyPage extends StatelessWidget {
                               ),
                             ),
                             child: const Text('保存する'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // レビュー誘導セクション（ページ末尾）
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(
+                              Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 26,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'レビューで応援してね',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'SakePediaの使い心地はいかがですか？App Storeでレビューをいただけると、今後の改善の励みになります。',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFD54F),
+                              foregroundColor: const Color(0xFF1D3567),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            onPressed: () => _promptAppReview(context),
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                            label: const Text(
+                              'レビューを書く',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         ),
                       ],

@@ -44,6 +44,7 @@ dependencies:
   syncfusion_flutter_sliders: ^25.2.3
 
   url_launcher: ^6.2.6
+  in_app_review: ^2.0.8
 
   #　同期
   rxdart: ^0.27.2

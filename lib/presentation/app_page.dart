@@ -38,6 +38,11 @@ class AppPage extends StatelessWidget {
       return RequireUpdate(notifier);
     }
 
+    const navigationPageIndexes = [0, 1, 3];
+    final navCurrentIndex = navigationPageIndexes.contains(currentIndex)
+        ? navigationPageIndexes.indexOf(currentIndex)
+        : 0;
+
     return Scaffold(
       body: IndexedStack(
         index: currentIndex,
@@ -49,8 +54,8 @@ class AppPage extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: notifier.onTabTapped,
+        currentIndex: navCurrentIndex,
+        onTap: (index) => notifier.onTabTapped(navigationPageIndexes[index]),
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF1D3567),
         selectedItemColor: Colors.white,
@@ -63,10 +68,6 @@ class AppPage extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book),
             label: 'メニュー解析',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: '産地検索',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

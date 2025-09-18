@@ -6,9 +6,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/assets.dart';
+import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../common/help/help_guide_dialog.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
@@ -33,8 +35,11 @@ class MainSearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final notifier = context.watch<MainSearchPageNotifier>();
     final favNotifier = context.watch<FavoriteNotifier>();
+    final savedNotifier = context.watch<SavedSakeNotifier>();
     final myFavoriteList =
         context.select((FavoriteState state) => state.myFavoriteList);
+    final savedSakeList =
+        context.select((SavedSakeState state) => state.savedSakeList);
     final isLoading =
         context.select((MainSearchPageState state) => state.isLoading);
     final isAdLoading =
@@ -76,29 +81,47 @@ class MainSearchPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 50),
-                      Container(
-                        height: 180,
-                        width: 180,
-                        padding: const EdgeInsets.all(20),
-                        child: Image(
-                          image: Assets.sakeLogo,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                          '日本酒検索',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black54,
-                                blurRadius: 5,
-                                offset: Offset(1, 1),
+                      const SizedBox(height: 70),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: SizedBox(
+                          height: 48,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Center(
+                                child: Text(
+                                  '日本酒検索',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        blurRadius: 5,
+                                        offset: Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                child: IconButton(
+                                  tooltip: '使い方ガイド',
+                                  icon: const Icon(
+                                    Icons.help_outline,
+                                    color: Color(0xFFFFD54F),
+                                  ),
+                                  onPressed: () {
+                                    HelpGuideDialog.showForType(
+                                      context,
+                                      type: HelpGuideType.mainSearch,
+                                    );
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -180,8 +203,15 @@ class MainSearchPage extends StatelessWidget {
 
                       // 検索結果表示
                       if (sakeInfo != null)
-                        _buildSakeInfoCard(context, notifier, favNotifier,
-                            sakeInfo, myFavoriteList),
+                        _buildSakeInfoCard(
+                          context,
+                          notifier,
+                          favNotifier,
+                          savedNotifier,
+                          sakeInfo,
+                          myFavoriteList,
+                          savedSakeList,
+                        ),
 
                       if (errorMessage != null)
                         Padding(
@@ -593,8 +623,10 @@ class MainSearchPage extends StatelessWidget {
     BuildContext context,
     MainSearchPageNotifier notifier,
     FavoriteNotifier favNotifier,
+    SavedSakeNotifier savedNotifier,
     Sake sakeInfo,
     List<FavoriteSake> myFavoriteList,
+    List<Sake> savedSakeList,
   ) {
     // 日本酒名とタイプが一致するかどうかでお気に入り判定
     final bool isFavorite = myFavoriteList.any(
@@ -620,6 +652,10 @@ class MainSearchPage extends StatelessWidget {
         recommendationIcon = Icons.star_half;
       }
     }
+
+    final bool isSaved = savedSakeList.any(
+      (item) => item.name == sakeInfo.name && item.type == sakeInfo.type,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -659,7 +695,23 @@ class MainSearchPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                // お気に入りボタン
+                IconButton(
+                  tooltip: isSaved ? '保存を解除' : '保存',
+                  icon: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                    color: isSaved ? Colors.amberAccent : Colors.white,
+                  ),
+                  onPressed: () {
+                    final shouldShowSavedToast = !isSaved;
+                    savedNotifier.toggleSavedSake(sakeInfo);
+                    if (shouldShowSavedToast) {
+                      SnackBarUtils.showInfoSnackBar(
+                        context,
+                        message: 'マイページに保存しました！',
+                      );
+                    }
+                  },
+                ),
                 IconButton(
                   icon: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
