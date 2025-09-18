@@ -68,6 +68,26 @@ class MyPage extends StatelessWidget {
         context.select((SavedSakeState state) => state.savedSakeList);
     final isGridView =
         context.select((SavedSakeState state) => state.isGridView);
+    final activeFilterTags =
+        context.select((SavedSakeState state) => state.activeFilterTags);
+    final allFilterTags = savedSakeList
+        .expand((sake) => sake.userTags ?? const <String>[])
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    final activeFilterTagSet = activeFilterTags.toSet();
+    final filteredSakeList = activeFilterTagSet.isEmpty
+        ? savedSakeList
+        : savedSakeList
+            .where(
+              (sake) => (sake.userTags ?? const <String>[])
+                  .map((tag) => tag.trim())
+                  .any(activeFilterTagSet.contains),
+            )
+            .toList();
+    final isFiltering = activeFilterTags.isNotEmpty;
     final preferences =
         context.select((MyPageState state) => state.preferences);
 
@@ -187,11 +207,52 @@ class MyPage extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               const Text(
-                                '保存したお酒',
+                                '保存リスト',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                onPressed: allFilterTags.isEmpty
+                                    ? null
+                                    : () {
+                                        _showTagFilterSheet(
+                                          context,
+                                          notifier: savedNotifier,
+                                          allTags: allFilterTags,
+                                          selectedTags: activeFilterTags,
+                                        );
+                                      },
+                                icon: Icon(
+                                  Icons.tune,
+                                  color: isFiltering
+                                      ? Colors.amber
+                                      : (allFilterTags.isEmpty
+                                          ? Colors.white30
+                                          : Colors.white),
+                                ),
+                                label: Text(
+                                  '絞り込み',
+                                  style: TextStyle(
+                                    color: isFiltering
+                                        ? Colors.amber
+                                        : (allFilterTags.isEmpty
+                                            ? Colors.white30
+                                            : Colors.white),
+                                    fontWeight: isFiltering
+                                        ? FontWeight.bold
+                                        : FontWeight.w600,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  foregroundColor:
+                                      isFiltering ? Colors.amber : Colors.white,
+                                  disabledForegroundColor: Colors.white30,
                                 ),
                               ),
                               const Spacer(),
@@ -203,19 +264,6 @@ class MyPage extends StatelessWidget {
                                 child: Row(
                                   children: [
                                     IconButton(
-                                      tooltip: 'リスト表示',
-                                      splashRadius: 18,
-                                      icon: Icon(
-                                        Icons.view_list,
-                                        color: isGridView
-                                            ? Colors.white54
-                                            : Colors.white,
-                                      ),
-                                      onPressed: () {
-                                        savedNotifier.setGridView(false);
-                                      },
-                                    ),
-                                    IconButton(
                                       tooltip: 'グリッド表示',
                                       splashRadius: 18,
                                       icon: Icon(
@@ -226,6 +274,19 @@ class MyPage extends StatelessWidget {
                                       ),
                                       onPressed: () {
                                         savedNotifier.setGridView(true);
+                                      },
+                                    ),
+                                    IconButton(
+                                      tooltip: 'リスト表示',
+                                      splashRadius: 18,
+                                      icon: Icon(
+                                        Icons.view_list,
+                                        color: isGridView
+                                            ? Colors.white54
+                                            : Colors.white,
+                                      ),
+                                      onPressed: () {
+                                        savedNotifier.setGridView(false);
                                       },
                                     ),
                                   ],
@@ -252,49 +313,55 @@ class MyPage extends StatelessWidget {
                         if (savedSakeList.isNotEmpty)
                           Container(
                             constraints: const BoxConstraints(maxHeight: 300),
-                            child: isGridView
-                                ? _SavedSakeGrid(
-                                    savedSakeList: savedSakeList,
-                                    onTap: (sake) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              SavedSakeDetailPage(sake: sake),
-                                        ),
-                                      );
-                                    },
-                                    onRemove: (sake) {
-                                      savedNotifier.toggleSavedSake(sake);
-                                      _showToast(
-                                        context,
-                                        message:
-                                            '${sake.name ?? '名称不明'} を保存リストから削除しました',
-                                        icon: Icons.bookmark_remove,
-                                      );
-                                    },
+                            child: filteredSakeList.isEmpty
+                                ? _SavedSakeFilterEmptyView(
+                                    onClear: savedNotifier.clearFilterTags,
                                   )
-                                : _SavedSakeList(
-                                    savedSakeList: savedSakeList,
-                                    onTap: (sake) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              SavedSakeDetailPage(sake: sake),
-                                        ),
-                                      );
-                                    },
-                                    onRemove: (sake) {
-                                      savedNotifier.toggleSavedSake(sake);
-                                      _showToast(
-                                        context,
-                                        message:
-                                            '${sake.name ?? '名称不明'} を保存リストから削除しました',
-                                        icon: Icons.bookmark_remove,
-                                      );
-                                    },
-                                  ),
+                                : isGridView
+                                    ? _SavedSakeGrid(
+                                        savedSakeList: filteredSakeList,
+                                        onTap: (sake) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SavedSakeDetailPage(
+                                                      sake: sake),
+                                            ),
+                                          );
+                                        },
+                                        onRemove: (sake) {
+                                          savedNotifier.toggleSavedSake(sake);
+                                          _showToast(
+                                            context,
+                                            message:
+                                                '${sake.name ?? '名称不明'} を保存リストから削除しました',
+                                            icon: Icons.bookmark_remove,
+                                          );
+                                        },
+                                      )
+                                    : _SavedSakeList(
+                                        savedSakeList: filteredSakeList,
+                                        onTap: (sake) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SavedSakeDetailPage(
+                                                      sake: sake),
+                                            ),
+                                          );
+                                        },
+                                        onRemove: (sake) {
+                                          savedNotifier.toggleSavedSake(sake);
+                                          _showToast(
+                                            context,
+                                            message:
+                                                '${sake.name ?? '名称不明'} を保存リストから削除しました',
+                                            icon: Icons.bookmark_remove,
+                                          );
+                                        },
+                                      ),
                           ),
                         const SizedBox(height: 24),
                       ],
@@ -535,6 +602,150 @@ class MyPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showTagFilterSheet(
+    BuildContext context, {
+    required SavedSakeNotifier notifier,
+    required List<String> allTags,
+    required List<String> selectedTags,
+  }) {
+    final sortedTags = List<String>.from(allTags)..sort();
+    final tempSelected = List<String>.from(selectedTags);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final hasTags = sortedTags.isNotEmpty;
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF0A1428),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'タグで絞り込む',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (!hasTags)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          '利用可能なタグがまだありません。',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: sortedTags.map((tag) {
+                          final isSelected = tempSelected.contains(tag);
+                          return FilterChip(
+                            label: Text(
+                              tag,
+                              style: const TextStyle(
+                                color: Color(0xFF0A1428),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            selected: isSelected,
+                            onSelected: (value) {
+                              setState(() {
+                                if (value) {
+                                  tempSelected.add(tag);
+                                } else {
+                                  tempSelected.remove(tag);
+                                }
+                              });
+                            },
+                            backgroundColor: Colors.white.withOpacity(0.18),
+                            selectedColor: Colors.amber,
+                            checkmarkColor: const Color(0xFF0A1428),
+                            shape: StadiumBorder(
+                              side: BorderSide(
+                                color:
+                                    isSelected ? Colors.amber : Colors.white24,
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed:
+                              selectedTags.isEmpty && tempSelected.isEmpty
+                                  ? null
+                                  : () {
+                                      notifier.clearFilterTags();
+                                      Navigator.of(context).pop();
+                                    },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                          ),
+                          child: const Text('絞り込みを解除'),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: hasTags
+                              ? () {
+                                  notifier.setFilterTags(tempSelected);
+                                  Navigator.of(context).pop();
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: const Color(0xFF0A1428),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('適用する'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -827,6 +1038,46 @@ class _SavedSakeList extends StatelessWidget {
   }
 }
 
+class _SavedSakeFilterEmptyView extends StatelessWidget {
+  const _SavedSakeFilterEmptyView({required this.onClear});
+
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.search_off,
+            color: Colors.white54,
+            size: 36,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            '選択中のタグに該当するお酒がありません。',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: onClear,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.amber,
+              side: const BorderSide(color: Colors.amber),
+            ),
+            child: const Text('絞り込みを解除'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SavedSakeGrid extends StatelessWidget {
   const _SavedSakeGrid({
     required this.savedSakeList,
@@ -845,8 +1096,8 @@ class _SavedSakeGrid extends StatelessWidget {
       physics: const ClampingScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        crossAxisSpacing: 0,
+        mainAxisSpacing: 0,
         childAspectRatio: 0.85,
       ),
       itemCount: savedSakeList.length,
@@ -856,10 +1107,8 @@ class _SavedSakeGrid extends StatelessWidget {
             ? sake.imagePaths!.first
             : null;
         Widget preview = Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
+          color: Colors.white.withOpacity(0.1),
+          alignment: Alignment.center,
           child: const Icon(
             Icons.image_not_supported,
             color: Colors.white38,
@@ -870,14 +1119,11 @@ class _SavedSakeGrid extends StatelessWidget {
         if (imagePath != null) {
           final file = File(imagePath);
           if (file.existsSync()) {
-            preview = ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                file,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.low,
-                cacheWidth: 600,
-              ),
+            preview = Image.file(
+              file,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.low,
+              cacheWidth: 600,
             );
           }
         }
@@ -887,109 +1133,129 @@ class _SavedSakeGrid extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onTap(sake),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Stack(
+          child: Stack(
+            children: [
+              Positioned.fill(child: preview),
+              if (isRecommended)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'おすすめ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () => onRemove(sake),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.bookmark_remove,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.0),
+                        Colors.black.withOpacity(0.65),
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Positioned.fill(child: preview),
-                      if (isRecommended)
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                      Text(
+                        sake.name ?? '名称不明',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (hasPlace)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            sake.place!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent.withOpacity(0.8),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'おすすめ',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          ),
+                        ),
+                      if ((sake.userTags ?? []).isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: sake.userTags!
+                                .take(3)
+                                .map(
+                                  (tag) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.45),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    sake.name ?? '名称不明',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (hasPlace)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      sake.place!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                if ((sake.userTags ?? []).isNotEmpty)
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: sake.userTags!
-                          .take(3)
-                          .map(
-                            (tag) => Chip(
-                              label: Text(tag),
-                              backgroundColor: Colors.white.withOpacity(0.18),
-                              labelStyle: const TextStyle(
-                                color: Color(0xFF1D3567),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.bookmark_remove,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
-                    onPressed: () => onRemove(sake),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

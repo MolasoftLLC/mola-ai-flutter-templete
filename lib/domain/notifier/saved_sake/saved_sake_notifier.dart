@@ -14,7 +14,8 @@ part 'saved_sake_notifier.freezed.dart';
 class SavedSakeState with _$SavedSakeState {
   const factory SavedSakeState({
     @Default([]) List<Sake> savedSakeList,
-    @Default(false) bool isGridView,
+    @Default(true) bool isGridView,
+    @Default(<String>[]) List<String> activeFilterTags,
   }) = _SavedSakeState;
 }
 
@@ -48,7 +49,15 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
 
       savedSakes.sort((a, b) => _compareSavedId(b.savedId, a.savedId));
 
-      state = state.copyWith(savedSakeList: savedSakes);
+      final availableTags = _extractTags(savedSakes);
+      final sanitizedFilters = state.activeFilterTags
+          .where((tag) => availableTags.contains(tag))
+          .toList();
+
+      state = state.copyWith(
+        savedSakeList: savedSakes,
+        activeFilterTags: sanitizedFilters,
+      );
       logger.info('保存済み日本酒を読み込みました: ${savedSakes.length}件');
     } catch (e) {
       logger.shout('保存済み日本酒の初期化に失敗しました: $e');
@@ -74,6 +83,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
           .where((item) => !_isSameSake(item, sake))
           .toList();
       state = state.copyWith(savedSakeList: updatedList);
+      _syncFiltersWithAvailableTags();
       logger.info('保存済み日本酒を削除: ${sake.name ?? '不明な日本酒'}');
     } else {
       await addSavedSake(sake);
@@ -93,6 +103,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
     final updatedList = [...state.savedSakeList];
     updatedList[index] = sake;
     state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
     await _persistSavedSakes();
     logger.info('保存済み日本酒を更新: ${sake.name ?? '名称不明'}');
   }
@@ -124,6 +135,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
     final updatedList = [...state.savedSakeList];
     updatedList[index] = merged;
     state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
     await _persistSavedSakes();
     logger.info('保存済み日本酒に解析結果を反映: ${merged.name ?? '名称不明'} (id=$savedId)');
   }
@@ -138,6 +150,18 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
       return;
     }
     state = state.copyWith(isGridView: isGrid);
+  }
+
+  void setFilterTags(List<String> tags) {
+    final sanitized = _sanitizeTags(tags);
+    state = state.copyWith(activeFilterTags: sanitized);
+  }
+
+  void clearFilterTags() {
+    if (state.activeFilterTags.isEmpty) {
+      return;
+    }
+    state = state.copyWith(activeFilterTags: const <String>[]);
   }
 
   Future<void> _persistSavedSakes() async {
@@ -200,6 +224,49 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
     return 'saved_${millis}_$rand';
   }
 
+  List<String> _sanitizeTags(List<String> tags) {
+    if (tags.isEmpty) {
+      return const <String>[];
+    }
+    final available = _extractTags(state.savedSakeList);
+    final sanitized = <String>[];
+    for (final raw in tags) {
+      final tag = raw.trim();
+      if (tag.isEmpty) {
+        continue;
+      }
+      if (!available.contains(tag)) {
+        continue;
+      }
+      if (sanitized.contains(tag)) {
+        continue;
+      }
+      sanitized.add(tag);
+    }
+    return sanitized;
+  }
+
+  Set<String> _extractTags(List<Sake> source) {
+    return source
+        .expand((sake) => sake.userTags ?? const <String>[])
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet();
+  }
+
+  void _syncFiltersWithAvailableTags() {
+    if (state.activeFilterTags.isEmpty) {
+      return;
+    }
+    final available = _extractTags(state.savedSakeList);
+    final filtered =
+        state.activeFilterTags.where((tag) => available.contains(tag)).toList();
+    if (filtered.length == state.activeFilterTags.length) {
+      return;
+    }
+    state = state.copyWith(activeFilterTags: filtered);
+  }
+
   Future<void> removeById(String savedId) async {
     final updatedList =
         state.savedSakeList.where((item) => item.savedId != savedId).toList();
@@ -207,6 +274,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState> {
       return;
     }
     state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
     await _persistSavedSakes();
     logger.info('保存済み日本酒を削除(解析失敗): id=$savedId');
   }

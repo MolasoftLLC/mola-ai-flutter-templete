@@ -18,6 +18,7 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$SavedSakeState {
   List<Sake> get savedSakeList => throw _privateConstructorUsedError;
   bool get isGridView => throw _privateConstructorUsedError;
+  List<String> get activeFilterTags => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $SavedSakeStateCopyWith<SavedSakeState> get copyWith =>
@@ -30,7 +31,10 @@ abstract class $SavedSakeStateCopyWith<$Res> {
           SavedSakeState value, $Res Function(SavedSakeState) then) =
       _$SavedSakeStateCopyWithImpl<$Res, SavedSakeState>;
   @useResult
-  $Res call({List<Sake> savedSakeList, bool isGridView});
+  $Res call(
+      {List<Sake> savedSakeList,
+      bool isGridView,
+      List<String> activeFilterTags});
 }
 
 /// @nodoc
@@ -48,6 +52,7 @@ class _$SavedSakeStateCopyWithImpl<$Res, $Val extends SavedSakeState>
   $Res call({
     Object? savedSakeList = null,
     Object? isGridView = null,
+    Object? activeFilterTags = null,
   }) {
     return _then(_value.copyWith(
       savedSakeList: null == savedSakeList
@@ -58,6 +63,10 @@ class _$SavedSakeStateCopyWithImpl<$Res, $Val extends SavedSakeState>
           ? _value.isGridView
           : isGridView // ignore: cast_nullable_to_non_nullable
               as bool,
+      activeFilterTags: null == activeFilterTags
+          ? _value.activeFilterTags
+          : activeFilterTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
     ) as $Val);
   }
 }
@@ -70,7 +79,10 @@ abstract class _$$SavedSakeStateImplCopyWith<$Res>
       __$$SavedSakeStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<Sake> savedSakeList, bool isGridView});
+  $Res call(
+      {List<Sake> savedSakeList,
+      bool isGridView,
+      List<String> activeFilterTags});
 }
 
 /// @nodoc
@@ -86,6 +98,7 @@ class __$$SavedSakeStateImplCopyWithImpl<$Res>
   $Res call({
     Object? savedSakeList = null,
     Object? isGridView = null,
+    Object? activeFilterTags = null,
   }) {
     return _then(_$SavedSakeStateImpl(
       savedSakeList: null == savedSakeList
@@ -96,6 +109,10 @@ class __$$SavedSakeStateImplCopyWithImpl<$Res>
           ? _value.isGridView
           : isGridView // ignore: cast_nullable_to_non_nullable
               as bool,
+      activeFilterTags: null == activeFilterTags
+          ? _value._activeFilterTags
+          : activeFilterTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
     ));
   }
 }
@@ -104,8 +121,11 @@ class __$$SavedSakeStateImplCopyWithImpl<$Res>
 
 class _$SavedSakeStateImpl implements _SavedSakeState {
   const _$SavedSakeStateImpl(
-      {final List<Sake> savedSakeList = const [], this.isGridView = false})
-      : _savedSakeList = savedSakeList;
+      {final List<Sake> savedSakeList = const [],
+      this.isGridView = true,
+      final List<String> activeFilterTags = const <String>[]})
+      : _savedSakeList = savedSakeList,
+        _activeFilterTags = activeFilterTags;
 
   final List<Sake> _savedSakeList;
   @override
@@ -120,9 +140,20 @@ class _$SavedSakeStateImpl implements _SavedSakeState {
   @JsonKey()
   final bool isGridView;
 
+  final List<String> _activeFilterTags;
+  @override
+  @JsonKey()
+  List<String> get activeFilterTags {
+    if (_activeFilterTags is EqualUnmodifiableListView) {
+      return _activeFilterTags;
+    }
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_activeFilterTags);
+  }
+
   @override
   String toString() {
-    return 'SavedSakeState(savedSakeList: $savedSakeList, isGridView: $isGridView)';
+    return 'SavedSakeState(savedSakeList: $savedSakeList, isGridView: $isGridView, activeFilterTags: $activeFilterTags)';
   }
 
   @override
@@ -133,12 +164,17 @@ class _$SavedSakeStateImpl implements _SavedSakeState {
             const DeepCollectionEquality()
                 .equals(other._savedSakeList, _savedSakeList) &&
             (identical(other.isGridView, isGridView) ||
-                other.isGridView == isGridView));
+                other.isGridView == isGridView) &&
+            const DeepCollectionEquality()
+                .equals(other._activeFilterTags, _activeFilterTags));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_savedSakeList), isGridView);
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_savedSakeList),
+      isGridView,
+      const DeepCollectionEquality().hash(_activeFilterTags));
 
   @JsonKey(ignore: true)
   @override
@@ -151,12 +187,15 @@ class _$SavedSakeStateImpl implements _SavedSakeState {
 abstract class _SavedSakeState implements SavedSakeState {
   const factory _SavedSakeState(
       {final List<Sake> savedSakeList,
-      final bool isGridView}) = _$SavedSakeStateImpl;
+      final bool isGridView,
+      final List<String> activeFilterTags}) = _$SavedSakeStateImpl;
 
   @override
   List<Sake> get savedSakeList;
   @override
   bool get isGridView;
+  @override
+  List<String> get activeFilterTags;
   @override
   @JsonKey(ignore: true)
   _$$SavedSakeStateImplCopyWith<_$SavedSakeStateImpl> get copyWith =>
