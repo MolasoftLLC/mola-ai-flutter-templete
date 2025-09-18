@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 
 import '../../common/assets.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../common/logger.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import 'menu_search_page_notifier.dart';
 
 class MenuSearchPage extends StatelessWidget {
@@ -33,6 +35,7 @@ class MenuSearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
     final favNotifier = context.watch<FavoriteNotifier>();
+    final savedNotifier = context.watch<SavedSakeNotifier>();
     final isLoading =
         context.select((MenuSearchPageState state) => state.isLoading);
     final isExtractingInfo =
@@ -46,6 +49,8 @@ class MenuSearchPage extends StatelessWidget {
     final sakes = context.select((MenuSearchPageState state) => state.sakes);
     final myFavoriteList =
         context.select((FavoriteState state) => state.myFavoriteList);
+    final mySavedList =
+        context.select((SavedSakeState state) => state.savedSakeList);
     final errorMessage =
         context.select((MenuSearchPageState state) => state.errorMessage);
     // 詳細情報が取得された日本酒の名前リスト
@@ -66,10 +71,13 @@ class MenuSearchPage extends StatelessWidget {
       loadingText = '日本酒の詳細情報を取得しています...';
     }
 
-    final hasScrolledToResults =
-        context.select((MenuSearchPageState state) => state.hasScrolledToResults);
-    
-    if (extractedSakes.isNotEmpty && !isLoading && !isExtractingInfo && !hasScrolledToResults) {
+    final hasScrolledToResults = context
+        .select((MenuSearchPageState state) => state.hasScrolledToResults);
+
+    if (extractedSakes.isNotEmpty &&
+        !isLoading &&
+        !isExtractingInfo &&
+        !hasScrolledToResults) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToResults();
         notifier.setHasScrolledToResults(true);
@@ -160,7 +168,8 @@ class MenuSearchPage extends StatelessWidget {
                                       image: DecorationImage(
                                         image: FileUtils.safeLoadImage(
                                           sakeImage.path,
-                                          base64Image: null, // Current image doesn't have base64 yet
+                                          base64Image:
+                                              null, // Current image doesn't have base64 yet
                                         ),
                                         fit: BoxFit.cover,
                                       ),
@@ -362,6 +371,16 @@ class MenuSearchPage extends StatelessWidget {
                                                   ? detailedSake!.type
                                                   : sake.type));
 
+                                  final isSaved = mySavedList.any((saved) =>
+                                      saved.name ==
+                                          (hasDetails
+                                              ? detailedSake!.name
+                                              : sake.name) &&
+                                      saved.type ==
+                                          (hasDetails
+                                              ? detailedSake!.type
+                                              : sake.type));
+
                                   return SakeResultTile(
                                     sake: sake,
                                     detailedSake: detailedSake,
@@ -376,22 +395,30 @@ class MenuSearchPage extends StatelessWidget {
                                         name: detailedSake!.name ?? 'Unknown',
                                         type: detailedSake!.type,
                                       );
-                                      favNotifier.addOrRemoveFavorite(favoriteSake);
+                                      favNotifier
+                                          .addOrRemoveFavorite(favoriteSake);
                                     },
+                                    isSaved: isSaved,
                                     onSave: () {
-                                      // 保存ボタンが押されたことをログ出力
-                                      // ignore: avoid_print
-                                      print('保存が押されました: \'${(detailedSake?.name ?? sake.name) ?? 'Unknown'}\'');
+                                      if (detailedSake == null) {
+                                        logger.warning(
+                                            '詳細情報がない日本酒の保存操作が呼び出されました');
+                                        return;
+                                      }
+                                      savedNotifier
+                                          .toggleSavedSake(detailedSake!);
                                     },
-                                    buildInfoRow: (key, value, icon) => _buildInfoRow(key, value, icon),
-                                    buildTypesRow: (types) => _buildTypesRow(types),
+                                    buildInfoRow: (key, value, icon) =>
+                                        _buildInfoRow(key, value, icon),
+                                    buildTypesRow: (types) =>
+                                        _buildTypesRow(types),
                                   );
                                 },
                               ),
                             ],
                           ),
                         ),
-                      
+
                       // メニュー解析履歴セクション
                       const MenuHistorySection(),
                     ],

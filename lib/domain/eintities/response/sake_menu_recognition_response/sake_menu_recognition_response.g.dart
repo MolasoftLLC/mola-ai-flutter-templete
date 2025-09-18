@@ -31,6 +31,15 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       price: json['price'] as String?,
       description: json['description'] as String?,
       recommendationScore: (json['recommendationScore'] as num?)?.toInt(),
+      impression: json['impression'] as String?,
+      place: json['place'] as String?,
+      userTags: (json['userTags'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      savedId: json['savedId'] as String?,
+      imagePaths: (json['imagePaths'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
@@ -44,4 +53,9 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'price': instance.price,
       'description': instance.description,
       'recommendationScore': instance.recommendationScore,
+      'impression': instance.impression,
+      'place': instance.place,
+      'userTags': instance.userTags,
+      'savedId': instance.savedId,
+      'imagePaths': instance.imagePaths,
     };

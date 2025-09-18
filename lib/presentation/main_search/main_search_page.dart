@@ -168,7 +168,11 @@ class MainSearchPage extends StatelessWidget {
                                   ? _buildNameSearchUI(
                                       context, notifier, sakeInfo, errorMessage)
                                   : _buildBottleSearchUI(
-                                      context, notifier, sakeImage),
+                                      context,
+                                      notifier,
+                                      sakeImage,
+                                      isAnalyzingInBackground,
+                                    ),
                             ),
                           ],
                         ),
@@ -379,6 +383,7 @@ class MainSearchPage extends StatelessWidget {
     BuildContext context,
     MainSearchPageNotifier notifier,
     File? sakeImage,
+    bool isAnalyzingInBackground,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -407,80 +412,96 @@ class MainSearchPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 画像表示エリア
-          Container(
-            height: 200,
+          SizedBox(
+            height: 220,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
-            ),
             child: sakeImage != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      sakeImage,
-                      fit: BoxFit.cover,
-                    ),
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          sakeImage,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: InkWell(
+                          onTap: notifier.clearImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Color(0xFF1D3567),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   )
-                : const Center(
-                    child: Icon(
-                      Icons.add_photo_alternate,
-                      size: 64,
-                      color: Colors.grey,
+                : InkWell(
+                    onTap: () {
+                      notifier.pickImage(ImageSource.gallery);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.image_search,
+                            size: 48,
+                            color: Color(0xFF1D3567),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'タップして画像を選択',
+                            style: TextStyle(
+                              color: Color(0xFF1D3567),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
           ),
           const SizedBox(height: 16),
 
-          // 画像選択ボタン
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // カメラボタン
-              ElevatedButton.icon(
-                onPressed: () {
-                  notifier.pickImage(ImageSource.camera);
-                },
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('カメラ'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1D3567),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+          ElevatedButton.icon(
+            onPressed: () {
+              notifier.pickImage(ImageSource.camera);
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('カメラで撮影'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D3567),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
-
-              // ギャラリーボタン
-              ElevatedButton.icon(
-                onPressed: () {
-                  notifier.pickImage(ImageSource.gallery);
-                },
-                icon: const Icon(Icons.photo_library),
-                label: const Text('ギャラリー'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1D3567),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
+            ),
           ),
 
           // 画像がある場合はクリアボタンを表示
@@ -498,39 +519,68 @@ class MainSearchPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // 解析ボタン
-          ElevatedButton(
-            onPressed: sakeImage != null
-                ? () async {
-                    await notifier.analyzeSakeBottle();
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D3567),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 16,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              disabledBackgroundColor: Colors.grey.shade400,
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.search),
-                SizedBox(width: 8),
-                Text(
-                  'AIに解析してもらう',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: sakeImage != null && !isAnalyzingInBackground
+                      ? () async {
+                          await notifier.saveAndAnalyzeBottle();
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD54F),
+                    foregroundColor: const Color(0xFF1D3567),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledBackgroundColor: Colors.grey.shade400,
+                  ),
+                  child: const Text(
+                    '解析して保存',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: sakeImage != null && !isAnalyzingInBackground
+                      ? () async {
+                          await notifier.analyzeSakeBottle();
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D3567),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledBackgroundColor: Colors.grey.shade400,
+                  ),
+                  child: const Text(
+                    '解析だけ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
         ],

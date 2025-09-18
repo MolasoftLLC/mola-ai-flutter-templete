@@ -25,6 +25,11 @@ class Sake with _$Sake {
     String? price,
     String? description,
     int? recommendationScore,
+    String? impression,
+    String? place,
+    List<String>? userTags,
+    String? savedId,
+    List<String>? imagePaths,
   }) = _Sake;
 
   factory Sake.fromJson(Map<String, dynamic> json) => _$SakeFromJson(json);

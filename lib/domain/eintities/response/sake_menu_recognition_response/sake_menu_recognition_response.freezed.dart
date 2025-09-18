@@ -186,6 +186,11 @@ mixin _$Sake {
   String? get price => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   int? get recommendationScore => throw _privateConstructorUsedError;
+  String? get impression => throw _privateConstructorUsedError;
+  String? get place => throw _privateConstructorUsedError;
+  List<String>? get userTags => throw _privateConstructorUsedError;
+  String? get savedId => throw _privateConstructorUsedError;
+  List<String>? get imagePaths => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -206,7 +211,12 @@ abstract class $SakeCopyWith<$Res> {
       String? type,
       String? price,
       String? description,
-      int? recommendationScore});
+      int? recommendationScore,
+      String? impression,
+      String? place,
+      List<String>? userTags,
+      String? savedId,
+      List<String>? imagePaths});
 }
 
 /// @nodoc
@@ -231,6 +241,11 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? price = freezed,
     Object? description = freezed,
     Object? recommendationScore = freezed,
+    Object? impression = freezed,
+    Object? place = freezed,
+    Object? userTags = freezed,
+    Object? savedId = freezed,
+    Object? imagePaths = freezed,
   }) {
     return _then(_value.copyWith(
       name: freezed == name
@@ -269,6 +284,26 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.recommendationScore
           : recommendationScore // ignore: cast_nullable_to_non_nullable
               as int?,
+      impression: freezed == impression
+          ? _value.impression
+          : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      place: freezed == place
+          ? _value.place
+          : place // ignore: cast_nullable_to_non_nullable
+              as String?,
+      userTags: freezed == userTags
+          ? _value.userTags
+          : userTags // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      savedId: freezed == savedId
+          ? _value.savedId
+          : savedId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imagePaths: freezed == imagePaths
+          ? _value.imagePaths
+          : imagePaths // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ) as $Val);
   }
 }
@@ -289,7 +324,12 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       String? type,
       String? price,
       String? description,
-      int? recommendationScore});
+      int? recommendationScore,
+      String? impression,
+      String? place,
+      List<String>? userTags,
+      String? savedId,
+      List<String>? imagePaths});
 }
 
 /// @nodoc
@@ -311,6 +351,11 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? price = freezed,
     Object? description = freezed,
     Object? recommendationScore = freezed,
+    Object? impression = freezed,
+    Object? place = freezed,
+    Object? userTags = freezed,
+    Object? savedId = freezed,
+    Object? imagePaths = freezed,
   }) {
     return _then(_$SakeImpl(
       name: freezed == name
@@ -349,6 +394,26 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value.recommendationScore
           : recommendationScore // ignore: cast_nullable_to_non_nullable
               as int?,
+      impression: freezed == impression
+          ? _value.impression
+          : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      place: freezed == place
+          ? _value.place
+          : place // ignore: cast_nullable_to_non_nullable
+              as String?,
+      userTags: freezed == userTags
+          ? _value._userTags
+          : userTags // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      savedId: freezed == savedId
+          ? _value.savedId
+          : savedId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imagePaths: freezed == imagePaths
+          ? _value._imagePaths
+          : imagePaths // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }
@@ -365,8 +430,15 @@ class _$SakeImpl implements _Sake {
       this.type,
       this.price,
       this.description,
-      this.recommendationScore})
-      : _types = types;
+      this.recommendationScore,
+      this.impression,
+      this.place,
+      final List<String>? userTags,
+      this.savedId,
+      final List<String>? imagePaths})
+      : _types = types,
+        _userTags = userTags,
+        _imagePaths = imagePaths;
 
   factory _$SakeImpl.fromJson(Map<String, dynamic> json) =>
       _$$SakeImplFromJson(json);
@@ -397,10 +469,35 @@ class _$SakeImpl implements _Sake {
   final String? description;
   @override
   final int? recommendationScore;
+  @override
+  final String? impression;
+  @override
+  final String? place;
+  final List<String>? _userTags;
+  @override
+  List<String>? get userTags {
+    final value = _userTags;
+    if (value == null) return null;
+    if (_userTags is EqualUnmodifiableListView) return _userTags;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  final String? savedId;
+  final List<String>? _imagePaths;
+  @override
+  List<String>? get imagePaths {
+    final value = _imagePaths;
+    if (value == null) return null;
+    if (_imagePaths is EqualUnmodifiableListView) return _imagePaths;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   @override
   String toString() {
-    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore)';
+    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths)';
   }
 
   @override
@@ -419,7 +516,14 @@ class _$SakeImpl implements _Sake {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.recommendationScore, recommendationScore) ||
-                other.recommendationScore == recommendationScore));
+                other.recommendationScore == recommendationScore) &&
+            (identical(other.impression, impression) ||
+                other.impression == impression) &&
+            (identical(other.place, place) || other.place == place) &&
+            const DeepCollectionEquality().equals(other._userTags, _userTags) &&
+            (identical(other.savedId, savedId) || other.savedId == savedId) &&
+            const DeepCollectionEquality()
+                .equals(other._imagePaths, _imagePaths));
   }
 
   @JsonKey(ignore: true)
@@ -434,7 +538,12 @@ class _$SakeImpl implements _Sake {
       type,
       price,
       description,
-      recommendationScore);
+      recommendationScore,
+      impression,
+      place,
+      const DeepCollectionEquality().hash(_userTags),
+      savedId,
+      const DeepCollectionEquality().hash(_imagePaths));
 
   @JsonKey(ignore: true)
   @override
@@ -460,7 +569,12 @@ abstract class _Sake implements Sake {
       final String? type,
       final String? price,
       final String? description,
-      final int? recommendationScore}) = _$SakeImpl;
+      final int? recommendationScore,
+      final String? impression,
+      final String? place,
+      final List<String>? userTags,
+      final String? savedId,
+      final List<String>? imagePaths}) = _$SakeImpl;
 
   factory _Sake.fromJson(Map<String, dynamic> json) = _$SakeImpl.fromJson;
 
@@ -482,6 +596,16 @@ abstract class _Sake implements Sake {
   String? get description;
   @override
   int? get recommendationScore;
+  @override
+  String? get impression;
+  @override
+  String? get place;
+  @override
+  List<String>? get userTags;
+  @override
+  String? get savedId;
+  @override
+  List<String>? get imagePaths;
   @override
   @JsonKey(ignore: true)
   _$$SakeImplCopyWith<_$SakeImpl> get copyWith =>

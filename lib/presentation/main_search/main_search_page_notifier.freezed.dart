@@ -29,6 +29,8 @@ mixin _$MainSearchPageState {
   String? get errorMessage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
   SearchMode get searchMode => throw _privateConstructorUsedError;
+  List<String> get pendingSavedSakeIds => throw _privateConstructorUsedError;
+  String? get analyzingImagePath => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MainSearchPageStateCopyWith<MainSearchPageState> get copyWith =>
@@ -54,7 +56,9 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
       Sake? sakeInfo,
       String? errorMessage,
       String? geminiResponse,
-      SearchMode searchMode});
+      SearchMode searchMode,
+      List<String> pendingSavedSakeIds,
+      String? analyzingImagePath});
 
   $SakeCopyWith<$Res>? get sakeInfo;
 }
@@ -85,6 +89,8 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
     Object? errorMessage = freezed,
     Object? geminiResponse = freezed,
     Object? searchMode = null,
+    Object? pendingSavedSakeIds = null,
+    Object? analyzingImagePath = freezed,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -139,6 +145,14 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.searchMode
           : searchMode // ignore: cast_nullable_to_non_nullable
               as SearchMode,
+      pendingSavedSakeIds: null == pendingSavedSakeIds
+          ? _value.pendingSavedSakeIds
+          : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      analyzingImagePath: freezed == analyzingImagePath
+          ? _value.analyzingImagePath
+          : analyzingImagePath // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -176,7 +190,9 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
       Sake? sakeInfo,
       String? errorMessage,
       String? geminiResponse,
-      SearchMode searchMode});
+      SearchMode searchMode,
+      List<String> pendingSavedSakeIds,
+      String? analyzingImagePath});
 
   @override
   $SakeCopyWith<$Res>? get sakeInfo;
@@ -206,6 +222,8 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     Object? errorMessage = freezed,
     Object? geminiResponse = freezed,
     Object? searchMode = null,
+    Object? pendingSavedSakeIds = null,
+    Object? analyzingImagePath = freezed,
   }) {
     return _then(_$MainSearchPageStateImpl(
       isLoading: null == isLoading
@@ -260,6 +278,14 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.searchMode
           : searchMode // ignore: cast_nullable_to_non_nullable
               as SearchMode,
+      pendingSavedSakeIds: null == pendingSavedSakeIds
+          ? _value._pendingSavedSakeIds
+          : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      analyzingImagePath: freezed == analyzingImagePath
+          ? _value.analyzingImagePath
+          : analyzingImagePath // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -280,7 +306,10 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
       this.sakeInfo,
       this.errorMessage,
       this.geminiResponse,
-      this.searchMode = SearchMode.name});
+      this.searchMode = SearchMode.bottle,
+      final List<String> pendingSavedSakeIds = const [],
+      this.analyzingImagePath})
+      : _pendingSavedSakeIds = pendingSavedSakeIds;
 
   @override
   @JsonKey()
@@ -314,10 +343,22 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   @override
   @JsonKey()
   final SearchMode searchMode;
+  final List<String> _pendingSavedSakeIds;
+  @override
+  @JsonKey()
+  List<String> get pendingSavedSakeIds {
+    if (_pendingSavedSakeIds is EqualUnmodifiableListView)
+      return _pendingSavedSakeIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_pendingSavedSakeIds);
+  }
+
+  @override
+  final String? analyzingImagePath;
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode)';
+    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode, pendingSavedSakeIds: $pendingSavedSakeIds, analyzingImagePath: $analyzingImagePath)';
   }
 
   @override
@@ -351,7 +392,11 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
             (identical(other.searchMode, searchMode) ||
-                other.searchMode == searchMode));
+                other.searchMode == searchMode) &&
+            const DeepCollectionEquality()
+                .equals(other._pendingSavedSakeIds, _pendingSavedSakeIds) &&
+            (identical(other.analyzingImagePath, analyzingImagePath) ||
+                other.analyzingImagePath == analyzingImagePath));
   }
 
   @override
@@ -369,7 +414,9 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
       sakeInfo,
       errorMessage,
       geminiResponse,
-      searchMode);
+      searchMode,
+      const DeepCollectionEquality().hash(_pendingSavedSakeIds),
+      analyzingImagePath);
 
   @JsonKey(ignore: true)
   @override
@@ -393,7 +440,9 @@ abstract class _MainSearchPageState implements MainSearchPageState {
       final Sake? sakeInfo,
       final String? errorMessage,
       final String? geminiResponse,
-      final SearchMode searchMode}) = _$MainSearchPageStateImpl;
+      final SearchMode searchMode,
+      final List<String> pendingSavedSakeIds,
+      final String? analyzingImagePath}) = _$MainSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -421,6 +470,10 @@ abstract class _MainSearchPageState implements MainSearchPageState {
   String? get geminiResponse;
   @override
   SearchMode get searchMode;
+  @override
+  List<String> get pendingSavedSakeIds;
+  @override
+  String? get analyzingImagePath;
   @override
   @JsonKey(ignore: true)
   _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>

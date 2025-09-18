@@ -11,6 +11,7 @@ class SakeResultTile extends StatefulWidget {
     required this.isItemLoading,
     required this.hasFailed,
     required this.isFavorited,
+    required this.isSaved,
     required this.isLoading,
     required this.recommendationScore,
     required this.onToggleFavorite,
@@ -25,9 +26,11 @@ class SakeResultTile extends StatefulWidget {
   final bool isItemLoading;
   final bool hasFailed;
   final bool isFavorited;
+  final bool isSaved;
   final bool isLoading;
   final num? recommendationScore;
   final VoidCallback onToggleFavorite;
+
   /// 保存ボタンタップ時に呼び出されるコールバック
   final VoidCallback onSave;
   final Widget Function(String key, String value, IconData icon) buildInfoRow;
@@ -62,7 +65,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
             ),
             child: ExpansionTile(
               controller: _expansionController,
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +89,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   if (isRecommended)
                     Container(
                       margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.red.shade100,
                         borderRadius: BorderRadius.circular(4),
@@ -129,16 +134,27 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          tooltip: '保存',
-                          icon: const Icon(Icons.save, color: Color(0xFF1D3567), size: 22),
+                          tooltip: widget.isSaved ? '保存を解除' : '保存',
+                          icon: Icon(
+                            widget.isSaved
+                                ? Icons.bookmark
+                                : Icons.bookmark_outline,
+                            color: widget.isSaved
+                                ? const Color(0xFF1D3567)
+                                : Colors.grey,
+                            size: 22,
+                          ),
                           onPressed: widget.onSave,
                         ),
                         const SizedBox(width: 4),
                         IconButton(
                           tooltip: widget.isFavorited ? 'お気に入り解除' : 'お気に入り',
                           icon: Icon(
-                            widget.isFavorited ? Icons.favorite : Icons.favorite_border,
-                            color: widget.isFavorited ? Colors.red : Colors.grey,
+                            widget.isFavorited
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color:
+                                widget.isFavorited ? Colors.red : Colors.grey,
                             size: 22,
                           ),
                           onPressed: widget.onToggleFavorite,
@@ -163,7 +179,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                 color: Color(0xFF1D3567),
                               ),
                             )
-                          : Icon(Icons.error_outline, color: Colors.red.shade700),
+                          : Icon(Icons.error_outline,
+                              color: Colors.red.shade700),
               children: [
                 if (widget.hasDetails)
                   Padding(
@@ -245,7 +262,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   child: IconButton(
                     tooltip: '展開',
                     padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
                     icon: const Icon(
                       Icons.expand_more,
                       color: Color(0xFF1D3567),
@@ -266,4 +284,4 @@ class _SakeResultTileState extends State<SakeResultTile> {
       ),
     );
   }
-} 
+}

@@ -6,6 +6,7 @@ import 'package:provider/single_child_widget.dart';
 import '../common/access_url.dart';
 import '../domain/notifier/favorite/favorite_notifier.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
+import '../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../domain/repository/gemini_mola_api_repository.dart';
 import '../domain/repository/mola_api_repository.dart';
 import '../domain/repository/sake_bottle_image_repository.dart';
@@ -80,6 +81,9 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
   return <SingleChildWidget>[
     StateNotifierProvider<FavoriteNotifier, FavoriteState>(
       create: (_) => FavoriteNotifier(),
+    ),
+    StateNotifierProvider<SavedSakeNotifier, SavedSakeState>(
+      create: (_) => SavedSakeNotifier(),
     ),
     StateNotifierProvider<MyPageNotifier, MyPageState>(
       create: (_) => MyPageNotifier(),

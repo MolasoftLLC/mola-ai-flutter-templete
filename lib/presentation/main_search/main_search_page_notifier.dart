@@ -14,6 +14,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_bottle_image.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
@@ -42,7 +43,9 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     Sake? sakeInfo,
     String? errorMessage,
     String? geminiResponse,
-    @Default(SearchMode.name) SearchMode searchMode,
+    @Default(SearchMode.bottle) SearchMode searchMode,
+    @Default([]) List<String> pendingSavedSakeIds,
+    String? analyzingImagePath,
   }) = _MainSearchPageState;
 }
 
@@ -153,7 +156,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
               logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
             },
           );
-          
+
           // 広告視聴後に検索を開始
           state = state.copyWith(isAdLoading: false, isLoading: true);
           await _performSearch(sakeName);
@@ -169,7 +172,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           message: '検索をキャンセルしました。検索機能向上のため、次回は広告視聴にご協力ください。',
           duration: const Duration(seconds: 4),
         );
-        
+
         // Reset loading state and do not perform search
         // Also revert the click count increment
         state = state.copyWith(
@@ -312,10 +315,70 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     state = state.copyWith(sakeImage: null);
   }
 
+  Future<bool> saveAndAnalyzeBottle() async {
+    final image = state.sakeImage;
+    if (image == null) {
+      logger.info('保存して解析: 画像がnullです');
+      return false;
+    }
+
+    final savedPath =
+        await ImageCropperService.saveImagePermanently(image, 'saved_sake');
+    if (savedPath == null) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '画像の保存に失敗しました',
+      );
+      return false;
+    }
+
+    final savedNotifier = read<SavedSakeNotifier>();
+    final placeholder = Sake(
+      savedId: null,
+      name: '解析中',
+      imagePaths: [savedPath],
+    );
+    final savedId = await savedNotifier.addSavedSake(placeholder);
+
+    SnackBarUtils.showInfoSnackBar(
+      context,
+      message: 'マイページに保存しました！',
+    );
+
+    // 保存後は選択画像をクリア
+    state = state.copyWith(
+      sakeImage: null,
+      analyzingImagePath: savedPath,
+      pendingSavedSakeIds: [...state.pendingSavedSakeIds, savedId],
+      isAnalyzingInBackground: true,
+      isLoading: true,
+    );
+
+    unawaited(analyzeSakeBottle(inBackground: true, savedIdHint: savedId));
+    return true;
+  }
+
   // 酒瓶画像を解析する
-  Future<void> analyzeSakeBottle() async {
-    if (state.sakeImage == null) {
+  Future<void> analyzeSakeBottle(
+      {bool inBackground = false, String? savedIdHint}) async {
+    File? analysisFile = state.sakeImage;
+    if (analysisFile == null && state.analyzingImagePath != null) {
+      final fileFromPath = File(state.analyzingImagePath!);
+      if (fileFromPath.existsSync()) {
+        analysisFile = fileFromPath;
+      }
+    }
+
+    if (analysisFile == null || !analysisFile.existsSync()) {
       logger.info('酒瓶解析: 画像がnullです');
+      if (savedIdHint != null) {
+        _handleAnalysisFailure(savedIdHint, '解析に使用する画像が見つかりませんでした');
+      }
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '解析に使用する画像が見つかりませんでした',
+        isAnalyzingInBackground: false,
+      );
       return;
     }
 
@@ -324,6 +387,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     state = state.copyWith(
       analyzeButtonClickCount: newClickCount,
       errorMessage: null,
+      isAnalyzingInBackground:
+          inBackground ? true : state.isAnalyzingInBackground,
     );
 
     // Check if we should show an ad using shared counter (3-search cycle)
@@ -355,7 +420,11 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
             logger.shout('リワード広告のロードに失敗しました: ${error.message}');
             state = state.copyWith(isAdLoading: false);
             // Proceed with analysis if ad fails to load
-            _performBottleAnalysis();
+            _performBottleAnalysis(
+              inBackground: inBackground,
+              savedIdHint: savedIdHint,
+              imageFile: analysisFile!,
+            );
           },
           onUserEarnedReward: (reward) {
             logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
@@ -373,14 +442,25 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
               logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
             },
           );
-          
+
           // 広告視聴後に解析を開始
-          state = state.copyWith(isAdLoading: false, isLoading: true);
-          await _performBottleAnalysis();
+          state = state.copyWith(
+            isAdLoading: false,
+            isLoading: inBackground ? state.isLoading : true,
+          );
+          await _performBottleAnalysis(
+            inBackground: inBackground,
+            savedIdHint: savedIdHint,
+            imageFile: analysisFile,
+          );
         } else {
           // Ad failed to load, proceed with analysis
           state = state.copyWith(isAdLoading: false);
-          await _performBottleAnalysis();
+          await _performBottleAnalysis(
+            inBackground: inBackground,
+            savedIdHint: savedIdHint,
+            imageFile: analysisFile,
+          );
         }
       } else {
         // User declined ad, cancel analysis completely
@@ -389,44 +469,57 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
           duration: const Duration(seconds: 4),
         );
-        
+
         // Reset loading state and do not perform analysis
         // Also revert the click count increment
         state = state.copyWith(
           isLoading: false,
           analyzeButtonClickCount: newClickCount - 1,
+          isAnalyzingInBackground: false,
         );
         return;
       }
     } else {
       // Odd-numbered click, proceed directly to analysis
-      state = state.copyWith(isLoading: true);
-      await _performBottleAnalysis();
+      state = state.copyWith(isLoading: inBackground ? state.isLoading : true);
+      await _performBottleAnalysis(
+        inBackground: inBackground,
+        savedIdHint: savedIdHint,
+        imageFile: analysisFile,
+      );
     }
   }
 
   // Helper method to perform the actual bottle analysis
-  Future<void> _performBottleAnalysis() async {
+  Future<void> _performBottleAnalysis({
+    bool inBackground = false,
+    String? savedIdHint,
+    required File imageFile,
+  }) async {
+    final currentPendingId = savedIdHint ??
+        (state.pendingSavedSakeIds.isNotEmpty
+            ? state.pendingSavedSakeIds.first
+            : null);
     try {
       // 初期化
       state = state.copyWith(sakeInfo: null);
-      final response = await sakeMenuRecognitionRepository
-          .recognizeSakeBottle(state.sakeImage!);
+      final response =
+          await sakeMenuRecognitionRepository.recognizeSakeBottle(imageFile);
 
       if (response == null) {
         logger.shout('酒瓶解析: APIレスポンスがnullです');
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: '酒瓶の認識に失敗しました',
+        _handleAnalysisFailure(
+          currentPendingId,
+          '酒瓶の認識に失敗しました',
         );
         return;
       }
 
       if (response.sakeName == null) {
         logger.shout('酒瓶解析: 日本酒名が認識できませんでした');
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: '酒瓶から日本酒名を認識できませんでした',
+        _handleAnalysisFailure(
+          currentPendingId,
+          '酒瓶から日本酒名を認識できませんでした',
         );
         return;
       }
@@ -443,9 +536,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
       if (sakeInfo == null) {
         logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: '日本酒情報が見つかりませんでした',
+        _handleAnalysisFailure(
+          currentPendingId,
+          '日本酒情報が見つかりませんでした',
         );
         return;
       }
@@ -456,14 +549,27 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       logger.info('酒瓶解析: 日本酒情報取得成功');
 
       // 結果を更新
+      List<String> pendingIds = state.pendingSavedSakeIds;
+      if (currentPendingId != null) {
+        await read<SavedSakeNotifier>().updateSavedSakeWithInfo(
+          currentPendingId,
+          sakeInfo.copyWith(savedId: currentPendingId),
+        );
+        pendingIds = _removePendingId(currentPendingId);
+      }
+
       state = state.copyWith(
         isLoading: false,
+        isAnalyzingInBackground:
+            inBackground ? false : state.isAnalyzingInBackground,
+        pendingSavedSakeIds: pendingIds,
+        analyzingImagePath: inBackground ? null : state.analyzingImagePath,
       );
 
       // Save the bottle image with sake name and type
       try {
         await sakeBottleImageRepository.saveSakeBottleImage(
-          state.sakeImage!,
+          imageFile,
           sakeName: sakeInfo.name,
           type: sakeInfo.type,
         );
@@ -475,10 +581,43 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');
       logger.shout('スタックトレース: $stackTrace');
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: '酒瓶解析に失敗しました: ${e.toString()}',
+      _handleAnalysisFailure(
+        currentPendingId,
+        '酒瓶解析に失敗しました: ${e.toString()}',
       );
     }
+  }
+
+  List<String> _removePendingId(String? id) {
+    if (id == null) {
+      return state.pendingSavedSakeIds;
+    }
+    final updated = [...state.pendingSavedSakeIds];
+    updated.remove(id);
+    return updated;
+  }
+
+  void _handleAnalysisFailure(String? savedId, String message) {
+    if (savedId != null) {
+      read<SavedSakeNotifier>().removeById(savedId);
+    }
+    final path = state.analyzingImagePath;
+    if (path != null) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (_) {
+        // ignore delete errors
+      }
+    }
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: message,
+      isAnalyzingInBackground: false,
+      pendingSavedSakeIds: _removePendingId(savedId),
+      analyzingImagePath: null,
+    );
   }
 }
