@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:mola_gemini_flutter_template/common/utils/image_cropper_service.dart';
@@ -168,7 +168,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       if (croppedFile != null) {
         // Save image to gallery
         try {
-          await ImageGallerySaver.saveFile(croppedFile.path);
+          await ImageGallerySaverPlus.saveFile(croppedFile.path);
           logger.info('画像をギャラリーに保存しました: ${croppedFile.path}');
           
           // アプリの永続ストレージにも保存

@@ -57,21 +57,21 @@ class ImageUtils {
       logger.info('圧縮ファイルパス: $targetPath');
 
       // Compress the image
-      final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      final compressedXFile = await FlutterImageCompress.compressAndGetFile(
         file.path,
         targetPath,
         quality: quality,
         format: format,
       );
 
-      if (compressedFile == null) {
+      if (compressedXFile == null) {
         // If compression fails, fall back to the original file
         logger.shout('画像圧縮に失敗しました。元の画像を使用します。');
         return base64Encode(originalBytes);
       }
 
       // Read the compressed file and encode to base64
-      final compressedBytes = compressedFile.readAsBytesSync();
+      final compressedBytes = await compressedXFile.readAsBytes();
       final compressedSize = compressedBytes.length;
 
       // 圧縮後のサイズをログ出力
@@ -80,9 +80,12 @@ class ImageUtils {
           '圧縮率: ${(compressedSize / originalSize * 100).toStringAsFixed(2)}%');
 
       // Delete the temporary compressed file
-      await compressedFile.delete().catchError((e) {
-        logger.info('一時ファイル削除に失敗: $e');
-      });
+      final compressedPath = compressedXFile.path;
+      if (compressedPath.isNotEmpty) {
+        await File(compressedPath).delete().catchError((e) {
+          logger.info('一時ファイル削除に失敗: $e');
+        });
+      }
 
       // Return the base64 encoded string
       return base64Encode(compressedBytes);

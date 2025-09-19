@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../../common/logger.dart';
@@ -55,7 +55,7 @@ class ImageCropperService {
   /// Save image to gallery and return the saved path
   static Future<String?> saveImageToGallery(File imageFile) async {
     try {
-      final result = await ImageGallerySaver.saveFile(imageFile.path);
+      final result = await ImageGallerySaverPlus.saveFile(imageFile.path);
       logger.info('画像をギャラリーに保存しました: $result');
 
       if (result is Map && result['isSuccess'] == true) {

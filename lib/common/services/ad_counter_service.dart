@@ -12,7 +12,7 @@ class AdCounterService {
     
     await prefs.setInt(_counterKey, currentCounter);
     
-    bool shouldShow = currentCounter % 3 == 0;
+    bool shouldShow = currentCounter % 5 == 0;
     
     print('AdCounterService: counter=$currentCounter, shouldShowAd=$shouldShow');
     

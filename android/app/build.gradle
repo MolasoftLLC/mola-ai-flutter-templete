@@ -41,13 +41,14 @@ android {
     }
 
     defaultConfig {
-        compileSdkVersion 34
+        compileSdkVersion 35
+        ndkVersion "26.1.10909125"
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "okinawa.molasoft_ai.sake"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 21
-        targetSdkVersion 34
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true

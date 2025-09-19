@@ -73,9 +73,9 @@ class MainSearchPage extends StatelessWidget {
           controller: _scrollController,
           child: isLoading || isAdLoading
               ? isAdLoading
-                  ? const AILoading(loadingText: '解析中...広告の表示にご協力ください...')
+                  ? const AILoading(loadingText: '解析中...時々出る広告の表示にご協力ください...')
                   : isAnalyzingInBackground
-                      ? const AILoading(loadingText: 'バックグラウンドで処理中...')
+                      ? const AILoading(loadingText: '日本酒情報を取得しています...')
                       : const AILoading(loadingText: '日本酒情報を取得しています...')
               : Center(
                   child: Column(
