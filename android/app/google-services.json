@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "423367075663",
+    "project_id": "sakepedia-5c50b",
+    "storage_bucket": "sakepedia-5c50b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423367075663:android:facc55540901c545d0473a",
+        "android_client_info": {
+          "package_name": "okinawa.molasoft_ai.sake"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwBOWTZ_B9gKFbpg333rnEUTcNhDeqw4k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
