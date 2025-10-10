@@ -10,6 +10,7 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../common/logger.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../common/widgets/guest_limit_dialog.dart';
 import '../common/help/help_guide_dialog.dart';
 import 'menu_search_page_notifier.dart';
 
@@ -408,23 +409,63 @@ class MenuSearchPage extends StatelessWidget {
                                     isFavorited: isFavorited,
                                     isLoading: isLoading,
                                     recommendationScore: recommendationScore,
-                                    onToggleFavorite: () {
+                                    onToggleFavorite: () async {
                                       final favoriteSake = FavoriteSake(
                                         name: detailedSake!.name ?? 'Unknown',
                                         type: detailedSake!.type,
                                       );
-                                      favNotifier
-                                          .addOrRemoveFavorite(favoriteSake);
+                                      if (!isFavorited &&
+                                          favNotifier.hasReachedGuestLimit) {
+                                        await GuestLimitDialog
+                                            .showFavoriteLimit(
+                                          context,
+                                          maxCount: FavoriteNotifier
+                                              .guestFavoriteLimit,
+                                        );
+                                        return;
+                                      }
+                                      try {
+                                        await favNotifier
+                                            .addOrRemoveFavorite(favoriteSake);
+                                      } on FavoriteGuestLimitReachedException {
+                                        await GuestLimitDialog
+                                            .showFavoriteLimit(
+                                          context,
+                                          maxCount: FavoriteNotifier
+                                              .guestFavoriteLimit,
+                                        );
+                                      }
                                     },
                                     isSaved: isSaved,
-                                    onSave: () {
+                                    onSave: () async {
                                       if (detailedSake == null) {
                                         logger.warning(
                                             '詳細情報がない日本酒の保存操作が呼び出されました');
-                                        return;
+                                        return false;
                                       }
-                                      savedNotifier
-                                          .toggleSavedSake(detailedSake!);
+                                      if (!isSaved &&
+                                          savedNotifier.hasReachedGuestLimit) {
+                                        await GuestLimitDialog
+                                            .showSavedSakeLimit(
+                                          context,
+                                          maxCount:
+                                              SavedSakeNotifier.guestSavedLimit,
+                                        );
+                                        return false;
+                                      }
+                                      try {
+                                        await savedNotifier
+                                            .toggleSavedSake(detailedSake!);
+                                      } on SavedSakeGuestLimitReachedException {
+                                        await GuestLimitDialog
+                                            .showSavedSakeLimit(
+                                          context,
+                                          maxCount:
+                                              SavedSakeNotifier.guestSavedLimit,
+                                        );
+                                        return false;
+                                      }
+                                      return !isSaved;
                                     },
                                     buildInfoRow: (key, value, icon) =>
                                         _buildInfoRow(key, value, icon),

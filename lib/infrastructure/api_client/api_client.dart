@@ -50,4 +50,71 @@ abstract class ApiClient extends ChopperService {
 
   @Get(path: 'get_latest_version')
   Future<Response> getLatestVersion();
+
+  @Post(path: 'saved-sakes/analysis-start')
+  Future<Response> uploadSavedSakeAnalysisStart(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'saved-sakes/analysis-complete')
+  Future<Response> uploadSavedSakeAnalysisComplete(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'saved-sakes')
+  Future<Response> fetchSavedSakes(
+    @Query('userId') String userId,
+  );
+
+  @Post(path: 'saved-sakes/{savedId}/images')
+  Future<Response> uploadSavedSakeImage(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'saved-sakes/{savedId}/images/delete')
+  Future<Response> deleteSavedSakeImage(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'favorites')
+  Future<Response> fetchFavorites(
+    @Query('userId') String userId,
+  );
+
+  @Post(path: 'favorites')
+  Future<Response> addFavorite(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'favorites/delete')
+  Future<Response> removeFavorite(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'preferences')
+  Future<Response> fetchPreferences(
+    @Query('userId') String userId,
+  );
+
+  @Post(path: 'preferences')
+  Future<Response> updatePreferences(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'sake-users/register')
+  Future<Response> registerSakeUser(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'sake-users/me')
+  Future<Response> fetchSakeUser(
+    @Query('userId') String userId,
+  );
+
+  @Post(path: 'sake-users/username')
+  Future<Response> updateUsername(
+    @Body() Map<String, dynamic> body,
+  );
 }

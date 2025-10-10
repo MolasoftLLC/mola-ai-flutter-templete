@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../common/widgets/guest_limit_dialog.dart';
 
 class SavedSakeDetailPage extends StatefulWidget {
   const SavedSakeDetailPage({super.key, required this.sake});
@@ -26,6 +28,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   late Sake _currentSake;
   late Set<String> _selectedTags;
   late List<String> _imagePaths;
+
+  bool _isRemotePath(String path) =>
+      path.startsWith('http://') || path.startsWith('https://');
 
   @override
   void initState() {
@@ -118,7 +123,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               isFavorited ? Icons.favorite : Icons.favorite_border,
               color: isFavorited ? Colors.redAccent : Colors.white,
             ),
-            onPressed: () => _toggleFavorite(favoriteNotifier, isFavorited),
+            onPressed: () async =>
+                await _toggleFavorite(favoriteNotifier, isFavorited),
           ),
         ],
       ),
@@ -390,11 +396,15 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     if (hasImage) {
       final path = _imagePaths[index];
+      if (_isRemotePath(path)) {
+        return _buildRemoteImageTile(path, borderRadius: borderRadius);
+      }
+
       final file = File(path);
       if (!file.existsSync()) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          _removeImagePath(path, showToast: false);
+          unawaited(_removeImagePath(path, showToast: false));
         });
         return _buildAddTile(isPrimary: index == 0);
       }
@@ -438,6 +448,59 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     final isPrimarySlot = index == _imagePaths.length;
     return _buildAddTile(isPrimary: isPrimarySlot);
+  }
+
+  Widget _buildRemoteImageTile(String url,
+      {required BorderRadius borderRadius}) {
+    return GestureDetector(
+      onTap: () => _showImagePreview(url),
+      onLongPress: () => _confirmRemoveImage(url),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                url,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                },
+                errorBuilder: (context, _, __) => Container(
+                  color: Colors.black26,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.broken_image,
+                    color: Colors.white54,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(
+                    Icons.zoom_in,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildAddTile({required bool isPrimary}) {
@@ -652,9 +715,15 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     _applySakeUpdate(updatedSake, toastMessage: 'メモを保存しました');
   }
 
-  void _applySakeUpdate(Sake updated,
-      {String? toastMessage, bool refreshTags = true}) {
-    context.read<SavedSakeNotifier>().updateSavedSake(updated);
+  void _applySakeUpdate(
+    Sake updated, {
+    String? toastMessage,
+    bool refreshTags = true,
+    bool updateNotifier = true,
+  }) {
+    if (updateNotifier) {
+      context.read<SavedSakeNotifier>().updateSavedSake(updated);
+    }
     setState(() {
       _currentSake = updated;
       _imagePaths = [...(updated.imagePaths ?? <String>[])];
@@ -750,11 +819,40 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       return;
     }
 
-    final newPaths = [..._imagePaths, savedPath];
+    final savedId = _currentSake.savedId;
+    if (savedId == null) {
+      _showSnack('保存情報が見つかりません');
+      return;
+    }
+
+    final notifier = context.read<SavedSakeNotifier>();
+    final updated = await notifier.addImageToSavedSake(
+      savedId: savedId,
+      localPath: savedPath,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (updated == null) {
+      try {
+        final file = File(savedPath);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (_) {
+        // ignore delete errors
+      }
+      _showSnack('画像の追加に失敗しました');
+      return;
+    }
+
     _applySakeUpdate(
-      _currentSake.copyWith(imagePaths: newPaths),
+      updated,
       toastMessage: '画像を追加しました',
       refreshTags: false,
+      updateNotifier: false,
     );
   }
 
@@ -783,25 +881,48 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       return;
     }
 
-    _removeImagePath(path, showToast: true);
+    await _removeImagePath(path, showToast: true);
   }
 
-  void _removeImagePath(String path, {bool showToast = true}) {
-    final newPaths = [..._imagePaths]..remove(path);
-    _applySakeUpdate(
-      _currentSake.copyWith(imagePaths: newPaths.isEmpty ? null : newPaths),
-      toastMessage: showToast ? '画像を削除しました' : null,
-      refreshTags: false,
+  Future<void> _removeImagePath(String path, {bool showToast = true}) async {
+    final savedId = _currentSake.savedId;
+    if (savedId == null) {
+      _showSnack('保存情報が見つかりません');
+      return;
+    }
+
+    final notifier = context.read<SavedSakeNotifier>();
+    final updated = await notifier.removeImageFromSavedSake(
+      savedId: savedId,
+      imagePath: path,
     );
 
-    try {
-      final file = File(path);
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-    } catch (_) {
-      // ignore delete errors
+    if (!mounted) {
+      return;
     }
+
+    if (updated == null) {
+      _showSnack('画像の削除に失敗しました');
+      return;
+    }
+
+    if (!_isRemotePath(path)) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (_) {
+        // ignore delete errors
+      }
+    }
+
+    _applySakeUpdate(
+      updated,
+      toastMessage: showToast ? '画像を削除しました' : null,
+      refreshTags: false,
+      updateNotifier: false,
+    );
   }
 
   void _showImagePreview(String path) {
@@ -818,10 +939,29 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 child: InteractiveViewer(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      File(path),
-                      fit: BoxFit.contain,
-                    ),
+                    child: _isRemotePath(path)
+                        ? Image.network(
+                            path,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              );
+                            },
+                            errorBuilder: (context, _, __) => const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 48,
+                              ),
+                            ),
+                          )
+                        : Image.file(
+                            File(path),
+                            fit: BoxFit.contain,
+                          ),
                   ),
                 ),
               ),
@@ -829,9 +969,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 bottom: 16,
                 right: 16,
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(context).pop();
-                    _removeImagePath(path, showToast: true);
+                    await _removeImagePath(path, showToast: true);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -860,12 +1000,28 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
   }
 
-  void _toggleFavorite(FavoriteNotifier notifier, bool isFavorited) {
+  Future<void> _toggleFavorite(
+      FavoriteNotifier notifier, bool isFavorited) async {
     final favorite = FavoriteSake(
       name: _currentSake.name ?? '名称不明',
       type: _currentSake.type,
     );
-    notifier.addOrRemoveFavorite(favorite);
+    if (!isFavorited && notifier.hasReachedGuestLimit) {
+      await GuestLimitDialog.showFavoriteLimit(
+        context,
+        maxCount: FavoriteNotifier.guestFavoriteLimit,
+      );
+      return;
+    }
+    try {
+      await notifier.addOrRemoveFavorite(favorite);
+    } on FavoriteGuestLimitReachedException {
+      await GuestLimitDialog.showFavoriteLimit(
+        context,
+        maxCount: FavoriteNotifier.guestFavoriteLimit,
+      );
+      return;
+    }
     _showSnack(
       isFavorited ? 'お気に入りから削除しました' : 'お気に入りに追加しました',
     );

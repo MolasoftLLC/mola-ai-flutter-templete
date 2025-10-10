@@ -11,6 +11,7 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../common/widgets/guest_limit_dialog.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
@@ -701,9 +702,24 @@ class MainSearchPage extends StatelessWidget {
                     isSaved ? Icons.bookmark : Icons.bookmark_outline,
                     color: isSaved ? Colors.amberAccent : Colors.white,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    if (!isSaved && savedNotifier.hasReachedGuestLimit) {
+                      await GuestLimitDialog.showSavedSakeLimit(
+                        context,
+                        maxCount: SavedSakeNotifier.guestSavedLimit,
+                      );
+                      return;
+                    }
                     final shouldShowSavedToast = !isSaved;
-                    savedNotifier.toggleSavedSake(sakeInfo);
+                    try {
+                      await savedNotifier.toggleSavedSake(sakeInfo);
+                    } on SavedSakeGuestLimitReachedException {
+                      await GuestLimitDialog.showSavedSakeLimit(
+                        context,
+                        maxCount: SavedSakeNotifier.guestSavedLimit,
+                      );
+                      return;
+                    }
                     if (shouldShowSavedToast) {
                       SnackBarUtils.showInfoSnackBar(
                         context,
@@ -717,13 +733,28 @@ class MainSearchPage extends StatelessWidget {
                     isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: isFavorite ? Colors.red : Colors.white,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final favoriteSake = FavoriteSake(
                       name: sakeInfo.name ?? '不明',
                       type: sakeInfo.type,
                     );
 
-                    favNotifier.addOrRemoveFavorite(favoriteSake);
+                    if (!isFavorite && favNotifier.hasReachedGuestLimit) {
+                      await GuestLimitDialog.showFavoriteLimit(
+                        context,
+                        maxCount: FavoriteNotifier.guestFavoriteLimit,
+                      );
+                      return;
+                    }
+
+                    try {
+                      await favNotifier.addOrRemoveFavorite(favoriteSake);
+                    } on FavoriteGuestLimitReachedException {
+                      await GuestLimitDialog.showFavoriteLimit(
+                        context,
+                        maxCount: FavoriteNotifier.guestFavoriteLimit,
+                      );
+                    }
                   },
                 ),
               ],

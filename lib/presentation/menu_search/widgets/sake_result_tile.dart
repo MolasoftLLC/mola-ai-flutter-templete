@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
@@ -31,10 +33,10 @@ class SakeResultTile extends StatefulWidget {
   final bool isSaved;
   final bool isLoading;
   final num? recommendationScore;
-  final VoidCallback onToggleFavorite;
+  final Future<void> Function() onToggleFavorite;
 
-  /// 保存ボタンタップ時に呼び出されるコールバック
-  final VoidCallback onSave;
+  /// 保存ボタンタップ時に呼び出されるコールバック。成功した場合は`true`を返す。
+  final Future<bool> Function() onSave;
   final Widget Function(String key, String value, IconData icon) buildInfoRow;
   final Widget Function(List<String> types) buildTypesRow;
 
@@ -146,10 +148,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                 : Colors.grey,
                             size: 22,
                           ),
-                          onPressed: () {
+                          onPressed: () async {
                             final wasSaved = widget.isSaved;
-                            widget.onSave();
-                            if (!wasSaved) {
+                            final success = await widget.onSave();
+                            if (success && !wasSaved) {
                               SnackBarUtils.showInfoSnackBar(
                                 context,
                                 message: 'マイページに保存しました！',
@@ -168,7 +170,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                 widget.isFavorited ? Colors.red : Colors.grey,
                             size: 22,
                           ),
-                          onPressed: widget.onToggleFavorite,
+                          onPressed: () {
+                            unawaited(widget.onToggleFavorite());
+                          },
                         ),
                       ],
                     )

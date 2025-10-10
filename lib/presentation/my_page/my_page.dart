@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'dart:io';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 // import 'package:in_app_review/in_app_review.dart';
@@ -10,12 +9,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../auth/email_link_auth_page.dart';
 import '../sake_bottle/sake_bottle_list_page.dart';
+import 'account_settings_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
+
+
+bool _isRemoteImagePath(String path) =>
+    path.startsWith('http://') || path.startsWith('https://');
 
 class MyPage extends StatelessWidget {
   const MyPage._({Key? key}) : super(key: key);
@@ -88,6 +94,7 @@ class MyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MyPageNotifier>();
+    final authNotifier = context.read<AuthNotifier>();
     final isLoading = context.select((MyPageState state) => state.isLoading);
     final geminiResponse =
         context.select((MyPageState state) => state.geminiResponse);
@@ -121,6 +128,8 @@ class MyPage extends StatelessWidget {
     final isFiltering = activeFilterTags.isNotEmpty;
     final preferences =
         context.select((MyPageState state) => state.preferences);
+    final userName = context.select((MyPageState state) => state.userName);
+    final authUser = context.select((AuthState state) => state.user);
 
     // Notifierから取得したTextEditingControllerを使用
     final preferencesController = notifier.preferencesController;
@@ -182,6 +191,65 @@ class MyPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                    child: _AuthCard(
+                      user: authUser,
+                      userName: userName,
+                      onAuthenticate: () {
+                        authNotifier.clearMessages();
+                        final navigator = Navigator.of(context);
+                        navigator
+                            .push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => const EmailLinkAuthPage(),
+                          ),
+                        )
+                            .then((result) {
+                          if (!navigator.mounted) {
+                            return;
+                          }
+                          if (result == true) {
+                            _showToast(
+                              navigator.context,
+                              message: 'ログインしました。',
+                              icon: Icons.login,
+                            );
+                          }
+                        });
+                      },
+                      onOpenAccountSettings: () {
+                        authNotifier.clearMessages();
+                        final navigator = Navigator.of(context);
+                        navigator
+                            .push<AccountSettingsResult?>(
+                          MaterialPageRoute(
+                            builder: (_) => const AccountSettingsPage(),
+                          ),
+                        )
+                            .then((result) {
+                          if (!navigator.mounted || result == null) {
+                            return;
+                          }
+                          if (result == AccountSettingsResult.loggedOut) {
+                            _showToast(
+                              navigator.context,
+                              message: 'ログアウトしました。',
+                              icon: Icons.logout,
+                            );
+                          } else if (result ==
+                              AccountSettingsResult.usernameUpdated) {
+                            _showToast(
+                              navigator.context,
+                              message: 'ニックネームを更新しました。',
+                              icon: Icons.person,
+                            );
+                          }
+                        });
+                      },
+                    ),
+                  ),
                   // 酒瓶リストセクション
                   Container(
                     width: MediaQuery.of(context).size.width,
@@ -251,7 +319,7 @@ class MyPage extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               const Text(
-                                '保存リスト',
+                                '保存酒',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -279,8 +347,9 @@ class MyPage extends StatelessWidget {
                                           : Colors.white),
                                 ),
                                 label: Text(
-                                  '絞り込み',
+                                  '並び替え',
                                   style: TextStyle(
+                                    fontSize: 10,
                                     color: isFiltering
                                         ? Colors.amber
                                         : (allFilterTags.isEmpty
@@ -487,10 +556,11 @@ class MyPage extends StatelessWidget {
                                         Icons.favorite,
                                         color: Colors.redAccent,
                                       ),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         final target =
                                             myFavoriteSakeList[index];
-                                        favNotifier.addOrRemoveFavorite(target);
+                                        await favNotifier
+                                            .addOrRemoveFavorite(target);
                                         _showToast(
                                           context,
                                           message:
@@ -1011,6 +1081,145 @@ class MyPage extends StatelessWidget {
   }
 }
 
+class _AuthCard extends StatelessWidget {
+  const _AuthCard({
+    required this.user,
+    required this.userName,
+    required this.onAuthenticate,
+    required this.onOpenAccountSettings,
+  });
+
+  final User? user;
+  final String? userName;
+  final VoidCallback onAuthenticate;
+  final VoidCallback onOpenAccountSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final themeColor = Colors.white.withOpacity(0.1);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: themeColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child:
+          user == null ? _buildGuestView(context) : _buildSignedInView(context),
+    );
+  }
+
+  Widget _buildGuestView(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: const [
+            Icon(Icons.mail_outline, color: Color(0xFFFFD54F)),
+            SizedBox(width: 8),
+            Text(
+              'メール認証でさらに便利に',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          '登録なしでも利用できますが、メール認証するとお気に入りのバックアップや端末間での同期が可能になります。',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onAuthenticate,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD54F),
+              foregroundColor: const Color(0xFF1D3567),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text(
+              'メールでログイン・登録',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignedInView(BuildContext context) {
+    final resolvedName = () {
+      if (userName != null && userName!.trim().isNotEmpty) {
+        return userName!.trim();
+      }
+      final displayName = user?.displayName;
+      if (displayName != null && displayName.trim().isNotEmpty) {
+        return displayName.trim();
+      }
+      final email = user?.email;
+      if (email != null && email.isNotEmpty) {
+        return email;
+      }
+      return 'ユーザー';
+    }();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Icon(Icons.verified_user, color: Color(0xFFFFD54F)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'ログイン中',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'こんにちは$resolvedNameさんっ',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: onOpenAccountSettings,
+          tooltip: 'アカウント設定',
+          icon: const Icon(
+            Icons.manage_accounts,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SavedSakeList extends StatelessWidget {
   const _SavedSakeList({
     required this.savedSakeList,
@@ -1230,14 +1439,36 @@ class _SavedSakeGrid extends StatelessWidget {
         );
 
         if (imagePath != null) {
-          final file = File(imagePath);
-          if (file.existsSync()) {
-            preview = Image.file(
-              file,
+          if (_isRemoteImagePath(imagePath)) {
+            preview = Image.network(
+              imagePath,
               fit: BoxFit.cover,
-              filterQuality: FilterQuality.low,
-              cacheWidth: 600,
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                );
+              },
+              errorBuilder: (context, _, __) => Container(
+                color: Colors.white10,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.broken_image,
+                  color: Colors.white38,
+                  size: 36,
+                ),
+              ),
             );
+          } else {
+            final file = File(imagePath);
+            if (file.existsSync()) {
+              preview = Image.file(
+                file,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.low,
+                cacheWidth: 600,
+              );
+            }
           }
         }
 

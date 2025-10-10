@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
@@ -15,10 +14,14 @@ import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_bottle_image.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/auth_repository.dart';
+import '../../domain/repository/gemini_mola_api_repository.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../common/widgets/ad_consent_dialog.dart';
+import '../common/widgets/guest_limit_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 
 part 'main_search_page_notifier.freezed.dart';
@@ -65,6 +68,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       read<SakeMenuRecognitionRepository>();
   SakeBottleImageRepository get sakeBottleImageRepository =>
       read<SakeBottleImageRepository>();
+  SavedSakeSyncRepository get savedSakeSyncRepository =>
+      read<SavedSakeSyncRepository>();
+  AuthRepository get authRepository => read<AuthRepository>();
 
   @override
   Future<void> initState() async {
@@ -333,12 +339,37 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     final savedNotifier = read<SavedSakeNotifier>();
+    if (savedNotifier.hasReachedGuestLimit) {
+      await GuestLimitDialog.showSavedSakeLimit(
+        context,
+        maxCount: SavedSakeNotifier.guestSavedLimit,
+      );
+      return false;
+    }
     final placeholder = Sake(
       savedId: null,
       name: '解析中',
       imagePaths: [savedPath],
     );
-    final savedId = await savedNotifier.addSavedSake(placeholder);
+    String savedId;
+    try {
+      savedId = await savedNotifier.addSavedSake(placeholder);
+    } on SavedSakeGuestLimitReachedException {
+      await GuestLimitDialog.showSavedSakeLimit(
+        context,
+        maxCount: SavedSakeNotifier.guestSavedLimit,
+      );
+      return false;
+    }
+
+    final placeholderWithId = placeholder.copyWith(savedId: savedId);
+    unawaited(
+      _syncSavedSake(
+        stage: SavedSakeSyncStage.analysisStart,
+        sake: placeholderWithId,
+        imageFile: File(savedPath),
+      ),
+    );
 
     SnackBarUtils.showInfoSnackBar(
       context,
@@ -494,8 +525,16 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   Future<void> _performBottleAnalysis({
     bool inBackground = false,
     String? savedIdHint,
-    required File imageFile,
+    File? imageFile,
   }) async {
+    File? analysisFile = imageFile ?? state.sakeImage;
+    if (analysisFile == null && state.analyzingImagePath != null) {
+      final fileFromPath = File(state.analyzingImagePath!);
+      if (fileFromPath.existsSync()) {
+        analysisFile = fileFromPath;
+      }
+    }
+
     final currentPendingId = savedIdHint ??
         (state.pendingSavedSakeIds.isNotEmpty
             ? state.pendingSavedSakeIds.first
@@ -503,8 +542,24 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     try {
       // 初期化
       state = state.copyWith(sakeInfo: null);
+      if (analysisFile == null || !analysisFile.existsSync()) {
+        logger.info('酒瓶解析: 解析に使用する画像が見つかりませんでした');
+        if (currentPendingId != null) {
+          _handleAnalysisFailure(
+            currentPendingId,
+            '解析に使用する画像が見つかりませんでした',
+          );
+        }
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: '解析に使用する画像が見つかりませんでした',
+          isAnalyzingInBackground: false,
+        );
+        return;
+      }
+
       final response =
-          await sakeMenuRecognitionRepository.recognizeSakeBottle(imageFile);
+          await sakeMenuRecognitionRepository.recognizeSakeBottle(analysisFile);
 
       if (response == null) {
         logger.shout('酒瓶解析: APIレスポンスがnullです');
@@ -551,10 +606,36 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       // 結果を更新
       List<String> pendingIds = state.pendingSavedSakeIds;
       if (currentPendingId != null) {
-        await read<SavedSakeNotifier>().updateSavedSakeWithInfo(
+        final savedNotifier = read<SavedSakeNotifier>();
+        await savedNotifier.updateSavedSakeWithInfo(
           currentPendingId,
           sakeInfo.copyWith(savedId: currentPendingId),
         );
+
+        final updatedList = savedNotifier.state.savedSakeList;
+        final index =
+            updatedList.indexWhere((item) => item.savedId == currentPendingId);
+        final sakeForSync = index != -1
+            ? updatedList[index]
+            : sakeInfo.copyWith(savedId: currentPendingId);
+
+        if (analysisFile != null) {
+          unawaited(
+            _syncSavedSake(
+              stage: SavedSakeSyncStage.analysisComplete,
+              sake: sakeForSync,
+              imageFile: analysisFile,
+            ),
+          );
+        } else {
+          unawaited(
+            _syncSavedSake(
+              stage: SavedSakeSyncStage.analysisComplete,
+              sake: sakeForSync,
+            ),
+          );
+        }
+
         pendingIds = _removePendingId(currentPendingId);
       }
 
@@ -569,7 +650,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       // Save the bottle image with sake name and type
       try {
         await sakeBottleImageRepository.saveSakeBottleImage(
-          imageFile,
+          analysisFile,
           sakeName: sakeInfo.name,
           type: sakeInfo.type,
         );
@@ -585,6 +666,29 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         currentPendingId,
         '酒瓶解析に失敗しました: ${e.toString()}',
       );
+    }
+  }
+
+  Future<void> _syncSavedSake({
+    required SavedSakeSyncStage stage,
+    required Sake sake,
+    File? imageFile,
+  }) async {
+    final user = authRepository.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      await savedSakeSyncRepository.syncSavedSake(
+        stage: stage,
+        userId: user.uid,
+        sake: sake,
+        imageFile: imageFile,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('保存酒同期で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
     }
   }
 

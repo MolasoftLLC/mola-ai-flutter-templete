@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -12,6 +13,7 @@ import 'app_config.dart';
 import 'common/access_url.dart';
 import 'common/utils/ad_utils.dart';
 import 'config/di_container.dart';
+import 'firebase_options.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -33,10 +35,13 @@ void main() async {
     DeviceOrientation.portraitUp,
   ]);
 
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // ATT許可ダイアログを表示
-  final trackingStatus = await AppTrackingTransparency.requestTrackingAuthorization();
+  final trackingStatus =
+      await AppTrackingTransparency.requestTrackingAuthorization();
   print('App Tracking Transparency status: $trackingStatus');
-  
+
   if (trackingStatus == TrackingStatus.notDetermined) {
     print('User has not responded to tracking authorization dialog yet');
   } else if (trackingStatus == TrackingStatus.restricted) {

@@ -82,9 +82,11 @@ class ImageUtils {
       // Delete the temporary compressed file
       final compressedPath = compressedXFile.path;
       if (compressedPath.isNotEmpty) {
-        await File(compressedPath).delete().catchError((e) {
-          logger.info('一時ファイル削除に失敗: $e');
-        });
+        try {
+          await File(compressedPath).delete();
+        } catch (error) {
+          logger.info('一時ファイル削除に失敗: $error');
+        }
       }
 
       // Return the base64 encoded string

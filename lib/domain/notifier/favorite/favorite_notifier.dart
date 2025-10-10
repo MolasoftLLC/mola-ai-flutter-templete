@@ -4,13 +4,15 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
-import '../../../common/logger.dart';
+import 'package:mola_gemini_flutter_template/common/logger.dart';
 import '../../../infrastructure/local_database/shared_key.dart';
 import '../../../infrastructure/local_database/shared_preference.dart';
+import '../../repository/auth_repository.dart';
+import '../../repository/favorite_sync_repository.dart';
+import '../../repository/gemini_mola_api_repository.dart';
 
 part 'favorite_notifier.freezed.dart';
 
@@ -58,12 +60,24 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
   FavoriteNotifier() : super(const FavoriteState()) {
     _loadFavorites();
+    Future.microtask(_loadRemoteIfLoggedIn);
   }
 
+  static const int guestFavoriteLimit = 8;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
+
+  AuthRepository get _authRepository => read<AuthRepository>();
+  FavoriteSyncRepository get _favoriteSyncRepository =>
+      read<FavoriteSyncRepository>();
+  bool get _isGuest => _authRepository.currentUser == null;
+
+  static const _favoriteMigrationUserKey = 'favoriteMigratedUserId';
+
+  bool get hasReachedGuestLimit =>
+      _isGuest && state.myFavoriteList.length >= guestFavoriteLimit;
 
   @override
   Future<void> initState() async {
@@ -108,15 +122,58 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
     final exists = state.myFavoriteList.any((item) =>
         item.name == favoriteSake.name && item.type == favoriteSake.type);
 
+    Future<void> applyLocalChange() async {
+      if (!exists && hasReachedGuestLimit) {
+        throw const FavoriteGuestLimitReachedException();
+      }
+      if (exists) {
+        final updatedList = state.myFavoriteList
+            .where((item) => !(item.name == favoriteSake.name &&
+                item.type == favoriteSake.type))
+            .toList();
+        state = state.copyWith(myFavoriteList: updatedList);
+      } else {
+        final updatedList = [...state.myFavoriteList, favoriteSake];
+        state = state.copyWith(myFavoriteList: updatedList);
+      }
+      await _saveFavorites();
+    }
+
+    if (_isGuest) {
+      await applyLocalChange();
+      return;
+    }
+
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      logger.warning('ログイン情報が取得できず、お気に入り操作をローカル処理に切り替えます');
+      await applyLocalChange();
+      return;
+    }
+
     if (exists) {
-      // 存在する場合は削除
+      final success = await _favoriteSyncRepository.removeFavorite(
+        userId: user.uid,
+        sake: favoriteSake,
+      );
+      if (!success) {
+        logger.warning('お気に入りの削除に失敗しました (remote)');
+        return;
+      }
       final updatedList = state.myFavoriteList
           .where((item) => !(item.name == favoriteSake.name &&
               item.type == favoriteSake.type))
           .toList();
       state = state.copyWith(myFavoriteList: updatedList);
     } else {
-      // 存在しない場合は追加
+      final success = await _favoriteSyncRepository.addFavorite(
+        userId: user.uid,
+        sake: favoriteSake,
+      );
+      if (!success) {
+        logger.warning('お気に入りの追加に失敗しました (remote)');
+        return;
+      }
       final updatedList = [...state.myFavoriteList, favoriteSake];
       state = state.copyWith(myFavoriteList: updatedList);
     }
@@ -162,4 +219,83 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
     state = state.copyWith(myFavoriteList: favoriteSakes);
     logger.shout('お気に入りリスト読み込み完了: ${state.myFavoriteList.length}件');
   }
+
+  Future<void> _loadRemoteIfLoggedIn() async {
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      return;
+    }
+    await _loadFavoritesFromServer(user.uid);
+  }
+
+  Future<void> _loadFavoritesFromServer(String userId) async {
+    final remoteFavorites =
+        await _favoriteSyncRepository.fetchFavorites(userId);
+    if (remoteFavorites.isEmpty) {
+      logger.info('サーバー上にお気に入りが存在しませんでした');
+    }
+    state = state.copyWith(myFavoriteList: remoteFavorites);
+    await _saveFavorites();
+    logger.info('サーバーのお気に入りを反映しました: ${remoteFavorites.length}件');
+  }
+
+  Future<void> refreshFromServer() async {
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      return;
+    }
+    await _loadFavoritesFromServer(user.uid);
+  }
+
+  Future<void> reloadLocal() async {
+    await _loadFavorites();
+  }
+
+  Future<void> onUserSignedIn(String userId) async {
+    await _migrateLocalFavoritesIfNeeded(userId);
+    await _loadFavoritesFromServer(userId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_favoriteMigrationUserKey, userId);
+  }
+
+  Future<void> onUserSignedOut() async {
+    await _clearLocalFavorites();
+    await _loadFavorites();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_favoriteMigrationUserKey, '');
+  }
+
+  Future<void> _migrateLocalFavoritesIfNeeded(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final migratedUser = prefs.getString(_favoriteMigrationUserKey) ?? '';
+    if (migratedUser == userId) {
+      return;
+    }
+
+    final localFavorites = [...state.myFavoriteList];
+    if (localFavorites.isEmpty) {
+      return;
+    }
+
+    for (final favorite in localFavorites) {
+      final success = await _favoriteSyncRepository.addFavorite(
+        userId: userId,
+        sake: favorite,
+      );
+      if (!success) {
+        logger.warning('お気に入りの移行に失敗しました: ${favorite.name}');
+      }
+    }
+
+    await _clearLocalFavorites();
+  }
+
+  Future<void> _clearLocalFavorites() async {
+    state = state.copyWith(myFavoriteList: const []);
+    await _saveFavorites();
+  }
+}
+
+class FavoriteGuestLimitReachedException implements Exception {
+  const FavoriteGuestLimitReachedException();
 }

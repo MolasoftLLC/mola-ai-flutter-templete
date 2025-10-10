@@ -4,13 +4,19 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import '../common/access_url.dart';
+import '../domain/notifier/auth/auth_notifier.dart';
 import '../domain/notifier/favorite/favorite_notifier.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
 import '../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../domain/repository/auth_repository.dart';
+import '../domain/repository/favorite_sync_repository.dart';
 import '../domain/repository/gemini_mola_api_repository.dart';
 import '../domain/repository/mola_api_repository.dart';
 import '../domain/repository/sake_bottle_image_repository.dart';
 import '../domain/repository/sake_menu_recognition_repository.dart';
+import '../domain/repository/saved_sake_sync_repository.dart';
+import '../domain/repository/user_preference_repository.dart';
+import '../domain/repository/sake_user_repository.dart';
 import '../infrastructure/api_client/api_client.dart';
 import '../infrastructure/api_client/client_creator.dart';
 import '../infrastructure/api_client/sake_menu_recognition_api_client.dart';
@@ -47,6 +53,9 @@ List<SingleChildWidget> get _repositoryProviders {
         ApiClient.create(chopperClient(url: apiURL())),
       ),
     ),
+    Provider<AuthRepository>(
+      create: (_) => AuthRepository(),
+    ),
     Provider<SharedPreference>(
       create: (_) => SharedPreference(),
     ),
@@ -62,6 +71,26 @@ List<SingleChildWidget> get _repositoryProviders {
     ),
     Provider<SakeBottleImageRepository>(
       create: (_) => SakeBottleImageRepository(),
+    ),
+    Provider<SavedSakeSyncRepository>(
+      create: (_) => SavedSakeSyncRepository(
+        ApiClient.create(chopperClient(url: apiURL())),
+      ),
+    ),
+    Provider<FavoriteSyncRepository>(
+      create: (_) => FavoriteSyncRepository(
+        ApiClient.create(chopperClient(url: apiURL())),
+      ),
+    ),
+    Provider<UserPreferenceRepository>(
+      create: (_) => UserPreferenceRepository(
+        ApiClient.create(chopperClient(url: apiURL())),
+      ),
+    ),
+    Provider<SakeUserRepository>(
+      create: (_) => SakeUserRepository(
+        ApiClient.create(chopperClient(url: apiURL())),
+      ),
     ),
   ];
 }
@@ -87,6 +116,9 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
     ),
     StateNotifierProvider<MyPageNotifier, MyPageState>(
       create: (_) => MyPageNotifier(),
+    ),
+    StateNotifierProvider<AuthNotifier, AuthState>(
+      create: (_) => AuthNotifier(),
     ),
   ];
 }

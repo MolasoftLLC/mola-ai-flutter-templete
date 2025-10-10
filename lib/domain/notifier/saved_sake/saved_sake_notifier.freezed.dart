@@ -139,14 +139,12 @@ class _$SavedSakeStateImpl implements _SavedSakeState {
   @override
   @JsonKey()
   final bool isGridView;
-
   final List<String> _activeFilterTags;
   @override
   @JsonKey()
   List<String> get activeFilterTags {
-    if (_activeFilterTags is EqualUnmodifiableListView) {
+    if (_activeFilterTags is EqualUnmodifiableListView)
       return _activeFilterTags;
-    }
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_activeFilterTags);
   }

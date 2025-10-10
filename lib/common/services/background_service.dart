@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 import 'package:flutter/foundation.dart' as flutter;
 
 /// バックグラウンド処理を行うサービス
