@@ -66,6 +66,12 @@ abstract class ApiClient extends ChopperService {
     @Query('userId') String userId,
   );
 
+  @Post(path: 'saved-sakes/{savedId}/remove')
+  Future<Response> removeSavedSake(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'saved-sakes/{savedId}/images')
   Future<Response> uploadSavedSakeImage(
     @Path('savedId') String savedId,

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:mola_gemini_flutter_template/presentation/app_page.dart';
 import 'package:provider/provider.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
@@ -14,6 +13,7 @@ import 'common/access_url.dart';
 import 'common/utils/ad_utils.dart';
 import 'config/di_container.dart';
 import 'firebase_options.dart';
+import 'presentation/startup/first_launch_gate.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -101,7 +101,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: AppPage.wrapped(),
+      home: const FirstLaunchGate(),
     );
   }
 }

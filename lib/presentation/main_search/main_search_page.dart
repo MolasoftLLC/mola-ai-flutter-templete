@@ -710,6 +710,14 @@ class MainSearchPage extends StatelessWidget {
                       );
                       return;
                     }
+                    if (!isSaved && savedNotifier.hasReachedMemberLimit) {
+                      SnackBarUtils.showWarningSnackBar(
+                        context,
+                        message:
+                            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                      );
+                      return;
+                    }
                     final shouldShowSavedToast = !isSaved;
                     try {
                       await savedNotifier.toggleSavedSake(sakeInfo);
@@ -717,6 +725,13 @@ class MainSearchPage extends StatelessWidget {
                       await GuestLimitDialog.showSavedSakeLimit(
                         context,
                         maxCount: SavedSakeNotifier.guestSavedLimit,
+                      );
+                      return;
+                    } on SavedSakeMemberLimitReachedException {
+                      SnackBarUtils.showWarningSnackBar(
+                        context,
+                        message:
+                            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
                       );
                       return;
                     }

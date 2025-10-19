@@ -40,7 +40,15 @@ ChopperClient chopperClient({http.Client? client, required String url}) {
           }
         }
 
-        return request.copyWith(headers: headers);
+        final originalUri = request.url;
+        final needsApiPrefix =
+            !originalUri.path.startsWith('/api/') && originalUri.path != '/api';
+        final normalizedPath = needsApiPrefix
+            ? '/api${originalUri.path.startsWith('/') ? originalUri.path : '/${originalUri.path}'}'
+            : originalUri.path;
+        final updatedUri = originalUri.replace(path: normalizedPath);
+
+        return request.copyWith(headers: headers, uri: updatedUri);
       },
     ],
   );

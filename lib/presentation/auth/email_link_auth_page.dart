@@ -32,11 +32,13 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
 
   late final TextEditingController _emailController;
   bool _hasNavigatedAfterSuccess = false;
+  late EmailLinkAuthMode _mode;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController();
+    _mode = widget.mode;
   }
 
   @override
@@ -45,13 +47,13 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
     super.dispose();
   }
 
-  bool get _isSignUp => widget.mode == EmailLinkAuthMode.signUp;
+  bool get _isSignUp => _mode == EmailLinkAuthMode.signUp;
 
   String get _descriptionText {
     if (_isSignUp) {
-      return 'メールアドレスにログイン用リンクを送信します。メール内のリンクをタップすると登録が完了します。';
+      return 'メールアドレスにログイン用リンクを送信します。メールのリンクをタップするだけで登録が完了します。';
     }
-    return '登録済みのメールにログインリンクを送信します。リンクをタップするとログインが完了します。';
+    return '登録済みのメールにログインリンクを送信します。同じ手順でいつでも再ログインできます。';
   }
 
   String _primaryButtonLabel({required bool emailLinkSent}) {
@@ -128,6 +130,19 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _ModeSwitcher(
+                      currentMode: _mode,
+                      onChanged: (newMode) {
+                        if (_mode == newMode) {
+                          return;
+                        }
+                        setState(() {
+                          _mode = newMode;
+                        });
+                        context.read<AuthNotifier>().clearMessages();
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       _descriptionText,
                       style: const TextStyle(
@@ -337,6 +352,61 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeSwitcher extends StatelessWidget {
+  const _ModeSwitcher({
+    required this.currentMode,
+    required this.onChanged,
+  });
+
+  final EmailLinkAuthMode currentMode;
+  final ValueChanged<EmailLinkAuthMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = currentMode == EmailLinkAuthMode.signIn ? 0 : 1;
+    final isSelected = <bool>[selectedIndex == 0, selectedIndex == 1];
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: ToggleButtons(
+          isSelected: isSelected,
+          borderColor: Colors.transparent,
+          selectedBorderColor: Colors.transparent,
+          fillColor: const Color(0xFFFFD54F),
+          selectedColor: const Color(0xFF1D3567),
+          color: Colors.white70,
+          borderRadius: BorderRadius.circular(12),
+          constraints: const BoxConstraints(minHeight: 36, minWidth: 120),
+          onPressed: (index) {
+            if (index == selectedIndex) {
+              return;
+            }
+            onChanged(
+              index == 0 ? EmailLinkAuthMode.signIn : EmailLinkAuthMode.signUp,
+            );
+          },
+          children: const [
+            Text(
+              'ログイン',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              '新規登録',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );

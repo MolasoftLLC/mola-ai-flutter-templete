@@ -61,6 +61,20 @@
 
 ---
 
+## 保存酒を削除
+- **Method:** `POST`
+- **Path:** `/saved-sakes/{savedId}/remove`
+- **Body:**
+  ```json
+  {
+    "userId": "firebase-uid",
+    "timestamp": "2024-05-01T12:45:00.456Z"
+  }
+  ```
+- **Response:** `200 OK`
+
+---
+
 ## 保存酒に画像を追加
 - **Method:** `POST`
 - **Path:** `/saved-sakes/{savedId}/images`
@@ -167,10 +181,15 @@
 - **Body:**
   ```json
   {
-    "userId": "firebase-uid",
-    "displayName": "表示名",
-    "photoUrl": "https://...",
-    "timestamp": "2024-05-01T13:20:00.000Z"
+    "user": {
+      "id": 1,
+      "firebaseUid": "firebase-uid",
+      "username": "user_xxx",
+      "displayName": "表示名",
+      "photoUrl": "https://...",
+      "createdAt": "2024-05-01T13:20:00.000Z",
+      "updatedAt": "2024-05-01T13:20:00.000Z"
+    }
   }
   ```
 - **Response:** `200 OK`

@@ -62,17 +62,44 @@ class SakeBottleListPage extends StatelessWidget {
         ),
         child: RefreshIndicator(
           onRefresh: () => notifier.refreshSakeBottleImages(),
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: const Text(
+                  'こちらの機能は保存酒とかぶってきたためひっそりとクローズ予定です。',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.6,
                   ),
-                )
-              : errorMessage != null
-                  ? _buildErrorState(errorMessage)
-                  : sakeBottleImages.isEmpty
-                      ? _buildEmptyState()
-                      : _buildGridView(context, sakeBottleImages),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Expanded(
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : errorMessage != null
+                        ? _buildErrorState(errorMessage)
+                        : sakeBottleImages.isEmpty
+                            ? _buildEmptyState()
+                            : _buildGridView(context, sakeBottleImages),
+              ),
+            ],
+          ),
         ),
       ),
     );

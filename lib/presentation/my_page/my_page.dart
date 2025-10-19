@@ -19,7 +19,6 @@ import 'account_settings_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
 
-
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
 
@@ -199,6 +198,7 @@ class MyPage extends StatelessWidget {
                       userName: userName,
                       onAuthenticate: () {
                         authNotifier.clearMessages();
+                        FocusScope.of(context).unfocus();
                         final navigator = Navigator.of(context);
                         navigator
                             .push<bool>(
@@ -207,6 +207,7 @@ class MyPage extends StatelessWidget {
                           ),
                         )
                             .then((result) {
+                          FocusScope.of(navigator.context).unfocus();
                           if (!navigator.mounted) {
                             return;
                           }
@@ -216,12 +217,14 @@ class MyPage extends StatelessWidget {
                               message: 'ログインしました。',
                               icon: Icons.login,
                             );
+                            notifier.fetchUserProfile();
                           }
                         });
                       },
                       onOpenAccountSettings: () {
                         authNotifier.clearMessages();
                         final navigator = Navigator.of(context);
+                        FocusScope.of(context).unfocus();
                         navigator
                             .push<AccountSettingsResult?>(
                           MaterialPageRoute(
@@ -229,6 +232,7 @@ class MyPage extends StatelessWidget {
                           ),
                         )
                             .then((result) {
+                          FocusScope.of(navigator.context).unfocus();
                           if (!navigator.mounted || result == null) {
                             return;
                           }
@@ -245,58 +249,12 @@ class MyPage extends StatelessWidget {
                               message: 'ニックネームを更新しました。',
                               icon: Icons.person,
                             );
+                            notifier.fetchUserProfile();
                           }
                         });
                       },
                     ),
                   ),
-                  // 酒瓶リストセクション
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SakeBottleListPage.wrapped(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.wine_bar,
-                              color: Colors.amber,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              '酒瓶リスト',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Spacer(),
-                            const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
                   // 保存したお酒セクション
                   Container(
                     width: MediaQuery.of(context).size.width,
@@ -478,6 +436,53 @@ class MyPage extends StatelessWidget {
                           ),
                         const SizedBox(height: 24),
                       ],
+                    ),
+                  ),
+
+                  // 酒瓶リストセクション（保存酒の下）
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SakeBottleListPage.wrapped(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.wine_bar,
+                              color: Colors.amber,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '酒瓶リスト',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
 
@@ -1195,7 +1200,7 @@ class _AuthCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'こんにちは$resolvedNameさんっ',
+                'こんにちは${resolvedName}さん！',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -1212,7 +1217,7 @@ class _AuthCard extends StatelessWidget {
           tooltip: 'アカウント設定',
           icon: const Icon(
             Icons.manage_accounts,
-            color: Colors.white,
+            color: Colors.white70,
           ),
         ),
       ],

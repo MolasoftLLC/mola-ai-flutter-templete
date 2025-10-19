@@ -28,6 +28,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   late Sake _currentSake;
   late Set<String> _selectedTags;
   late List<String> _imagePaths;
+  bool _isImageProcessing = false;
 
   bool _isRemotePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -41,6 +42,24 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     _placeController = TextEditingController(text: widget.sake.place ?? '');
     _selectedTags = {...(widget.sake.userTags ?? <String>[])};
     _imagePaths = [...(widget.sake.imagePaths ?? <String>[])];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final savedId = _currentSake.savedId;
+      if (savedId == null) {
+        return;
+      }
+      final notifier = context.read<SavedSakeNotifier>();
+      final updated = await notifier.syncLocalImagesIfNeeded(savedId);
+      if (!mounted || updated == null) {
+        return;
+      }
+      _applySakeUpdate(
+        updated,
+        refreshTags: false,
+        updateNotifier: false,
+      );
+    });
   }
 
   @override
@@ -128,43 +147,56 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(gradient: gradient),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeaderCard(themeColor),
-              _buildImageGallerySection(),
-              _buildMemoSection(),
-              if (infoRows.isNotEmpty)
-                _buildSection(
-                  title: '基本情報',
-                  children: infoRows,
-                ),
-              if (featureWidgets.isNotEmpty)
-                _buildSection(
-                  title: 'テイスト・特徴',
-                  children: featureWidgets,
-                ),
-              if (infoRows.isEmpty && featureWidgets.isEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 24),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    '詳細情報が登録されていません。',
-                    style: TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(gradient: gradient),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeaderCard(themeColor),
+                  _buildImageGallerySection(),
+                  _buildMemoSection(),
+                  if (infoRows.isNotEmpty)
+                    _buildSection(
+                      title: '基本情報',
+                      children: infoRows,
+                    ),
+                  if (featureWidgets.isNotEmpty)
+                    _buildSection(
+                      title: 'テイスト・特徴',
+                      children: featureWidgets,
+                    ),
+                  if (infoRows.isEmpty && featureWidgets.isEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        '詳細情報が登録されていません。',
+                        style: TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
+          if (_isImageProcessing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.45),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -404,7 +436,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       if (!file.existsSync()) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          unawaited(_removeImagePath(path, showToast: false));
+          unawaited(
+            _removeImagePath(
+              path,
+              showToast: false,
+              showLoading: false,
+            ),
+          );
         });
         return _buildAddTile(isPrimary: index == 0);
       }
@@ -826,10 +864,25 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     final notifier = context.read<SavedSakeNotifier>();
-    final updated = await notifier.addImageToSavedSake(
-      savedId: savedId,
-      localPath: savedPath,
-    );
+    if (mounted) {
+      setState(() {
+        _isImageProcessing = true;
+      });
+    }
+
+    Sake? updated;
+    try {
+      updated = await notifier.addImageToSavedSake(
+        savedId: savedId,
+        localPath: savedPath,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImageProcessing = false;
+        });
+      }
+    }
 
     if (!mounted) {
       return;
@@ -884,7 +937,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     await _removeImagePath(path, showToast: true);
   }
 
-  Future<void> _removeImagePath(String path, {bool showToast = true}) async {
+  Future<void> _removeImagePath(
+    String path, {
+    bool showToast = true,
+    bool showLoading = true,
+  }) async {
     final savedId = _currentSake.savedId;
     if (savedId == null) {
       _showSnack('保存情報が見つかりません');
@@ -892,10 +949,25 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     final notifier = context.read<SavedSakeNotifier>();
-    final updated = await notifier.removeImageFromSavedSake(
-      savedId: savedId,
-      imagePath: path,
-    );
+    if (showLoading && mounted) {
+      setState(() {
+        _isImageProcessing = true;
+      });
+    }
+
+    Sake? updated;
+    try {
+      updated = await notifier.removeImageFromSavedSake(
+        savedId: savedId,
+        imagePath: path,
+      );
+    } finally {
+      if (showLoading && mounted) {
+        setState(() {
+          _isImageProcessing = false;
+        });
+      }
+    }
 
     if (!mounted) {
       return;

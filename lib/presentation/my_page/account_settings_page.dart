@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../domain/notifier/auth/auth_notifier.dart'
     show AuthNotifier, AuthState;
 import '../../domain/notifier/my_page/my_page_notifier.dart';
-import '../auth/email_link_auth_page.dart';
 
 enum AccountSettingsResult { loggedOut, usernameUpdated }
 
@@ -80,8 +79,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       Navigator.of(context).pop(AccountSettingsResult.usernameUpdated);
     } else {
       setState(() {
-        _errorMessage =
-            'ニックネームの更新に失敗しました。時間をおいて再度お試しください。';
+        _errorMessage = 'ニックネームの更新に失敗しました。時間をおいて再度お試しください。';
       });
     }
   }
@@ -113,15 +111,6 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     }
 
     Navigator.of(context).pop(AccountSettingsResult.loggedOut);
-  }
-
-  void _openEmailAuthPage() {
-    context.read<AuthNotifier>().clearMessages();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const EmailLinkAuthPage(),
-      ),
-    );
   }
 
   @override
@@ -284,68 +273,43 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  '※ 現在アプリ内でメールアドレスの変更はできません。',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                          OutlinedButton(
-                            onPressed: _isProcessing ? null : _openEmailAuthPage,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFFD54F),
-                              side: const BorderSide(color: Color(0xFFFFD54F)),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: const Text('変更する'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.logout, color: Color(0xFFFF8A65)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    'ログアウト',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    '現在のアカウントからサインアウトします。',
-                                    style: TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 12,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _isProcessing ? null : _handleLogout,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.4),
                             ),
-                            TextButton(
-                              onPressed: _isProcessing ? null : _handleLogout,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('ログアウト'),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                          ],
+                          ),
+                          icon: const Icon(Icons.logout,
+                              color: Color(0xFFFF8A65)),
+                          label: const Text(
+                            'ログアウト',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                         ),
                       ),
                     ],

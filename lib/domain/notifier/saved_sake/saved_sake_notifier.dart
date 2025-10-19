@@ -18,6 +18,10 @@ class SavedSakeGuestLimitReachedException implements Exception {
   const SavedSakeGuestLimitReachedException();
 }
 
+class SavedSakeMemberLimitReachedException implements Exception {
+  const SavedSakeMemberLimitReachedException();
+}
+
 @freezed
 class SavedSakeState with _$SavedSakeState {
   const factory SavedSakeState({
@@ -35,9 +39,11 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   static const int guestSavedLimit = 8;
+  static const int memberSavedLimit = 50;
   static const _migrationUserKey = 'savedSakeMigratedUserId';
 
   final Random _random = Random();
+  final Set<String> _syncingImageIds = <String>{};
 
   AuthRepository get _authRepository => read<AuthRepository>();
   SavedSakeSyncRepository get _syncRepository =>
@@ -47,6 +53,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   bool get hasReachedGuestLimit =>
       _isGuest && state.savedSakeList.length >= guestSavedLimit;
+
+  bool get hasReachedMemberLimit =>
+      !_isGuest && state.savedSakeList.length >= memberSavedLimit;
 
   bool _isRemoteImagePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -161,6 +170,11 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
         state.savedSakeList.length >= guestSavedLimit) {
       throw const SavedSakeGuestLimitReachedException();
     }
+    if (!_isGuest &&
+        !alreadySaved &&
+        state.savedSakeList.length >= memberSavedLimit) {
+      throw const SavedSakeMemberLimitReachedException();
+    }
     final savedId = sake.savedId ?? _generateId();
     final newSake = sake.copyWith(savedId: savedId);
     state = state.copyWith(
@@ -175,6 +189,32 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     final exists = state.savedSakeList.any((item) => _isSameSake(item, sake));
 
     if (exists) {
+      if (!_isGuest) {
+        final user = _authRepository.currentUser;
+        if (user != null) {
+          Sake? target;
+          for (final item in state.savedSakeList) {
+            if (_isSameSake(item, sake)) {
+              target = item;
+              break;
+            }
+          }
+          final savedId = target?.savedId;
+          if (savedId != null && savedId.isNotEmpty) {
+            final success = await _syncRepository.deleteSavedSakeRecord(
+              userId: user.uid,
+              savedId: savedId,
+            );
+            if (!success) {
+              logger.warning('保存酒のサーバー削除に失敗したためローカル削除を中止しました: id=$savedId');
+              return;
+            }
+          } else {
+            logger.info('削除対象の savedId が未設定のためサーバー削除はスキップしました');
+          }
+        }
+      }
+
       final updatedList = state.savedSakeList
           .where((item) => !_isSameSake(item, sake))
           .toList();
@@ -496,6 +536,63 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
     for (final sake in localList) {
       try {
+        final savedId = sake.savedId;
+        if (savedId == null || savedId.isEmpty) {
+          logger.warning('保存酒移行をスキップ: savedId 未設定 (name=${sake.name ?? 'unknown'})');
+          continue;
+        }
+
+        final imagePaths = [...(sake.imagePaths ?? const <String>[])];
+        final localPaths =
+            imagePaths.where((path) => !_isRemoteImagePath(path)).toList();
+
+        File? primaryImage;
+        if (localPaths.isNotEmpty) {
+          for (final candidate in localPaths) {
+            if (candidate.isEmpty) {
+              continue;
+            }
+            final file = File(candidate);
+            if (file.existsSync()) {
+              primaryImage = file;
+              break;
+            }
+          }
+        }
+
+        await _syncRepository.syncSavedSake(
+          stage: SavedSakeSyncStage.analysisStart,
+          userId: userId,
+          sake: sake,
+          imageFile: primaryImage,
+        );
+
+        if (localPaths.length > 1) {
+          final remaining = localPaths.where((path) =>
+              primaryImage == null || path != primaryImage!.path);
+          for (final path in remaining) {
+            if (path.isEmpty) {
+              continue;
+            }
+            final file = File(path);
+            if (!file.existsSync()) {
+              continue;
+            }
+            final uploadedUrl = await _syncRepository.uploadSavedSakeImage(
+              userId: userId,
+              savedId: savedId,
+              imageFile: file,
+            );
+            if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+              try {
+                file.deleteSync();
+              } catch (_) {
+                // ignore delete errors
+              }
+            }
+          }
+        }
+
         await _syncRepository.syncSavedSake(
           stage: SavedSakeSyncStage.analysisComplete,
           userId: userId,
@@ -519,5 +616,110 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       key: SAVED_SAKE_LIST,
       list: const <String>[],
     );
+  }
+
+  Future<Sake?> syncLocalImagesIfNeeded(String savedId) async {
+    if (_isGuest) {
+      return null;
+    }
+
+    if (_syncingImageIds.contains(savedId)) {
+      return null;
+    }
+    _syncingImageIds.add(savedId);
+
+    try {
+      final index = state.savedSakeList
+          .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+      if (index == -1) {
+        logger.info('同期対象の保存酒が見つかりません: id=$savedId');
+        return null;
+      }
+
+      final current = state.savedSakeList[index];
+      final imagePaths = [...(current.imagePaths ?? const <String>[])];
+      final localPaths =
+          imagePaths.where((path) => !_isRemoteImagePath(path)).toList();
+
+      if (localPaths.isEmpty) {
+        return null;
+      }
+
+      final user = _authRepository.currentUser;
+      if (user == null) {
+        return null;
+      }
+
+      final updatedPaths = [...imagePaths];
+      var updated = false;
+
+      for (final localPath in localPaths) {
+        final file = File(localPath);
+        if (!file.existsSync()) {
+          updatedPaths.remove(localPath);
+          updated = true;
+          continue;
+        }
+
+        final remoteUrl = await _syncRepository.uploadSavedSakeImage(
+          userId: user.uid,
+          savedId: savedId,
+          imageFile: file,
+        );
+
+        if (remoteUrl == null || remoteUrl.isEmpty) {
+          logger.warning('保存酒画像の同期に失敗しました: $localPath');
+          continue;
+        }
+
+        updatedPaths.remove(localPath);
+        updatedPaths.add(remoteUrl);
+        updated = true;
+
+        try {
+          file.deleteSync();
+        } catch (_) {
+          // ignore delete errors
+        }
+      }
+
+      if (!updated) {
+        return null;
+      }
+
+      final remoteSet = <String>{};
+      final localSet = <String>{};
+      for (final path in updatedPaths) {
+        if (_isRemoteImagePath(path)) {
+          remoteSet.add(path);
+        } else {
+          localSet.add(path);
+        }
+      }
+
+      final normalizedPaths = <String>[];
+      if (remoteSet.isNotEmpty) {
+        normalizedPaths.addAll(remoteSet);
+      } else {
+        normalizedPaths.addAll(localSet);
+      }
+
+      final updatedSake = current.copyWith(
+        imagePaths: normalizedPaths.isEmpty ? null : normalizedPaths,
+      );
+
+      final nextList = [...state.savedSakeList];
+      nextList[index] = updatedSake;
+      state = state.copyWith(savedSakeList: nextList);
+      await _persistSavedSakes();
+      logger.info('保存酒画像をクラウドへ同期しました: id=$savedId');
+      return updatedSake;
+    } catch (error, stackTrace) {
+      logger.warning('保存酒画像同期で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
+    } finally {
+      _syncingImageIds.remove(savedId);
+    }
   }
 }

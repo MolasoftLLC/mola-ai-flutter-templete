@@ -10,6 +10,9 @@ import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/api_client.dart';
 
+bool _isRemotePath(String path) =>
+    path.startsWith('http://') || path.startsWith('https://');
+
 enum SavedSakeSyncStage { analysisStart, analysisComplete }
 
 extension SavedSakeSyncStageValue on SavedSakeSyncStage {
@@ -78,6 +81,7 @@ class SavedSakeSyncRepository {
       }
 
       final rawBody = response.body;
+      logger.info('[SavedSakeSyncRepository.fetchSavedSakes] レスポンス: $rawBody');
       final List<dynamic> rawList;
       if (rawBody is List) {
         rawList = rawBody;
@@ -93,7 +97,22 @@ class SavedSakeSyncRepository {
         if (item is! Map<String, dynamic>) {
           continue;
         }
+        logger.info('[SavedSakeSyncRepository.fetchSavedSakes] レコード生データ: $item');
         final sakeJson = Map<String, dynamic>.from(item);
+
+        Map<String, dynamic>? embeddedDetail;
+        final dynamic embedded = sakeJson.remove('sake');
+        if (embedded is Map<String, dynamic>) {
+          embeddedDetail = Map<String, dynamic>.from(embedded);
+        } else if (embedded is Map) {
+          embeddedDetail = <String, dynamic>{};
+          embedded.forEach((key, value) {
+            if (key == null) {
+              return;
+            }
+            embeddedDetail![key.toString()] = value;
+          });
+        }
 
         final dynamic base64Field = sakeJson.remove('imageBase64');
         final dynamic base64ListField = sakeJson.remove('imageBase64List');
@@ -133,17 +152,49 @@ class SavedSakeSyncRepository {
           }
         }
 
+        if (embeddedDetail != null && embeddedDetail.isNotEmpty) {
+          embeddedDetail.forEach((key, value) {
+            if (value == null) {
+              return;
+            }
+            if (!sakeJson.containsKey(key) || sakeJson[key] == null) {
+              sakeJson[key] = value;
+            }
+          });
+        }
+
         try {
           final sake = Sake.fromJson(sakeJson);
-          if (imagePaths.isNotEmpty) {
-            result.add(
-              sake.copyWith(
-                imagePaths: [
-                  ...(sake.imagePaths ?? const <String>[]),
-                  ...imagePaths
-                ],
-              ),
-            );
+          logger.info('[SavedSakeSyncRepository.fetchSavedSakes] パース後: $sakeJson');
+
+          final combined = <String>[];
+          if (sake.imagePaths != null) {
+            combined.addAll(sake.imagePaths!);
+          }
+          combined.addAll(imagePaths);
+
+          final remoteSet = <String>{};
+          final localSet = <String>{};
+          for (final path in combined) {
+            if (path.isEmpty) {
+              continue;
+            }
+            if (_isRemotePath(path)) {
+              remoteSet.add(path);
+            } else {
+              localSet.add(path);
+            }
+          }
+
+          final normalizedPaths = <String>[];
+          if (remoteSet.isNotEmpty) {
+            normalizedPaths.addAll(remoteSet);
+          } else if (localSet.isNotEmpty) {
+            normalizedPaths.addAll(localSet);
+          }
+
+          if (normalizedPaths.isNotEmpty) {
+            result.add(sake.copyWith(imagePaths: normalizedPaths));
           } else {
             result.add(sake);
           }
@@ -179,10 +230,12 @@ class SavedSakeSyncRepository {
       'sake': sakeJson,
     };
 
-    final imageBase64 =
-        await _encodeImage(imageFile ?? _resolveImageFile(sake));
-    if (imageBase64 != null) {
-      payload['imageBase64'] = imageBase64;
+    if (stage == SavedSakeSyncStage.analysisStart) {
+      final File? effectiveImage = imageFile ?? _resolveImageFile(sake);
+      final imageBase64 = await _encodeImage(effectiveImage);
+      if (imageBase64 != null) {
+        payload['imageBase64'] = imageBase64;
+      }
     }
 
     return payload;
@@ -268,6 +321,33 @@ class SavedSakeSyncRepository {
       return true;
     } catch (error, stackTrace) {
       logger.warning('保存酒画像の削除処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteSavedSakeRecord({
+    required String userId,
+    required String savedId,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _apiClient.removeSavedSake(savedId, payload);
+      if (!response.isSuccessful) {
+        logger.warning(
+          '保存酒削除に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return false;
+      }
+
+      logger.info('保存酒をサーバーから削除しました: id=$savedId');
+      return true;
+    } catch (error, stackTrace) {
+      logger.warning('保存酒削除処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
     }

@@ -453,6 +453,21 @@ class MenuSearchPage extends StatelessWidget {
                                         );
                                         return false;
                                       }
+                                      if (!isSaved &&
+                                          savedNotifier
+                                              .hasReachedMemberLimit) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                                            ),
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                        return false;
+                                      }
                                       try {
                                         await savedNotifier
                                             .toggleSavedSake(detailedSake!);
@@ -462,6 +477,18 @@ class MenuSearchPage extends StatelessWidget {
                                           context,
                                           maxCount:
                                               SavedSakeNotifier.guestSavedLimit,
+                                        );
+                                        return false;
+                                      } on SavedSakeMemberLimitReachedException {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                                            ),
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                          ),
                                         );
                                         return false;
                                       }

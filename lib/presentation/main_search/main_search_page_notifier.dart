@@ -346,6 +346,13 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       );
       return false;
     }
+    if (savedNotifier.hasReachedMemberLimit) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+      );
+      return false;
+    }
     final placeholder = Sake(
       savedId: null,
       name: '解析中',
@@ -358,6 +365,12 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       await GuestLimitDialog.showSavedSakeLimit(
         context,
         maxCount: SavedSakeNotifier.guestSavedLimit,
+      );
+      return false;
+    } on SavedSakeMemberLimitReachedException {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
       );
       return false;
     }
