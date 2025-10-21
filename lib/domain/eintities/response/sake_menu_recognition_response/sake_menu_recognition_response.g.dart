@@ -40,6 +40,9 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       imagePaths: (json['imagePaths'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      syncStatus: $enumDecodeNullable(
+              _$SavedSakeSyncStatusEnumMap, json['syncStatus']) ??
+          SavedSakeSyncStatus.localOnly,
     );
 
 Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
@@ -58,4 +61,10 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'userTags': instance.userTags,
       'savedId': instance.savedId,
       'imagePaths': instance.imagePaths,
+      'syncStatus': _$SavedSakeSyncStatusEnumMap[instance.syncStatus]!,
     };
+
+const _$SavedSakeSyncStatusEnumMap = {
+  SavedSakeSyncStatus.localOnly: 'localOnly',
+  SavedSakeSyncStatus.serverSynced: 'serverSynced',
+};

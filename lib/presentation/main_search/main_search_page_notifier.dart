@@ -349,7 +349,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (savedNotifier.hasReachedMemberLimit) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+        message:
+            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
       );
       return false;
     }
@@ -370,7 +371,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     } on SavedSakeMemberLimitReachedException {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+        message:
+            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
       );
       return false;
     }
@@ -693,12 +695,30 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     try {
-      await savedSakeSyncRepository.syncSavedSake(
+      final success = await savedSakeSyncRepository.syncSavedSake(
         stage: stage,
         userId: user.uid,
         sake: sake,
         imageFile: imageFile,
       );
+
+      if (success && stage == SavedSakeSyncStage.analysisComplete) {
+        final savedId = sake.savedId;
+        if (savedId != null && savedId.isNotEmpty) {
+          final notifier = read<SavedSakeNotifier>();
+          final list = notifier.state.savedSakeList;
+          final index = list.indexWhere(
+              (item) => item.savedId != null && item.savedId == savedId);
+          if (index != -1) {
+            final target = list[index];
+            if (target.syncStatus != SavedSakeSyncStatus.serverSynced) {
+              notifier.updateSavedSake(
+                target.copyWith(syncStatus: SavedSakeSyncStatus.serverSynced),
+              );
+            }
+          }
+        }
+      }
     } catch (error, stackTrace) {
       logger.warning('保存酒同期で例外が発生しました: $error');
       logger.info(stackTrace.toString());

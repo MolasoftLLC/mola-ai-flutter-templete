@@ -442,7 +442,7 @@ class MyPage extends StatelessWidget {
                   // 酒瓶リストセクション（保存酒の下）
                   Container(
                     width: MediaQuery.of(context).size.width,
-                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -1124,7 +1124,7 @@ class _AuthCard extends StatelessWidget {
             Icon(Icons.mail_outline, color: Color(0xFFFFD54F)),
             SizedBox(width: 8),
             Text(
-              'メール認証でさらに便利に',
+              'ログインでさらに便利に',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -1135,7 +1135,7 @@ class _AuthCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const Text(
-          '登録なしでも利用できますが、メール認証するとお気に入りのバックアップや端末間での同期が可能になります。',
+          '登録なしでも利用できますが、ログインすると保存数UP、保存酒リストのバックアップや端末間での同期が可能になります！',
           style: TextStyle(
             color: Colors.white70,
             fontSize: 13,
@@ -1156,7 +1156,7 @@ class _AuthCard extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'メールでログイン・登録',
+              'メールアドレスでログイン・登録',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -1194,7 +1194,7 @@ class _AuthCard extends StatelessWidget {
                 'ログイン中',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1216,6 +1216,7 @@ class _AuthCard extends StatelessWidget {
           onPressed: onOpenAccountSettings,
           tooltip: 'アカウント設定',
           icon: const Icon(
+            size: 28,
             Icons.manage_accounts,
             color: Colors.white70,
           ),
@@ -1246,6 +1247,7 @@ class _SavedSakeList extends StatelessWidget {
         final sake = savedSakeList[index];
         final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
         final isRecommended = (sake.recommendationScore ?? 0) >= 7;
+        final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
@@ -1264,6 +1266,26 @@ class _SavedSakeList extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isLocalOnly)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '未同期',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 if (sake.type != null)
                   Text(
                     sake.type!,
@@ -1433,6 +1455,7 @@ class _SavedSakeGrid extends StatelessWidget {
         final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
             ? sake.imagePaths!.first
             : null;
+        final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
         Widget preview = Container(
           color: Colors.white.withOpacity(0.1),
           alignment: Alignment.center,
@@ -1547,6 +1570,26 @@ class _SavedSakeGrid extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (isLocalOnly)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.orangeAccent.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            '未同期',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       Text(
                         sake.name ?? '名称不明',
                         maxLines: 1,

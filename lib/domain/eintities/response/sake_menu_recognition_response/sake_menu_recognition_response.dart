@@ -13,6 +13,12 @@ class SakeMenuRecognitionResponse with _$SakeMenuRecognitionResponse {
       _$SakeMenuRecognitionResponseFromJson(json);
 }
 
+@JsonEnum(alwaysCreate: true)
+enum SavedSakeSyncStatus {
+  localOnly,
+  serverSynced,
+}
+
 @freezed
 class Sake with _$Sake {
   const factory Sake({
@@ -30,6 +36,9 @@ class Sake with _$Sake {
     List<String>? userTags,
     String? savedId,
     List<String>? imagePaths,
+    @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+    @Default(SavedSakeSyncStatus.localOnly)
+    SavedSakeSyncStatus syncStatus,
   }) = _Sake;
 
   factory Sake.fromJson(Map<String, dynamic> json) => _$SakeFromJson(json);

@@ -6,7 +6,7 @@ class AuthRepository {
     FirebaseAuth? firebaseAuth,
   }) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
-  static const _cachedEmailKey = 'auth.emailForLink';
+  static const _cachedEmailKey = 'auth.lastEmail';
 
   final FirebaseAuth _firebaseAuth;
 
@@ -14,36 +14,36 @@ class AuthRepository {
 
   User? get currentUser => _firebaseAuth.currentUser;
 
-  Future<void> sendEmailLink({
+  Future<UserCredential> signInWithEmailAndPassword({
     required String email,
-    required ActionCodeSettings settings,
+    required String password,
   }) async {
-    await _firebaseAuth.sendSignInLinkToEmail(
+    final credential = await _firebaseAuth.signInWithEmailAndPassword(
       email: email,
-      actionCodeSettings: settings,
+      password: password,
     );
     await _cacheEmail(email);
-  }
-
-  bool isSignInWithEmailLink(String emailLink) {
-    return _firebaseAuth.isSignInWithEmailLink(emailLink);
-  }
-
-  Future<UserCredential> signInWithEmailLink({
-    required String email,
-    required String emailLink,
-  }) async {
-    final credential = await _firebaseAuth.signInWithEmailLink(
-      email: email,
-      emailLink: emailLink,
-    );
-    await _clearCachedEmail();
     return credential;
+  }
+
+  Future<UserCredential> signUpWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    await _cacheEmail(email);
+    return credential;
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
-    await _clearCachedEmail();
   }
 
   Future<void> reloadCurrentUser() async {
@@ -65,10 +65,5 @@ class AuthRepository {
   Future<void> _cacheEmail(String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_cachedEmailKey, email);
-  }
-
-  Future<void> _clearCachedEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cachedEmailKey);
   }
 }

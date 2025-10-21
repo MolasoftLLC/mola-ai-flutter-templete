@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
@@ -29,6 +30,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   late Set<String> _selectedTags;
   late List<String> _imagePaths;
   bool _isImageProcessing = false;
+  bool _isSyncing = false;
 
   bool _isRemotePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -42,24 +44,6 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     _placeController = TextEditingController(text: widget.sake.place ?? '');
     _selectedTags = {...(widget.sake.userTags ?? <String>[])};
     _imagePaths = [...(widget.sake.imagePaths ?? <String>[])];
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final savedId = _currentSake.savedId;
-      if (savedId == null) {
-        return;
-      }
-      final notifier = context.read<SavedSakeNotifier>();
-      final updated = await notifier.syncLocalImagesIfNeeded(savedId);
-      if (!mounted || updated == null) {
-        return;
-      }
-      _applySakeUpdate(
-        updated,
-        refreshTags: false,
-        updateNotifier: false,
-      );
-    });
   }
 
   @override
@@ -78,6 +62,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       colors: [Color(0xFF1D3567), Color(0xFF0A1428)],
     );
     final favoriteNotifier = context.read<FavoriteNotifier>();
+    final isLoggedIn = context.select((AuthState state) => state.user != null);
+    final isLocalOnly =
+        _currentSake.syncStatus == SavedSakeSyncStatus.localOnly;
     final isFavorited = context.select((FavoriteState state) =>
         state.myFavoriteList.any((fav) =>
             fav.name == (_currentSake.name ?? '名称不明') &&
@@ -156,7 +143,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHeaderCard(themeColor),
+                  _buildHeaderCard(
+                    themeColor,
+                    showSyncButton: isLoggedIn && isLocalOnly,
+                  ),
                   _buildImageGallerySection(),
                   _buildMemoSection(),
                   if (infoRows.isNotEmpty)
@@ -187,12 +177,22 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               ),
             ),
           ),
-          if (_isImageProcessing)
+          if (_isImageProcessing || _isSyncing)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.45),
-                child: const Center(
-                  child: CircularProgressIndicator(),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 12),
+                      Text(
+                        _isSyncing ? 'サーバーと同期中…' : '処理中…',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -201,7 +201,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
   }
 
-  Widget _buildHeaderCard(Color themeColor) {
+  Widget _buildHeaderCard(
+    Color themeColor, {
+    required bool showSyncButton,
+  }) {
     final isRecommended = (_currentSake.recommendationScore ?? 0) >= 7;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -309,6 +312,47 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     .toList(),
               ),
             ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
+                    ? Icons.cloud_done
+                    : Icons.cloud_upload,
+                color:
+                    _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
+                        ? Colors.lightBlueAccent
+                        : Colors.orangeAccent,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
+                      ? 'サーバーに保存済み'
+                      : '未同期（この端末にのみ保存されています）',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              if (showSyncButton)
+                TextButton.icon(
+                  onPressed: _isSyncing ? null : _handleManualSync,
+                  icon: const Icon(Icons.cloud_upload, size: 16),
+                  label: const Text('サーバーへ同期'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    backgroundColor: Colors.white.withOpacity(0.12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -751,6 +795,40 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
 
     _applySakeUpdate(updatedSake, toastMessage: 'メモを保存しました');
+  }
+
+  Future<void> _handleManualSync() async {
+    final savedId = _currentSake.savedId;
+    if (savedId == null || savedId.isEmpty) {
+      _showSnack('同期できる保存IDが見つかりませんでした。');
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+    });
+
+    final notifier = context.read<SavedSakeNotifier>();
+    final synced = await notifier.syncSavedSakeToServer(savedId);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSyncing = false;
+    });
+
+    if (synced == null) {
+      _showSnack('同期に失敗しました。通信環境をご確認のうえ再度お試しください。');
+      return;
+    }
+
+    _applySakeUpdate(
+      synced,
+      toastMessage: 'サーバーと同期しました！',
+      updateNotifier: false,
+    );
   }
 
   void _applySakeUpdate(

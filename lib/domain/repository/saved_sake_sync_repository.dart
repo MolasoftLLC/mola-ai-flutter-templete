@@ -31,7 +31,7 @@ class SavedSakeSyncRepository {
 
   final ApiClient _apiClient;
 
-  Future<void> syncSavedSake({
+  Future<bool> syncSavedSake({
     required SavedSakeSyncStage stage,
     required String userId,
     required Sake sake,
@@ -39,7 +39,7 @@ class SavedSakeSyncRepository {
   }) async {
     if (sake.savedId == null || sake.savedId!.isEmpty) {
       logger.warning('サーバー同期をスキップしました: savedIdが未設定です');
-      return;
+      return false;
     }
 
     try {
@@ -61,12 +61,15 @@ class SavedSakeSyncRepository {
         logger.warning(
           '保存酒の同期に失敗しました: status=${response.statusCode}, error=${response.error}',
         );
-      } else {
-        logger.info('保存酒を同期しました: stage=${stage.apiValue}, id=${sake.savedId}');
+        return false;
       }
+
+      logger.info('保存酒を同期しました: stage=${stage.apiValue}, id=${sake.savedId}');
+      return true;
     } catch (error, stackTrace) {
       logger.warning('保存酒の同期処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
+      return false;
     }
   }
 
@@ -97,7 +100,8 @@ class SavedSakeSyncRepository {
         if (item is! Map<String, dynamic>) {
           continue;
         }
-        logger.info('[SavedSakeSyncRepository.fetchSavedSakes] レコード生データ: $item');
+        logger
+            .info('[SavedSakeSyncRepository.fetchSavedSakes] レコード生データ: $item');
         final sakeJson = Map<String, dynamic>.from(item);
 
         Map<String, dynamic>? embeddedDetail;
@@ -165,7 +169,8 @@ class SavedSakeSyncRepository {
 
         try {
           final sake = Sake.fromJson(sakeJson);
-          logger.info('[SavedSakeSyncRepository.fetchSavedSakes] パース後: $sakeJson');
+          logger.info(
+              '[SavedSakeSyncRepository.fetchSavedSakes] パース後: $sakeJson');
 
           final combined = <String>[];
           if (sake.imagePaths != null) {
@@ -220,6 +225,7 @@ class SavedSakeSyncRepository {
     final Map<String, dynamic> sakeJson =
         Map<String, dynamic>.from(sake.toJson());
     sakeJson.remove('imagePaths');
+    sakeJson.remove('syncStatus');
     _removeNullAndEmptyValues(sakeJson);
 
     final payload = <String, dynamic>{

@@ -70,7 +70,7 @@ class GuestLimitDialog {
               ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: const Text(
-                'メール認証に進む',
+                'ログイン・登録へ',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

@@ -138,17 +138,20 @@ class _OnboardingPrompt extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Sakepediaにようこそ！',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: const Text(
+                    'Sakepediaにようこそ！',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'メール認証をしておくと、保存酒やお気に入りを端末間で同期できます。',
+                  'メールアドレスでログインしておくと、保存酒やお気に入りを端末間で同期できます。ログイン後に届く確認メールから認証を完了してください。',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -156,6 +159,11 @@ class _OnboardingPrompt extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
+                _FeatureRow(
+                  icon: Icons.volunteer_activism,
+                  text: 'もちろん無料で利用可能',
+                ),
+                const SizedBox(height: 16),
                 _FeatureRow(
                   icon: Icons.cloud_sync,
                   text: '保存酒やお気に入りを自動バックアップ',

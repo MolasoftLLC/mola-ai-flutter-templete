@@ -4,22 +4,22 @@ import 'package:provider/provider.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 
-enum EmailLinkAuthMode { signUp, signIn }
+enum EmailAuthMode { signIn, signUp }
 
 class EmailLinkAuthPage extends StatefulWidget {
   const EmailLinkAuthPage({
     super.key,
-    this.mode = EmailLinkAuthMode.signIn,
+    this.mode = EmailAuthMode.signIn,
   });
 
-  final EmailLinkAuthMode mode;
+  final EmailAuthMode mode;
 
   static Widget signUp() {
-    return const EmailLinkAuthPage(mode: EmailLinkAuthMode.signUp);
+    return const EmailLinkAuthPage(mode: EmailAuthMode.signUp);
   }
 
   static Widget signIn() {
-    return const EmailLinkAuthPage(mode: EmailLinkAuthMode.signIn);
+    return const EmailLinkAuthPage(mode: EmailAuthMode.signIn);
   }
 
   @override
@@ -27,40 +27,106 @@ class EmailLinkAuthPage extends StatefulWidget {
 }
 
 class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
-  static const _authCompletedMessage = '認証が完了しました。';
-  static const _pageTitle = 'メールでログイン・登録';
+  static const _pageTitle = 'メールアドレスでログイン・登録';
 
   late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _confirmPasswordController;
   bool _hasNavigatedAfterSuccess = false;
-  late EmailLinkAuthMode _mode;
+  late EmailAuthMode _mode;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  String? _localError;
+
+  bool get _isSignUp => _mode == EmailAuthMode.signUp;
+
+  String get _descriptionText {
+    if (_isSignUp) {
+      return 'メールアドレスとパスワードを設定してアカウントを作成できます。登録後は同じ情報でログインできます。';
+    }
+    return '登録済みのメールアドレスとパスワードでログインします。パスワードを忘れた場合は再設定メールを送信できます。';
+  }
+
+  String get _primaryButtonLabel => _isSignUp ? '登録する' : 'ログインする';
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
     _mode = widget.mode;
   }
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  bool get _isSignUp => _mode == EmailLinkAuthMode.signUp;
-
-  String get _descriptionText {
-    if (_isSignUp) {
-      return 'メールアドレスにログイン用リンクを送信します。メールのリンクをタップするだけで登録が完了します。';
+  void _toggleMode(EmailAuthMode newMode) {
+    if (_mode == newMode) {
+      return;
     }
-    return '登録済みのメールにログインリンクを送信します。同じ手順でいつでも再ログインできます。';
+    setState(() {
+      _mode = newMode;
+      _localError = null;
+      _confirmPasswordController.clear();
+    });
+    context.read<AuthNotifier>().clearMessages();
   }
 
-  String _primaryButtonLabel({required bool emailLinkSent}) {
-    if (emailLinkSent) {
-      return _isSignUp ? '認証状況を確認して登録を完了' : '認証状況を確認してログイン';
+  Future<void> _submit(AuthNotifier notifier) async {
+    FocusScope.of(context).unfocus();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    notifier.updateEmail(email);
+
+    if (_isSignUp) {
+      final confirm = _confirmPasswordController.text;
+      if (password != confirm) {
+        setState(() {
+          _localError = '確認用パスワードが一致しません。';
+        });
+        return;
+      }
+      setState(() => _localError = null);
+      await notifier.signUp(email, password);
+      if (!mounted) {
+        return;
+      }
+      final authState = context.read<AuthState>();
+      if (authState.errorMessage == null) {
+        setState(() {
+          _mode = EmailAuthMode.signIn;
+          _confirmPasswordController.clear();
+        });
+      }
+      return;
     }
-    return _isSignUp ? '登録リンクを送信' : 'ログインリンクを送信';
+
+    setState(() => _localError = null);
+    await notifier.signIn(email, password);
+  }
+
+  Future<void> _sendPasswordReset(AuthNotifier notifier) async {
+    FocusScope.of(context).unfocus();
+    final email = _emailController.text.trim();
+    notifier.updateEmail(email);
+    setState(() => _localError = null);
+    await notifier.sendPasswordReset(email);
+    if (!mounted) {
+      return;
+    }
+    final authState = context.read<AuthState>();
+    if (authState.errorMessage == null && authState.infoMessage != null) {
+      SnackBarUtils.showInfoSnackBar(
+        context,
+        message: 'パスワード再設定メールを送信しました。迷惑メールフォルダもご確認ください。',
+      );
+    }
   }
 
   @override
@@ -71,8 +137,6 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
     final infoMessage = context.select((AuthState state) => state.infoMessage);
     final errorMessage =
         context.select((AuthState state) => state.errorMessage);
-    final emailLinkSent =
-        context.select((AuthState state) => state.emailLinkSent);
     final user = context.select((AuthState state) => state.user);
 
     if (email.isNotEmpty && _emailController.text.isEmpty) {
@@ -81,13 +145,8 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
           TextSelection.collapsed(offset: _emailController.text.length);
     }
 
-    final isBusy = isLoading;
-    final showMailActions = user == null;
-    final primaryLabel =
-        _primaryButtonLabel(emailLinkSent: emailLinkSent && showMailActions);
-
     if (!_hasNavigatedAfterSuccess &&
-        infoMessage == _authCompletedMessage &&
+        user != null &&
         Navigator.of(context).canPop()) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _hasNavigatedAfterSuccess) {
@@ -132,15 +191,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                   children: [
                     _ModeSwitcher(
                       currentMode: _mode,
-                      onChanged: (newMode) {
-                        if (_mode == newMode) {
-                          return;
-                        }
-                        setState(() {
-                          _mode = newMode;
-                        });
-                        context.read<AuthNotifier>().clearMessages();
-                      },
+                      onChanged: _toggleMode,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -152,11 +203,6 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    if (user != null)
-                      _MessageBanner(
-                        message: '${user.email ?? '登録済みアカウント'}でログイン中です。',
-                        isError: false,
-                      ),
                     if (errorMessage != null)
                       _MessageBanner(
                         message: errorMessage,
@@ -167,11 +213,16 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                         message: infoMessage,
                         isError: false,
                       ),
+                    if (_localError != null)
+                      _MessageBanner(
+                        message: _localError!,
+                        isError: true,
+                      ),
                     TextField(
                       controller: _emailController,
                       autocorrect: false,
                       keyboardType: TextInputType.emailAddress,
-                      enabled: !isBusy,
+                      enabled: !isLoading,
                       onChanged: notifier.updateEmail,
                       decoration: InputDecoration(
                         filled: true,
@@ -192,161 +243,139 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                       ),
                       style: const TextStyle(color: Colors.white),
                     ),
-                    const SizedBox(height: 20),
-                    if (showMailActions)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isBusy
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      enabled: !isLoading,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white.withOpacity(0.1),
+                        labelText: 'パスワード',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.white70,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFFFD54F)),
+                        ),
+                      ),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    if (_isSignUp) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _confirmPasswordController,
+                        enabled: !isLoading,
+                        obscureText: _obscureConfirmPassword,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          labelText: 'パスワード（確認用）',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.white70,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFFFD54F)),
+                          ),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : () => _submit(notifier),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD54F),
+                          foregroundColor: const Color(0xFF1D3567),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Color(0xFF1D3567),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                _primaryButtonLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                      ),
+                    ),
+                    if (!_isSignUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: isLoading
                               ? null
-                              : () async {
-                                  FocusScope.of(context).unfocus();
-                                  if (emailLinkSent) {
-                                    await notifier.refreshUserStatus();
-                                  } else {
-                                    await notifier.sendEmailLink(
-                                      _emailController.text,
-                                    );
-                                    if (!mounted) {
-                                      return;
-                                    }
-                                    final authState = context.read<AuthState>();
-                                    if (authState.errorMessage == null &&
-                                        authState.emailLinkSent) {
-                                      SnackBarUtils.showInfoSnackBar(
-                                        context,
-                                        message: '送信しました！迷惑メールもご確認ください！',
-                                      );
-                                    }
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFD54F),
-                            foregroundColor: const Color(0xFF1D3567),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                              : () => _sendPasswordReset(notifier),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
                           ),
-                          child: isBusy
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Color(0xFF1D3567),
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  primaryLabel,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                          child: const Text('パスワードをお忘れの方はこちら'),
                         ),
-                      ),
-                    if (emailLinkSent && showMailActions)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: isBusy
-                                ? null
-                                : () async {
-                                    await notifier.resendEmailLink();
-                                    if (!mounted) {
-                                      return;
-                                    }
-                                    final authState = context.read<AuthState>();
-                                    if (authState.errorMessage == null &&
-                                        authState.emailLinkSent) {
-                                      SnackBarUtils.showInfoSnackBar(
-                                        context,
-                                        message: '送信しました！迷惑メールもご確認ください！',
-                                      );
-                                    }
-                                  },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFFFD54F)),
-                              foregroundColor: const Color(0xFFFFD54F),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text('メールを再送'),
-                          ),
-                        ),
-                      ),
-                    if (user != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: isBusy
-                                  ? null
-                                  : () {
-                                      notifier.signOut();
-                                    },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.white70),
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text('ログアウト'),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1D3567),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text(
-                                'マイページへ戻る',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     const SizedBox(height: 32),
-                    Center(
-                      child: Column(
-                        children: const [
-                          Text(
-                            '登録しなくてもアプリをご利用いただけます。',
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                    const Center(
+                      child: Text(
+                        '登録しなくてもアプリをご利用いただけます。',
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (isBusy)
+              if (isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.2),
                 ),
@@ -364,12 +393,12 @@ class _ModeSwitcher extends StatelessWidget {
     required this.onChanged,
   });
 
-  final EmailLinkAuthMode currentMode;
-  final ValueChanged<EmailLinkAuthMode> onChanged;
+  final EmailAuthMode currentMode;
+  final ValueChanged<EmailAuthMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = currentMode == EmailLinkAuthMode.signIn ? 0 : 1;
+    final selectedIndex = currentMode == EmailAuthMode.signIn ? 0 : 1;
     final isSelected = <bool>[selectedIndex == 0, selectedIndex == 1];
 
     return Center(
@@ -394,7 +423,7 @@ class _ModeSwitcher extends StatelessWidget {
               return;
             }
             onChanged(
-              index == 0 ? EmailLinkAuthMode.signIn : EmailLinkAuthMode.signUp,
+              index == 0 ? EmailAuthMode.signIn : EmailAuthMode.signUp,
             );
           },
           children: const [
@@ -426,7 +455,7 @@ class _MessageBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.only(top: 4, bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isError

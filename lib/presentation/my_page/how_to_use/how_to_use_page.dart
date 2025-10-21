@@ -39,7 +39,7 @@ class HowToUse extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
-                '本サービスではメールアドレスによる認証を採用しており、認証が完了していない場合や不正利用が疑われる場合には、機能の制限またはご利用を停止させていただくことがあります。',
+                '本サービスではメールアドレスとパスワードによるログインを採用しており、不正利用が疑われる場合には機能の制限またはご利用を停止させていただくことがあります。',
                 style: TextStyle(color: Colors.white),
               ),
             ),

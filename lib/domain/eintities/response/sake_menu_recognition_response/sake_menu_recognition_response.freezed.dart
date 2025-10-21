@@ -191,6 +191,7 @@ mixin _$Sake {
   List<String>? get userTags => throw _privateConstructorUsedError;
   String? get savedId => throw _privateConstructorUsedError;
   List<String>? get imagePaths => throw _privateConstructorUsedError;
+  SavedSakeSyncStatus get syncStatus => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -216,7 +217,8 @@ abstract class $SakeCopyWith<$Res> {
       String? place,
       List<String>? userTags,
       String? savedId,
-      List<String>? imagePaths});
+      List<String>? imagePaths,
+      SavedSakeSyncStatus syncStatus});
 }
 
 /// @nodoc
@@ -246,6 +248,7 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? userTags = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
+    Object? syncStatus = null,
   }) {
     return _then(_value.copyWith(
       name: freezed == name
@@ -304,6 +307,10 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.imagePaths
           : imagePaths // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      syncStatus: null == syncStatus
+          ? _value.syncStatus
+          : syncStatus // ignore: cast_nullable_to_non_nullable
+              as SavedSakeSyncStatus,
     ) as $Val);
   }
 }
@@ -329,7 +336,8 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       String? place,
       List<String>? userTags,
       String? savedId,
-      List<String>? imagePaths});
+      List<String>? imagePaths,
+      SavedSakeSyncStatus syncStatus});
 }
 
 /// @nodoc
@@ -356,6 +364,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? userTags = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
+    Object? syncStatus = null,
   }) {
     return _then(_$SakeImpl(
       name: freezed == name
@@ -414,6 +423,10 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value._imagePaths
           : imagePaths // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      syncStatus: null == syncStatus
+          ? _value.syncStatus
+          : syncStatus // ignore: cast_nullable_to_non_nullable
+              as SavedSakeSyncStatus,
     ));
   }
 }
@@ -435,7 +448,8 @@ class _$SakeImpl implements _Sake {
       this.place,
       final List<String>? userTags,
       this.savedId,
-      final List<String>? imagePaths})
+      final List<String>? imagePaths,
+      this.syncStatus = SavedSakeSyncStatus.localOnly})
       : _types = types,
         _userTags = userTags,
         _imagePaths = imagePaths;
@@ -496,8 +510,12 @@ class _$SakeImpl implements _Sake {
   }
 
   @override
+  @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+  final SavedSakeSyncStatus syncStatus;
+
+  @override
   String toString() {
-    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths)';
+    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths, syncStatus: $syncStatus)';
   }
 
   @override
@@ -523,7 +541,9 @@ class _$SakeImpl implements _Sake {
             const DeepCollectionEquality().equals(other._userTags, _userTags) &&
             (identical(other.savedId, savedId) || other.savedId == savedId) &&
             const DeepCollectionEquality()
-                .equals(other._imagePaths, _imagePaths));
+                .equals(other._imagePaths, _imagePaths) &&
+            (identical(other.syncStatus, syncStatus) ||
+                other.syncStatus == syncStatus));
   }
 
   @JsonKey(ignore: true)
@@ -543,7 +563,8 @@ class _$SakeImpl implements _Sake {
       place,
       const DeepCollectionEquality().hash(_userTags),
       savedId,
-      const DeepCollectionEquality().hash(_imagePaths));
+      const DeepCollectionEquality().hash(_imagePaths),
+      syncStatus);
 
   @JsonKey(ignore: true)
   @override
@@ -574,7 +595,8 @@ abstract class _Sake implements Sake {
       final String? place,
       final List<String>? userTags,
       final String? savedId,
-      final List<String>? imagePaths}) = _$SakeImpl;
+      final List<String>? imagePaths,
+      final SavedSakeSyncStatus syncStatus}) = _$SakeImpl;
 
   factory _Sake.fromJson(Map<String, dynamic> json) = _$SakeImpl.fromJson;
 
@@ -606,6 +628,8 @@ abstract class _Sake implements Sake {
   String? get savedId;
   @override
   List<String>? get imagePaths;
+  @override
+  SavedSakeSyncStatus get syncStatus;
   @override
   @JsonKey(ignore: true)
   _$$SakeImplCopyWith<_$SakeImpl> get copyWith =>

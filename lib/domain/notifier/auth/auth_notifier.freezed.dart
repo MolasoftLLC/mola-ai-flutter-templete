@@ -19,7 +19,7 @@ mixin _$AuthState {
   User? get user => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
-  bool get emailLinkSent => throw _privateConstructorUsedError;
+  bool get verificationEmailSent => throw _privateConstructorUsedError;
   String? get infoMessage => throw _privateConstructorUsedError;
   String? get errorMessage => throw _privateConstructorUsedError;
 
@@ -37,7 +37,7 @@ abstract class $AuthStateCopyWith<$Res> {
       {User? user,
       String email,
       bool isLoading,
-      bool emailLinkSent,
+      bool verificationEmailSent,
       String? infoMessage,
       String? errorMessage});
 }
@@ -58,7 +58,7 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
     Object? user = freezed,
     Object? email = null,
     Object? isLoading = null,
-    Object? emailLinkSent = null,
+    Object? verificationEmailSent = null,
     Object? infoMessage = freezed,
     Object? errorMessage = freezed,
   }) {
@@ -75,9 +75,9 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      emailLinkSent: null == emailLinkSent
-          ? _value.emailLinkSent
-          : emailLinkSent // ignore: cast_nullable_to_non_nullable
+      verificationEmailSent: null == verificationEmailSent
+          ? _value.verificationEmailSent
+          : verificationEmailSent // ignore: cast_nullable_to_non_nullable
               as bool,
       infoMessage: freezed == infoMessage
           ? _value.infoMessage
@@ -103,7 +103,7 @@ abstract class _$$AuthStateImplCopyWith<$Res>
       {User? user,
       String email,
       bool isLoading,
-      bool emailLinkSent,
+      bool verificationEmailSent,
       String? infoMessage,
       String? errorMessage});
 }
@@ -122,7 +122,7 @@ class __$$AuthStateImplCopyWithImpl<$Res>
     Object? user = freezed,
     Object? email = null,
     Object? isLoading = null,
-    Object? emailLinkSent = null,
+    Object? verificationEmailSent = null,
     Object? infoMessage = freezed,
     Object? errorMessage = freezed,
   }) {
@@ -139,9 +139,9 @@ class __$$AuthStateImplCopyWithImpl<$Res>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      emailLinkSent: null == emailLinkSent
-          ? _value.emailLinkSent
-          : emailLinkSent // ignore: cast_nullable_to_non_nullable
+      verificationEmailSent: null == verificationEmailSent
+          ? _value.verificationEmailSent
+          : verificationEmailSent // ignore: cast_nullable_to_non_nullable
               as bool,
       infoMessage: freezed == infoMessage
           ? _value.infoMessage
@@ -162,7 +162,7 @@ class _$AuthStateImpl implements _AuthState {
       {this.user,
       this.email = '',
       this.isLoading = false,
-      this.emailLinkSent = false,
+      this.verificationEmailSent = false,
       this.infoMessage,
       this.errorMessage});
 
@@ -176,7 +176,7 @@ class _$AuthStateImpl implements _AuthState {
   final bool isLoading;
   @override
   @JsonKey()
-  final bool emailLinkSent;
+  final bool verificationEmailSent;
   @override
   final String? infoMessage;
   @override
@@ -184,7 +184,7 @@ class _$AuthStateImpl implements _AuthState {
 
   @override
   String toString() {
-    return 'AuthState(user: $user, email: $email, isLoading: $isLoading, emailLinkSent: $emailLinkSent, infoMessage: $infoMessage, errorMessage: $errorMessage)';
+    return 'AuthState(user: $user, email: $email, isLoading: $isLoading, verificationEmailSent: $verificationEmailSent, infoMessage: $infoMessage, errorMessage: $errorMessage)';
   }
 
   @override
@@ -196,8 +196,8 @@ class _$AuthStateImpl implements _AuthState {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
-            (identical(other.emailLinkSent, emailLinkSent) ||
-                other.emailLinkSent == emailLinkSent) &&
+            (identical(other.verificationEmailSent, verificationEmailSent) ||
+                other.verificationEmailSent == verificationEmailSent) &&
             (identical(other.infoMessage, infoMessage) ||
                 other.infoMessage == infoMessage) &&
             (identical(other.errorMessage, errorMessage) ||
@@ -205,8 +205,9 @@ class _$AuthStateImpl implements _AuthState {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, user, email, isLoading,
-      emailLinkSent, infoMessage, errorMessage);
+  int get hashCode =>
+      Object.hash(runtimeType, user, email, isLoading, verificationEmailSent,
+          infoMessage, errorMessage);
 
   @JsonKey(ignore: true)
   @override
@@ -220,7 +221,7 @@ abstract class _AuthState implements AuthState {
       {final User? user,
       final String email,
       final bool isLoading,
-      final bool emailLinkSent,
+      final bool verificationEmailSent,
       final String? infoMessage,
       final String? errorMessage}) = _$AuthStateImpl;
 
@@ -231,7 +232,7 @@ abstract class _AuthState implements AuthState {
   @override
   bool get isLoading;
   @override
-  bool get emailLinkSent;
+  bool get verificationEmailSent;
   @override
   String? get infoMessage;
   @override

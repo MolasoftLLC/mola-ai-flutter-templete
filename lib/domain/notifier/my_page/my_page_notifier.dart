@@ -284,6 +284,10 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     if (trimmed.isEmpty) {
       return false;
     }
+    if (trimmed.characters.length > 10) {
+      logger.info('ユーザー名が10文字を超えています');
+      return false;
+    }
 
     final success = await _sakeUserRepository.updateUsername(trimmed);
     if (success) {

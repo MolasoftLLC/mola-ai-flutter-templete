@@ -58,6 +58,12 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       });
       return;
     }
+    if (newName.characters.length > 10) {
+      setState(() {
+        _errorMessage = 'ニックネームは10文字以内で入力してください。';
+      });
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
@@ -169,7 +175,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       TextField(
                         controller: _usernameController,
                         enabled: !_isProcessing,
-                        maxLength: 30,
+                        maxLength: 10,
                         decoration: InputDecoration(
                           counterText: '',
                           filled: true,
