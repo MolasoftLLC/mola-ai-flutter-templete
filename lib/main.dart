@@ -35,22 +35,9 @@ void main() async {
     DeviceOrientation.portraitUp,
   ]);
 
+  await _requestTrackingAuthorization();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // ATT許可ダイアログを表示
-  final trackingStatus =
-      await AppTrackingTransparency.requestTrackingAuthorization();
-  print('App Tracking Transparency status: $trackingStatus');
-
-  if (trackingStatus == TrackingStatus.notDetermined) {
-    print('User has not responded to tracking authorization dialog yet');
-  } else if (trackingStatus == TrackingStatus.restricted) {
-    print('Tracking restricted by parental controls or enterprise management');
-  } else if (trackingStatus == TrackingStatus.denied) {
-    print('User denied tracking authorization');
-  } else if (trackingStatus == TrackingStatus.authorized) {
-    print('User granted tracking authorization');
-  }
 
   // AdMobのテストデバイス設定
   MobileAds.instance.updateRequestConfiguration(
@@ -85,6 +72,18 @@ void main() async {
       child: const MyApp(),
     ),
   );
+}
+
+Future<void> _requestTrackingAuthorization() async {
+  if (!Platform.isIOS) {
+    return;
+  }
+
+  final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+  if (status == TrackingStatus.notDetermined) {
+    await Future.delayed(const Duration(milliseconds: 500));
+    await AppTrackingTransparency.requestTrackingAuthorization();
+  }
 }
 
 class MyApp extends StatelessWidget {
