@@ -205,9 +205,8 @@ class _$AuthStateImpl implements _AuthState {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, user, email, isLoading, verificationEmailSent,
-          infoMessage, errorMessage);
+  int get hashCode => Object.hash(runtimeType, user, email, isLoading,
+      verificationEmailSent, infoMessage, errorMessage);
 
   @JsonKey(ignore: true)
   @override

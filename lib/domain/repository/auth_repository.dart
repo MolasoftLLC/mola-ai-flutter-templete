@@ -46,6 +46,30 @@ class AuthRepository {
     await _firebaseAuth.signOut();
   }
 
+  Future<void> reauthenticateWithPassword(String password) async {
+    final user = _firebaseAuth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'ユーザー情報を取得できませんでした。',
+      );
+    }
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      return;
+    }
+    await user.delete();
+  }
+
   Future<void> reloadCurrentUser() async {
     final user = _firebaseAuth.currentUser;
     if (user != null) {

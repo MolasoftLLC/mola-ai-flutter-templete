@@ -218,6 +218,39 @@
   ```
 - **Response:** `200 OK`
 
+## アカウント削除 API 仕様
+- **概要:**
+  - クライアントは Firebase ID トークンを `Authorization: Bearer <ID_TOKEN>` として送信します。
+  - バックエンドはトークンを検証し、`uid` とリクエスト本文の `userId` が一致することを確認した上で、関連リソースを削除します。
+- **Method:** `POST`
+- **Path:** `/sake-users/delete`
+- **Request Body:**
+  ```json
+  {
+    "userId": "firebase-uid"  // Firebase Authentication の uid
+  }
+  ```
+- **Successful Response:** `200 OK`
+  ```json
+  {
+    "status": "deleted"
+  }
+  ```
+- **エラー応答例:**
+  - 認証失敗／トークン不正 → `401 Unauthorized`
+  - `userId` 不一致 → `403 Forbidden`
+  - リソース未登録 → `404 Not Found`
+  - 内部エラー → `500 Internal Server Error`
+- **削除対象（必須）:**
+  1. `saved_sakes` 系テーブル（保存酒メタデータ、画像 URL など）
+  2. `favorite_sakes` / お気に入り関連テーブル
+  3. `sake_preferences`（嗜好設定）
+  4. `sake_users` 本体レコード
+  5. 付随するログ／キャッシュがあれば適宜削除
+- **注意事項:**
+  - クライアント側では Firebase ユーザー削除も行うため、サーバーでエラーが発生した場合は明示的に失敗レスポンスを返し、重複削除を避ける。
+  - 非同期削除を行う場合は `202 Accepted` を返し、バックグラウンド処理完了を監視できるようにすること。
+
 ## 備考
 - クライアントは `imageBase64` があればローカルに書き出し、それ以外の画像は URL を直接表示します。
 - ステージ値は `analysis_start` / `analysis_complete` の 2 種類。

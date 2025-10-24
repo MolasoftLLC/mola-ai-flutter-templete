@@ -25,6 +25,26 @@ class AuthState with _$AuthState {
   }) = _AuthState;
 }
 
+enum DeleteAccountStatus { success, validationError, failure }
+
+class DeleteAccountResult {
+  const DeleteAccountResult._(this.status, this.message);
+
+  factory DeleteAccountResult.success(String message) =>
+      DeleteAccountResult._(DeleteAccountStatus.success, message);
+
+  factory DeleteAccountResult.validationError(String message) =>
+      DeleteAccountResult._(DeleteAccountStatus.validationError, message);
+
+  factory DeleteAccountResult.failure(String message) =>
+      DeleteAccountResult._(DeleteAccountStatus.failure, message);
+
+  final DeleteAccountStatus status;
+  final String message;
+
+  bool get isSuccess => status == DeleteAccountStatus.success;
+}
+
 class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
   AuthNotifier() : super(const AuthState()) {
     Future.microtask(_initialize);
@@ -247,6 +267,62 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
     );
   }
 
+  Future<DeleteAccountResult> deleteAccount(String password) async {
+    final trimmedPassword = password.trim();
+    if (trimmedPassword.isEmpty) {
+      return DeleteAccountResult.validationError('パスワードを入力してください。');
+    }
+    if (trimmedPassword.length < 6) {
+      return DeleteAccountResult.validationError('パスワードは6文字以上で入力してください。');
+    }
+
+    final user = _repository.currentUser;
+    if (user == null) {
+      return DeleteAccountResult.failure('ログイン状態を確認できませんでした。再度ログインしてお試しください。');
+    }
+
+    try {
+      await _repository.reauthenticateWithPassword(trimmedPassword);
+    } on FirebaseAuthException catch (error, stackTrace) {
+      dev.log('Failed to reauthenticate before deletion: ${error.code}',
+          name: 'AuthNotifier');
+      dev.log(stackTrace.toString(), name: 'AuthNotifier');
+      return DeleteAccountResult.failure(_translateFirebaseError(error));
+    } catch (error, stackTrace) {
+      dev.log('Failed to reauthenticate before deletion: $error',
+          name: 'AuthNotifier');
+      dev.log(stackTrace.toString(), name: 'AuthNotifier');
+      return DeleteAccountResult.failure('認証に失敗しました。通信環境をご確認のうえ再度お試しください。');
+    }
+
+    final remoteDeleted = await _userRepository.deleteAccount(user.uid);
+    if (!remoteDeleted) {
+      return DeleteAccountResult.failure(
+          'サーバー上のアカウント削除に失敗しました。時間をおいて再度お試しください。');
+    }
+
+    try {
+      await _repository.deleteCurrentUser();
+      await _handleUserSignedOut();
+      state = state.copyWith(
+        user: null,
+        infoMessage: 'アカウントを削除しました。',
+        errorMessage: null,
+        verificationEmailSent: false,
+      );
+      return DeleteAccountResult.success('アカウントを削除しました。');
+    } on FirebaseAuthException catch (error, stackTrace) {
+      dev.log('Failed to delete firebase user: ${error.code}',
+          name: 'AuthNotifier');
+      dev.log(stackTrace.toString(), name: 'AuthNotifier');
+      return DeleteAccountResult.failure(_translateFirebaseError(error));
+    } catch (error, stackTrace) {
+      dev.log('Failed to delete firebase user: $error', name: 'AuthNotifier');
+      dev.log(stackTrace.toString(), name: 'AuthNotifier');
+      return DeleteAccountResult.failure('アカウント削除に失敗しました。時間をおいて再度お試しください。');
+    }
+  }
+
   Future<void> _sendVerificationEmail(User user) async {
     await user.sendEmailVerification();
   }
@@ -273,8 +349,7 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
           isLoading: false,
           email: email,
           verificationEmailSent: true,
-          infoMessage:
-              'メールBoxを開いてURLをタップし認証を完了してください！迷惑メールもご確認ください。',
+          infoMessage: 'メールBoxを開いてURLをタップし認証を完了してください！迷惑メールもご確認ください。',
         );
         return;
       }
@@ -295,7 +370,7 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
         errorMessage: '確認メールの送信に失敗しました。時間をおいて再度お試しください。',
         verificationEmailSent: false,
       );
-  }
+    }
   }
 
   Future<void> _handleUserSignedIn(User user) async {
@@ -347,6 +422,8 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
         return 'リクエストが集中しています。少し時間をおいてから再度お試しください。';
       case 'user-disabled':
         return 'このメールアドレスは利用できません。別のメールアドレスでお試しください。';
+      case 'requires-recent-login':
+        return '安全のため再ログインが必要です。ログアウト後に再度ログインしてお試しください。';
       default:
         return 'エラーが発生しました (${exception.code}). お手数ですが再度お試しください。';
     }

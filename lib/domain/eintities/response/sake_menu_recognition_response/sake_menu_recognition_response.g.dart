@@ -41,7 +41,8 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
           ?.map((e) => e as String)
           .toList(),
       syncStatus: $enumDecodeNullable(
-              _$SavedSakeSyncStatusEnumMap, json['syncStatus']) ??
+              _$SavedSakeSyncStatusEnumMap, json['syncStatus'],
+              unknownValue: SavedSakeSyncStatus.localOnly) ??
           SavedSakeSyncStatus.localOnly,
     );
 

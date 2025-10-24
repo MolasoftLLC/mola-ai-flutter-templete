@@ -243,6 +243,13 @@ class MyPage extends StatelessWidget {
                               icon: Icons.logout,
                             );
                           } else if (result ==
+                              AccountSettingsResult.accountDeleted) {
+                            _showToast(
+                              navigator.context,
+                              message: 'アカウントを削除しました。',
+                              icon: Icons.delete_forever,
+                            );
+                          } else if (result ==
                               AccountSettingsResult.usernameUpdated) {
                             _showToast(
                               navigator.context,

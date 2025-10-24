@@ -186,9 +186,7 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> fetchSavedSakes(String userId) {
     final Uri $url = Uri.parse('/saved-sakes');
-    final Map<String, String> $params = <String, String>{
-      'userId': userId,
-    };
+    final Map<String, dynamic> $params = <String, dynamic>{'userId': userId};
     final Request $request = Request(
       'GET',
       $url,
@@ -249,9 +247,7 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> fetchFavorites(String userId) {
     final Uri $url = Uri.parse('/favorites');
-    final Map<String, String> $params = <String, String>{
-      'userId': userId,
-    };
+    final Map<String, dynamic> $params = <String, dynamic>{'userId': userId};
     final Request $request = Request(
       'GET',
       $url,
@@ -290,9 +286,7 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> fetchPreferences(String userId) {
     final Uri $url = Uri.parse('/preferences');
-    final Map<String, String> $params = <String, String>{
-      'userId': userId,
-    };
+    final Map<String, dynamic> $params = <String, dynamic>{'userId': userId};
     final Request $request = Request(
       'GET',
       $url,
@@ -331,9 +325,7 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> fetchSakeUser(String userId) {
     final Uri $url = Uri.parse('/sake-users/me');
-    final Map<String, String> $params = <String, String>{
-      'userId': userId,
-    };
+    final Map<String, dynamic> $params = <String, dynamic>{'userId': userId};
     final Request $request = Request(
       'GET',
       $url,
@@ -346,6 +338,19 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> updateUsername(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/sake-users/username');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> deleteSakeUser(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/sake-users/delete');
     final $body = body;
     final Request $request = Request(
       'POST',

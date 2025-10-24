@@ -123,4 +123,9 @@ abstract class ApiClient extends ChopperService {
   Future<Response> updateUsername(
     @Body() Map<String, dynamic> body,
   );
+
+  @Post(path: 'sake-users/delete')
+  Future<Response> deleteSakeUser(
+    @Body() Map<String, dynamic> body,
+  );
 }

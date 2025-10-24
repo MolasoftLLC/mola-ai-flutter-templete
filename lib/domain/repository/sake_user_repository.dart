@@ -113,10 +113,30 @@ class SakeUserRepository {
         return false;
       }
 
-      logger.info('[SakeUserRepository.updateUsername] レスポンス: ${response.body}');
+      logger
+          .info('[SakeUserRepository.updateUsername] レスポンス: ${response.body}');
       return true;
     } catch (error, stackTrace) {
       logger.warning('ユーザー名更新処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteAccount(String userId) async {
+    try {
+      final payload = <String, dynamic>{'userId': userId};
+      final response = await _apiClient.deleteSakeUser(payload);
+      if (!response.isSuccessful) {
+        logger.warning(
+          'アカウント削除リクエストに失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return false;
+      }
+      logger.info('アカウント削除リクエストを送信しました: $userId');
+      return true;
+    } catch (error, stackTrace) {
+      logger.warning('アカウント削除処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
     }

@@ -191,6 +191,7 @@ mixin _$Sake {
   List<String>? get userTags => throw _privateConstructorUsedError;
   String? get savedId => throw _privateConstructorUsedError;
   List<String>? get imagePaths => throw _privateConstructorUsedError;
+  @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
   SavedSakeSyncStatus get syncStatus => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -218,6 +219,7 @@ abstract class $SakeCopyWith<$Res> {
       List<String>? userTags,
       String? savedId,
       List<String>? imagePaths,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       SavedSakeSyncStatus syncStatus});
 }
 
@@ -337,6 +339,7 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       List<String>? userTags,
       String? savedId,
       List<String>? imagePaths,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       SavedSakeSyncStatus syncStatus});
 }
 
@@ -449,6 +452,7 @@ class _$SakeImpl implements _Sake {
       final List<String>? userTags,
       this.savedId,
       final List<String>? imagePaths,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       this.syncStatus = SavedSakeSyncStatus.localOnly})
       : _types = types,
         _userTags = userTags,
@@ -596,6 +600,7 @@ abstract class _Sake implements Sake {
       final List<String>? userTags,
       final String? savedId,
       final List<String>? imagePaths,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       final SavedSakeSyncStatus syncStatus}) = _$SakeImpl;
 
   factory _Sake.fromJson(Map<String, dynamic> json) = _$SakeImpl.fromJson;
@@ -629,6 +634,7 @@ abstract class _Sake implements Sake {
   @override
   List<String>? get imagePaths;
   @override
+  @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
   SavedSakeSyncStatus get syncStatus;
   @override
   @JsonKey(ignore: true)
