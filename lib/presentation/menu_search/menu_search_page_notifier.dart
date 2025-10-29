@@ -24,7 +24,9 @@ import '../../common/logger.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 
@@ -86,18 +88,18 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     // 初期化と移行を実行
     await _initializeWithMigration();
   }
-  
+
   Future<void> _initializeWithMigration() async {
     try {
       logger.info('MenuSearchPageNotifier 初期化を開始します');
       // 既存の画像を永続的なストレージに移行
       await migrateMenuAnalysisImages();
       logger.info('画像の移行が完了しました');
-      
+
       // メニュー解析履歴を読み込む
       await loadMenuAnalysisHistory();
       logger.info('メニュー解析履歴の読み込みが完了しました');
-      
+
       logger.info('MenuSearchPageNotifier 初期化が完了しました');
     } catch (e) {
       logger.shout('MenuSearchPageNotifier 初期化中にエラーが発生しました: $e');
@@ -127,17 +129,16 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         await CustomImagePicker.pickImage(source: ImageSource.gallery);
     if (imageFile != null) {
       // Show cropping UI
-      final croppedFile = await ImageCropperService.cropAndRotateImage(imageFile.path);
-      
+      final croppedFile =
+          await ImageCropperService.cropAndRotateImage(imageFile.path);
+
       if (croppedFile != null) {
         // ギャラリーから選択した画像も永続的に保存
         try {
           // ドキュメントディレクトリに画像を保存
           final permanentPath = await ImageCropperService.saveImagePermanently(
-            croppedFile,
-            'gallery_selected'
-          );
-          
+              croppedFile, 'gallery_selected');
+
           if (permanentPath != null) {
             logger.info('ギャラリー選択画像を永続的に保存しました: $permanentPath');
             // 永続的に保存した画像を使用
@@ -163,20 +164,19 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         await CustomImagePicker.pickImage(source: ImageSource.camera);
     if (imageFile != null) {
       // Show cropping UI
-      final croppedFile = await ImageCropperService.cropAndRotateImage(imageFile.path);
-      
+      final croppedFile =
+          await ImageCropperService.cropAndRotateImage(imageFile.path);
+
       if (croppedFile != null) {
         // Save image to gallery
         try {
           await ImageGallerySaverPlus.saveFile(croppedFile.path);
           logger.info('画像をギャラリーに保存しました: ${croppedFile.path}');
-          
+
           // アプリの永続ストレージにも保存
           final permanentPath = await ImageCropperService.saveImagePermanently(
-            croppedFile,
-            'camera_captured'
-          );
-          
+              croppedFile, 'camera_captured');
+
           if (permanentPath != null) {
             logger.info('カメラ撮影画像を永続的に保存しました: $permanentPath');
             // 永続的に保存した画像を使用
@@ -213,6 +213,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       return;
     }
 
+    if (!await _ensureSakePreferencesReady()) {
+      return;
+    }
+
     // 初期状態をリセット
     state = state.copyWith(
       isLoading: true,
@@ -229,7 +233,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     try {
       // Check if we should show an ad using shared counter (3-search cycle)
       final shouldShowAd = await AdCounterService.shouldShowAd();
-      
+
       if (shouldShowAd) {
         // 広告表示前に同意ダイアログを表示
         final consent = await AdConsentDialog.show(
@@ -241,102 +245,102 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
         // ユーザーが同意した場合のみ広告を表示
         if (consent == true) {
-        // 広告のロードを開始
-        try {
-          final rewardedAd = await AdUtils.loadRewardedAd(
-            onAdLoaded: (ad) {
-              logger.info('リワード広告がロードされました');
-            },
-            onAdDismissed: () {
-              logger.info('リワード広告が閉じられました');
-              
-              // 広告が閉じられた時の処理
-              if (state.isAnalyzingInBackground) {
-                // まだ解析中の場合は、解析中の表示を継続
-                logger.info('広告が閉じられましたが、まだ解析中です');
+          // 広告のロードを開始
+          try {
+            final rewardedAd = await AdUtils.loadRewardedAd(
+              onAdLoaded: (ad) {
+                logger.info('リワード広告がロードされました');
+              },
+              onAdDismissed: () {
+                logger.info('リワード広告が閉じられました');
+
+                // 広告が閉じられた時の処理
+                if (state.isAnalyzingInBackground) {
+                  // まだ解析中の場合は、解析中の表示を継続
+                  logger.info('広告が閉じられましたが、まだ解析中です');
+                  state = state.copyWith(
+                    isAdLoading: false,
+                    isLoading: true,
+                    isExtractingInfo: true,
+                  );
+                } else if (state.extractedSakes.isNotEmpty) {
+                  // 解析が完了している場合は、詳細情報を取得
+                  logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
+                  state = state.copyWith(
+                    isAdLoading: false,
+                    isLoading: false,
+                  );
+                  _fetchSakeDetails(state.extractedSakes);
+                } else {
+                  // 解析結果がない場合（エラーなど）
+                  state = state.copyWith(
+                    isAdLoading: false,
+                    isLoading: false,
+                  );
+                }
+              },
+              onAdFailedToLoad: (error) {
+                logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+                state = state.copyWith(isAdLoading: false);
+              },
+              onUserEarnedReward: (reward) {
+                logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+              },
+            );
+
+            if (rewardedAd != null) {
+              // 広告を表示し、同時に裏側で解析を開始
+              state = state.copyWith(
+                isAdLoading: true,
+                isAnalyzingInBackground: true,
+              );
+
+              // 広告を表示
+              try {
+                // 裏側で解析を開始（非同期で実行）
+                _extractSakeInfoInBackground(imageFile);
+
+                // 広告を表示（ユーザーはこれを見ている間に解析が進む）
+                await AdUtils.showRewardedAd(
+                  rewardedAd,
+                  onUserEarnedReward: (reward) {
+                    logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+                  },
+                );
+
+                return; // 処理完了（残りの処理はコールバックで行われる）
+              } catch (e) {
+                logger.shout('広告の表示に失敗しました: $e');
+                // 広告の表示に失敗した場合は通常の解析を実行
                 state = state.copyWith(
                   isAdLoading: false,
                   isLoading: true,
                   isExtractingInfo: true,
+                  isAnalyzingInBackground: false,
                 );
-              } else if (state.extractedSakes.isNotEmpty) {
-                // 解析が完了している場合は、詳細情報を取得
-                logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
-                state = state.copyWith(
-                  isAdLoading: false,
-                  isLoading: false,
-                );
-                _fetchSakeDetails(state.extractedSakes);
-              } else {
-                // 解析結果がない場合（エラーなど）
-                state = state.copyWith(
-                  isAdLoading: false,
-                  isLoading: false,
-                );
+                await _extractSakeInfoInForeground(imageFile);
               }
-            },
-            onAdFailedToLoad: (error) {
-              logger.shout('リワード広告のロードに失敗しました: ${error.message}');
-              state = state.copyWith(isAdLoading: false);
-            },
-            onUserEarnedReward: (reward) {
-              logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-            },
-          );
 
-          if (rewardedAd != null) {
-            // 広告を表示し、同時に裏側で解析を開始
-            state = state.copyWith(
-              isAdLoading: true,
-              isAnalyzingInBackground: true,
-            );
-
-            // 広告を表示
-            try {
-              // 裏側で解析を開始（非同期で実行）
-              _extractSakeInfoInBackground(imageFile);
-              
-              // 広告を表示（ユーザーはこれを見ている間に解析が進む）
-              await AdUtils.showRewardedAd(
-                rewardedAd,
-                onUserEarnedReward: (reward) {
-                  logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-                },
-              );
-              
-              return; // 処理完了（残りの処理はコールバックで行われる）
-            } catch (e) {
-              logger.shout('広告の表示に失敗しました: $e');
-              // 広告の表示に失敗した場合は通常の解析を実行
-              state = state.copyWith(
-                isAdLoading: false,
-                isLoading: true,
-                isExtractingInfo: true,
-                isAnalyzingInBackground: false,
-              );
-              await _extractSakeInfoInForeground(imageFile);
+              return; // 処理完了
             }
-
-            return; // 処理完了
+          } catch (e) {
+            logger.shout('広告処理でエラーが発生しました: $e');
+            state = state.copyWith(
+              isAdLoading: false,
+              isAnalyzingInBackground: false,
+            );
           }
-        } catch (e) {
-          logger.shout('広告処理でエラーが発生しました: $e');
-          state = state.copyWith(
-            isAdLoading: false,
-            isAnalyzingInBackground: false,
-          );
-        }
         } else {
           // ユーザーが広告視聴を拒否した場合
           logger.info('ユーザーが広告視聴を拒否しました');
-          
+
           // SnackBarで通知
           SnackBarUtils.showWarningSnackBar(
             context,
             message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
             duration: const Duration(seconds: 4),
           );
-          
+
           // 解析をキャンセルして処理を終了
           state = state.copyWith(
             isLoading: false,
@@ -366,6 +370,30 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         errorMessage: '日本酒情報の抽出に失敗しました: $e',
       );
     }
+  }
+
+  Future<bool> _ensureSakePreferencesReady() async {
+    final myPageNotifier = read<MyPageNotifier>();
+    final bool ensured = await ensureSakePreferences(
+      context: context,
+      myPageNotifier: myPageNotifier,
+    );
+
+    if (!ensured) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '好みの設定が完了していません。好みを登録してからお試しください。',
+        duration: const Duration(seconds: 3),
+      );
+      return false;
+    }
+
+    final String? latest = myPageNotifier.state.preferences;
+    if (latest != null && latest.trim().isNotEmpty) {
+      state = state.copyWith(preferences: latest.trim());
+    }
+
+    return true;
   }
 
   /// 日本酒の詳細情報を取得する
@@ -408,16 +436,15 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
               // 現在のsakesリストに新しい情報を追加（重複チェック）
               final List<Sake> currentSakes = state.sakes ?? [];
-              
+
               // 既に同じ名前の日本酒が存在するかチェック
-              bool isDuplicate = currentSakes.any((existingSake) => 
-                existingSake.name == sakeInfo.name);
-              
+              bool isDuplicate = currentSakes
+                  .any((existingSake) => existingSake.name == sakeInfo.name);
+
               // 重複していない場合のみ追加
-              final List<Sake> updatedSakes = isDuplicate 
-                  ? currentSakes 
-                  : [...currentSakes, sakeInfo];
-                  
+              final List<Sake> updatedSakes =
+                  isDuplicate ? currentSakes : [...currentSakes, sakeInfo];
+
               state = state.copyWith(
                 sakes: updatedSakes,
                 sakeLoadingStatus: newLoadingStatus,
@@ -508,12 +535,12 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
     }
   }
-  
+
   /// バックグラウンドでメニュー解析を実行する（広告表示中に実行）
   Future<void> _extractSakeInfoInBackground(File imageFile) async {
     try {
       logger.info('バックグラウンドでメニュー解析を開始します');
-      
+
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
       final extractedSakes =
           await sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
@@ -538,7 +565,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       }
 
       logger.info('バックグラウンド解析が完了しました: ${extractedSakes.length}件の日本酒情報を抽出');
-      
+
       // 広告が表示中かどうかをチェック
       if (state.isAdLoading) {
         // 広告表示中の場合は、解析結果を保存するが、ローディング表示は維持
@@ -562,7 +589,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           sakeLoadingStatus: initialLoadingStatus,
           hasScrolledToResults: false,
         );
-        
+
         // 詳細情報を取得
         await _fetchSakeDetails(extractedSakes);
       }
@@ -602,7 +629,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             validHistory.add(item);
           }
           // base64データがなくても、画像ファイルが存在(またはnull)する場合は保持
-          else if (item.imagePath == null || File(item.imagePath!).existsSync()) {
+          else if (item.imagePath == null ||
+              File(item.imagePath!).existsSync()) {
             validHistory.add(item);
           } else {
             logger.warning('メニュー画像ファイルが見つかりません: ${item.imagePath}');
@@ -613,8 +641,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         validHistory.sort((a, b) => b.date.compareTo(a.date));
 
         // 最大20件まで保存（古いものから削除）
-        final limitedHistory =
-            validHistory.length > 20 ? validHistory.sublist(0, 20) : validHistory;
+        final limitedHistory = validHistory.length > 20
+            ? validHistory.sublist(0, 20)
+            : validHistory;
 
         state = state.copyWith(menuAnalysisHistory: limitedHistory);
       }
@@ -639,23 +668,23 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   // 現在の解析結果をメニュー解析履歴に追加する
   Future<void> addCurrentAnalysisToHistory() async {
     if (state.sakes == null || state.sakes!.isEmpty) return;
-    
+
     // Check if we already have a history item with the same sakes to prevent duplication
     if (state.menuAnalysisHistory.isNotEmpty) {
       // Generate the list of sake names for comparison
-      final List<String> currentSakeNames = state.sakes!
-          .map((sake) => sake.name ?? '不明な日本酒')
-          .toList();
-      
+      final List<String> currentSakeNames =
+          state.sakes!.map((sake) => sake.name ?? '不明な日本酒').toList();
+
       // Check the most recent history item (which would be the one we might be duplicating)
       final latestHistoryItem = state.menuAnalysisHistory.first;
-      final List<String> latestHistorySakeNames = latestHistoryItem.sakes
-          .map((sake) => sake.name)
-          .toList();
-      
+      final List<String> latestHistorySakeNames =
+          latestHistoryItem.sakes.map((sake) => sake.name).toList();
+
       // If the sake lists have the same length and contain the same items, it's likely a duplicate
       if (currentSakeNames.length == latestHistorySakeNames.length &&
-          currentSakeNames.toSet().containsAll(latestHistorySakeNames.toSet())) {
+          currentSakeNames
+              .toSet()
+              .containsAll(latestHistorySakeNames.toSet())) {
         logger.info('メニュー解析履歴の重複を防止しました');
         return;
       }
@@ -668,20 +697,18 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       if (state.sakeImage != null) {
         // Save to permanent storage
         imagePath = await ImageCropperService.saveImagePermanently(
-          state.sakeImage!,
-          'menu'
-        );
-        
+            state.sakeImage!, 'menu');
+
         // Compress and encode to base64
         base64Image = await ImageUtils.compressAndEncodeImage(
           state.sakeImage!,
           quality: 55,
           format: CompressFormat.webp,
         );
-        
+
         logger.info('メニュー画像をbase64エンコードしました');
       }
-      
+
       // 現在の日本酒情報から保存用のデータを作成
       final List<SavedSake> savedSakes = state.sakes!
           .map((sake) => SavedSake(
@@ -738,22 +765,22 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         final List<MenuAnalysisHistoryItem> history = historyList
             .map((item) => MenuAnalysisHistoryItem.fromJson(item))
             .toList();
-        
+
         logger.info('解析履歴アイテム数: ${history.length}');
         bool hasChanges = false;
         final updatedHistory = <MenuAnalysisHistoryItem>[];
-        
+
         for (final item in history) {
           // 処理する履歴項目のIDをログ出力
           logger.info('処理中の履歴ID: ${item.id}');
-          
+
           // 既にbase64データがある場合はスキップ
           if (item.base64Image != null && item.base64Image!.isNotEmpty) {
             logger.info('既にbase64データが存在します: ${item.id}');
             updatedHistory.add(item);
             continue;
           }
-          
+
           if (item.imagePath != null) {
             logger.info('画像パスが存在します: ${item.imagePath}');
             final file = File(item.imagePath!);
@@ -762,21 +789,19 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
               // アプリのドキュメントディレクトリにあるか確認
               final appDir = await getApplicationDocumentsDirectory();
               String? permanentPath = item.imagePath;
-              
+
               if (!item.imagePath!.startsWith(appDir.path)) {
                 logger.info('画像を永続的ストレージに移行します');
                 // 画像を永続的ストレージに移行
                 permanentPath = await ImageCropperService.saveImagePermanently(
-                  file,
-                  'menu'
-                );
+                    file, 'menu');
                 if (permanentPath != null) {
                   logger.info('画像を移行しました: $permanentPath');
                 } else {
                   logger.warning('画像の移行に失敗しました');
                 }
               }
-              
+
               // パス移行に関係なくbase64エンコードを試みる
               try {
                 logger.info('画像をbase64エンコードします');
@@ -786,10 +811,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                   quality: 55,
                   format: CompressFormat.webp,
                 );
-                
+
                 if (base64Image.isNotEmpty) {
                   logger.info('base64エンコードに成功しました: ${base64Image.length} 文字');
-                  
+
                   // 新しい履歴項目を作成（パスとbase64データを更新）
                   final updatedItem = MenuAnalysisHistoryItem(
                     id: item.id,
@@ -829,7 +854,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 );
                 updatedHistory.add(updatedItem);
                 hasChanges = permanentPath != item.imagePath;
-                logger.warning('メニュー解析履歴の画像のbase64エンコードに失敗しました: ${item.id} - $e');
+                logger
+                    .warning('メニュー解析履歴の画像のbase64エンコードに失敗しました: ${item.id} - $e');
               }
             } else {
               logger.warning('ファイルが存在しません: ${item.imagePath}');
@@ -852,7 +878,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             updatedHistory.add(item);
           }
         }
-        
+
         if (hasChanges) {
           logger.info('メニュー解析履歴を更新します');
           state = state.copyWith(menuAnalysisHistory: updatedHistory);
@@ -879,7 +905,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             date: item.date,
             storeName: storeName,
             sakes: item.sakes,
-            imagePath: item.imagePath,     // 画像パスを保持
+            imagePath: item.imagePath, // 画像パスを保持
             base64Image: item.base64Image, // base64エンコードデータを保持
           );
         }
@@ -918,7 +944,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         (item) => item.id == historyId,
         orElse: () => throw Exception('削除対象の履歴項目が見つかりませんでした'),
       );
-      
+
       // ファイルが存在する場合は削除を試みる
       if (itemToDelete.imagePath != null) {
         final file = File(itemToDelete.imagePath!);

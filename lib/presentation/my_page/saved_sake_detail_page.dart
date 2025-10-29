@@ -12,7 +12,13 @@ import '../../common/utils/image_cropper_service.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
+import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../../common/logger.dart';
 import '../common/widgets/guest_limit_dialog.dart';
+
+const double _blockSpacing = 16;
+const double _blockVerticalPadding = 20;
 
 class SavedSakeDetailPage extends StatefulWidget {
   const SavedSakeDetailPage({super.key, required this.sake});
@@ -24,13 +30,19 @@ class SavedSakeDetailPage extends StatefulWidget {
 }
 
 class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
+  late final TextEditingController _nameController;
   late final TextEditingController _impressionController;
   late final TextEditingController _placeController;
+  late final FocusNode _nameFocusNode;
+  late final ScrollController _scrollController;
   late Sake _currentSake;
   late Set<String> _selectedTags;
   late List<String> _imagePaths;
   bool _isImageProcessing = false;
   bool _isSyncing = false;
+  String? _progressMessage;
+  bool _hasNameChanged = false;
+  final GlobalKey _memoryHeadingKey = GlobalKey();
 
   bool _isRemotePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -39,6 +51,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   void initState() {
     super.initState();
     _currentSake = widget.sake;
+    _nameFocusNode = FocusNode();
+    _scrollController = ScrollController();
+    _nameController = TextEditingController(text: widget.sake.name ?? '');
+    _nameController.addListener(_handleNameFieldChanged);
     _impressionController =
         TextEditingController(text: widget.sake.impression ?? '');
     _placeController = TextEditingController(text: widget.sake.place ?? '');
@@ -48,8 +64,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   @override
   void dispose() {
+    _nameController.removeListener(_handleNameFieldChanged);
+    _nameFocusNode.dispose();
+    _nameController.dispose();
     _impressionController.dispose();
     _placeController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -119,7 +139,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           _currentSake.name ?? '日本酒詳細',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 21,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -134,11 +154,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           ),
         ],
       ),
+      bottomNavigationBar: _buildMemoCtaFooter(),
       body: Stack(
         children: [
           Container(
             decoration: BoxDecoration(gradient: gradient),
             child: SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,9 +168,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   _buildHeaderCard(
                     themeColor,
                     showSyncButton: isLoggedIn && isLocalOnly,
+                    isLoggedIn: isLoggedIn,
                   ),
-                  _buildImageGallerySection(),
-                  _buildMemoSection(),
                   if (infoRows.isNotEmpty)
                     _buildSection(
                       title: '基本情報',
@@ -161,8 +182,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     ),
                   if (infoRows.isEmpty && featureWidgets.isEmpty)
                     Container(
-                      margin: const EdgeInsets.only(top: 24),
-                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(top: _blockSpacing),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: _blockVerticalPadding,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(16),
@@ -173,6 +197,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                         textAlign: TextAlign.center,
                       ),
                     ),
+                  _buildImageGallerySection(),
+                  _buildMemoSection(),
                 ],
               ),
             ),
@@ -188,7 +214,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       const CircularProgressIndicator(),
                       const SizedBox(height: 12),
                       Text(
-                        _isSyncing ? 'サーバーと同期中…' : '処理中…',
+                        _progressMessage ?? (_isSyncing ? '処理中…' : '処理中…'),
                         style: const TextStyle(color: Colors.white70),
                       ),
                     ],
@@ -204,11 +230,17 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Widget _buildHeaderCard(
     Color themeColor, {
     required bool showSyncButton,
+    required bool isLoggedIn,
   }) {
     final isRecommended = (_currentSake.recommendationScore ?? 0) >= 7;
+    final canReanalyze =
+        isLoggedIn && (_currentSake.savedId?.isNotEmpty ?? false);
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(
+        vertical: _blockVerticalPadding,
+        horizontal: 20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
@@ -217,21 +249,17 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _currentSake.name ?? '名称不明',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+          _buildNameEditor(
+            isLoggedIn: isLoggedIn,
+            canReanalyze: canReanalyze,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           if (_isValid(_currentSake.brewery))
             Text(
               _currentSake.brewery!,
               style: const TextStyle(
                 color: Colors.white70,
-                fontSize: 14,
+                fontSize: 15,
               ),
             ),
           if (_isValid(_currentSake.type))
@@ -241,7 +269,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 _currentSake.type!,
                 style: const TextStyle(
                   color: Colors.white70,
-                  fontSize: 14,
+                  fontSize: 15,
                 ),
               ),
             ),
@@ -257,7 +285,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       _currentSake.place!,
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -333,7 +361,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       : '未同期（この端末にのみ保存されています）',
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 12,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -358,10 +386,122 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
   }
 
+  Widget _buildNameEditor({
+    required bool isLoggedIn,
+    required bool canReanalyze,
+  }) {
+    final bool hasChanged = _hasNameChanged;
+    final bool allowReanalyze = hasChanged && canReanalyze;
+    final ButtonStyle changeStyle = FilledButton.styleFrom(
+      minimumSize: const Size(0, 48),
+      backgroundColor: Colors.white.withOpacity(0.12),
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+    final ButtonStyle reanalyzeStyle = FilledButton.styleFrom(
+      minimumSize: const Size(0, 48),
+      backgroundColor: const Color(0xFFFFD54F),
+      foregroundColor: const Color(0xFF1D3567),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    );
+    final String buttonLabel =
+        hasChanged ? (allowReanalyze ? '再解析' : '保存') : '変更';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: TextField(
+                  focusNode: _nameFocusNode,
+                  controller: _nameController,
+                  maxLength: 50,
+                  textAlignVertical: TextAlignVertical.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: '日本酒の名前',
+                    labelStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.08),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 48,
+              child: FilledButton(
+                onPressed: _isSyncing
+                    ? null
+                    : () async {
+                        if (!hasChanged) {
+                          FocusScope.of(context).requestFocus(_nameFocusNode);
+                          return;
+                        }
+                        if (!canReanalyze) {
+                          await _handleSaveName(reanalyze: false);
+                          _showSnack('ログインすると再解析できます');
+                          return;
+                        }
+                        await _handleSaveName(reanalyze: true);
+                      },
+                style: hasChanged ? reanalyzeStyle : changeStyle,
+                child: Text(buttonLabel),
+              ),
+            ),
+          ],
+        ),
+        if (!isLoggedIn)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'ログインすると名前変更後に再解析できます',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 13,
+              ),
+            ),
+          ),
+        if (isLoggedIn && !canReanalyze)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '保存IDが未設定のため再解析は利用できません',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 13,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildMemoSection() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: _blockSpacing),
+      padding: const EdgeInsets.symmetric(
+        vertical: _blockVerticalPadding,
+        horizontal: 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
@@ -376,7 +516,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 'メモ',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -386,12 +526,20 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   '保存',
                   style: TextStyle(
                     color: Color(0xFFFFD54F),
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '設定しておくと一覧でフィルタリングができる！',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -412,12 +560,18 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             controller: _impressionController,
             maxLength: 200,
             maxLines: 4,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
               labelText: '感想 (200文字まで)',
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              labelStyle: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
               hintText: '味わいや香りの印象を記録しましょう',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 14,
+              ),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(
@@ -432,12 +586,18 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             controller: _placeController,
             maxLines: 1,
             maxLength: 30,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
               labelText: '飲んだ場所',
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              labelStyle: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+              ),
               hintText: 'お店やイベント名などを記録できます',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 14,
+              ),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
               border: OutlineInputBorder(
@@ -454,13 +614,29 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   Widget _buildImageGallerySection() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      margin: const EdgeInsets.only(top: _blockSpacing),
+      padding: const EdgeInsets.symmetric(vertical: _blockVerticalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (int i = 0; i < 3; i++) ...[
-            Expanded(child: _buildImageTile(i)),
-            if (i < 2) const SizedBox(width: 8),
-          ],
+          Text(
+            '思い出も残そう',
+            key: _memoryHeadingKey,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (int i = 0; i < 3; i++) ...[
+                Expanded(child: _buildImageTile(i)),
+                if (i < 2) const SizedBox(width: 8),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -530,6 +706,84 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     final isPrimarySlot = index == _imagePaths.length;
     return _buildAddTile(isPrimary: isPrimarySlot);
+  }
+
+  Future<void> _scrollToMemoryHeading() async {
+    final context = _memoryHeadingKey.currentContext;
+    if (context == null) {
+      return;
+    }
+    await Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildMemoCtaFooter() {
+    return Container(
+      color: const Color(0xFF0A1428),
+      child: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: (_isImageProcessing || _isSyncing)
+                ? null
+                : () async {
+                    await _scrollToMemoryHeading();
+                  },
+            borderRadius: BorderRadius.circular(18),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD54F),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.edit_note,
+                    color: Color(0xFF1D3567),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'このお酒の記録を残しませんか？',
+                          style: TextStyle(
+                            color: Color(0xFF1D3567),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFF1D3567),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildRemoteImageTile(String url,
@@ -617,7 +871,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   '追加',
                   style: TextStyle(
                     color: isPrimary ? const Color(0xFFFFD54F) : Colors.white60,
-                    fontSize: 12,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -631,8 +885,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Widget _buildSection(
       {required String title, required List<Widget> children}) {
     return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: _blockSpacing),
+      padding: const EdgeInsets.symmetric(
+        vertical: _blockVerticalPadding,
+        horizontal: 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
@@ -644,7 +901,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -671,7 +928,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   label,
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 12,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -679,7 +936,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   value,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -701,7 +958,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             label,
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 12,
+              fontSize: 13,
             ),
           ),
           const SizedBox(height: 6),
@@ -709,7 +966,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 15,
               height: 1.4,
             ),
           ),
@@ -726,7 +983,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           'タイプ',
           style: TextStyle(
             color: Colors.white70,
-            fontSize: 12,
+            fontSize: 13,
           ),
         ),
         const SizedBox(height: 8),
@@ -781,8 +1038,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     });
   }
 
-  void _saveMemo() {
+  Future<void> _saveMemo() async {
     FocusScope.of(context).unfocus();
+    final authNotifier = context.read<AuthNotifier>();
+    final isLoggedIn = authNotifier.state.user != null;
+
     final updatedSake = _currentSake.copyWith(
       impression: _impressionController.text.trim().isEmpty
           ? null
@@ -792,9 +1052,195 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           : _placeController.text.trim(),
       userTags: _selectedTags.isEmpty ? null : _selectedTags.toList(),
       imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
+      syncStatus: isLoggedIn
+          ? SavedSakeSyncStatus.localOnly
+          : _currentSake.syncStatus,
     );
 
-    _applySakeUpdate(updatedSake, toastMessage: 'メモを保存しました');
+    _applySakeUpdate(
+      updatedSake,
+      toastMessage: isLoggedIn ? null : 'メモを保存しました',
+    );
+
+    if (!isLoggedIn) {
+      return;
+    }
+
+    final savedId = updatedSake.savedId;
+    if (savedId == null || savedId.isEmpty) {
+      _showSnack('保存IDが未設定のためサーバー保存はできません');
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _progressMessage = 'サーバーに保存中…';
+    });
+
+    final notifier = context.read<SavedSakeNotifier>();
+    Sake? synced;
+    try {
+      synced = await notifier.syncSavedSakeToServer(savedId);
+    } catch (error, stackTrace) {
+      logger.warning('メモ同期で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSyncing = false;
+      _progressMessage = null;
+    });
+
+    if (synced == null) {
+      _showSnack('サーバーへの保存に失敗しました。通信環境をご確認ください。');
+      return;
+    }
+
+    _applySakeUpdate(
+      synced,
+      toastMessage: 'サーバーに保存しました',
+    );
+  }
+
+  Future<void> _handleSaveName({required bool reanalyze}) async {
+    FocusScope.of(context).unfocus();
+    final trimmed = _nameController.text.trim();
+    if (trimmed.isEmpty) {
+      _showSnack('日本酒の名前を入力してください');
+      return;
+    }
+
+    final originalName = _currentSake.name ?? '';
+    final nameChanged = trimmed != originalName;
+
+    if (!nameChanged && !reanalyze) {
+      _showSnack('変更された内容がありません');
+      return;
+    }
+
+    final authNotifier = context.read<AuthNotifier>();
+    final isLoggedIn = authNotifier.state.user != null;
+    final shouldMarkUnsynced = isLoggedIn && (nameChanged || reanalyze);
+
+    final updated = _currentSake.copyWith(
+      name: trimmed,
+      syncStatus: shouldMarkUnsynced
+          ? SavedSakeSyncStatus.localOnly
+          : _currentSake.syncStatus,
+    );
+
+    _applySakeUpdate(
+      updated,
+      toastMessage: !reanalyze ? '名前を保存しました' : null,
+      refreshTags: false,
+    );
+
+    if (!reanalyze) {
+      if (mounted && _hasNameChanged) {
+        setState(() {
+          _hasNameChanged = false;
+        });
+      }
+      return;
+    }
+
+    if (!isLoggedIn) {
+      _showSnack('ログインするとサーバー再解析を利用できます');
+      if (mounted && _hasNameChanged) {
+        setState(() {
+          _hasNameChanged = false;
+        });
+      }
+      return;
+    }
+
+    final savedId = updated.savedId;
+    if (savedId == null || savedId.isEmpty) {
+      _showSnack('保存IDが見つかりませんでした');
+      return;
+    }
+
+    setState(() {
+      _isSyncing = true;
+      _progressMessage = '再解析中…';
+    });
+
+    final notifier = context.read<SavedSakeNotifier>();
+    Sake? synced;
+    try {
+      synced = await notifier.syncSavedSakeToServer(savedId);
+    } catch (error, stackTrace) {
+      logger.warning('再解析の同期処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    if (synced == null) {
+      setState(() {
+        _isSyncing = false;
+        _progressMessage = null;
+      });
+      _showSnack('再解析に失敗しました。通信環境をご確認のうえ再度お試しください。');
+      return;
+    }
+
+    Sake? fetched;
+    try {
+      final repository = context.read<SakeMenuRecognitionRepository>();
+      final preferences =
+          context.read<MyPageNotifier>().state.preferences?.trim();
+      fetched = await repository.getSakeInfo(
+        trimmed,
+        type: synced.type,
+        preferences:
+            preferences == null || preferences.isEmpty ? null : preferences,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('getSakeInfo の取得に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+
+    if (fetched != null) {
+      await notifier.updateSavedSakeWithInfo(
+        savedId,
+        fetched.copyWith(savedId: savedId),
+      );
+    }
+
+    final Sake resolvedSynced = synced.copyWith(name: trimmed);
+
+    final Sake latest = notifier.state.savedSakeList.firstWhere(
+      (item) => item.savedId == savedId,
+      orElse: () => resolvedSynced,
+    );
+
+    _applySakeUpdate(
+      latest.copyWith(
+        name: trimmed,
+        syncStatus: SavedSakeSyncStatus.serverSynced,
+      ),
+      toastMessage: fetched != null ? '再解析が完了しました' : 'サーバーに保存しました',
+      updateNotifier: false,
+    );
+
+    if (fetched == null) {
+      _showSnack('詳細情報の取得に失敗しました');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isSyncing = false;
+        _progressMessage = null;
+        _hasNameChanged = false;
+      });
+    }
   }
 
   Future<void> _handleManualSync() async {
@@ -806,6 +1252,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     setState(() {
       _isSyncing = true;
+      _progressMessage = 'サーバーと同期中…';
     });
 
     final notifier = context.read<SavedSakeNotifier>();
@@ -817,6 +1264,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     setState(() {
       _isSyncing = false;
+      _progressMessage = null;
     });
 
     if (synced == null) {
@@ -847,8 +1295,25 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         _selectedTags = {...(updated.userTags ?? <String>[])};
       }
     });
+    final newName = updated.name ?? '';
+    if (_nameController.text != newName) {
+      _nameController
+        ..text = newName
+        ..selection = TextSelection.collapsed(offset: newName.length);
+    }
     if (toastMessage != null) {
       _showSnack(toastMessage);
+    }
+  }
+
+  void _handleNameFieldChanged() {
+    final trimmed = _nameController.text.trim();
+    final currentName = (_currentSake.name ?? '').trim();
+    final changed = trimmed != currentName;
+    if (changed != _hasNameChanged && mounted) {
+      setState(() {
+        _hasNameChanged = changed;
+      });
     }
   }
 
@@ -1222,7 +1687,7 @@ class _TagCheckbox extends StatelessWidget {
               label,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),

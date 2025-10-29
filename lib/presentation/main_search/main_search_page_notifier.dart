@@ -20,9 +20,11 @@ import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../common/dialogs/sake_preferences_dialog.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
@@ -328,6 +330,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return false;
     }
 
+    if (!await _ensureSakePreferencesReady()) {
+      return false;
+    }
+
     final savedPath =
         await ImageCropperService.saveImagePermanently(image, 'saved_sake');
     if (savedPath == null) {
@@ -423,6 +429,14 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       state = state.copyWith(
         isLoading: false,
         errorMessage: '解析に使用する画像が見つかりませんでした',
+        isAnalyzingInBackground: false,
+      );
+      return;
+    }
+
+    if (!await _ensureSakePreferencesReady()) {
+      state = state.copyWith(
+        isLoading: false,
         isAnalyzingInBackground: false,
       );
       return;
@@ -756,5 +770,23 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       pendingSavedSakeIds: _removePendingId(savedId),
       analyzingImagePath: null,
     );
+  }
+
+  Future<bool> _ensureSakePreferencesReady() async {
+    final myPageNotifier = read<MyPageNotifier>();
+    final bool ensured = await ensureSakePreferences(
+      context: context,
+      myPageNotifier: myPageNotifier,
+    );
+
+    if (!ensured) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '好みの設定が完了していません。好みを登録してからお試しください。',
+        duration: const Duration(seconds: 3),
+      );
+    }
+
+    return ensured;
   }
 }
