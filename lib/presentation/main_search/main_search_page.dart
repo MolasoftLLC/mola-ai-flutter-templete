@@ -516,24 +516,25 @@ class MainSearchPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          ElevatedButton.icon(
-            onPressed: () {
-              notifier.pickImage(ImageSource.camera);
-            },
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('カメラで撮影'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D3567),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          if (sakeImage == null)
+            ElevatedButton.icon(
+              onPressed: () {
+                notifier.pickImage(ImageSource.camera);
+              },
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('カメラで撮影'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1D3567),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
-          ),
 
           // 画像がある場合はクリアボタンを表示
           if (sakeImage != null)
@@ -584,29 +585,30 @@ class MainSearchPage extends StatelessWidget {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: OutlinedButton(
                   onPressed: sakeImage != null && !isAnalyzingInBackground
                       ? () async {
                           await notifier.analyzeSakeBottle();
                         }
                       : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D3567),
-                    foregroundColor: Colors.white,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1D3567),
+                    side: BorderSide(color: const Color(0xFF1D3567).withOpacity(0.4)),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                      horizontal: 20,
+                      vertical: 14,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    disabledBackgroundColor: Colors.grey.shade400,
+                    disabledForegroundColor: Colors.grey.shade500,
+                    disabledBackgroundColor: Colors.transparent,
                   ),
                   child: const Text(
                     '解析だけ',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

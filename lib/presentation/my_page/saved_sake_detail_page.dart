@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import 'package:provider/provider.dart';
 
@@ -235,154 +236,175 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     final isRecommended = (_currentSake.recommendationScore ?? 0) >= 7;
     final canReanalyze =
         isLoggedIn && (_currentSake.savedId?.isNotEmpty ?? false);
-    return Container(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.symmetric(
-        vertical: _blockVerticalPadding,
-        horizontal: 20,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNameEditor(
-            isLoggedIn: isLoggedIn,
-            canReanalyze: canReanalyze,
-          ),
-          const SizedBox(height: 12),
-          if (_isValid(_currentSake.brewery))
-            Text(
-              _currentSake.brewery!,
+    final savedDateText = _formatSavedDate(_currentSake.savedId);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (savedDateText != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              '保存日 $savedDateText',
               style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 15,
+                color: Color(0xFFFFD54F),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          if (_isValid(_currentSake.type))
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _currentSake.type!,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          if (_isValid(_currentSake.place))
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.place, color: Colors.amber, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _currentSake.place!,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (isRecommended)
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.recommend, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    (_currentSake.recommendationScore ?? 0) >= 8
-                        ? '超おすすめ！'
-                        : 'おすすめ！',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if ((_currentSake.userTags ?? []).isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: _currentSake.userTags!
-                    .map(
-                      (tag) => Chip(
-                        label: Text(
-                          tag,
-                          style: const TextStyle(
-                            color: Color(0xFF1D3567),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        backgroundColor: Colors.white.withOpacity(0.18),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          const SizedBox(height: 16),
-          Row(
+          ),
+        Container(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(
+            vertical: _blockVerticalPadding,
+            horizontal: 20,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
-                    ? Icons.cloud_done
-                    : Icons.cloud_upload,
-                color:
-                    _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
-                        ? Colors.lightBlueAccent
-                        : Colors.orangeAccent,
-                size: 18,
+              _buildNameEditor(
+                isLoggedIn: isLoggedIn,
+                canReanalyze: canReanalyze,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
-                      ? 'サーバーに保存済み'
-                      : '未同期（この端末にのみ保存されています）',
+              const SizedBox(height: 12),
+              if (_isValid(_currentSake.brewery))
+                Text(
+                  _currentSake.brewery!,
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 13,
+                    fontSize: 15,
                   ),
                 ),
-              ),
-              if (showSyncButton)
-                TextButton.icon(
-                  onPressed: _isSyncing ? null : _handleManualSync,
-                  icon: const Icon(Icons.cloud_upload, size: 16),
-                  label: const Text('サーバーへ同期'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    backgroundColor: Colors.white.withOpacity(0.12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              if (_isValid(_currentSake.type))
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _currentSake.type!,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
                     ),
                   ),
                 ),
+              if (_isValid(_currentSake.place))
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.place, color: Colors.amber, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _currentSake.place!,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (isRecommended)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.recommend, color: Colors.white, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        (_currentSake.recommendationScore ?? 0) >= 8
+                            ? '超おすすめ！'
+                            : 'おすすめ！',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if ((_currentSake.userTags ?? []).isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: _currentSake.userTags!
+                        .map(
+                          (tag) => Chip(
+                            label: Text(
+                              tag,
+                              style: const TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            backgroundColor: Colors.white.withOpacity(0.18),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(
+                    _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
+                        ? Icons.cloud_done
+                        : Icons.cloud_upload,
+                    color:
+                        _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
+                            ? Colors.lightBlueAccent
+                            : Colors.orangeAccent,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _currentSake.syncStatus ==
+                              SavedSakeSyncStatus.serverSynced
+                          ? 'サーバーに保存済み'
+                          : '未同期（この端末にのみ保存されています）',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (showSyncButton)
+                    TextButton.icon(
+                      onPressed: _isSyncing ? null : _handleManualSync,
+                      icon: const Icon(Icons.cloud_upload, size: 16),
+                      label: const Text('サーバーへ同期'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        backgroundColor: Colors.white.withOpacity(0.12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1104,6 +1126,29 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       synced,
       toastMessage: 'サーバーに保存しました',
     );
+  }
+
+  String? _formatSavedDate(String? savedId) {
+    final date = _savedDateFromId(savedId);
+    if (date == null) {
+      return null;
+    }
+    return DateFormat('yyyy/MM/dd').format(date);
+  }
+
+  DateTime? _savedDateFromId(String? savedId) {
+    if (savedId == null) {
+      return null;
+    }
+    final parts = savedId.split('_');
+    if (parts.length < 3) {
+      return null;
+    }
+    final millis = int.tryParse(parts[1]);
+    if (millis == null) {
+      return null;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(millis);
   }
 
   Future<void> _handleSaveName({required bool reanalyze}) async {
