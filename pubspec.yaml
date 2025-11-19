@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 3.2.1+48
+version: 4.0.0+51
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -70,6 +70,9 @@ dependencies:
 
   #日付フォーマット
   intl: ^0.18.1
+
+  # ビュー可視判定
+  visibility_detector: ^0.4.0+2
 
   # Firebase
   firebase_core: ^2.32.0

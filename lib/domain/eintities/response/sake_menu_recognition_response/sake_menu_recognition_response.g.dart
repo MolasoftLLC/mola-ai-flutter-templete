@@ -40,6 +40,11 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       imagePaths: (json['imagePaths'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      username: json['username'] as String?,
+      displayName: json['displayName'] as String?,
+      iconUrl: json['iconUrl'] as String?,
+      envyCount: (json['envyCount'] as num?)?.toInt() ?? 0,
+      isPublic: json['is_public'] as bool? ?? false,
       syncStatus: $enumDecodeNullable(
               _$SavedSakeSyncStatusEnumMap, json['syncStatus'],
               unknownValue: SavedSakeSyncStatus.localOnly) ??
@@ -62,6 +67,11 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'userTags': instance.userTags,
       'savedId': instance.savedId,
       'imagePaths': instance.imagePaths,
+      'username': instance.username,
+      'displayName': instance.displayName,
+      'iconUrl': instance.iconUrl,
+      'envyCount': instance.envyCount,
+      'is_public': instance.isPublic,
       'syncStatus': _$SavedSakeSyncStatusEnumMap[instance.syncStatus]!,
     };
 

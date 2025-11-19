@@ -42,6 +42,6 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
 
   @Post(path: 'sake-preference/analyze')
   Future<Response> analyzeSakePreference(
-      @Body() Map<String, dynamic> body,
-      );
+    @Body() Map<String, dynamic> body,
+  );
 }

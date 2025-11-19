@@ -23,13 +23,13 @@ class CustomImagePicker {
         // Fall back to default implementation if custom one fails
       }
     }
-    
+
     // Use default implementation for camera or non-Android platforms
     final pickedFile = await _defaultPicker.pickImage(source: source);
     if (pickedFile != null) {
       return File(pickedFile.path);
     }
-    
+
     return null;
   }
 }

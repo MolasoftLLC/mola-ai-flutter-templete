@@ -36,6 +36,11 @@ class Sake with _$Sake {
     List<String>? userTags,
     String? savedId,
     List<String>? imagePaths,
+    String? username,
+    String? displayName,
+    String? iconUrl,
+    @Default(0) int envyCount,
+    @JsonKey(name: 'is_public') @Default(false) bool isPublic,
     @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
     @Default(SavedSakeSyncStatus.localOnly)
     SavedSakeSyncStatus syncStatus,

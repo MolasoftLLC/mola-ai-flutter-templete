@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
+import '../common/widgets/primary_app_bar.dart';
 
 import '../../domain/notifier/auth/auth_notifier.dart'
     show AuthNotifier, AuthState;
 import '../../domain/notifier/my_page/my_page_notifier.dart';
+import '../../common/utils/custom_image_picker.dart';
 
 enum AccountSettingsResult { loggedOut, usernameUpdated, accountDeleted }
 
@@ -17,12 +23,16 @@ class AccountSettingsPage extends StatefulWidget {
 }
 
 class _AccountSettingsPageState extends State<AccountSettingsPage> {
+  static const double _avatarPreviewSize = 96;
   late final TextEditingController _usernameController;
   late final TextEditingController _deletePasswordController;
   bool _hasInitialized = false;
   bool _isProcessing = false;
+  bool _isAvatarUpdating = false;
   String? _errorMessage;
   String? _deleteErrorMessage;
+  String? _avatarErrorMessage;
+  File? _pendingAvatarFile;
   _AccountSettingsAction? _activeAction;
 
   @override
@@ -294,10 +304,137 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     );
   }
 
+  Future<void> _handleChangeAvatar() async {
+    FocusScope.of(context).unfocus();
+    final source = await _showImageSourceSheet();
+    if (source == null) {
+      return;
+    }
+
+    final file = await CustomImagePicker.pickImage(source: source);
+    if (file == null) {
+      return;
+    }
+
+    setState(() {
+      _pendingAvatarFile = file;
+      _isAvatarUpdating = true;
+      _avatarErrorMessage = null;
+    });
+
+    final notifier = context.read<MyPageNotifier>();
+    final success = await notifier.updateUserPhoto(file);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isAvatarUpdating = false;
+      _pendingAvatarFile = null;
+      if (!success) {
+        _avatarErrorMessage = 'アイコンの更新に失敗しました。時間をおいて再度お試しください。';
+      }
+    });
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アイコンを更新しました。')),
+      );
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceSheet() async {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: const Color(0xFF14264A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white70),
+                title: const Text(
+                  'フォトライブラリから選択',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: Colors.white70),
+                title: const Text(
+                  'カメラで撮影',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAvatarPreview(String? iconUrl) {
+    Widget placeholder() {
+      return Container(
+        width: _avatarPreviewSize,
+        height: _avatarPreviewSize,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.12),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.person,
+          color: Colors.white70,
+          size: 40,
+        ),
+      );
+    }
+
+    if (_pendingAvatarFile != null) {
+      return SizedBox(
+        width: _avatarPreviewSize,
+        height: _avatarPreviewSize,
+        child: ClipOval(
+          child: Image.file(
+            _pendingAvatarFile!,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+
+    final trimmed = iconUrl?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return SizedBox(
+        width: _avatarPreviewSize,
+        height: _avatarPreviewSize,
+        child: ClipOval(
+          child: Image.network(
+            trimmed,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => placeholder(),
+          ),
+        ),
+      );
+    }
+
+    return placeholder();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthState>();
     final email = authState.user?.email ?? '未設定';
+    final myPageState = context.watch<MyPageState>();
+    final iconUrl = myPageState.userIconUrl;
 
     return Container(
       decoration: const BoxDecoration(
@@ -309,17 +446,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1D3567),
-          title: const Text(
-            'アカウント設定',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          iconTheme: const IconThemeData(color: Colors.white),
+        appBar: const PrimaryAppBar(
+          title: 'アカウント設定',
+          titleFontSize: 18,
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -327,6 +456,85 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _buildAvatarPreview(iconUrl),
+                          if (_isAvatarUpdating)
+                            Container(
+                              width: _avatarPreviewSize,
+                              height: _avatarPreviewSize,
+                              decoration: BoxDecoration(
+                                color: Colors.black45,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white70),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (_avatarErrorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            _avatarErrorMessage!,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed:
+                            _isAvatarUpdating ? null : _handleChangeAvatar,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.4),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        icon: Icon(
+                          _isAvatarUpdating
+                              ? Icons.hourglass_top
+                              : Icons.image_outlined,
+                          color: Colors.white70,
+                        ),
+                        label: Text(
+                          _isAvatarUpdating ? '更新中...' : 'アイコンを変更',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),

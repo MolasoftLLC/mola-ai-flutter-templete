@@ -186,7 +186,7 @@
       "firebaseUid": "firebase-uid",
       "username": "user_xxx",
       "displayName": "表示名",
-      "photoUrl": "https://...",
+      "iconUrl": "https://...",
       "createdAt": "2024-05-01T13:20:00.000Z",
       "updatedAt": "2024-05-01T13:20:00.000Z"
     }
@@ -203,7 +203,7 @@
   {
     "userId": "firebase-uid",
     "displayName": "表示名",
-    "photoUrl": "https://..."
+    "iconUrl": "https://..."
   }
   ```
 

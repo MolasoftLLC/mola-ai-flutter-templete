@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -6,13 +7,17 @@ import 'package:flutter/material.dart';
 // import 'package:in_app_review/in_app_review.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/eintities/preferences/taste_preference_profile.dart';
+import '../../common/assets.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
 import '../sake_bottle/sake_bottle_list_page.dart';
 import 'account_settings_page.dart';
@@ -128,10 +133,45 @@ class MyPage extends StatelessWidget {
     final preferences =
         context.select((MyPageState state) => state.preferences);
     final userName = context.select((MyPageState state) => state.userName);
+    final userIconUrl =
+        context.select((MyPageState state) => state.userIconUrl);
     final authUser = context.select((AuthState state) => state.user);
+    final isLoggedIn = authUser != null;
+    final achievementCounts =
+        context.select((MyPageState state) => state.achievementCounts);
+    final loginCount = achievementCounts['login'] ?? 0;
+    final analyzedBottleCount = achievementCounts['analyzedBottle'] ?? 0;
+    final menuAnalysisCount = achievementCounts['menuAnalysis'] ?? 0;
+    final envyPointCount = achievementCounts['envyPoint'] ?? 0;
 
     // Notifierから取得したTextEditingControllerを使用
     final preferencesController = notifier.preferencesController;
+
+    void openLogin() {
+      authNotifier.clearMessages();
+      FocusScope.of(context).unfocus();
+      final navigator = Navigator.of(context);
+      navigator
+          .push<bool>(
+        MaterialPageRoute(
+          builder: (_) => const EmailLinkAuthPage(),
+        ),
+      )
+          .then((result) {
+        FocusScope.of(navigator.context).unfocus();
+        if (!navigator.mounted) {
+          return;
+        }
+        if (result == true) {
+          _showToast(
+            navigator.context,
+            message: 'ログインしました。',
+            icon: Icons.login,
+          );
+          notifier.fetchUserProfile();
+        }
+      });
+    }
 
     return GestureDetector(
       // キーボード外タップでキーボードを閉じる
@@ -139,19 +179,9 @@ class MyPage extends StatelessWidget {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1D3567),
-          elevation: 0,
+        appBar: PrimaryAppBar(
+          title: 'マイページ',
           automaticallyImplyLeading: false,
-          centerTitle: true,
-          title: const Text(
-            'マイページ',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
           actions: [
             IconButton(
               tooltip: '使い方ガイド',
@@ -196,31 +226,9 @@ class MyPage extends StatelessWidget {
                     child: _AuthCard(
                       user: authUser,
                       userName: userName,
-                      onAuthenticate: () {
-                        authNotifier.clearMessages();
-                        FocusScope.of(context).unfocus();
-                        final navigator = Navigator.of(context);
-                        navigator
-                            .push<bool>(
-                          MaterialPageRoute(
-                            builder: (_) => const EmailLinkAuthPage(),
-                          ),
-                        )
-                            .then((result) {
-                          FocusScope.of(navigator.context).unfocus();
-                          if (!navigator.mounted) {
-                            return;
-                          }
-                          if (result == true) {
-                            _showToast(
-                              navigator.context,
-                              message: 'ログインしました。',
-                              icon: Icons.login,
-                            );
-                            notifier.fetchUserProfile();
-                          }
-                        });
-                      },
+                      userIconUrl: userIconUrl,
+                      envyPointCount: envyPointCount,
+                      onAuthenticate: openLogin,
                       onOpenAccountSettings: () {
                         authNotifier.clearMessages();
                         final navigator = Navigator.of(context);
@@ -262,6 +270,13 @@ class MyPage extends StatelessWidget {
                       },
                     ),
                   ),
+                  if (isLoggedIn)
+                    _AchievementsCard(
+                      loginCount: loginCount,
+                      analyzedBottleCount: analyzedBottleCount,
+                      menuAnalysisCount: menuAnalysisCount,
+                      envyPointCount: envyPointCount,
+                    ),
                   // 保存したお酒セクション
                   Container(
                     width: MediaQuery.of(context).size.width,
@@ -601,6 +616,16 @@ class MyPage extends StatelessWidget {
                       onPressed: () async {
                         // お気に入りの日本酒が2つ以上あるか確認
                         if (myFavoriteSakeList.length >= 2) {
+                          if (!notifier.hasAnalysisQuota) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('診断は1日に3回までです。時間をおいてお試しください。'),
+                                duration: Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
                           // 2つ以上ある場合は診断を実行
                           _showSakePreferenceAnalysisDialog(context, notifier);
                           notifier.analyzeSakePreference(myFavoriteSakeList);
@@ -616,7 +641,12 @@ class MyPage extends StatelessWidget {
                         }
                       },
                       icon: const Icon(Icons.psychology),
-                      label: const Text('あなたにぴったりのお酒診断'),
+                      label: const Text(
+                        'あなたにぴったりのお酒診断',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade700,
                         foregroundColor: Colors.white,
@@ -670,6 +700,15 @@ class MyPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        if (isLoggedIn)
+                          _buildPreferenceChartPreview(
+                            context.select(
+                              (MyPageState state) => state.tasteProfile,
+                            ),
+                          )
+                        else
+                          _buildPreferenceChartLoginPrompt(openLogin),
+                        const SizedBox(height: 16),
                         TextField(
                           controller: preferencesController,
                           maxLength: 200,
@@ -796,6 +835,139 @@ class MyPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPreferenceChartPreview(TastePreferenceProfile? profile) {
+    final effectiveProfile = profile ?? TastePreferenceProfile.sample();
+    final axes = <_PreferenceAxisData>[
+      _PreferenceAxisData(
+        title: 'フルーティ',
+        leftLabel: '穏やか',
+        rightLabel: 'フルーティ',
+        value: effectiveProfile.fruity,
+      ),
+      _PreferenceAxisData(
+        title: '甘味',
+        leftLabel: '辛口',
+        rightLabel: '甘口',
+        value: effectiveProfile.sweetness,
+      ),
+      _PreferenceAxisData(
+        title: '酸味',
+        leftLabel: '低酸',
+        rightLabel: '高酸',
+        value: effectiveProfile.acidity,
+      ),
+      _PreferenceAxisData(
+        title: '旨味',
+        leftLabel: '淡麗',
+        rightLabel: '濃醇',
+        value: effectiveProfile.umami,
+      ),
+      _PreferenceAxisData(
+        title: 'キレ',
+        leftLabel: 'まろやか',
+        rightLabel: 'シャープ',
+        value: effectiveProfile.kire,
+      ),
+      _PreferenceAxisData(
+        title: '辛さ',
+        leftLabel: '穏やか',
+        rightLabel: 'ピリッ',
+        value: effectiveProfile.spiciness,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            profile == null ? '好きなお酒の傾向（サンプル表示）' : '好きなお酒の傾向',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            profile == null
+                ? 'お気に入りデータがそろったら、あなた専用のチャートをここに表示します。'
+                : 'お気に入りの日本酒から算出した平均傾向です。あくまでAIの解析なのでお手柔らかに。',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.65),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: _PreferenceRadarChart(axes: axes),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreferenceChartLoginPrompt(VoidCallback onAuthenticate) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ログインユーザー限定',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'お気に入りの日本酒から傾向チャートを自動生成します。ログインして自分専用の分析を確認しましょう。',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onAuthenticate,
+              icon: const Icon(Icons.login),
+              label: const Text(
+                'ログインしてチャートを見る',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD54F),
+                foregroundColor: const Color(0xFF1D3567),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1019,6 +1191,8 @@ class MyPage extends StatelessWidget {
                 context.select((MyPageState state) => state.isLoading);
             final sakePreferenceAnalysis = context
                 .select((MyPageState state) => state.sakePreferenceAnalysis);
+            final tasteProfile =
+                context.select((MyPageState state) => state.tasteProfile);
 
             return AlertDialog(
               title: const Text(
@@ -1044,13 +1218,21 @@ class MyPage extends StatelessWidget {
                                 color: Colors.black87,
                               ),
                             )
-                          : const Text(
-                              'お気に入りのお酒から診断できませんでした。別のお酒を登録してみてください。',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            ),
+                          : tasteProfile != null
+                              ? const Text(
+                                  '味覚チャートを更新しました！\nお気に入りを増やすとさらに精度が上がります。',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
+                                )
+                              : const Text(
+                                  'お気に入りのお酒から診断できませんでした。別のお酒を登録してみてください。',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
+                                ),
                 ),
               ),
               actions: [
@@ -1093,16 +1275,819 @@ class MyPage extends StatelessWidget {
   }
 }
 
+class _PreferenceRadarChart extends StatefulWidget {
+  const _PreferenceRadarChart({required this.axes});
+
+  final List<_PreferenceAxisData> axes;
+
+  @override
+  State<_PreferenceRadarChart> createState() => _PreferenceRadarChartState();
+}
+
+class _PreferenceRadarChartState extends State<_PreferenceRadarChart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+  final UniqueKey _visibilityKey = UniqueKey();
+  bool _hasAnimated = false;
+  bool _isVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = math.min(constraints.maxWidth, 280.0);
+        final chartRadius = size / 2 * 0.72;
+        final labelRadius = chartRadius + 30;
+        final labelWidth = 68.0;
+
+        return VisibilityDetector(
+          key: _visibilityKey,
+          onVisibilityChanged: (info) {
+            _isVisible = info.visibleFraction > 0.35;
+            if (!_hasAnimated && _isVisible) {
+              _hasAnimated = true;
+              _controller.forward();
+            }
+          },
+          child: SizedBox(
+            width: size,
+            height: size + 40,
+            child: AnimatedBuilder(
+              animation: _animation,
+              builder: (context, _) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CustomPaint(
+                      size: Size(size, size),
+                      painter: _PreferenceRadarPainter(
+                        axes: widget.axes,
+                        chartRadius: chartRadius,
+                        progress: _animation.value,
+                      ),
+                    ),
+                    for (var i = 0; i < widget.axes.length; i++)
+                      _buildAxisLabel(
+                        widget.axes[i].title,
+                        size,
+                        labelRadius,
+                        labelWidth,
+                        i,
+                        widget.axes.length,
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _PreferenceRadarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_listEqualsAxis(oldWidget.axes, widget.axes)) {
+      _hasAnimated = false;
+      _controller.reset();
+      if (_isVisible) {
+        _hasAnimated = true;
+        _controller.forward();
+      }
+    }
+  }
+
+  bool _listEqualsAxis(
+    List<_PreferenceAxisData> a,
+    List<_PreferenceAxisData> b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final left = a[i];
+      final right = b[i];
+      if (left.title != right.title ||
+          (left.value - right.value).abs() > 0.0001) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Widget _buildAxisLabel(
+    String title,
+    double size,
+    double radius,
+    double labelWidth,
+    int index,
+    int total,
+  ) {
+    final angle = -math.pi / 2 + (2 * math.pi * index) / total;
+    final dx = math.cos(angle) * radius;
+    final dy = math.sin(angle) * radius;
+
+    final proposedLeft = size / 2 + dx - labelWidth / 2;
+    final proposedTop = size / 2 + dy - 12;
+    final safeLeft = (proposedLeft.clamp(0.0, size - labelWidth)) as double;
+    final safeTop = (proposedTop.clamp(0.0, size - 30)) as double;
+
+    return Positioned(
+      left: safeLeft,
+      top: safeTop,
+      width: labelWidth,
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _PreferenceRadarPainter extends CustomPainter {
+  _PreferenceRadarPainter({
+    required this.axes,
+    required this.chartRadius,
+    required this.progress,
+  });
+
+  final List<_PreferenceAxisData> axes;
+  final double chartRadius;
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final angleStep = (2 * math.pi) / axes.length;
+    const levelCount = 4;
+
+    final gridPaint = Paint()
+      ..color = Colors.white.withOpacity(0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final axisPaint = Paint()
+      ..color = Colors.white.withOpacity(0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final fillPaint = Paint()
+      ..color = const Color(0xFFFFD54F).withOpacity(0.32)
+      ..style = PaintingStyle.fill;
+
+    final strokePaint = Paint()
+      ..color = const Color(0xFFFFD54F)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (var level = 1; level <= levelCount; level++) {
+      final factor = level / levelCount;
+      final path = Path();
+      for (var i = 0; i < axes.length; i++) {
+        final angle = -math.pi / 2 + angleStep * i;
+        final dx = center.dx + math.cos(angle) * chartRadius * factor;
+        final dy = center.dy + math.sin(angle) * chartRadius * factor;
+        if (i == 0) {
+          path.moveTo(dx, dy);
+        } else {
+          path.lineTo(dx, dy);
+        }
+      }
+      path.close();
+      canvas.drawPath(path, gridPaint);
+    }
+
+    for (var i = 0; i < axes.length; i++) {
+      final angle = -math.pi / 2 + angleStep * i;
+      final dx = center.dx + math.cos(angle) * chartRadius;
+      final dy = center.dy + math.sin(angle) * chartRadius;
+      canvas.drawLine(center, Offset(dx, dy), axisPaint);
+    }
+
+    final animationValue = progress.clamp(0.0, 1.0).toDouble();
+
+    final radarPath = Path();
+    for (var i = 0; i < axes.length; i++) {
+      final angle = -math.pi / 2 + angleStep * i;
+      final baseValue = axes[i].value.clamp(0.0, 1.0);
+      final value = baseValue * animationValue;
+      final dx = center.dx + math.cos(angle) * chartRadius * value;
+      final dy = center.dy + math.sin(angle) * chartRadius * value;
+      if (i == 0) {
+        radarPath.moveTo(dx, dy);
+      } else {
+        radarPath.lineTo(dx, dy);
+      }
+    }
+    radarPath.close();
+
+    canvas.drawPath(radarPath, fillPaint);
+    canvas.drawPath(radarPath, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PreferenceAxisData {
+  final String title;
+  final String leftLabel;
+  final String rightLabel;
+  final double value;
+
+  const _PreferenceAxisData({
+    required this.title,
+    required this.leftLabel,
+    required this.rightLabel,
+    required this.value,
+  });
+}
+
+class _AchievementData {
+  const _AchievementData({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.current,
+    required this.target,
+    required this.asset,
+    required this.tier,
+    required this.hasProgress,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final int current;
+  final int target;
+  final AssetImage asset;
+  final _MedalTier tier;
+  final bool hasProgress;
+
+  double get progress =>
+      target <= 0 ? 0 : (current / target).clamp(0, 1).toDouble();
+  int get remaining => (target - current).clamp(0, 999);
+  bool get isComplete => tier == _MedalTier.gold && current >= target;
+}
+
+class _AchievementDefinition {
+  const _AchievementDefinition({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.asset,
+    required this.thresholds,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final AssetImage asset;
+  final List<int> thresholds;
+}
+
+const List<_AchievementDefinition> _achievementDefinitions = [
+  _AchievementDefinition(
+    id: 'login',
+    title: 'ウェルカム乾杯',
+    description: 'たくさん利用してバッジを集めましょう',
+    asset: Assets.sakeLogoColor,
+    thresholds: [1, 3, 7],
+  ),
+  _AchievementDefinition(
+    id: 'analyzedBottle',
+    title: 'ボトルマスター',
+    description: '酒瓶解析で日本酒の知識を深めよう',
+    asset: Assets.medalBin,
+    thresholds: [1, 5, 15],
+  ),
+  _AchievementDefinition(
+    id: 'envyPoint',
+    title: 'うらやまコレクター',
+    description: 'うらやまを集めて注目の的になろう',
+    asset: Assets.medalLike,
+    thresholds: [3, 7, 15],
+  ),
+];
+
+class _AchievementsCard extends StatefulWidget {
+  const _AchievementsCard({
+    required this.loginCount,
+    required this.analyzedBottleCount,
+    required this.menuAnalysisCount,
+    required this.envyPointCount,
+  });
+
+  final int loginCount;
+  final int analyzedBottleCount;
+  final int menuAnalysisCount;
+  final int envyPointCount;
+
+  @override
+  State<_AchievementsCard> createState() => _AchievementsCardState();
+}
+
+class _AchievementsCardState extends State<_AchievementsCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _shine;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+    _shine = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final achievements = _buildAchievements();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF253766), Color(0xFF0C1428)],
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.emoji_events, color: Colors.amberAccent, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'バッジ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...achievements.map(_buildAchievementRow),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<_AchievementData> _buildAchievements() {
+    return _achievementDefinitions.map((definition) {
+      final current = _countFor(definition.id);
+      final thresholds = List<int>.from(definition.thresholds)..sort();
+      final hasProgress = current > 0;
+      final target = _nextThreshold(current, thresholds);
+      final tier = _determineTier(current, thresholds);
+
+      return _AchievementData(
+        id: definition.id,
+        title: definition.title,
+        description: definition.description,
+        current: current,
+        target: target,
+        asset: definition.asset,
+        tier: tier,
+        hasProgress: hasProgress,
+      );
+    }).toList();
+  }
+
+  int _countFor(String id) {
+    switch (id) {
+      case 'login':
+        return widget.loginCount;
+      case 'analyzedBottle':
+        return widget.analyzedBottleCount;
+      case 'menuAnalysis':
+        return widget.menuAnalysisCount;
+      case 'envyPoint':
+        return widget.envyPointCount;
+      default:
+        return 0;
+    }
+  }
+
+  int _nextThreshold(int current, List<int> thresholds) {
+    if (thresholds.isEmpty) {
+      return current > 0 ? current : 1;
+    }
+    for (final threshold in thresholds) {
+      if (current < threshold) {
+        return threshold;
+      }
+    }
+    return thresholds.last;
+  }
+
+  _MedalTier _determineTier(int current, List<int> thresholds) {
+    if (thresholds.isEmpty) {
+      return current > 0 ? _MedalTier.gold : _MedalTier.none;
+    }
+
+    final sorted = List<int>.from(thresholds)..sort();
+
+    if (sorted.length == 1) {
+      return current >= sorted[0] ? _MedalTier.gold : _MedalTier.none;
+    }
+    if (sorted.length == 2) {
+      if (current >= sorted[1]) {
+        return _MedalTier.gold;
+      }
+      if (current >= sorted[0]) {
+        return _MedalTier.bronze;
+      }
+      return _MedalTier.none;
+    }
+
+    if (current >= sorted[2]) {
+      return _MedalTier.gold;
+    }
+    if (current >= sorted[1]) {
+      return _MedalTier.silver;
+    }
+    if (current >= sorted[0]) {
+      return _MedalTier.bronze;
+    }
+    return _MedalTier.none;
+  }
+
+  Widget _buildAchievementRow(_AchievementData achievement) {
+    final tier = achievement.tier;
+    final remaining = achievement.remaining;
+    final hasProgress = achievement.hasProgress;
+    final displayCurrent = achievement.target <= 0
+        ? achievement.current
+        : math.min(achievement.current, achievement.target);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  _MedalBadge(
+                    animation: _shine,
+                    asset: achievement.asset,
+                    tier: tier,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _tierLabel(tier),
+                    style: TextStyle(
+                      color: tier == _MedalTier.none
+                          ? Colors.white60
+                          : Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            achievement.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${displayCurrent}/${achievement.target}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      achievement.description,
+                      style: TextStyle(
+                        color: hasProgress ? Colors.white60 : Colors.white38,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        minHeight: 8,
+                        value: achievement.progress,
+                        backgroundColor: Colors.white.withOpacity(0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          _progressColorForTier(tier, achievement.progress),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      achievement.isComplete
+                          ? 'コンプリート！バッジを獲得しました'
+                          : hasProgress
+                              ? 'あと$remaining回で次のバッジ'
+                              : 'まずは最初の挑戦から始めてみましょう',
+                      style: TextStyle(
+                        color: tier == _MedalTier.none
+                            ? Colors.white60
+                            : Colors.amberAccent,
+                        fontSize: 11,
+                        fontWeight: tier == _MedalTier.none
+                            ? FontWeight.w500
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _progressColorForTier(_MedalTier tier, double progress) {
+    switch (tier) {
+      case _MedalTier.gold:
+        return Color.lerp(
+              const Color(0xFFFFA726),
+              const Color(0xFFFFD54F),
+              progress.clamp(0, 1),
+            ) ??
+            const Color(0xFFFFD54F);
+      case _MedalTier.silver:
+        return Color.lerp(
+              const Color(0xFF90A4AE),
+              const Color(0xFFCFD8DC),
+              progress.clamp(0, 1),
+            ) ??
+            const Color(0xFFCFD8DC);
+      case _MedalTier.bronze:
+        return Color.lerp(
+              const Color(0xFF8D6E63),
+              const Color(0xFFBCAAA4),
+              progress.clamp(0, 1),
+            ) ??
+            const Color(0xFFBCAAA4);
+      case _MedalTier.none:
+        return Colors.white38;
+    }
+  }
+
+  String _tierLabel(_MedalTier tier) {
+    switch (tier) {
+      case _MedalTier.gold:
+        return 'ゴールドバッジ';
+      case _MedalTier.silver:
+        return 'シルバーバッジ';
+      case _MedalTier.bronze:
+        return 'ブロンズバッジ';
+      case _MedalTier.none:
+        return '未獲得';
+    }
+  }
+}
+
+enum _MedalTier { none, bronze, silver, gold }
+
+class _MedalBadge extends StatelessWidget {
+  const _MedalBadge({
+    required this.animation,
+    required this.asset,
+    required this.tier,
+  });
+
+  final Animation<double> animation;
+  final AssetImage asset;
+  final _MedalTier tier;
+
+  List<Color> _gradientForTier() {
+    switch (tier) {
+      case _MedalTier.gold:
+        return const [Color(0xFFFFD54F), Color(0xFFF9A825)];
+      case _MedalTier.silver:
+        return const [Color(0xFFCFD8DC), Color(0xFF90A4AE)];
+      case _MedalTier.bronze:
+        return const [Color(0xFFBCAAA4), Color(0xFF8D6E63)];
+      case _MedalTier.none:
+        return const [Color(0xFF2F3344), Color(0xFF252A38)];
+    }
+  }
+
+  Color _glowColor() {
+    switch (tier) {
+      case _MedalTier.gold:
+        return Colors.amberAccent;
+      case _MedalTier.silver:
+        return const Color(0xFFCFD8DC);
+      case _MedalTier.bronze:
+        return const Color(0xFFBCAAA4);
+      case _MedalTier.none:
+        return Colors.white24;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final glow =
+            tier == _MedalTier.none ? 0.03 : 0.08 + (animation.value * 0.12);
+        return Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: _glowColor().withOpacity(glow),
+                blurRadius: tier == _MedalTier.none ? 8 : 14,
+                spreadRadius: tier == _MedalTier.none ? 1 : 3,
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _gradientForTier(),
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.5),
+                    width: 1.2,
+                  ),
+                ),
+              ),
+              _MedalShimmer(
+                animationValue: animation.value,
+                tier: tier,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.35),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Image(
+                    image: asset,
+                    fit: BoxFit.contain,
+                    color: tier == _MedalTier.none ? Colors.white54 : null,
+                    colorBlendMode:
+                        tier == _MedalTier.none ? BlendMode.srcIn : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MedalShimmer extends StatelessWidget {
+  const _MedalShimmer({
+    required this.animationValue,
+    required this.tier,
+    required this.child,
+  });
+
+  final double animationValue;
+  final _MedalTier tier;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlightOpacity = tier == _MedalTier.none ? 0.18 : 0.45;
+    final gradient = LinearGradient(
+      begin: Alignment(-1.0, -0.35),
+      end: Alignment(1.0, 0.35),
+      colors: [
+        Colors.white.withOpacity(0.0),
+        Colors.white.withOpacity(highlightOpacity),
+        Colors.white.withOpacity(0.0),
+      ],
+      stops: const [0.3, 0.5, 0.7],
+      transform: _SlidingGradientTransform(slidePercent: animationValue),
+    );
+
+    return ShaderMask(
+      shaderCallback: (bounds) => gradient.createShader(bounds),
+      blendMode: BlendMode.srcATop,
+      child: child,
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  final double slidePercent;
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    final double translateX = bounds.width * (slidePercent * 2 - 1);
+    return Matrix4.identity()
+      ..translate(translateX)
+      ..rotateZ(math.pi / 10);
+  }
+}
+
 class _AuthCard extends StatelessWidget {
   const _AuthCard({
     required this.user,
     required this.userName,
+    this.userIconUrl,
+    this.envyPointCount = 0,
     required this.onAuthenticate,
     required this.onOpenAccountSettings,
   });
 
   final User? user;
   final String? userName;
+  final String? userIconUrl;
+  final int envyPointCount;
   final VoidCallback onAuthenticate;
   final VoidCallback onOpenAccountSettings;
 
@@ -1188,47 +2173,198 @@ class _AuthCard extends StatelessWidget {
       return 'ユーザー';
     }();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    const double avatarSize = 48;
+
+    Widget buildPlaceholder() {
+      return Container(
+        width: avatarSize,
+        height: avatarSize,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.12),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white24),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.person,
+          color: Colors.white70,
+          size: 24,
+        ),
+      );
+    }
+
+    String? resolvedIcon = userIconUrl?.trim();
+    final userProvidedPhoto = user?.photoURL;
+    if ((resolvedIcon == null || resolvedIcon.isEmpty) &&
+        userProvidedPhoto != null &&
+        userProvidedPhoto.trim().isNotEmpty) {
+      resolvedIcon = userProvidedPhoto.trim();
+    }
+
+    final Widget avatarWidget;
+    if (resolvedIcon != null && resolvedIcon.isNotEmpty) {
+      avatarWidget = ClipOval(
+        child: Image.network(
+          resolvedIcon,
+          width: avatarSize,
+          height: avatarSize,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => buildPlaceholder(),
+        ),
+      );
+    } else {
+      avatarWidget = buildPlaceholder();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.verified_user, color: Color(0xFFFFD54F)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            avatarWidget,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ログイン中',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'こんにちは${resolvedName}さん！',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: onOpenAccountSettings,
+              tooltip: 'アカウント設定',
+              icon: const Icon(
+                size: 28,
+                Icons.manage_accounts,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _EnvyPointHighlight(count: envyPointCount),
+      ],
+    );
+  }
+}
+
+class _EnvyPointHighlight extends StatelessWidget {
+  const _EnvyPointHighlight({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasPoints = count > 0;
+    final headline = hasPoints ? '累計うらやまポイント' : 'うらやまを集めよう';
+    final detail =
+        hasPoints ? 'これまでに $count 件のうらやまを獲得しています' : 'タイムラインで共有すると仲間からうらやまが届きます';
+    final highlightColor = hasPoints ? Colors.pinkAccent : Colors.white54;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: hasPoints
+              ? [
+                  const Color(0xFFFF7EB3).withOpacity(0.35),
+                  const Color(0xFFFFC371).withOpacity(0.35),
+                ]
+              : [
+                  Colors.white10,
+                  Colors.white10,
+                ],
+        ),
+        border: Border.all(
+          color:
+              hasPoints ? Colors.pinkAccent.withOpacity(0.4) : Colors.white12,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: highlightColor.withOpacity(0.18),
+            ),
+            child: Icon(
+              hasPoints ? Icons.favorite : Icons.favorite_border,
+              color: highlightColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  headline,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
-                'ログイン中',
+              Text(
+                '$count pt',
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
+                  color: highlightColor,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
               Text(
-                'こんにちは${resolvedName}さん！',
+                hasPoints ? 'みんなが賞賛！' : '集めてみよう',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.white60,
+                  fontSize: 10,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ),
-        IconButton(
-          onPressed: onOpenAccountSettings,
-          tooltip: 'アカウント設定',
-          icon: const Icon(
-            size: 28,
-            Icons.manage_accounts,
-            color: Colors.white70,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

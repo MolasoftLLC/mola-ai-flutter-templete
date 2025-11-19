@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../common/logger.dart';
 import '../../infrastructure/api_client/api_client.dart';
+import '../../common/utils/image_utils.dart';
 
 class SakeUserRepository {
   SakeUserRepository(this._apiClient);
@@ -42,7 +45,7 @@ class SakeUserRepository {
       final payload = <String, dynamic>{
         'userId': user.uid,
         'displayName': resolvedDisplayName ?? resolvedUsername,
-        'photoUrl': user.photoURL,
+        'iconUrl': user.photoURL,
         'timestamp': DateTime.now().toIso8601String(),
       };
 
@@ -139,6 +142,71 @@ class SakeUserRepository {
       logger.warning('アカウント削除処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
+    }
+  }
+
+  Future<String?> uploadUserPhoto({
+    required String userId,
+    required File imageFile,
+  }) async {
+    try {
+      final base64 = await ImageUtils.compressAndEncodeImage(imageFile);
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'imageBase64': base64,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _apiClient.uploadUserPhoto(payload);
+      if (!response.isSuccessful) {
+        logger.warning(
+          'ユーザーアイコンのアップロードに失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return null;
+      }
+
+      final body = response.body;
+      if (body is Map<String, dynamic>) {
+        final iconUrl = body['iconUrl'];
+        if (iconUrl is String && iconUrl.trim().isNotEmpty) {
+          return iconUrl;
+        }
+      }
+
+      logger.warning('ユーザーアイコンのレスポンスに iconUrl が含まれていません');
+      return null;
+    } catch (error, stackTrace) {
+      logger.warning('ユーザーアイコン更新処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchAchievementStats(String userId) async {
+    try {
+      final response = await _apiClient.fetchAchievementStats(userId);
+      if (!response.isSuccessful || response.body == null) {
+        logger.warning(
+          '実績カウントの取得に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return null;
+      }
+
+      final body = response.body;
+      if (body is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(body);
+      }
+
+      if (body is Map) {
+        return Map<String, dynamic>.from(body.cast<String, dynamic>());
+      }
+
+      logger.warning('実績カウントのレスポンス形式が想定外です: ${response.body}');
+      return null;
+    } catch (error, stackTrace) {
+      logger.warning('実績カウント取得で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
     }
   }
 }

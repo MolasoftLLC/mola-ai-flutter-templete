@@ -1,5 +1,6 @@
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import '../../infrastructure/api_client/api_client.dart';
+import '../eintities/preferences/taste_preference_profile.dart';
 
 class UserPreferenceRepository {
   UserPreferenceRepository(this._apiClient);
@@ -58,6 +59,67 @@ class UserPreferenceRepository {
       logger.warning('好み設定の更新処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
+    }
+  }
+
+  Future<TastePreferenceProfile?> fetchTasteProfile(String userId) async {
+    try {
+      final response = await _apiClient.fetchTasteProfile(userId);
+      if (!response.isSuccessful) {
+        logger.warning(
+          '味覚プロファイルの取得に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return null;
+      }
+
+      final body = response.body;
+      if (body is Map<String, dynamic>) {
+        return TastePreferenceProfile.fromJson(body);
+      }
+      logger.warning('味覚プロファイルのレスポンス形式が想定と異なります');
+      return null;
+    } catch (error, stackTrace) {
+      logger.warning('味覚プロファイル取得処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
+    }
+  }
+
+  Future<TastePreferenceProfile?> analyzeTasteProfile({
+    required String userId,
+    required List<Map<String, dynamic>> favorites,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'favorites': favorites,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _apiClient.analyzeTasteProfile(payload);
+      if (!response.isSuccessful) {
+        logger.warning(
+          '味覚プロファイル解析に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return null;
+      }
+
+      final body = response.body;
+      if (body is Map<String, dynamic>) {
+        final profileJson = body['profile'] is Map<String, dynamic>
+            ? body['profile'] as Map<String, dynamic>
+            : body;
+        if (profileJson is Map<String, dynamic>) {
+          return TastePreferenceProfile.fromJson(profileJson);
+        }
+      }
+
+      logger.warning('味覚プロファイル解析のレスポンス形式が想定と異なります');
+      return null;
+    } catch (error, stackTrace) {
+      logger.warning('味覚プロファイル解析処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
     }
   }
 }

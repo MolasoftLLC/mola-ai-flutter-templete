@@ -12,6 +12,7 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../common/widgets/primary_app_bar.dart';
 import 'menu_search_page_notifier.dart';
 
 class MenuSearchPage extends StatelessWidget {
@@ -86,6 +87,25 @@ class MenuSearchPage extends StatelessWidget {
     }
 
     return Scaffold(
+      appBar: PrimaryAppBar(
+        title: 'メニュー検索',
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            tooltip: '使い方ガイド',
+            icon: const Icon(
+              Icons.help_outline,
+              color: Color(0xFFFFD54F),
+            ),
+            onPressed: () {
+              HelpGuideDialog.showForType(
+                context,
+                type: HelpGuideType.menuSearch,
+              );
+            },
+          ),
+        ],
+      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(
@@ -99,52 +119,7 @@ class MenuSearchPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 70),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: SizedBox(
-                          height: 48,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Center(
-                                child: Text(
-                                  'メニュー検索',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black54,
-                                        blurRadius: 5,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 0,
-                                child: IconButton(
-                                  tooltip: '使い方ガイド',
-                                  icon: const Icon(
-                                    Icons.help_outline,
-                                    color: Color(0xFFFFD54F),
-                                  ),
-                                  onPressed: () {
-                                    HelpGuideDialog.showForType(
-                                      context,
-                                      type: HelpGuideType.menuSearch,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 24),
                         padding: const EdgeInsets.all(16),
@@ -454,16 +429,14 @@ class MenuSearchPage extends StatelessWidget {
                                         return false;
                                       }
                                       if (!isSaved &&
-                                          savedNotifier
-                                              .hasReachedMemberLimit) {
+                                          savedNotifier.hasReachedMemberLimit) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
                                             ),
-                                            behavior:
-                                                SnackBarBehavior.floating,
+                                            behavior: SnackBarBehavior.floating,
                                           ),
                                         );
                                         return false;
@@ -486,8 +459,7 @@ class MenuSearchPage extends StatelessWidget {
                                             content: Text(
                                               '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
                                             ),
-                                            behavior:
-                                                SnackBarBehavior.floating,
+                                            behavior: SnackBarBehavior.floating,
                                           ),
                                         );
                                         return false;

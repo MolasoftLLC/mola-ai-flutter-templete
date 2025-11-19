@@ -99,5 +99,7 @@
 			<string>3sh42y64q3.skadnetwork</string>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

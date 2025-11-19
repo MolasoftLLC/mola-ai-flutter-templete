@@ -15,6 +15,7 @@ import '../favorite/favorite_notifier.dart';
 import '../../repository/sake_menu_recognition_repository.dart';
 import '../../repository/user_preference_repository.dart';
 import '../../repository/sake_user_repository.dart';
+import '../../eintities/preferences/taste_preference_profile.dart';
 
 part 'my_page_notifier.freezed.dart';
 
@@ -27,8 +28,11 @@ abstract class MyPageState with _$MyPageState {
     File? sakeImage,
     String? geminiResponse,
     String? userName,
+    String? userIconUrl,
     String? preferences,
     String? sakePreferenceAnalysis,
+    TastePreferenceProfile? tasteProfile,
+    @Default(<String, int>{}) Map<String, int> achievementCounts,
     // TextEditingControllerはfreezedで管理できないため、別途保持
   }) = _MyPageState;
 }
@@ -57,6 +61,10 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   SakeUserRepository get _sakeUserRepository => read<SakeUserRepository>();
   bool get _isGuest => _authRepository.currentUser == null;
 
+  static const int _maxDailyAnalyses = 3;
+  DateTime? _lastAnalysisDate;
+  int _analysisCountToday = 0;
+
   static const _preferencesMigrationUserKey = 'preferencesMigratedUserId';
 
   // TextEditingControllerをNotifier内で管理
@@ -70,6 +78,40 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     if (_preferencesController.text != state.preferences) {
       state = state.copyWith(preferences: _preferencesController.text);
     }
+  }
+
+  bool get hasAnalysisQuota {
+    _resetAnalysisCounterIfNeeded();
+    return _analysisCountToday < _maxDailyAnalyses;
+  }
+
+  void _resetAnalysisCounterIfNeeded() {
+    if (_lastAnalysisDate == null) {
+      return;
+    }
+    final now = DateTime.now();
+    final last = _lastAnalysisDate!;
+    final isSameDay =
+        now.year == last.year && now.month == last.month && now.day == last.day;
+    if (!isSameDay) {
+      _analysisCountToday = 0;
+      _lastAnalysisDate = now;
+    }
+  }
+
+  bool _consumeAnalysisQuota() {
+    final now = DateTime.now();
+    if (_lastAnalysisDate == null) {
+      _lastAnalysisDate = now;
+      _analysisCountToday = 0;
+    }
+    _resetAnalysisCounterIfNeeded();
+    if (_analysisCountToday >= _maxDailyAnalyses) {
+      return false;
+    }
+    _analysisCountToday += 1;
+    _lastAnalysisDate = now;
+    return true;
   }
 
   @override
@@ -174,15 +216,75 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return;
     }
 
+    if (!_consumeAnalysisQuota()) {
+      logger.info('味覚プロファイル解析の本日実行回数が上限に達しました');
+      return;
+    }
+
     state = state.copyWith(isLoading: true);
+    try {
+      TastePreferenceProfile? profile;
+      final user = _authRepository.currentUser;
+      final favoritesCount = sakes.length;
 
-    final preference =
-        await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+      if (user != null) {
+        final favoritesPayload = sakes
+            .map((e) => {
+                  'name': e.name,
+                  if (e.type != null) 'type': e.type,
+                })
+            .toList();
 
-    state = state.copyWith(
-      isLoading: false,
-      sakePreferenceAnalysis: preference,
-    );
+        logger.info(
+          '味覚プロファイル解析リクエスト: userId=${user.uid}, favorites=$favoritesCount',
+        );
+
+        profile = await _userPreferenceRepository.analyzeTasteProfile(
+          userId: user.uid,
+          favorites: favoritesPayload,
+        );
+
+        if (profile != null) {
+          logger.info('味覚プロファイル解析に成功しました');
+        }
+      }
+
+      if (profile != null) {
+        final preferenceText =
+            await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+        if (preferenceText == null || preferenceText.trim().isEmpty) {
+          logger.warning('文章診断APIが空のレスポンスを返しました');
+        } else {
+          logger.info('文章診断APIからテキストを取得しました');
+        }
+        state = state.copyWith(
+          isLoading: false,
+          tasteProfile: profile,
+          sakePreferenceAnalysis: preferenceText?.trim().isNotEmpty == true
+              ? preferenceText!.trim()
+              : null,
+        );
+        return;
+      }
+
+      logger.warning(
+        '味覚プロファイル解析の結果が取得できなかったため文章診断にフォールバックします: '
+        'userId=${user?.uid ?? 'guest'}, favorites=$favoritesCount',
+      );
+
+      final preference =
+          await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+
+      state = state.copyWith(
+        isLoading: false,
+        sakePreferenceAnalysis:
+            preference?.trim().isNotEmpty == true ? preference!.trim() : null,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('味覚プロファイル解析で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   // お酒診断の結果を好みの設定として保存する
@@ -200,6 +302,8 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     }
     await refreshPreferencesFromServer();
     await fetchUserProfile();
+    await refreshTasteProfile();
+    await loadAchievementStats();
   }
 
   Future<void> refreshPreferencesFromServer() async {
@@ -236,6 +340,8 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_preferencesMigrationUserKey, userId);
     await fetchUserProfile();
+    await refreshTasteProfile();
+    await loadAchievementStats();
   }
 
   Future<void> onUserSignedOut() async {
@@ -245,6 +351,9 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     state = state.copyWith(
       preferences: null,
       userName: null,
+      userIconUrl: null,
+      tasteProfile: null,
+      achievementCounts: const <String, int>{},
     );
     if (_preferencesController.text.isNotEmpty) {
       _preferencesController.text = '';
@@ -254,12 +363,13 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   Future<void> fetchUserProfile() async {
     final user = _authRepository.currentUser;
     if (user == null) {
-      state = state.copyWith(userName: null);
+      state = state.copyWith(userName: null, userIconUrl: null);
       return;
     }
 
     final remote = await _sakeUserRepository.fetchUser(user.uid);
     String? resolvedName;
+    String? resolvedIcon;
 
     if (remote != null) {
       final remoteUserName = remote['username'];
@@ -271,12 +381,77 @@ class MyPageNotifier extends StateNotifier<MyPageState>
           resolvedName = displayName.trim();
         }
       }
+
+      final remoteIcon = (remote['iconUrl'] ?? remote['photoUrl']);
+      if (remoteIcon is String && remoteIcon.trim().isNotEmpty) {
+        resolvedIcon = remoteIcon.trim();
+      }
     }
 
     resolvedName ??= user.displayName;
     resolvedName ??= user.email;
 
-    state = state.copyWith(userName: resolvedName);
+    resolvedIcon ??= user.photoURL;
+
+    state = state.copyWith(
+      userName: resolvedName,
+      userIconUrl: resolvedIcon,
+    );
+  }
+
+  Future<void> refreshTasteProfile() async {
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      state = state.copyWith(tasteProfile: null);
+      return;
+    }
+
+    final profile = await _userPreferenceRepository.fetchTasteProfile(user.uid);
+    if (profile == null) {
+      logger.info('味覚プロファイルはまだ算出されていませんでした');
+      return;
+    }
+
+    state = state.copyWith(tasteProfile: profile);
+  }
+
+  Future<void> loadAchievementStats() async {
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      state = state.copyWith(achievementCounts: const <String, int>{});
+      return;
+    }
+
+    try {
+      final response =
+          await _sakeUserRepository.fetchAchievementStats(user.uid);
+      if (response == null) {
+        logger.info('実績カウントが取得できませんでした');
+        return;
+      }
+
+      final counts = <String, int>{
+        'login': _parseCount(response['loginCount']),
+        'analyzedBottle': _parseCount(response['analyzedBottleCount']),
+        'menuAnalysis': _parseCount(response['menuAnalysisCount']),
+        'envyPoint': _parseCount(response['envyPointCount']),
+      };
+
+      state = state.copyWith(achievementCounts: counts);
+    } catch (error, stackTrace) {
+      logger.warning('実績カウントの取得で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
+  int _parseCount(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return 0;
   }
 
   Future<bool> updateUsername(String username) async {
@@ -297,6 +472,28 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       logger.warning('ユーザー名の更新に失敗しました');
     }
     return success;
+  }
+
+  Future<bool> updateUserPhoto(File imageFile) async {
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      logger.warning('ユーザーアイコン更新に必要なログイン情報がありません');
+      return false;
+    }
+
+    final newIconUrl = await _sakeUserRepository.uploadUserPhoto(
+      userId: user.uid,
+      imageFile: imageFile,
+    );
+
+    if (newIconUrl == null || newIconUrl.trim().isEmpty) {
+      logger.warning('ユーザーアイコンの更新に失敗しました: URLが取得できませんでした');
+      return false;
+    }
+
+    state = state.copyWith(userIconUrl: newIconUrl.trim());
+    logger.info('ユーザーアイコンを更新しました');
+    return true;
   }
 
   Future<void> _migrateLocalPreferencesIfNeeded(String userId) async {

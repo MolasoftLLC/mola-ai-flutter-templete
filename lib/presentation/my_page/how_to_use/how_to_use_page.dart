@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../common/widgets/primary_app_bar.dart';
+
 class HowToUse extends StatelessWidget {
   const HowToUse({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1D3567),
+      appBar: const PrimaryAppBar(
+        title: '使い方ガイド',
+        titleFontSize: 18,
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,

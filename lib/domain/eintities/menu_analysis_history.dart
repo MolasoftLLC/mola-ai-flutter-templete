@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class MenuAnalysisHistoryItem {
   final String id;
   final DateTime date;

@@ -39,10 +39,10 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
-  
+
   // TextEditingControllerをNotifier内で管理
   late final TextEditingController _preferencesController;
-  
+
   // コントローラーを外部から取得するためのゲッター
   TextEditingController get preferencesController => _preferencesController;
 
@@ -124,13 +124,13 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   void setPreferences(String preferences) {
     // Stateを更新
     state = state.copyWith(preferences: preferences);
-    
+
     // コントローラーのテキストも更新（カーソル位置を維持するため、
     // 現在のテキストと異なる場合のみ更新）
     if (_preferencesController.text != preferences) {
       final currentPosition = _preferencesController.selection.baseOffset;
       _preferencesController.text = preferences;
-      
+
       // カーソル位置を復元（テキストの長さを超えないように）
       if (currentPosition >= 0 && currentPosition <= preferences.length) {
         _preferencesController.selection = TextSelection.fromPosition(

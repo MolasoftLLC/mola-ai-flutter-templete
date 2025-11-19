@@ -92,7 +92,8 @@ class ImageCropperService {
   }
 
   /// Save an image permanently to the app's documents directory
-  static Future<String?> saveImagePermanently(File imageFile, [String? customPrefix]) async {
+  static Future<String?> saveImagePermanently(File imageFile,
+      [String? customPrefix]) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final fileName = path.basename(imageFile.path);

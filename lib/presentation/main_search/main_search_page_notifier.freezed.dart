@@ -31,6 +31,7 @@ mixin _$MainSearchPageState {
   SearchMode get searchMode => throw _privateConstructorUsedError;
   List<String> get pendingSavedSakeIds => throw _privateConstructorUsedError;
   String? get analyzingImagePath => throw _privateConstructorUsedError;
+  bool get shareToTimeline => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MainSearchPageStateCopyWith<MainSearchPageState> get copyWith =>
@@ -58,7 +59,8 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
       String? geminiResponse,
       SearchMode searchMode,
       List<String> pendingSavedSakeIds,
-      String? analyzingImagePath});
+      String? analyzingImagePath,
+      bool shareToTimeline});
 
   $SakeCopyWith<$Res>? get sakeInfo;
 }
@@ -91,6 +93,7 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
     Object? searchMode = null,
     Object? pendingSavedSakeIds = null,
     Object? analyzingImagePath = freezed,
+    Object? shareToTimeline = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -153,6 +156,10 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.analyzingImagePath
           : analyzingImagePath // ignore: cast_nullable_to_non_nullable
               as String?,
+      shareToTimeline: null == shareToTimeline
+          ? _value.shareToTimeline
+          : shareToTimeline // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -192,7 +199,8 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
       String? geminiResponse,
       SearchMode searchMode,
       List<String> pendingSavedSakeIds,
-      String? analyzingImagePath});
+      String? analyzingImagePath,
+      bool shareToTimeline});
 
   @override
   $SakeCopyWith<$Res>? get sakeInfo;
@@ -224,6 +232,7 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     Object? searchMode = null,
     Object? pendingSavedSakeIds = null,
     Object? analyzingImagePath = freezed,
+    Object? shareToTimeline = null,
   }) {
     return _then(_$MainSearchPageStateImpl(
       isLoading: null == isLoading
@@ -286,6 +295,10 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.analyzingImagePath
           : analyzingImagePath // ignore: cast_nullable_to_non_nullable
               as String?,
+      shareToTimeline: null == shareToTimeline
+          ? _value.shareToTimeline
+          : shareToTimeline // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -308,7 +321,8 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
       this.geminiResponse,
       this.searchMode = SearchMode.bottle,
       final List<String> pendingSavedSakeIds = const [],
-      this.analyzingImagePath})
+      this.analyzingImagePath,
+      this.shareToTimeline = true})
       : _pendingSavedSakeIds = pendingSavedSakeIds;
 
   @override
@@ -355,10 +369,13 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 
   @override
   final String? analyzingImagePath;
+  @override
+  @JsonKey()
+  final bool shareToTimeline;
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode, pendingSavedSakeIds: $pendingSavedSakeIds, analyzingImagePath: $analyzingImagePath)';
+    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode, pendingSavedSakeIds: $pendingSavedSakeIds, analyzingImagePath: $analyzingImagePath, shareToTimeline: $shareToTimeline)';
   }
 
   @override
@@ -396,7 +413,9 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
             const DeepCollectionEquality()
                 .equals(other._pendingSavedSakeIds, _pendingSavedSakeIds) &&
             (identical(other.analyzingImagePath, analyzingImagePath) ||
-                other.analyzingImagePath == analyzingImagePath));
+                other.analyzingImagePath == analyzingImagePath) &&
+            (identical(other.shareToTimeline, shareToTimeline) ||
+                other.shareToTimeline == shareToTimeline));
   }
 
   @override
@@ -416,7 +435,8 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
       geminiResponse,
       searchMode,
       const DeepCollectionEquality().hash(_pendingSavedSakeIds),
-      analyzingImagePath);
+      analyzingImagePath,
+      shareToTimeline);
 
   @JsonKey(ignore: true)
   @override
@@ -442,7 +462,8 @@ abstract class _MainSearchPageState implements MainSearchPageState {
       final String? geminiResponse,
       final SearchMode searchMode,
       final List<String> pendingSavedSakeIds,
-      final String? analyzingImagePath}) = _$MainSearchPageStateImpl;
+      final String? analyzingImagePath,
+      final bool shareToTimeline}) = _$MainSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -474,6 +495,8 @@ abstract class _MainSearchPageState implements MainSearchPageState {
   List<String> get pendingSavedSakeIds;
   @override
   String? get analyzingImagePath;
+  @override
+  bool get shareToTimeline;
   @override
   @JsonKey(ignore: true)
   _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>

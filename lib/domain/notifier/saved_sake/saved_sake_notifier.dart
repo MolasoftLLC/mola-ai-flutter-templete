@@ -181,7 +181,11 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
             }
           }
           final savedId = target?.savedId;
-          if (savedId != null && savedId.isNotEmpty) {
+          final shouldRequestServerDelete = target != null &&
+              target.syncStatus == SavedSakeSyncStatus.serverSynced;
+          if (savedId != null &&
+              savedId.isNotEmpty &&
+              shouldRequestServerDelete) {
             final success = await _syncRepository.deleteSavedSakeRecord(
               userId: user.uid,
               savedId: savedId,
@@ -190,6 +194,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
               logger.warning('保存酒のサーバー削除に失敗したためローカル削除を中止しました: id=$savedId');
               return;
             }
+          } else if (savedId != null && savedId.isNotEmpty) {
+            logger.info('ローカルのみの保存酒のためサーバー削除はスキップしました: id=$savedId');
           } else {
             logger.info('削除対象の savedId が未設定のためサーバー削除はスキップしました');
           }
@@ -382,6 +388,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
         userId: user.uid,
         sake: target,
         imageFile: primaryImage,
+        isPublic: target.isPublic,
       );
 
       if (!startResult) {
@@ -419,6 +426,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
           stage: SavedSakeSyncStage.analysisComplete,
           userId: user.uid,
           sake: target,
+          isPublic: target.isPublic,
         );
         succeeded = succeeded && completeResult;
       }
@@ -724,5 +732,4 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     await _persistSavedSakes();
     logger.info('保存済み日本酒を削除(解析失敗): id=$savedId');
   }
-
 }

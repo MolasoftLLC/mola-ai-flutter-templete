@@ -34,7 +34,7 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
     _sakeBottleImageRepository = context.read<SakeBottleImageRepository>();
     _initializeWithMigration();
   }
-  
+
   Future<void> _initializeWithMigration() async {
     // Migrate existing images first
     await _sakeBottleImageRepository.migrateExistingImages();

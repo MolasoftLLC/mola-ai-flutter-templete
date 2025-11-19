@@ -66,6 +66,21 @@ abstract class ApiClient extends ChopperService {
     @Query('userId') String userId,
   );
 
+  @Get(path: 'saved-sakes/timeline')
+  Future<Response> fetchSavedSakeTimeline();
+
+  @Post(path: 'saved-sakes/{savedId}/envy')
+  Future<Response> incrementSavedSakeEnvy(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'saved-sakes/{savedId}/report')
+  Future<Response> reportSavedSake(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'saved-sakes/{savedId}/remove')
   Future<Response> removeSavedSake(
     @Path('savedId') String savedId,
@@ -109,6 +124,16 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Get(path: 'preferences/taste-profile')
+  Future<Response> fetchTasteProfile(
+    @Query('userId') String userId,
+  );
+
+  @Post(path: 'preferences/taste-profile/analyze')
+  Future<Response> analyzeTasteProfile(
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'sake-users/register')
   Future<Response> registerSakeUser(
     @Body() Map<String, dynamic> body,
@@ -124,8 +149,18 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'sake-users/icon')
+  Future<Response> uploadUserPhoto(
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'sake-users/delete')
   Future<Response> deleteSakeUser(
     @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'users/{userId}/achievement-stats')
+  Future<Response> fetchAchievementStats(
+    @Path('userId') String userId,
   );
 }

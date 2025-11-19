@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 
 import '../../domain/eintities/sake_bottle_image.dart';
+import '../common/widgets/primary_app_bar.dart';
 import 'sake_bottle_list_page_notifier.dart';
 
 class SakeBottleListPage extends StatelessWidget {
@@ -33,17 +34,9 @@ class SakeBottleListPage extends StatelessWidget {
         context.select((SakeBottleListPageState state) => state.errorMessage);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1D3567),
-        elevation: 0,
-        title: const Text(
-          '酒瓶リスト',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      appBar: PrimaryAppBar(
+        title: '酒瓶リスト',
+        automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {

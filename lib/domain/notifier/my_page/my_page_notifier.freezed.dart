@@ -22,8 +22,12 @@ mixin _$MyPageState {
   File? get sakeImage => throw _privateConstructorUsedError;
   String? get geminiResponse => throw _privateConstructorUsedError;
   String? get userName => throw _privateConstructorUsedError;
+  String? get userIconUrl => throw _privateConstructorUsedError;
   String? get preferences => throw _privateConstructorUsedError;
   String? get sakePreferenceAnalysis => throw _privateConstructorUsedError;
+  TastePreferenceProfile? get tasteProfile =>
+      throw _privateConstructorUsedError;
+  Map<String, int> get achievementCounts => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $MyPageStateCopyWith<MyPageState> get copyWith =>
@@ -43,8 +47,11 @@ abstract class $MyPageStateCopyWith<$Res> {
       File? sakeImage,
       String? geminiResponse,
       String? userName,
+      String? userIconUrl,
       String? preferences,
-      String? sakePreferenceAnalysis});
+      String? sakePreferenceAnalysis,
+      TastePreferenceProfile? tasteProfile,
+      Map<String, int> achievementCounts});
 }
 
 /// @nodoc
@@ -66,8 +73,11 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? userName = freezed,
+    Object? userIconUrl = freezed,
     Object? preferences = freezed,
     Object? sakePreferenceAnalysis = freezed,
+    Object? tasteProfile = freezed,
+    Object? achievementCounts = null,
   }) {
     return _then(_value.copyWith(
       isLoading: null == isLoading
@@ -94,6 +104,10 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
           ? _value.userName
           : userName // ignore: cast_nullable_to_non_nullable
               as String?,
+      userIconUrl: freezed == userIconUrl
+          ? _value.userIconUrl
+          : userIconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       preferences: freezed == preferences
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
@@ -102,6 +116,14 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
           ? _value.sakePreferenceAnalysis
           : sakePreferenceAnalysis // ignore: cast_nullable_to_non_nullable
               as String?,
+      tasteProfile: freezed == tasteProfile
+          ? _value.tasteProfile
+          : tasteProfile // ignore: cast_nullable_to_non_nullable
+              as TastePreferenceProfile?,
+      achievementCounts: null == achievementCounts
+          ? _value.achievementCounts
+          : achievementCounts // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
     ) as $Val);
   }
 }
@@ -121,8 +143,11 @@ abstract class _$$MyPageStateImplCopyWith<$Res>
       File? sakeImage,
       String? geminiResponse,
       String? userName,
+      String? userIconUrl,
       String? preferences,
-      String? sakePreferenceAnalysis});
+      String? sakePreferenceAnalysis,
+      TastePreferenceProfile? tasteProfile,
+      Map<String, int> achievementCounts});
 }
 
 /// @nodoc
@@ -142,8 +167,11 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
     Object? sakeImage = freezed,
     Object? geminiResponse = freezed,
     Object? userName = freezed,
+    Object? userIconUrl = freezed,
     Object? preferences = freezed,
     Object? sakePreferenceAnalysis = freezed,
+    Object? tasteProfile = freezed,
+    Object? achievementCounts = null,
   }) {
     return _then(_$MyPageStateImpl(
       isLoading: null == isLoading
@@ -170,6 +198,10 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
           ? _value.userName
           : userName // ignore: cast_nullable_to_non_nullable
               as String?,
+      userIconUrl: freezed == userIconUrl
+          ? _value.userIconUrl
+          : userIconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       preferences: freezed == preferences
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
@@ -178,6 +210,14 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
           ? _value.sakePreferenceAnalysis
           : sakePreferenceAnalysis // ignore: cast_nullable_to_non_nullable
               as String?,
+      tasteProfile: freezed == tasteProfile
+          ? _value.tasteProfile
+          : tasteProfile // ignore: cast_nullable_to_non_nullable
+              as TastePreferenceProfile?,
+      achievementCounts: null == achievementCounts
+          ? _value._achievementCounts
+          : achievementCounts // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
     ));
   }
 }
@@ -192,8 +232,12 @@ class _$MyPageStateImpl implements _MyPageState {
       this.sakeImage,
       this.geminiResponse,
       this.userName,
+      this.userIconUrl,
       this.preferences,
-      this.sakePreferenceAnalysis});
+      this.sakePreferenceAnalysis,
+      this.tasteProfile,
+      final Map<String, int> achievementCounts = const <String, int>{}})
+      : _achievementCounts = achievementCounts;
 
   @override
   @JsonKey()
@@ -209,13 +253,26 @@ class _$MyPageStateImpl implements _MyPageState {
   @override
   final String? userName;
   @override
+  final String? userIconUrl;
+  @override
   final String? preferences;
   @override
   final String? sakePreferenceAnalysis;
+  @override
+  final TastePreferenceProfile? tasteProfile;
+  final Map<String, int> _achievementCounts;
+  @override
+  @JsonKey()
+  Map<String, int> get achievementCounts {
+    if (_achievementCounts is EqualUnmodifiableMapView)
+      return _achievementCounts;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_achievementCounts);
+  }
 
   @override
   String toString() {
-    return 'MyPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, userName: $userName, preferences: $preferences, sakePreferenceAnalysis: $sakePreferenceAnalysis)';
+    return 'MyPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, userName: $userName, userIconUrl: $userIconUrl, preferences: $preferences, sakePreferenceAnalysis: $sakePreferenceAnalysis, tasteProfile: $tasteProfile, achievementCounts: $achievementCounts)';
   }
 
   @override
@@ -234,15 +291,32 @@ class _$MyPageStateImpl implements _MyPageState {
                 other.geminiResponse == geminiResponse) &&
             (identical(other.userName, userName) ||
                 other.userName == userName) &&
+            (identical(other.userIconUrl, userIconUrl) ||
+                other.userIconUrl == userIconUrl) &&
             (identical(other.preferences, preferences) ||
                 other.preferences == preferences) &&
             (identical(other.sakePreferenceAnalysis, sakePreferenceAnalysis) ||
-                other.sakePreferenceAnalysis == sakePreferenceAnalysis));
+                other.sakePreferenceAnalysis == sakePreferenceAnalysis) &&
+            (identical(other.tasteProfile, tasteProfile) ||
+                other.tasteProfile == tasteProfile) &&
+            const DeepCollectionEquality()
+                .equals(other._achievementCounts, _achievementCounts));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
-      sakeImage, geminiResponse, userName, preferences, sakePreferenceAnalysis);
+  int get hashCode => Object.hash(
+      runtimeType,
+      isLoading,
+      sakeName,
+      hint,
+      sakeImage,
+      geminiResponse,
+      userName,
+      userIconUrl,
+      preferences,
+      sakePreferenceAnalysis,
+      tasteProfile,
+      const DeepCollectionEquality().hash(_achievementCounts));
 
   @JsonKey(ignore: true)
   @override
@@ -259,8 +333,11 @@ abstract class _MyPageState implements MyPageState {
       final File? sakeImage,
       final String? geminiResponse,
       final String? userName,
+      final String? userIconUrl,
       final String? preferences,
-      final String? sakePreferenceAnalysis}) = _$MyPageStateImpl;
+      final String? sakePreferenceAnalysis,
+      final TastePreferenceProfile? tasteProfile,
+      final Map<String, int> achievementCounts}) = _$MyPageStateImpl;
 
   @override
   bool get isLoading;
@@ -275,9 +352,15 @@ abstract class _MyPageState implements MyPageState {
   @override
   String? get userName;
   @override
+  String? get userIconUrl;
+  @override
   String? get preferences;
   @override
   String? get sakePreferenceAnalysis;
+  @override
+  TastePreferenceProfile? get tasteProfile;
+  @override
+  Map<String, int> get achievementCounts;
   @override
   @JsonKey(ignore: true)
   _$$MyPageStateImplCopyWith<_$MyPageStateImpl> get copyWith =>

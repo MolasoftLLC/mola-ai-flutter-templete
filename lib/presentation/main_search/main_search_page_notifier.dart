@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
@@ -12,7 +13,6 @@ import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
-import '../../domain/eintities/sake_bottle_image.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/gemini_mola_api_repository.dart';
@@ -51,6 +51,7 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     @Default(SearchMode.bottle) SearchMode searchMode,
     @Default([]) List<String> pendingSavedSakeIds,
     String? analyzingImagePath,
+    @Default(true) bool shareToTimeline,
   }) = _MainSearchPageState;
 }
 
@@ -74,9 +75,14 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       read<SavedSakeSyncRepository>();
   AuthRepository get authRepository => read<AuthRepository>();
 
+  final Map<String, bool> _savedIdPublicFlags = <String, bool>{};
+  static const String _timelineSharePreferenceKey =
+      'timeline_share_checkbox_preference';
+
   @override
   Future<void> initState() async {
     super.initState();
+    unawaited(_restoreTimelineSharePreference());
   }
 
   @override
@@ -323,6 +329,75 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     state = state.copyWith(sakeImage: null);
   }
 
+  Future<void> onTimelineShareToggle(bool newValue) async {
+    if (newValue) {
+      state = state.copyWith(shareToTimeline: true);
+      await _persistTimelineSharePreference(true);
+      return;
+    }
+
+    final shouldDisable = await _showTimelineOptOutDialog();
+    final updatedValue = !shouldDisable;
+    state = state.copyWith(shareToTimeline: updatedValue);
+    await _persistTimelineSharePreference(updatedValue);
+  }
+
+  Future<void> _restoreTimelineSharePreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedValue = prefs.getBool(_timelineSharePreferenceKey);
+      final effectiveValue = storedValue ?? true;
+
+      if (storedValue == null) {
+        await prefs.setBool(_timelineSharePreferenceKey, true);
+      }
+
+      if (state.shareToTimeline != effectiveValue) {
+        state = state.copyWith(shareToTimeline: effectiveValue);
+      }
+    } catch (error, stackTrace) {
+      logger.warning('タイムライン共有設定の復元に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
+  Future<void> _persistTimelineSharePreference(bool value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_timelineSharePreferenceKey, value);
+    } catch (error, stackTrace) {
+      logger.warning('タイムライン共有設定の保存に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
+  Future<bool> _showTimelineOptOutDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('タイムラインへの掲載について'),
+          content: const Text(
+            'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。'
+            'あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('このまま解析'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('チェックを外す'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
   Future<bool> saveAndAnalyzeBottle() async {
     final image = state.sakeImage;
     if (image == null) {
@@ -360,10 +435,13 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       );
       return false;
     }
+    final shouldShareTimeline = state.shareToTimeline;
+
     final placeholder = Sake(
       savedId: null,
       name: '解析中',
       imagePaths: [savedPath],
+      isPublic: shouldShareTimeline,
     );
     String savedId;
     try {
@@ -384,11 +462,13 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     final placeholderWithId = placeholder.copyWith(savedId: savedId);
+    _savedIdPublicFlags[savedId] = shouldShareTimeline;
     unawaited(
       _syncSavedSake(
         stage: SavedSakeSyncStage.analysisStart,
         sake: placeholderWithId,
         imageFile: File(savedPath),
+        isPublic: shouldShareTimeline,
       ),
     );
 
@@ -648,22 +728,19 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
             ? updatedList[index]
             : sakeInfo.copyWith(savedId: currentPendingId);
 
-        if (analysisFile != null) {
-          unawaited(
-            _syncSavedSake(
-              stage: SavedSakeSyncStage.analysisComplete,
-              sake: sakeForSync,
-              imageFile: analysisFile,
-            ),
-          );
-        } else {
-          unawaited(
-            _syncSavedSake(
-              stage: SavedSakeSyncStage.analysisComplete,
-              sake: sakeForSync,
-            ),
-          );
-        }
+        final savedIdForSync = sakeForSync.savedId;
+        final shareFlag = savedIdForSync != null
+            ? (_savedIdPublicFlags[savedIdForSync] ?? sakeForSync.isPublic)
+            : sakeForSync.isPublic;
+
+        unawaited(
+          _syncSavedSake(
+            stage: SavedSakeSyncStage.analysisComplete,
+            sake: sakeForSync,
+            imageFile: analysisFile,
+            isPublic: shareFlag,
+          ),
+        );
 
         pendingIds = _removePendingId(currentPendingId);
       }
@@ -702,6 +779,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     required SavedSakeSyncStage stage,
     required Sake sake,
     File? imageFile,
+    bool? isPublic,
   }) async {
     final user = authRepository.currentUser;
     if (user == null) {
@@ -709,11 +787,17 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     try {
+      final bool shareFlag = isPublic ??
+          (sake.savedId != null
+              ? (_savedIdPublicFlags[sake.savedId!] ?? sake.isPublic)
+              : sake.isPublic);
+
       final success = await savedSakeSyncRepository.syncSavedSake(
         stage: stage,
         userId: user.uid,
         sake: sake,
         imageFile: imageFile,
+        isPublic: shareFlag,
       );
 
       if (success && stage == SavedSakeSyncStage.analysisComplete) {
@@ -725,12 +809,17 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
               (item) => item.savedId != null && item.savedId == savedId);
           if (index != -1) {
             final target = list[index];
-            if (target.syncStatus != SavedSakeSyncStatus.serverSynced) {
+            if (target.syncStatus != SavedSakeSyncStatus.serverSynced ||
+                target.isPublic != shareFlag) {
               notifier.updateSavedSake(
-                target.copyWith(syncStatus: SavedSakeSyncStatus.serverSynced),
+                target.copyWith(
+                  syncStatus: SavedSakeSyncStatus.serverSynced,
+                  isPublic: shareFlag,
+                ),
               );
             }
           }
+          _savedIdPublicFlags.remove(savedId);
         }
       }
     } catch (error, stackTrace) {
@@ -770,6 +859,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       pendingSavedSakeIds: _removePendingId(savedId),
       analyzingImagePath: null,
     );
+    if (savedId != null) {
+      _savedIdPublicFlags.remove(savedId);
+    }
   }
 
   Future<bool> _ensureSakePreferencesReady() async {

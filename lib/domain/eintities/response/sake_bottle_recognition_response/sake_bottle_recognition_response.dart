@@ -6,4 +6,4 @@ class SakeBottleRecognitionResponse {
     this.sakeName,
     this.type,
   });
-} 
+}

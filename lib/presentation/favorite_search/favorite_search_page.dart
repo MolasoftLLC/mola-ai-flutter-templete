@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../common/prefecture.dart';
 import '../../common/sake/master.dart';
+import '../common/widgets/primary_app_bar.dart';
 import 'favorite_search_page_notifier.dart';
 
 class FavoriteSearchPage extends StatelessWidget {
@@ -43,6 +44,10 @@ class FavoriteSearchPage extends StatelessWidget {
     final selectedPrefecture = context
         .select((FavoriteSearchPageState state) => state.selectedPrefecture);
     return Scaffold(
+      appBar: const PrimaryAppBar(
+        title: '好みで検索',
+        automaticallyImplyLeading: false,
+      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         color: const Color(0xFF1D3567),
@@ -51,9 +56,7 @@ class FavoriteSearchPage extends StatelessWidget {
               ? const AILoading(loadingText: 'AIに問い合わせています')
               : Column(
                   children: [
-                    SizedBox(
-                      height: 100,
-                    ),
+                    const SizedBox(height: 24),
                     Text(
                       '産地で検索',
                       textAlign: TextAlign.center,

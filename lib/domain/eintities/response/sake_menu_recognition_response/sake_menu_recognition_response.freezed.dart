@@ -191,6 +191,12 @@ mixin _$Sake {
   List<String>? get userTags => throw _privateConstructorUsedError;
   String? get savedId => throw _privateConstructorUsedError;
   List<String>? get imagePaths => throw _privateConstructorUsedError;
+  String? get username => throw _privateConstructorUsedError;
+  String? get displayName => throw _privateConstructorUsedError;
+  String? get iconUrl => throw _privateConstructorUsedError;
+  int get envyCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_public')
+  bool get isPublic => throw _privateConstructorUsedError;
   @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
   SavedSakeSyncStatus get syncStatus => throw _privateConstructorUsedError;
 
@@ -219,6 +225,11 @@ abstract class $SakeCopyWith<$Res> {
       List<String>? userTags,
       String? savedId,
       List<String>? imagePaths,
+      String? username,
+      String? displayName,
+      String? iconUrl,
+      int envyCount,
+      @JsonKey(name: 'is_public') bool isPublic,
       @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       SavedSakeSyncStatus syncStatus});
 }
@@ -250,6 +261,11 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? userTags = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
+    Object? username = freezed,
+    Object? displayName = freezed,
+    Object? iconUrl = freezed,
+    Object? envyCount = null,
+    Object? isPublic = null,
     Object? syncStatus = null,
   }) {
     return _then(_value.copyWith(
@@ -309,6 +325,26 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.imagePaths
           : imagePaths // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      username: freezed == username
+          ? _value.username
+          : username // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: freezed == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      envyCount: null == envyCount
+          ? _value.envyCount
+          : envyCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isPublic: null == isPublic
+          ? _value.isPublic
+          : isPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
       syncStatus: null == syncStatus
           ? _value.syncStatus
           : syncStatus // ignore: cast_nullable_to_non_nullable
@@ -339,6 +375,11 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       List<String>? userTags,
       String? savedId,
       List<String>? imagePaths,
+      String? username,
+      String? displayName,
+      String? iconUrl,
+      int envyCount,
+      @JsonKey(name: 'is_public') bool isPublic,
       @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       SavedSakeSyncStatus syncStatus});
 }
@@ -367,6 +408,11 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? userTags = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
+    Object? username = freezed,
+    Object? displayName = freezed,
+    Object? iconUrl = freezed,
+    Object? envyCount = null,
+    Object? isPublic = null,
     Object? syncStatus = null,
   }) {
     return _then(_$SakeImpl(
@@ -426,6 +472,26 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value._imagePaths
           : imagePaths // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      username: freezed == username
+          ? _value.username
+          : username // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: freezed == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      envyCount: null == envyCount
+          ? _value.envyCount
+          : envyCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isPublic: null == isPublic
+          ? _value.isPublic
+          : isPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
       syncStatus: null == syncStatus
           ? _value.syncStatus
           : syncStatus // ignore: cast_nullable_to_non_nullable
@@ -452,6 +518,11 @@ class _$SakeImpl implements _Sake {
       final List<String>? userTags,
       this.savedId,
       final List<String>? imagePaths,
+      this.username,
+      this.displayName,
+      this.iconUrl,
+      this.envyCount = 0,
+      @JsonKey(name: 'is_public') this.isPublic = false,
       @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       this.syncStatus = SavedSakeSyncStatus.localOnly})
       : _types = types,
@@ -514,12 +585,24 @@ class _$SakeImpl implements _Sake {
   }
 
   @override
+  final String? username;
+  @override
+  final String? displayName;
+  @override
+  final String? iconUrl;
+  @override
+  @JsonKey()
+  final int envyCount;
+  @override
+  @JsonKey(name: 'is_public')
+  final bool isPublic;
+  @override
   @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
   final SavedSakeSyncStatus syncStatus;
 
   @override
   String toString() {
-    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths, syncStatus: $syncStatus)';
+    return 'Sake(name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -546,29 +629,44 @@ class _$SakeImpl implements _Sake {
             (identical(other.savedId, savedId) || other.savedId == savedId) &&
             const DeepCollectionEquality()
                 .equals(other._imagePaths, _imagePaths) &&
+            (identical(other.username, username) ||
+                other.username == username) &&
+            (identical(other.displayName, displayName) ||
+                other.displayName == displayName) &&
+            (identical(other.iconUrl, iconUrl) || other.iconUrl == iconUrl) &&
+            (identical(other.envyCount, envyCount) ||
+                other.envyCount == envyCount) &&
+            (identical(other.isPublic, isPublic) ||
+                other.isPublic == isPublic) &&
             (identical(other.syncStatus, syncStatus) ||
                 other.syncStatus == syncStatus));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      name,
-      brewery,
-      const DeepCollectionEquality().hash(_types),
-      taste,
-      sakeMeterValue,
-      type,
-      price,
-      description,
-      recommendationScore,
-      impression,
-      place,
-      const DeepCollectionEquality().hash(_userTags),
-      savedId,
-      const DeepCollectionEquality().hash(_imagePaths),
-      syncStatus);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        name,
+        brewery,
+        const DeepCollectionEquality().hash(_types),
+        taste,
+        sakeMeterValue,
+        type,
+        price,
+        description,
+        recommendationScore,
+        impression,
+        place,
+        const DeepCollectionEquality().hash(_userTags),
+        savedId,
+        const DeepCollectionEquality().hash(_imagePaths),
+        username,
+        displayName,
+        iconUrl,
+        envyCount,
+        isPublic,
+        syncStatus
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -600,6 +698,11 @@ abstract class _Sake implements Sake {
       final List<String>? userTags,
       final String? savedId,
       final List<String>? imagePaths,
+      final String? username,
+      final String? displayName,
+      final String? iconUrl,
+      final int envyCount,
+      @JsonKey(name: 'is_public') final bool isPublic,
       @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
       final SavedSakeSyncStatus syncStatus}) = _$SakeImpl;
 
@@ -633,6 +736,17 @@ abstract class _Sake implements Sake {
   String? get savedId;
   @override
   List<String>? get imagePaths;
+  @override
+  String? get username;
+  @override
+  String? get displayName;
+  @override
+  String? get iconUrl;
+  @override
+  int get envyCount;
+  @override
+  @JsonKey(name: 'is_public')
+  bool get isPublic;
   @override
   @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
   SavedSakeSyncStatus get syncStatus;

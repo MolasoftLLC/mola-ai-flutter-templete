@@ -17,6 +17,7 @@ import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../common/logger.dart';
 import '../common/widgets/guest_limit_dialog.dart';
+import '../common/widgets/primary_app_bar.dart';
 
 const double _blockSpacing = 16;
 const double _blockVerticalPadding = 20;
@@ -133,17 +134,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: themeColor,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          _currentSake.name ?? '日本酒詳細',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 21,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      appBar: PrimaryAppBar(
+        title: _currentSake.name ?? '日本酒詳細',
+        titleFontSize: 21,
         actions: [
           IconButton(
             icon: Icon(
@@ -323,7 +316,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.recommend, color: Colors.white, size: 18),
+                      const Icon(Icons.recommend,
+                          color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
                         (_currentSake.recommendationScore ?? 0) >= 8
@@ -366,10 +360,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
                         ? Icons.cloud_done
                         : Icons.cloud_upload,
-                    color:
-                        _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
-                            ? Colors.lightBlueAccent
-                            : Colors.orangeAccent,
+                    color: _currentSake.syncStatus ==
+                            SavedSakeSyncStatus.serverSynced
+                        ? Colors.lightBlueAccent
+                        : Colors.orangeAccent,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -1074,9 +1068,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           : _placeController.text.trim(),
       userTags: _selectedTags.isEmpty ? null : _selectedTags.toList(),
       imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
-      syncStatus: isLoggedIn
-          ? SavedSakeSyncStatus.localOnly
-          : _currentSake.syncStatus,
+      syncStatus:
+          isLoggedIn ? SavedSakeSyncStatus.localOnly : _currentSake.syncStatus,
     );
 
     _applySakeUpdate(

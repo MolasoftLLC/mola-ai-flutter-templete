@@ -88,157 +88,156 @@ class _HelpGuideDialogState extends State<HelpGuideDialog> {
           ],
         ),
         child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-              child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: 360, maxHeight: 460),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1D3567),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 320,
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: widget.pages.length,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentPage = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          final page = widget.pages[index];
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _accentColor.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  page.summary,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1D3567),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  height: 220,
-                                  width: double.infinity,
-                                  color: Colors.white,
-                                  alignment: Alignment.center,
-                                  child: FittedBox(
-                                    fit: BoxFit.contain,
-                                    child: Image(image: page.image),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Text(
-                                    page.description,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF1D3567),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(widget.pages.length, (index) {
-                        final isActive = index == _currentPage;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: isActive ? 16 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? _accentColor
-                                : _accentColor.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: _currentPage == 0
-                              ? null
-                              : () {
-                                  _pageController.previousPage(
-                                    duration: const Duration(milliseconds: 250),
-                                    curve: Curves.easeInOut,
-                                  );
-                                },
-                          child: const Text('戻る'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).maybePop();
-                          },
-                          child: const Text('閉じる'),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1D3567),
-                            foregroundColor: Colors.white,
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360, maxHeight: 460),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D3567),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 320,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.pages.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final page = widget.pages[index];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
+                              horizontal: 12,
+                              vertical: 8,
                             ),
-                            shape: RoundedRectangleBorder(
+                            decoration: BoxDecoration(
+                              color: _accentColor.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            child: Text(
+                              page.summary,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1D3567),
+                              ),
+                            ),
                           ),
-                          onPressed: () {
-                            if (isLastPage) {
-                              Navigator.of(context).maybePop();
-                            } else {
-                              _pageController.nextPage(
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 220,
+                              width: double.infinity,
+                              color: Colors.white,
+                              alignment: Alignment.center,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: Image(image: page.image),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Text(
+                                page.description,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1D3567),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(widget.pages.length, (index) {
+                    final isActive = index == _currentPage;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: isActive ? 16 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? _accentColor
+                            : _accentColor.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: _currentPage == 0
+                          ? null
+                          : () {
+                              _pageController.previousPage(
                                 duration: const Duration(milliseconds: 250),
                                 curve: Curves.easeInOut,
                               );
-                            }
-                          },
-                          child: Text(isLastPage ? '完了' : '次へ'),
+                            },
+                      child: const Text('戻る'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).maybePop();
+                      },
+                      child: const Text('閉じる'),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1D3567),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
                         ),
-                      ],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (isLastPage) {
+                          Navigator.of(context).maybePop();
+                        } else {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                      child: Text(isLastPage ? '完了' : '次へ'),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
+          ),
+        ),
       ),
     );
   }

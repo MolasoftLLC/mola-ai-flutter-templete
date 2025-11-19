@@ -6,6 +6,7 @@ import 'package:mola_gemini_flutter_template/common/access_url.dart';
 import 'package:mola_gemini_flutter_template/presentation/favorite_search/favorite_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/main_search/main_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page.dart';
 import 'package:provider/provider.dart';
 
 import 'app_page_notifier.dart';
@@ -38,7 +39,7 @@ class AppPage extends StatelessWidget {
       return RequireUpdate(notifier);
     }
 
-    const navigationPageIndexes = [0, 1, 3];
+    const navigationPageIndexes = [0, 2, 1, 4];
     final navCurrentIndex = navigationPageIndexes.contains(currentIndex)
         ? navigationPageIndexes.indexOf(currentIndex)
         : 0;
@@ -48,6 +49,7 @@ class AppPage extends StatelessWidget {
         index: currentIndex,
         children: [
           MainSearchPage.wrapped(),
+          TimelinePage.wrapped(),
           MenuSearchPage.wrapped(),
           FavoriteSearchPage.wrapped(),
           MyPage.wrapped(),
@@ -68,6 +70,10 @@ class AppPage extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book),
             label: 'メニュー解析',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.timeline),
+            label: 'タイムライン',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

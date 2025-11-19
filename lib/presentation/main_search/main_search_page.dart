@@ -12,6 +12,7 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
+import '../common/widgets/primary_app_bar.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
@@ -57,6 +58,8 @@ class MainSearchPage extends StatelessWidget {
         context.select((MainSearchPageState state) => state.searchMode);
     final sakeImage =
         context.select((MainSearchPageState state) => state.sakeImage);
+    final shareToTimeline =
+        context.select((MainSearchPageState state) => state.shareToTimeline);
 
     if (sakeInfo != null && !isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,6 +68,25 @@ class MainSearchPage extends StatelessWidget {
     }
 
     return Scaffold(
+      appBar: PrimaryAppBar(
+        title: '日本酒検索',
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            tooltip: '使い方ガイド',
+            icon: const Icon(
+              Icons.help_outline,
+              color: Color(0xFFFFD54F),
+            ),
+            onPressed: () {
+              HelpGuideDialog.showForType(
+                context,
+                type: HelpGuideType.mainSearch,
+              );
+            },
+          ),
+        ],
+      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(
@@ -82,52 +104,7 @@ class MainSearchPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 70),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: SizedBox(
-                          height: 48,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Center(
-                                child: Text(
-                                  '日本酒検索',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black54,
-                                        blurRadius: 5,
-                                        offset: Offset(1, 1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 0,
-                                child: IconButton(
-                                  tooltip: '使い方ガイド',
-                                  icon: const Icon(
-                                    Icons.help_outline,
-                                    color: Color(0xFFFFD54F),
-                                  ),
-                                  onPressed: () {
-                                    HelpGuideDialog.showForType(
-                                      context,
-                                      type: HelpGuideType.mainSearch,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
 
                       // タブと検索UIの間隔を調整
                       Padding(
@@ -196,6 +173,7 @@ class MainSearchPage extends StatelessWidget {
                                       notifier,
                                       sakeImage,
                                       isAnalyzingInBackground,
+                                      shareToTimeline,
                                     ),
                             ),
                           ],
@@ -415,6 +393,7 @@ class MainSearchPage extends StatelessWidget {
     MainSearchPageNotifier notifier,
     File? sakeImage,
     bool isAnalyzingInBackground,
+    bool shareToTimeline,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -536,6 +515,27 @@ class MainSearchPage extends StatelessWidget {
               ),
             ),
 
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: shareToTimeline,
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              notifier.onTimelineShareToggle(value);
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF1D3567),
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'タイムラインにも表示する',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              '画像は1枚目だけしか共有されません！',
+            ),
+          ),
+
           // 画像がある場合はクリアボタンを表示
           if (sakeImage != null)
             TextButton.icon(
@@ -593,7 +593,8 @@ class MainSearchPage extends StatelessWidget {
                       : null,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF1D3567),
-                    side: BorderSide(color: const Color(0xFF1D3567).withOpacity(0.4)),
+                    side: BorderSide(
+                        color: const Color(0xFF1D3567).withOpacity(0.4)),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 14,
@@ -663,13 +664,14 @@ class MainSearchPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -678,12 +680,12 @@ class MainSearchPage extends StatelessWidget {
         children: [
           // ヘッダー部分（日本酒名）
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1D3567),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F214A),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
             child: Row(
@@ -693,7 +695,7 @@ class MainSearchPage extends StatelessWidget {
                     sakeInfo.name ?? '不明',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -814,7 +816,7 @@ class MainSearchPage extends StatelessWidget {
 
           // 日本酒の詳細情報
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -871,23 +873,23 @@ class MainSearchPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF1D3567), size: 20),
+              Icon(icon, color: Colors.amberAccent.shade200, size: 20),
               const SizedBox(width: 12),
               Text(
                 label,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Color(0xFF1D3567),
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -897,7 +899,7 @@ class MainSearchPage extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade800,
+              color: Colors.white.withOpacity(0.85),
               height: 1.5,
             ),
           ),
@@ -913,23 +915,23 @@ class MainSearchPage extends StatelessWidget {
       margin: const EdgeInsets.only(top: 16, bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.search, color: const Color(0xFF1D3567), size: 20),
+              Icon(Icons.search, color: Colors.amberAccent.shade200, size: 20),
               const SizedBox(width: 12),
               const Text(
                 'タイプ別検索',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Color(0xFF1D3567),
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -948,7 +950,7 @@ class MainSearchPage extends StatelessWidget {
                 },
                 child: Chip(
                   label: Text(type),
-                  backgroundColor: const Color(0xFF1D3567).withOpacity(0.1),
+                  backgroundColor: Colors.white.withOpacity(0.9),
                   labelStyle: const TextStyle(
                     color: Color(0xFF1D3567),
                     fontWeight: FontWeight.bold,

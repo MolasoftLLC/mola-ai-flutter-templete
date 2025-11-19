@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
+import '../common/widgets/primary_app_bar.dart';
 
 enum EmailAuthMode { signIn, signUp }
 
@@ -168,17 +169,9 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF1D3567),
-          title: const Text(
-            _pageTitle,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-          ),
-          iconTheme: const IconThemeData(color: Colors.white),
+        appBar: const PrimaryAppBar(
+          title: _pageTitle,
+          titleFontSize: 18,
         ),
         body: SafeArea(
           child: Stack(

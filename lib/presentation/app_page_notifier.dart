@@ -40,9 +40,12 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   static const String _mainSearchHelpKey = 'help_shown_main_search';
   static const String _menuSearchHelpKey = 'help_shown_menu_search';
   static const String _myPageHelpKey = 'help_shown_my_page';
+  static const String _timelineIntroKey = 'timeline_intro_shown';
 
   final Set<HelpGuideType> _displayedHelpTypes = {};
   final Set<HelpGuideType> _pendingHelpTypes = {};
+  bool _hasAttemptedTimelineIntro = false;
+  bool _isTimelineIntroDialogOpen = false;
 
   GlobalKey first = GlobalKey();
   GlobalKey keyBottomNavigation1 = GlobalKey();
@@ -86,8 +89,25 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     final currentVersion = await getCurrentVersion();
     logger.shout(currentVersion);
     logger.shout(latestVersion);
-    return Version.parse(latestVersion!['version']!) >
-        Version.parse(currentVersion);
+
+    if (latestVersion == null) {
+      logger.info('最新バージョン情報が取得できなかったためアップデート判定をスキップします');
+      return false;
+    }
+
+    final latestVersionValue = latestVersion['version'];
+    if (latestVersionValue is! String || latestVersionValue.isEmpty) {
+      logger.warning('最新バージョン情報にversionキーが含まれていません: $latestVersion');
+      return false;
+    }
+
+    try {
+      return Version.parse(latestVersionValue) > Version.parse(currentVersion);
+    } catch (error, stackTrace) {
+      logger.warning('バージョン番号の解析に失敗したためアップデート判定をスキップします: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
   }
 
   @override
@@ -100,6 +120,9 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       state = state.copyWith(currentIndex: index);
     }
     unawaited(_maybeShowHelpGuide(index));
+    if (index == 1) {
+      unawaited(_maybeShowTimelineIntro());
+    }
   }
 
   Future<void> launchURL(String url) async {
@@ -113,9 +136,9 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     switch (index) {
       case 0:
         return HelpGuideType.mainSearch;
-      case 1:
+      case 2:
         return HelpGuideType.menuSearch;
-      case 3:
+      case 4:
         return HelpGuideType.myPage;
       default:
         return null;
@@ -184,6 +207,88 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     }
   }
 
+  Future<void> _maybeShowTimelineIntro() async {
+    if (_hasAttemptedTimelineIntro || state.needUpDate) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownIntro = prefs.getBool(_timelineIntroKey) ?? false;
+    if (hasShownIntro) {
+      _hasAttemptedTimelineIntro = true;
+      return;
+    }
+
+    if (_isTimelineIntroDialogOpen) {
+      return;
+    }
+
+    _isTimelineIntroDialogOpen = true;
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (!context.mounted || state.currentIndex != 1) {
+        _isTimelineIntroDialogOpen = false;
+        return;
+      }
+
+      _hasAttemptedTimelineIntro = true;
+
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1D3567),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.timeline, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'タイムラインへようこそ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'みんなが飲んだお酒がここにずらり。\n気になる一杯は保存して、あなただけのリストに加えましょう！',
+                  style: TextStyle(color: Colors.white70, height: 1.5),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'うらやましい日本酒は気軽に👍ボタンしてあげよう。',
+                  style: TextStyle(color: Colors.white70, height: 1.5),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          );
+        },
+      );
+
+      await prefs.setBool(_timelineIntroKey, true);
+    } finally {
+      _isTimelineIntroDialogOpen = false;
+    }
+  }
+
   // 好みの設定が未設定の場合、ダイアログを表示
   Future<void> _checkAndShowPreferencesDialog() async {
     // 既にダイアログを表示済みの場合は表示しない
@@ -211,5 +316,4 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       });
     }
   }
-
 }

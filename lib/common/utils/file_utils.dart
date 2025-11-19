@@ -13,7 +13,7 @@ class FileUtils {
       logger.info('画像の読み込み: ファイルパスもbase64もnullのためプレースホルダーを使用');
       return Assets.sakePlaceholder;
     }
-    
+
     // Try base64 image first if available
     if (base64Image != null && base64Image.isNotEmpty) {
       try {
@@ -28,20 +28,20 @@ class FileUtils {
     } else if (base64Image != null) {
       logger.warning('base64データは存在しますが、空です');
     }
-    
+
     // If no file path or base64 decode failed, return placeholder
     if (filePath == null) {
       logger.info('ファイルパスがnullのためプレースホルダーを使用');
       return Assets.sakePlaceholder;
     }
-    
+
     // Check if file exists
     final file = File(filePath);
     if (!file.existsSync()) {
       logger.warning('ファイルが見つかりません: $filePath');
       return Assets.sakePlaceholder;
     }
-    
+
     // File exists, return FileImage
     logger.info('ファイルから画像を読み込みます: $filePath');
     return FileImage(file);

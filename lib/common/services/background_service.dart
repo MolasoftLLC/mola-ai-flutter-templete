@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' as flutter;
 /// バックグラウンド処理を行うサービス
 class BackgroundService {
   /// バックグラウンドで処理を実行する
-  /// 
+  ///
   /// [computation] バックグラウンドで実行する処理
   /// [input] 処理に渡す入力データ
   static Future<T> compute<Q, T>(
@@ -21,7 +21,7 @@ class MenuAnalysisData {
   final File file;
   final String baseUrl;
   final String apiKey;
-  
+
   MenuAnalysisData({
     required this.file,
     required this.baseUrl,
@@ -33,11 +33,11 @@ class MenuAnalysisData {
 class MenuAnalysisResult {
   final Map<String, dynamic>? data;
   final String? error;
-  
+
   MenuAnalysisResult({
     this.data,
     this.error,
   });
-  
+
   bool get isSuccess => error == null && data != null;
 }
