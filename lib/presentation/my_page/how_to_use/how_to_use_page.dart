@@ -49,6 +49,13 @@ class HowToUse extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8),
               child: Text(
+                'ユーザーは以下のような不適切な写真や情報を投稿できません。\n\n・人物が写っている写真\n・暴力、脅迫、差別、ハラスメントなどの表現\n・性的内容（アルコール関連を除く）\n・著作権その他の知的財産権を侵害する内容\n・その他、当社が不適切と判断する内容\n\n本アプリではAIによって酒瓶以外の写真は投稿できない仕組みを採用していますが、不適切な投稿が確認された場合は投稿の非表示や削除を行うことがあります。',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
                 '運営上の都合により予告なくサービスを停止・終了する場合があり、その際はサーバーに保存された解析画像や各種データが消去されることがあります。重要なデータは必ずご自身でも保管してください。',
                 style: TextStyle(color: Colors.white),
               ),
