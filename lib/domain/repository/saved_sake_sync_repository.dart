@@ -164,6 +164,29 @@ class SavedSakeSyncRepository {
     }
   }
 
+  Future<List<Sake>> fetchTimelineEnvyRanking({int limit = 20}) async {
+    try {
+      final response = await _apiClient.fetchTimelineEnvyRanking(limit: limit);
+      if (!response.isSuccessful || response.body == null) {
+        logger.warning(
+          '羨ましいランキングの取得に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return const <Sake>[];
+      }
+      logger.info(
+          '[SavedSakeSyncRepository.fetchTimelineEnvyRanking] レスポンス: ${response.body}');
+      return await _parseSakeRecords(
+        response.body,
+        logPrefix: 'SavedSakeSyncRepository.fetchTimelineEnvyRanking',
+        onlyFirstImage: true,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('羨ましいランキング取得中に例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return const <Sake>[];
+    }
+  }
+
   Future<bool> incrementEnvyCount({
     String? userId,
     required String savedId,

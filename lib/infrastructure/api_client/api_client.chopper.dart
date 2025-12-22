@@ -223,6 +223,22 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> fetchTimelineEnvyRanking({int? limit}) {
+    final Uri $url = Uri.parse('/saved-sakes/timeline/envy-ranking');
+    final Map<String, dynamic> $params = <String, dynamic>{};
+    if (limit != null) {
+      $params['limit'] = limit;
+    }
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      parameters: $params,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> incrementSavedSakeEnvy(
     String savedId,
     Map<String, dynamic> body,

@@ -73,6 +73,11 @@ abstract class ApiClient extends ChopperService {
     @Query('limit') int? limit,
   });
 
+  @Get(path: 'saved-sakes/timeline/envy-ranking')
+  Future<Response> fetchTimelineEnvyRanking({
+    @Query('limit') int? limit,
+  });
+
   @Post(path: 'saved-sakes/{savedId}/envy')
   Future<Response> incrementSavedSakeEnvy(
     @Path('savedId') String savedId,

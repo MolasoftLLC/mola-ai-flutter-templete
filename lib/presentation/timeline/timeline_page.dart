@@ -10,6 +10,8 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import 'envy_result.dart';
+import 'timeline_envy_ranking_page.dart';
 import 'timeline_page_notifier.dart';
 
 class TimelinePage extends StatelessWidget {
@@ -102,8 +104,11 @@ class TimelinePage extends StatelessWidget {
     final bool showErrorState = errorMessage != null && sakes.isEmpty;
     final bool showFallback = sakes.isEmpty;
     final bool showLoadingIndicator = !showFallback && isLoadingMore;
-    final int itemCount =
+    final bool showRankingShortcut = feedType == TimelineFeedType.public;
+    final int rankingOffset = showRankingShortcut ? 1 : 0;
+    final int baseItemCount =
         showFallback ? 1 : sakes.length + (showLoadingIndicator ? 1 : 0);
+    final int itemCount = rankingOffset + baseItemCount;
 
     Widget buildFallbackItem() {
       if (showInitialLoading) {
@@ -152,6 +157,11 @@ class TimelinePage extends StatelessWidget {
       final envyCount = sake.envyCount;
       final isReportPending =
           savedId != null && pendingReports.contains(savedId);
+      final bool canSendEnvy =
+          feedType != TimelineFeedType.mine && envyKey.isNotEmpty;
+      final bool canReport = feedType != TimelineFeedType.mine &&
+          savedId != null &&
+          savedId.isNotEmpty;
 
       return _TimelineSakeCard(
         sake: sake,
@@ -235,7 +245,7 @@ class TimelinePage extends StatelessWidget {
             );
           }
         },
-        onToggleEnvy: envyKey.isEmpty
+        onToggleEnvy: !canSendEnvy
             ? null
             : () async {
                 final result = await notifier.incrementEnvy(sake);
@@ -262,10 +272,18 @@ class TimelinePage extends StatelessWidget {
                     break;
                 }
               },
-        onReport: savedId == null
+        onReport: !canReport
             ? null
             : () async {
                 if (!await ensureLoggedIn()) {
+                  return;
+                }
+                if (!context.mounted) {
+                  return;
+                }
+                final confirmed =
+                    await _TimelineReportConfirmDialog.show(context);
+                if (!confirmed || !context.mounted) {
                   return;
                 }
                 final result = await notifier.reportSavedSake(sake);
@@ -306,10 +324,25 @@ class TimelinePage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       itemCount: itemCount,
       itemBuilder: (context, index) {
-        if (showFallback) {
-          return buildFallbackItem();
+        if (showRankingShortcut && index == 0) {
+          return _TimelineRankingShortcut(
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TimelineEnvyRankingPage.wrapped(),
+                ),
+              );
+            },
+          );
         }
-        if (showLoadingIndicator && index >= sakes.length) {
+        final dataIndex = index - rankingOffset;
+        if (showFallback) {
+          if (dataIndex == 0) {
+            return buildFallbackItem();
+          }
+          return const SizedBox.shrink();
+        }
+        if (showLoadingIndicator && dataIndex >= sakes.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Center(
@@ -324,7 +357,7 @@ class TimelinePage extends StatelessWidget {
             ),
           );
         }
-        return buildCard(index);
+        return buildCard(dataIndex);
       },
       separatorBuilder: (_, __) => const SizedBox(height: 16),
     );
@@ -452,6 +485,72 @@ class _TimelineHeaderShortcutButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineRankingShortcut extends StatelessWidget {
+  const _TimelineRankingShortcut({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD54F).withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.emoji_events,
+                color: Color(0xFFFFD54F),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    '羨ましい日本酒ランキング',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'うらやまが多い投稿ベスト20をチェック',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.white70,
+            ),
+          ],
         ),
       ),
     );
@@ -1172,6 +1271,64 @@ class _TimelineUserAvatar extends StatelessWidget {
         size: 18,
       ),
     );
+  }
+}
+
+class _TimelineReportConfirmDialog {
+  static Future<bool> show(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1D3567),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            '投稿を報告しますか？',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            '問題のある投稿として運営に報告します。よろしいですか？',
+            style: TextStyle(
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'いいえ',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD54F),
+                foregroundColor: const Color(0xFF1D3567),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text(
+                'はい',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
   }
 }
 

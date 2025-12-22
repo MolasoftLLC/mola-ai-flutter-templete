@@ -5,10 +5,9 @@ import 'package:state_notifier/state_notifier.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
+import 'envy_result.dart';
 
 const _stateSentinel = Object();
-
-enum EnvyResult { success, already, pending, failed }
 
 enum ReportResult { success, already, pending, failed, unauthenticated }
 
