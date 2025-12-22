@@ -67,7 +67,11 @@ abstract class ApiClient extends ChopperService {
   );
 
   @Get(path: 'saved-sakes/timeline')
-  Future<Response> fetchSavedSakeTimeline();
+  Future<Response> fetchSavedSakeTimeline({
+    @Query('userId') String? userId,
+    @Query('cursor') String? cursor,
+    @Query('limit') int? limit,
+  });
 
   @Post(path: 'saved-sakes/{savedId}/envy')
   Future<Response> incrementSavedSakeEnvy(
@@ -77,6 +81,12 @@ abstract class ApiClient extends ChopperService {
 
   @Post(path: 'saved-sakes/{savedId}/report')
   Future<Response> reportSavedSake(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'saved-sakes/{savedId}/visibility')
+  Future<Response> updateSavedSakeVisibility(
     @Path('savedId') String savedId,
     @Body() Map<String, dynamic> body,
   );

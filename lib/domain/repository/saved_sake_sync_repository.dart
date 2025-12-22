@@ -14,6 +14,25 @@ class SavedSakeTimelineUnauthorizedException implements Exception {
   const SavedSakeTimelineUnauthorizedException();
 }
 
+class TimelineSakePage {
+  const TimelineSakePage({
+    required this.sakes,
+    this.nextCursor,
+    this.hasMore = false,
+  });
+
+  const TimelineSakePage.empty()
+      : sakes = const <Sake>[],
+        nextCursor = null,
+        hasMore = false;
+
+  final List<Sake> sakes;
+  final String? nextCursor;
+  final bool hasMore;
+
+  bool get canLoadMore => hasMore && nextCursor != null;
+}
+
 bool _isRemotePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
 
@@ -105,9 +124,17 @@ class SavedSakeSyncRepository {
     }
   }
 
-  Future<List<Sake>> fetchTimelineSakes() async {
+  Future<TimelineSakePage> fetchTimelineSakes({
+    String? userId,
+    String? cursor,
+    int limit = 20,
+  }) async {
     try {
-      final response = await _apiClient.fetchSavedSakeTimeline();
+      final response = await _apiClient.fetchSavedSakeTimeline(
+        userId: userId,
+        cursor: cursor,
+        limit: limit,
+      );
       if (!response.isSuccessful || response.body == null) {
         if (response.statusCode == 401) {
           logger.info('タイムライン保存酒の取得には認証が必要です (401)。');
@@ -116,15 +143,14 @@ class SavedSakeSyncRepository {
         logger.warning(
           'タイムライン保存酒の取得に失敗しました: status=${response.statusCode}, error=${response.error}',
         );
-        return const <Sake>[];
+        return const TimelineSakePage.empty();
       }
 
       logger.info(
           '[SavedSakeSyncRepository.fetchTimelineSakes] レスポンス: ${response.body}');
-      return await _parseSakeRecords(
+      return await _parseTimelineResponse(
         response.body,
         logPrefix: 'SavedSakeSyncRepository.fetchTimelineSakes',
-        onlyFirstImage: true,
       );
     } catch (error, stackTrace) {
       if (identical(error, _unauthorizedTimelineException) ||
@@ -134,7 +160,7 @@ class SavedSakeSyncRepository {
       }
       logger.warning('タイムライン保存酒の取得処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
-      return const <Sake>[];
+      return const TimelineSakePage.empty();
     }
   }
 
@@ -186,6 +212,32 @@ class SavedSakeSyncRepository {
       return true;
     } catch (error, stackTrace) {
       logger.warning('保存酒報告処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
+  }
+
+  Future<bool> updateSavedSakeVisibility({
+    required String userId,
+    required String savedId,
+    required bool isPublic,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'isPublic': isPublic,
+      };
+      final response =
+          await _apiClient.updateSavedSakeVisibility(savedId, payload);
+      if (!response.isSuccessful) {
+        logger.warning(
+          '公開設定の更新に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return false;
+      }
+      return true;
+    } catch (error, stackTrace) {
+      logger.warning('公開設定更新処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
     }
@@ -332,6 +384,38 @@ class SavedSakeSyncRepository {
     }
 
     return result;
+  }
+
+  Future<TimelineSakePage> _parseTimelineResponse(
+    dynamic rawBody, {
+    required String logPrefix,
+  }) async {
+    String? nextCursor;
+    bool hasMoreFlag = false;
+    if (rawBody is Map<String, dynamic>) {
+      final dynamic rawCursor = rawBody['nextCursor'];
+      if (rawCursor is String && rawCursor.trim().isNotEmpty) {
+        nextCursor = rawCursor.trim();
+      }
+      final dynamic rawHasMore = rawBody['hasMore'];
+      if (rawHasMore is bool) {
+        hasMoreFlag = rawHasMore;
+      }
+    }
+
+    final records = await _parseSakeRecords(
+      rawBody,
+      logPrefix: logPrefix,
+      onlyFirstImage: true,
+    );
+
+    final bool normalizedHasMore =
+        hasMoreFlag && nextCursor != null && nextCursor.isNotEmpty;
+    return TimelineSakePage(
+      sakes: records,
+      nextCursor: nextCursor,
+      hasMore: normalizedHasMore,
+    );
   }
 
   Future<Map<String, dynamic>> _buildPayload({

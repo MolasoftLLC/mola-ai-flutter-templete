@@ -462,6 +462,40 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     }
   }
 
+  Future<bool> updateTimelineVisibility({
+    required String savedId,
+    required bool isPublic,
+  }) async {
+    final index = state.savedSakeList
+        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    if (index == -1) {
+      logger.warning('公開設定更新対象の保存酒が見つかりません: id=$savedId');
+      return false;
+    }
+
+    final user = _authRepository.currentUser;
+    if (user == null) {
+      logger.warning('公開設定更新に失敗: ログイン情報がありません');
+      return false;
+    }
+
+    final success = await _syncRepository.updateSavedSakeVisibility(
+      userId: user.uid,
+      savedId: savedId,
+      isPublic: isPublic,
+    );
+    if (!success) {
+      return false;
+    }
+
+    final updatedList = [...state.savedSakeList];
+    updatedList[index] = updatedList[index].copyWith(isPublic: isPublic);
+    state = state.copyWith(savedSakeList: updatedList);
+    await _persistSavedSakes();
+    logger.info('公開設定を更新しました: id=$savedId isPublic=$isPublic');
+    return true;
+  }
+
   Future<void> updateSavedSakeWithInfo(String savedId, Sake info) async {
     final index = state.savedSakeList
         .indexWhere((item) => item.savedId != null && item.savedId == savedId);

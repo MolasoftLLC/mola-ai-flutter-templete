@@ -6,6 +6,7 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.actions,
     this.leading,
+    this.leadingWidth,
     this.centerTitle = true,
     this.automaticallyImplyLeading = true,
     this.titleFontSize = 20,
@@ -14,6 +15,7 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final Widget? leading;
+  final double? leadingWidth;
   final bool centerTitle;
   final bool automaticallyImplyLeading;
   final double titleFontSize;
@@ -29,6 +31,7 @@ class PrimaryAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: centerTitle,
       automaticallyImplyLeading: automaticallyImplyLeading,
       leading: leading,
+      leadingWidth: leadingWidth,
       actions: actions,
       iconTheme: const IconThemeData(color: Colors.white),
       title: Text(

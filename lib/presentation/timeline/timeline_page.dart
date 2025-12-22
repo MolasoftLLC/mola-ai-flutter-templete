@@ -13,16 +13,49 @@ import '../common/widgets/primary_app_bar.dart';
 import 'timeline_page_notifier.dart';
 
 class TimelinePage extends StatelessWidget {
-  const TimelinePage._({super.key});
+  const TimelinePage._({
+    super.key,
+    required this.feedType,
+    required this.title,
+    required this.emptyMessage,
+  });
+
+  final TimelineFeedType feedType;
+  final String title;
+  final String emptyMessage;
 
   static Widget wrapped() {
+    return _build(
+      feedType: TimelineFeedType.public,
+      title: 'みんなの日本酒',
+      emptyMessage: 'まだタイムラインには保存酒がありません。\nほかのユーザーが保存するとここに表示されます。',
+    );
+  }
+
+  static Widget myPosts() {
+    return _build(
+      feedType: TimelineFeedType.mine,
+      title: '自分の投稿',
+      emptyMessage: 'まだタイムラインに公開した投稿がありません。\nお気に入りのお酒をシェアしてみましょう。',
+    );
+  }
+
+  static Widget _build({
+    required TimelineFeedType feedType,
+    required String title,
+    required String emptyMessage,
+  }) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<TimelinePageNotifier, TimelinePageState>(
-          create: (_) => TimelinePageNotifier(),
+          create: (_) => TimelinePageNotifier(feedType: feedType),
         ),
       ],
-      child: const TimelinePage._(),
+      child: TimelinePage._(
+        feedType: feedType,
+        title: title,
+        emptyMessage: emptyMessage,
+      ),
     );
   }
 
@@ -49,6 +82,9 @@ class TimelinePage extends StatelessWidget {
         context.select((TimelinePageState state) => state.pendingEnvyIds);
     final pendingReports =
         context.select((TimelinePageState state) => state.pendingReportIds);
+    final hasMore = context.select((TimelinePageState state) => state.hasMore);
+    final isLoadingMore =
+        context.select((TimelinePageState state) => state.isLoadingMore);
 
     Future<bool> ensureLoggedIn() async {
       if (notifier.isLoggedIn) {
@@ -62,224 +98,301 @@ class TimelinePage extends StatelessWidget {
       return false;
     }
 
-    Widget content;
-    if (isLoading && sakes.isEmpty && !isRefreshing) {
-      content = const Center(
-        child: Padding(
+    final bool showInitialLoading = isLoading && sakes.isEmpty && !isRefreshing;
+    final bool showErrorState = errorMessage != null && sakes.isEmpty;
+    final bool showFallback = sakes.isEmpty;
+    final bool showLoadingIndicator = !showFallback && isLoadingMore;
+    final int itemCount =
+        showFallback ? 1 : sakes.length + (showLoadingIndicator ? 1 : 0);
+
+    Widget buildFallbackItem() {
+      if (showInitialLoading) {
+        return const Padding(
           padding: EdgeInsets.only(top: 80),
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+          child: Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+        );
+      }
+      if (showErrorState) {
+        return _TimelineMessageView(
+          message: errorMessage ?? 'データの取得に失敗しました。通信環境をご確認ください。',
+          actionLabel: '再読み込み',
+          onPressed: () => notifier.fetchTimeline(isRefresh: false),
+        );
+      }
+      return _TimelineMessageView(message: emptyMessage);
+    }
+
+    Widget buildCard(int index) {
+      final sake = sakes[index];
+      final normalizedName =
+          sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明';
+      final envyKey = TimelinePageNotifier.envyKey(sake);
+      final savedId = sake.savedId?.trim();
+      final isSaved = savedList.any((item) {
+        final hasSameId = item.savedId != null &&
+            sake.savedId != null &&
+            item.savedId == sake.savedId;
+        if (hasSameId) {
+          return true;
+        }
+        final itemName =
+            item.name?.trim().isNotEmpty == true ? item.name!.trim() : '名称不明';
+        final itemType = item.type?.trim();
+        final targetType = sake.type?.trim();
+        return itemName == normalizedName && itemType == targetType;
+      });
+      final isFavorite = favoriteList.any(
+        (item) => item.name.trim() == normalizedName && item.type == sake.type,
       );
-    } else if (errorMessage != null && sakes.isEmpty) {
-      content = _TimelineMessageView(
-        message: errorMessage,
-        actionLabel: '再読み込み',
-        onPressed: () => notifier.fetchTimeline(isRefresh: false),
-      );
-    } else if (sakes.isEmpty) {
-      content = const _TimelineMessageView(
-        message: 'まだタイムラインには保存酒がありません。\nほかのユーザーが保存するとここに表示されます。',
-      );
-    } else {
-      content = ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemCount: sakes.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final sake = sakes[index];
-          final normalizedName =
-              sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明';
-          final envyKey = TimelinePageNotifier.envyKey(sake);
-          final savedId = sake.savedId?.trim();
-          final isSaved = savedList.any((item) {
-            final hasSameId = item.savedId != null &&
-                sake.savedId != null &&
-                item.savedId == sake.savedId;
-            if (hasSameId) {
-              return true;
+      final isEnvied = envyKey.isNotEmpty && enviedIds.contains(envyKey);
+      final isEnvyPending =
+          envyKey.isNotEmpty && pendingEnvies.contains(envyKey);
+      final envyCount = sake.envyCount;
+      final isReportPending =
+          savedId != null && pendingReports.contains(savedId);
+
+      return _TimelineSakeCard(
+        sake: sake,
+        isSaved: isSaved,
+        isFavorite: isFavorite,
+        isEnvied: isEnvied,
+        isEnvyPending: isEnvyPending,
+        envyCount: envyCount,
+        isReportPending: isReportPending,
+        onToggleSaved: () async {
+          if (!await ensureLoggedIn()) {
+            return;
+          }
+          if (!isSaved && savedNotifier.hasReachedGuestLimit) {
+            await GuestLimitDialog.showSavedSakeLimit(
+              context,
+              maxCount: SavedSakeNotifier.guestSavedLimit,
+            );
+            return;
+          }
+          if (!isSaved && savedNotifier.hasReachedMemberLimit) {
+            SnackBarUtils.showWarningSnackBar(
+              context,
+              message:
+                  '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+            );
+            return;
+          }
+
+          final normalized = sake.copyWith(
+            savedId: null,
+            name: normalizedName,
+            impression: null,
+            userTags: null,
+          );
+          final shouldShowSavedToast = !isSaved;
+          try {
+            await savedNotifier.toggleSavedSake(normalized);
+            if (shouldShowSavedToast) {
+              SnackBarUtils.showInfoSnackBar(
+                context,
+                message: 'マイページに保存しました！',
+              );
             }
-            final itemName = item.name?.trim().isNotEmpty == true
-                ? item.name!.trim()
-                : '名称不明';
-            final itemType = item.type?.trim();
-            final targetType = sake.type?.trim();
-            return itemName == normalizedName && itemType == targetType;
-          });
-          final isFavorite = favoriteList.any(
-            (item) =>
-                item.name.trim() == normalizedName && item.type == sake.type,
-          );
-          final isEnvied = envyKey.isNotEmpty && enviedIds.contains(envyKey);
-          final isEnvyPending =
-              envyKey.isNotEmpty && pendingEnvies.contains(envyKey);
-          final envyCount = sake.envyCount;
-          final isReportPending =
-              savedId != null && pendingReports.contains(savedId);
-
-          return _TimelineSakeCard(
-            sake: sake,
-            isSaved: isSaved,
-            isFavorite: isFavorite,
-            isEnvied: isEnvied,
-            isEnvyPending: isEnvyPending,
-            envyCount: envyCount,
-            isReportPending: isReportPending,
-            onToggleSaved: () async {
-              if (!await ensureLoggedIn()) {
-                return;
-              }
-              if (!isSaved && savedNotifier.hasReachedGuestLimit) {
-                await GuestLimitDialog.showSavedSakeLimit(
-                  context,
-                  maxCount: SavedSakeNotifier.guestSavedLimit,
-                );
-                return;
-              }
-              if (!isSaved && savedNotifier.hasReachedMemberLimit) {
-                SnackBarUtils.showWarningSnackBar(
-                  context,
-                  message:
-                      '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
-                );
-                return;
-              }
-
-              final normalized = sake.copyWith(
-                savedId: null,
-                name: normalizedName,
-                impression: null,
-                userTags: null,
-              );
-              final shouldShowSavedToast = !isSaved;
-              try {
-                await savedNotifier.toggleSavedSake(normalized);
-                if (shouldShowSavedToast) {
-                  SnackBarUtils.showInfoSnackBar(
-                    context,
-                    message: 'マイページに保存しました！',
-                  );
-                }
-              } on SavedSakeGuestLimitReachedException {
-                await GuestLimitDialog.showSavedSakeLimit(
-                  context,
-                  maxCount: SavedSakeNotifier.guestSavedLimit,
-                );
-              } on SavedSakeMemberLimitReachedException {
-                SnackBarUtils.showWarningSnackBar(
-                  context,
-                  message:
-                      '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
-                );
-              }
-            },
-            onToggleFavorite: () async {
-              if (!await ensureLoggedIn()) {
-                return;
-              }
-              final favoriteSake = FavoriteSake(
-                name: normalizedName,
-                type: sake.type,
-              );
-
-              if (!isFavorite && favoriteNotifier.hasReachedGuestLimit) {
-                await GuestLimitDialog.showFavoriteLimit(
-                  context,
-                  maxCount: FavoriteNotifier.guestFavoriteLimit,
-                );
-                return;
-              }
-
-              try {
-                await favoriteNotifier.addOrRemoveFavorite(favoriteSake);
-              } on FavoriteGuestLimitReachedException {
-                await GuestLimitDialog.showFavoriteLimit(
-                  context,
-                  maxCount: FavoriteNotifier.guestFavoriteLimit,
-                );
-              }
-            },
-            onToggleEnvy: envyKey.isEmpty
-                ? null
-                : () async {
-                    final result = await notifier.incrementEnvy(sake);
-                    switch (result) {
-                      case EnvyResult.success:
-                        SnackBarUtils.showInfoSnackBar(
-                          context,
-                          message: 'うらやまを送信しました！',
-                        );
-                        break;
-                      case EnvyResult.failed:
-                        SnackBarUtils.showWarningSnackBar(
-                          context,
-                          message: 'うらやまの送信に失敗しました。通信環境をご確認ください。',
-                        );
-                        break;
-                      case EnvyResult.already:
-                        SnackBarUtils.showInfoSnackBar(
-                          context,
-                          message: 'すでにうらやま済みです！',
-                        );
-                        break;
-                      case EnvyResult.pending:
-                        break;
-                    }
-                  },
-            onReport: savedId == null
-                ? null
-                : () async {
-                    if (!await ensureLoggedIn()) {
-                      return;
-                    }
-                    final result = await notifier.reportSavedSake(sake);
-                    if (!context.mounted) {
-                      return;
-                    }
-                    switch (result) {
-                      case ReportResult.success:
-                        SnackBarUtils.showInfoSnackBar(
-                          context,
-                          message: 'ありがとうございました。報告を受け付けました。',
-                        );
-                        break;
-                      case ReportResult.already:
-                        SnackBarUtils.showInfoSnackBar(
-                          context,
-                          message: 'この投稿は既に報告済みです。',
-                        );
-                        break;
-                      case ReportResult.pending:
-                        break;
-                      case ReportResult.unauthenticated:
-                        await ensureLoggedIn();
-                        break;
-                      case ReportResult.failed:
-                        SnackBarUtils.showWarningSnackBar(
-                          context,
-                          message: '報告に失敗しました。通信環境をご確認ください。',
-                        );
-                        break;
-                    }
-                  },
-          );
+          } on SavedSakeGuestLimitReachedException {
+            await GuestLimitDialog.showSavedSakeLimit(
+              context,
+              maxCount: SavedSakeNotifier.guestSavedLimit,
+            );
+          } on SavedSakeMemberLimitReachedException {
+            SnackBarUtils.showWarningSnackBar(
+              context,
+              message:
+                  '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+            );
+          }
         },
+        onToggleFavorite: () async {
+          if (!await ensureLoggedIn()) {
+            return;
+          }
+          final favoriteSake = FavoriteSake(
+            name: normalizedName,
+            type: sake.type,
+          );
+
+          if (!isFavorite && favoriteNotifier.hasReachedGuestLimit) {
+            await GuestLimitDialog.showFavoriteLimit(
+              context,
+              maxCount: FavoriteNotifier.guestFavoriteLimit,
+            );
+            return;
+          }
+
+          try {
+            await favoriteNotifier.addOrRemoveFavorite(favoriteSake);
+          } on FavoriteGuestLimitReachedException {
+            await GuestLimitDialog.showFavoriteLimit(
+              context,
+              maxCount: FavoriteNotifier.guestFavoriteLimit,
+            );
+          }
+        },
+        onToggleEnvy: envyKey.isEmpty
+            ? null
+            : () async {
+                final result = await notifier.incrementEnvy(sake);
+                switch (result) {
+                  case EnvyResult.success:
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: 'うらやまを送信しました！',
+                    );
+                    break;
+                  case EnvyResult.failed:
+                    SnackBarUtils.showWarningSnackBar(
+                      context,
+                      message: 'うらやまの送信に失敗しました。通信環境をご確認ください。',
+                    );
+                    break;
+                  case EnvyResult.already:
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: 'すでにうらやま済みです！',
+                    );
+                    break;
+                  case EnvyResult.pending:
+                    break;
+                }
+              },
+        onReport: savedId == null
+            ? null
+            : () async {
+                if (!await ensureLoggedIn()) {
+                  return;
+                }
+                final result = await notifier.reportSavedSake(sake);
+                if (!context.mounted) {
+                  return;
+                }
+                switch (result) {
+                  case ReportResult.success:
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: 'ありがとうございました。報告を受け付けました。',
+                    );
+                    break;
+                  case ReportResult.already:
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: 'この投稿は既に報告済みです。',
+                    );
+                    break;
+                  case ReportResult.pending:
+                    break;
+                  case ReportResult.unauthenticated:
+                    await ensureLoggedIn();
+                    break;
+                  case ReportResult.failed:
+                    SnackBarUtils.showWarningSnackBar(
+                      context,
+                      message: '報告に失敗しました。通信環境をご確認ください。',
+                    );
+                    break;
+                }
+              },
       );
     }
 
-    final scrollable = content is ListView
-        ? content
-        : ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-            children: [content],
+    final listView = ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (showFallback) {
+          return buildFallbackItem();
+        }
+        if (showLoadingIndicator && index >= sakes.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           );
+        }
+        return buildCard(index);
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+    );
+
+    final scrollable = NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.vertical &&
+            (notification is ScrollUpdateNotification ||
+                notification is OverscrollNotification)) {
+          final bool shouldLoadMore = !showFallback &&
+              hasMore &&
+              !isLoading &&
+              !isRefreshing &&
+              !isLoadingMore &&
+              notification.metrics.extentAfter < 200;
+          if (shouldLoadMore) {
+            notifier.loadMore();
+          }
+        }
+        return false;
+      },
+      child: listView,
+    );
+
+    final bool showBackButton = feedType == TimelineFeedType.mine;
+    final bool showShortcutButton = feedType == TimelineFeedType.public;
+    final navigator = Navigator.of(context);
+
+    Widget? leadingButton;
+    double? leadingWidth;
+    if (showShortcutButton) {
+      leadingButton = _TimelineHeaderShortcutButton(
+        icon: Icons.person_outline,
+        label: '自分の投稿',
+        color: const Color(0xFFFFD54F),
+        onTap: () async {
+          if (!await ensureLoggedIn()) {
+            return;
+          }
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TimelinePage.myPosts(),
+            ),
+          );
+        },
+      );
+      leadingWidth = 90;
+    } else if (showBackButton) {
+      leadingButton = _TimelineHeaderShortcutButton(
+        icon: Icons.arrow_back_ios_new,
+        label: 'みんなの日本酒',
+        color: const Color(0xFFFFD54F),
+        onTap: () {
+          if (navigator.canPop()) {
+            navigator.pop();
+          }
+        },
+      );
+      leadingWidth = 90;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF1D3567),
       appBar: PrimaryAppBar(
-        title: 'みんなの日本酒',
-        automaticallyImplyLeading: false,
+        title: title,
+        automaticallyImplyLeading: leadingButton == null && showBackButton,
+        leadingWidth: leadingWidth,
+        leading: leadingButton,
         actions: [
           IconButton(
             tooltip: '更新',
@@ -295,6 +408,50 @@ class TimelinePage extends StatelessWidget {
           backgroundColor: const Color(0xFF1D3567),
           onRefresh: notifier.refresh,
           child: scrollable,
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineHeaderShortcutButton extends StatelessWidget {
+  const _TimelineHeaderShortcutButton({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: SizedBox(
+          width: 72,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

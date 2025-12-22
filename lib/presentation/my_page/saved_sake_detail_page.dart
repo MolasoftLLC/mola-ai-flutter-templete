@@ -42,6 +42,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   late List<String> _imagePaths;
   bool _isImageProcessing = false;
   bool _isSyncing = false;
+  bool _isVisibilityUpdating = false;
   String? _progressMessage;
   bool _hasNameChanged = false;
   final GlobalKey _memoryHeadingKey = GlobalKey();
@@ -395,7 +396,88 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     ),
                 ],
               ),
+              if ((isLoggedIn || (_currentSake.savedId?.isNotEmpty ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: _buildVisibilityToggle(
+                    isLoggedIn: isLoggedIn,
+                    hasSavedId: _currentSake.savedId?.isNotEmpty ?? false,
+                    isServerSynced: _currentSake.syncStatus ==
+                        SavedSakeSyncStatus.serverSynced,
+                  ),
+                ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVisibilityToggle({
+    required bool isLoggedIn,
+    required bool hasSavedId,
+    required bool isServerSynced,
+  }) {
+    final bool canToggle = isLoggedIn &&
+        hasSavedId &&
+        isServerSynced &&
+        !_isVisibilityUpdating &&
+        !_isSyncing;
+    final bool needsSync = !hasSavedId || !isServerSynced;
+    final String helperText;
+    if (needsSync) {
+      helperText = 'サーバーに同期するとタイムライン公開を切り替えられます。';
+    } else if (!isLoggedIn) {
+      helperText = 'ログインすると公開設定を変更できます。';
+    } else {
+      helperText = 'タイムラインへの公開／非公開をいつでも切り替えられます。';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.public, color: Color(0xFFFFD54F), size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'タイムラインに表示する',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (_isVisibilityUpdating)
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            Switch.adaptive(
+              value: _currentSake.isPublic,
+              onChanged: needsSync
+                  ? null
+                  : (canToggle ? _handleVisibilityToggle : null),
+              activeColor: const Color(0xFFFFD54F),
+              inactiveTrackColor: Colors.white30,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          helperText,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            height: 1.3,
           ),
         ),
       ],
@@ -509,6 +591,47 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           ),
       ],
     );
+  }
+
+  Future<void> _handleVisibilityToggle(bool isPublic) async {
+    final savedId = _currentSake.savedId;
+    if (savedId == null || savedId.isEmpty) {
+      _showSnack('サーバーに同期するとタイムライン公開を設定できます');
+      return;
+    }
+    if (_currentSake.syncStatus != SavedSakeSyncStatus.serverSynced) {
+      _showSnack('サーバーに同期するとタイムライン公開を設定できます');
+      return;
+    }
+
+    setState(() {
+      _isVisibilityUpdating = true;
+    });
+
+    final notifier = context.read<SavedSakeNotifier>();
+    final success = await notifier.updateTimelineVisibility(
+      savedId: savedId,
+      isPublic: isPublic,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isVisibilityUpdating = false;
+    });
+
+    if (!success) {
+      _showSnack('公開設定の更新に失敗しました。通信環境をご確認ください。');
+      return;
+    }
+
+    setState(() {
+      _currentSake = _currentSake.copyWith(isPublic: isPublic);
+    });
+
+    _showSnack(isPublic ? 'タイムラインに公開しました' : 'タイムラインでの表示をオフにしました');
   }
 
   Widget _buildMemoSection() {

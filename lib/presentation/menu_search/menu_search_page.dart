@@ -215,7 +215,7 @@ class MenuSearchPage extends StatelessWidget {
                                             MainAxisAlignment.center,
                                         children: [
                                           Icon(
-                                            Icons.image_search,
+                                            Icons.menu_book,
                                             size: 48,
                                             color: Color(0xFF1D3567),
                                           ),

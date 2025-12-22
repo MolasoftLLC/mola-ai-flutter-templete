@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/assets.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
@@ -196,7 +197,9 @@ class MainSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
-                            errorMessage,
+                            searchMode == SearchMode.bottle
+                                ? '$errorMessage\n裏のラベルなら解析できるかも！'
+                                : errorMessage,
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,
@@ -472,16 +475,17 @@ class MainSearchPage extends StatelessWidget {
                           width: 2,
                         ),
                       ),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.image_search,
-                            size: 48,
-                            color: Color(0xFF1D3567),
+                          Image(
+                            image: Assets.medalBin,
+                            width: 48,
+                            height: 48,
+                            color: const Color(0xFF1D3567),
                           ),
-                          SizedBox(height: 12),
-                          Text(
+                          const SizedBox(height: 12),
+                          const Text(
                             'タップして画像を選択',
                             style: TextStyle(
                               color: Color(0xFF1D3567),

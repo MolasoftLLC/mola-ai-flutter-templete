@@ -197,12 +197,27 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
-  Future<Response<dynamic>> fetchSavedSakeTimeline() {
+  Future<Response<dynamic>> fetchSavedSakeTimeline({
+    String? userId,
+    String? cursor,
+    int? limit,
+  }) {
     final Uri $url = Uri.parse('/saved-sakes/timeline');
+    final Map<String, dynamic> $params = <String, dynamic>{};
+    if (userId != null) {
+      $params['userId'] = userId;
+    }
+    if (cursor != null) {
+      $params['cursor'] = cursor;
+    }
+    if (limit != null) {
+      $params['limit'] = limit;
+    }
     final Request $request = Request(
       'GET',
       $url,
       client.baseUrl,
+      parameters: $params,
     );
     return client.send<dynamic, dynamic>($request);
   }
@@ -229,6 +244,22 @@ class _$ApiClient extends ApiClient {
     Map<String, dynamic> body,
   ) {
     final Uri $url = Uri.parse('/saved-sakes/${savedId}/report');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> updateSavedSakeVisibility(
+    String savedId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/saved-sakes/${savedId}/visibility');
     final $body = body;
     final Request $request = Request(
       'POST',

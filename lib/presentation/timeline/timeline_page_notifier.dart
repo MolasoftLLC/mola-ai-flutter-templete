@@ -6,11 +6,13 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
 
-const _errorSentinel = Object();
+const _stateSentinel = Object();
 
 enum EnvyResult { success, already, pending, failed }
 
 enum ReportResult { success, already, pending, failed, unauthenticated }
+
+enum TimelineFeedType { public, mine }
 
 class TimelinePageState {
   const TimelinePageState({
@@ -22,6 +24,9 @@ class TimelinePageState {
     this.pendingEnvyIds = const <String>{},
     this.reportedSavedIds = const <String>{},
     this.pendingReportIds = const <String>{},
+    this.nextCursor,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   final bool isLoading;
@@ -32,37 +37,50 @@ class TimelinePageState {
   final Set<String> pendingEnvyIds;
   final Set<String> reportedSavedIds;
   final Set<String> pendingReportIds;
+  final String? nextCursor;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   TimelinePageState copyWith({
     bool? isLoading,
     bool? isRefreshing,
     List<Sake>? sakes,
-    Object? errorMessage = _errorSentinel,
+    Object? errorMessage = _stateSentinel,
     Set<String>? enviedIds,
     Set<String>? pendingEnvyIds,
     Set<String>? reportedSavedIds,
     Set<String>? pendingReportIds,
+    Object? nextCursor = _stateSentinel,
+    bool? hasMore,
+    bool? isLoadingMore,
   }) {
     return TimelinePageState(
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       sakes: sakes ?? this.sakes,
-      errorMessage: identical(errorMessage, _errorSentinel)
+      errorMessage: identical(errorMessage, _stateSentinel)
           ? this.errorMessage
           : errorMessage as String?,
       enviedIds: enviedIds ?? this.enviedIds,
       pendingEnvyIds: pendingEnvyIds ?? this.pendingEnvyIds,
       reportedSavedIds: reportedSavedIds ?? this.reportedSavedIds,
       pendingReportIds: pendingReportIds ?? this.pendingReportIds,
+      nextCursor: identical(nextCursor, _stateSentinel)
+          ? this.nextCursor
+          : nextCursor as String?,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }
 
 class TimelinePageNotifier extends StateNotifier<TimelinePageState>
     with LocatorMixin {
-  TimelinePageNotifier()
+  TimelinePageNotifier({this.feedType = TimelineFeedType.public})
       : _reportedSavedIds = <String>{},
         super(const TimelinePageState());
+
+  final TimelineFeedType feedType;
 
   SavedSakeSyncRepository get _savedSakeSyncRepository =>
       read<SavedSakeSyncRepository>();
@@ -113,6 +131,16 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       return;
     }
 
+    if (feedType == TimelineFeedType.mine && !isLoggedIn) {
+      state = state.copyWith(
+        isLoading: false,
+        isRefreshing: false,
+        sakes: const <Sake>[],
+        errorMessage: '自分の投稿を表示するにはログインしてください。',
+      );
+      return;
+    }
+
     if (isRefresh) {
       state = state.copyWith(isRefreshing: true, errorMessage: null);
     } else {
@@ -120,51 +148,43 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
     }
 
     try {
-      final fetchedSakes = await _savedSakeSyncRepository.fetchTimelineSakes();
-      for (final sake in fetchedSakes) {
+      final userId = feedType == TimelineFeedType.mine
+          ? _authRepository.currentUser?.uid
+          : null;
+      final page = await _savedSakeSyncRepository.fetchTimelineSakes(
+        userId: userId,
+      );
+      for (final sake in page.sakes) {
         logger.info(
           '[Timeline] fetched: savedId=${sake.savedId}, name=${sake.name}, '
           'impression="${sake.impression}", description="${sake.description}"',
         );
       }
-      final filteredSakes = fetchedSakes.where((sake) {
-        final savedId = sake.savedId?.trim();
-        if (savedId == null || savedId.isEmpty) {
-          return true;
-        }
-        return !_reportedSavedIds.contains(savedId);
-      }).toList();
-      final validKeys = <String>{
-        for (final sake in filteredSakes) envyKey(sake),
-      }..removeWhere((key) => key.isEmpty);
-      final filteredEnvied =
-          state.enviedIds.where((key) => validKeys.contains(key)).toSet();
-      final filteredPending =
-          state.pendingEnvyIds.where((key) => validKeys.contains(key)).toSet();
-      final filteredPendingReports = state.pendingReportIds
-          .where((savedId) =>
-              filteredSakes.any((sake) => sake.savedId?.trim() == savedId))
-          .toSet();
-      state = state.copyWith(
-        sakes: filteredSakes,
-        enviedIds: filteredEnvied,
-        pendingEnvyIds: filteredPending,
-        reportedSavedIds: Set<String>.from(_reportedSavedIds),
-        pendingReportIds: filteredPendingReports,
+      final filteredSakes = _filterReportedSakes(page.sakes);
+      _syncStateWithSakes(
+        filteredSakes,
+        nextCursor: page.nextCursor,
+        canLoadMore: page.canLoadMore,
       );
     } on SavedSakeTimelineUnauthorizedException {
       final message = isLoggedIn
           ? '認証の有効期限が切れました。再度ログインしてください。'
-          : 'タイムラインを表示するにはログインしてください。';
+          : (feedType == TimelineFeedType.mine
+              ? '自分の投稿を表示するにはログインしてください。'
+              : 'タイムラインを表示するにはログインしてください。');
       state = state.copyWith(
         sakes: const <Sake>[],
         errorMessage: message,
+        nextCursor: null,
+        hasMore: false,
       );
     } catch (error, stackTrace) {
       logger.warning('タイムライン取得中に例外が発生しました: $error');
       logger.info(stackTrace.toString());
       state = state.copyWith(
         errorMessage: 'データの取得に失敗しました。通信環境をご確認ください。',
+        nextCursor: null,
+        hasMore: false,
       );
     } finally {
       if (isRefresh) {
@@ -172,10 +192,69 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       } else {
         state = state.copyWith(isLoading: false);
       }
+      state = state.copyWith(isLoadingMore: false);
     }
   }
 
   Future<void> refresh() => fetchTimeline(isRefresh: true);
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || state.isLoading || state.isRefreshing) {
+      return;
+    }
+    if (!state.hasMore || state.nextCursor == null) {
+      return;
+    }
+    if (feedType == TimelineFeedType.mine && !isLoggedIn) {
+      return;
+    }
+
+    final cursor = state.nextCursor!;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final userId = feedType == TimelineFeedType.mine
+          ? _authRepository.currentUser?.uid
+          : null;
+      final page = await _savedSakeSyncRepository.fetchTimelineSakes(
+        userId: userId,
+        cursor: cursor,
+      );
+      final filteredNew = _filterReportedSakes(page.sakes);
+      final merged = List<Sake>.from(state.sakes);
+      if (filteredNew.isNotEmpty) {
+        final existingIds = <String>{
+          for (final sake in merged)
+            if (sake.savedId?.trim().isNotEmpty == true) sake.savedId!.trim(),
+        };
+        for (final sake in filteredNew) {
+          final savedId = sake.savedId?.trim();
+          if (savedId != null && savedId.isNotEmpty) {
+            if (existingIds.contains(savedId)) {
+              continue;
+            }
+            existingIds.add(savedId);
+          }
+          merged.add(sake);
+        }
+      }
+
+      _syncStateWithSakes(
+        merged,
+        nextCursor: page.nextCursor,
+        canLoadMore: page.canLoadMore,
+      );
+    } on SavedSakeTimelineUnauthorizedException {
+      state = state.copyWith(
+        hasMore: false,
+        nextCursor: null,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('タイムライン追加取得中に例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    } finally {
+      state = state.copyWith(isLoadingMore: false);
+    }
+  }
 
   Future<EnvyResult> incrementEnvy(Sake sake) async {
     final key = envyKey(sake);
@@ -280,6 +359,49 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       sakes: updatedSakes,
     );
     return ReportResult.success;
+  }
+
+  List<Sake> _filterReportedSakes(List<Sake> sakes) {
+    return sakes.where((sake) {
+      final savedId = sake.savedId?.trim();
+      if (savedId == null || savedId.isEmpty) {
+        return true;
+      }
+      return !_reportedSavedIds.contains(savedId);
+    }).toList();
+  }
+
+  void _syncStateWithSakes(
+    List<Sake> updatedSakes, {
+    required String? nextCursor,
+    required bool canLoadMore,
+  }) {
+    final normalizedCursor =
+        canLoadMore && nextCursor != null && nextCursor.trim().isNotEmpty
+            ? nextCursor.trim()
+            : null;
+
+    final validKeys = <String>{
+      for (final sake in updatedSakes) envyKey(sake),
+    }..removeWhere((key) => key.isEmpty);
+    final filteredEnvied =
+        state.enviedIds.where((key) => validKeys.contains(key)).toSet();
+    final filteredPending =
+        state.pendingEnvyIds.where((key) => validKeys.contains(key)).toSet();
+    final filteredPendingReports = state.pendingReportIds
+        .where((savedId) =>
+            updatedSakes.any((sake) => sake.savedId?.trim() == savedId))
+        .toSet();
+
+    state = state.copyWith(
+      sakes: updatedSakes,
+      enviedIds: filteredEnvied,
+      pendingEnvyIds: filteredPending,
+      reportedSavedIds: Set<String>.from(_reportedSavedIds),
+      pendingReportIds: filteredPendingReports,
+      nextCursor: normalizedCursor,
+      hasMore: normalizedCursor != null && canLoadMore,
+    );
   }
 
   static String envyKey(Sake sake) {
