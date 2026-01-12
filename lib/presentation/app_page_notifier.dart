@@ -23,6 +23,7 @@ abstract class AppPageState with _$AppPageState {
     @Default(0) int currentIndex,
     @Default(false) bool needUpDate,
     @Default(false) bool hasShownPreferencesDialog,
+    @Default(false) bool hasReadTimelineIntro,
   }) = _AppPageState;
 }
 
@@ -62,6 +63,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     state = state.copyWith(needUpDate: needUpDate);
 
     unawaited(_maybeShowHelpGuide(state.currentIndex));
+    unawaited(_restoreTimelineIntroStatus());
 
     // アプリ起動時に好みの設定をチェック
     _checkAndShowPreferencesDialog();
@@ -216,6 +218,9 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     final hasShownIntro = prefs.getBool(_timelineIntroKey) ?? false;
     if (hasShownIntro) {
       _hasAttemptedTimelineIntro = true;
+      if (!state.hasReadTimelineIntro) {
+        state = state.copyWith(hasReadTimelineIntro: true);
+      }
       return;
     }
 
@@ -284,8 +289,17 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       );
 
       await prefs.setBool(_timelineIntroKey, true);
+      state = state.copyWith(hasReadTimelineIntro: true);
     } finally {
       _isTimelineIntroDialogOpen = false;
+    }
+  }
+
+  Future<void> _restoreTimelineIntroStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownIntro = prefs.getBool(_timelineIntroKey) ?? false;
+    if (hasShownIntro && !state.hasReadTimelineIntro) {
+      state = state.copyWith(hasReadTimelineIntro: true);
     }
   }
 

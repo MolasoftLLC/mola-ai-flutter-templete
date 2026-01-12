@@ -19,6 +19,7 @@ mixin _$AppPageState {
   int get currentIndex => throw _privateConstructorUsedError;
   bool get needUpDate => throw _privateConstructorUsedError;
   bool get hasShownPreferencesDialog => throw _privateConstructorUsedError;
+  bool get hasReadTimelineIntro => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $AppPageStateCopyWith<AppPageState> get copyWith =>
@@ -32,7 +33,10 @@ abstract class $AppPageStateCopyWith<$Res> {
       _$AppPageStateCopyWithImpl<$Res, AppPageState>;
   @useResult
   $Res call(
-      {int currentIndex, bool needUpDate, bool hasShownPreferencesDialog});
+      {int currentIndex,
+      bool needUpDate,
+      bool hasShownPreferencesDialog,
+      bool hasReadTimelineIntro});
 }
 
 /// @nodoc
@@ -51,6 +55,7 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
     Object? currentIndex = null,
     Object? needUpDate = null,
     Object? hasShownPreferencesDialog = null,
+    Object? hasReadTimelineIntro = null,
   }) {
     return _then(_value.copyWith(
       currentIndex: null == currentIndex
@@ -65,6 +70,10 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
           ? _value.hasShownPreferencesDialog
           : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
               as bool,
+      hasReadTimelineIntro: null == hasReadTimelineIntro
+          ? _value.hasReadTimelineIntro
+          : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -78,7 +87,10 @@ abstract class _$$AppPageStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int currentIndex, bool needUpDate, bool hasShownPreferencesDialog});
+      {int currentIndex,
+      bool needUpDate,
+      bool hasShownPreferencesDialog,
+      bool hasReadTimelineIntro});
 }
 
 /// @nodoc
@@ -95,6 +107,7 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
     Object? currentIndex = null,
     Object? needUpDate = null,
     Object? hasShownPreferencesDialog = null,
+    Object? hasReadTimelineIntro = null,
   }) {
     return _then(_$AppPageStateImpl(
       currentIndex: null == currentIndex
@@ -109,6 +122,10 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
           ? _value.hasShownPreferencesDialog
           : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
               as bool,
+      hasReadTimelineIntro: null == hasReadTimelineIntro
+          ? _value.hasReadTimelineIntro
+          : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -119,7 +136,8 @@ class _$AppPageStateImpl implements _AppPageState {
   const _$AppPageStateImpl(
       {this.currentIndex = 0,
       this.needUpDate = false,
-      this.hasShownPreferencesDialog = false});
+      this.hasShownPreferencesDialog = false,
+      this.hasReadTimelineIntro = false});
 
   @override
   @JsonKey()
@@ -130,10 +148,13 @@ class _$AppPageStateImpl implements _AppPageState {
   @override
   @JsonKey()
   final bool hasShownPreferencesDialog;
+  @override
+  @JsonKey()
+  final bool hasReadTimelineIntro;
 
   @override
   String toString() {
-    return 'AppPageState(currentIndex: $currentIndex, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog)';
+    return 'AppPageState(currentIndex: $currentIndex, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog, hasReadTimelineIntro: $hasReadTimelineIntro)';
   }
 
   @override
@@ -147,12 +168,14 @@ class _$AppPageStateImpl implements _AppPageState {
                 other.needUpDate == needUpDate) &&
             (identical(other.hasShownPreferencesDialog,
                     hasShownPreferencesDialog) ||
-                other.hasShownPreferencesDialog == hasShownPreferencesDialog));
+                other.hasShownPreferencesDialog == hasShownPreferencesDialog) &&
+            (identical(other.hasReadTimelineIntro, hasReadTimelineIntro) ||
+                other.hasReadTimelineIntro == hasReadTimelineIntro));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, currentIndex, needUpDate, hasShownPreferencesDialog);
+  int get hashCode => Object.hash(runtimeType, currentIndex, needUpDate,
+      hasShownPreferencesDialog, hasReadTimelineIntro);
 
   @JsonKey(ignore: true)
   @override
@@ -165,7 +188,8 @@ abstract class _AppPageState implements AppPageState {
   const factory _AppPageState(
       {final int currentIndex,
       final bool needUpDate,
-      final bool hasShownPreferencesDialog}) = _$AppPageStateImpl;
+      final bool hasShownPreferencesDialog,
+      final bool hasReadTimelineIntro}) = _$AppPageStateImpl;
 
   @override
   int get currentIndex;
@@ -173,6 +197,8 @@ abstract class _AppPageState implements AppPageState {
   bool get needUpDate;
   @override
   bool get hasShownPreferencesDialog;
+  @override
+  bool get hasReadTimelineIntro;
   @override
   @JsonKey(ignore: true)
   _$$AppPageStateImplCopyWith<_$AppPageStateImpl> get copyWith =>

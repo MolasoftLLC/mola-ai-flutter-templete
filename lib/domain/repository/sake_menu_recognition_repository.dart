@@ -10,6 +10,7 @@ import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
+import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../notifier/favorite/favorite_notifier.dart';
 
 class SakeMenuRecognitionRepository {
@@ -187,14 +188,76 @@ class SakeMenuRecognitionRepository {
           type: body['type'] as String?,
         );
       } else {
-        // エラーレスポンスの詳細をログに出力
+        final statusCode = response.statusCode ?? -1;
+        final errorPayload = response.error ?? response.body;
+        final message = _extractBottleErrorMessage(errorPayload);
         logger.shout(
-            '酒瓶認識API失敗: ステータスコード=${response.statusCode}, エラー=${response.error}');
-        return null;
+            '酒瓶認識API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}');
+        throw SakeBottleRecognitionException(
+          statusCode: statusCode,
+          message: message,
+        );
       }
+    } on SakeBottleRecognitionException catch (e) {
+      logger.shout('酒瓶認識API例外: $e');
+      rethrow;
     } catch (e, stackTrace) {
       // 例外の詳細をログに出力
       logger.shout('酒瓶認識API例外: $e');
+      logger.shout('スタックトレース: $stackTrace');
+      return null;
+    }
+  }
+
+  Future<SakeBottleComprehensiveResponse?> comprehensiveSakeBottleAnalysis(
+    File file, {
+    String? preferences,
+  }) async {
+    try {
+      final baseFile = await ImageUtils.compressAndEncodeImage(file);
+      final payload = <String, dynamic>{
+        'file': baseFile,
+      };
+      if (preferences != null && preferences.isNotEmpty) {
+        payload['preferences'] = preferences;
+      }
+      final response = await _apiClient.comprehensiveSakeBottleAnalysis(
+        payload,
+      );
+
+      if (response.isSuccessful) {
+        final body = response.body;
+        if (body is! Map<String, dynamic>) {
+          logger.shout('酒瓶包括解析API: レスポンスボディが不正です');
+          return null;
+        }
+
+        final infoJson = body['sakeInfo'] as Map<String, dynamic>?;
+        Sake? sakeInfo;
+        if (infoJson != null) {
+          sakeInfo = Sake.fromJson(infoJson);
+        }
+
+        return SakeBottleComprehensiveResponse(
+          sakeName: body['sakeName'] as String?,
+          type: body['type'] as String?,
+          sakeInfo: sakeInfo,
+        );
+      } else {
+        final statusCode = response.statusCode ?? -1;
+        final errorPayload = response.error ?? response.body;
+        final message = _extractBottleErrorMessage(errorPayload);
+        logger.shout(
+            '酒瓶包括解析API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}');
+        throw SakeBottleRecognitionException(
+          statusCode: statusCode,
+          message: message,
+        );
+      }
+    } on SakeBottleRecognitionException {
+      rethrow;
+    } catch (e, stackTrace) {
+      logger.shout('酒瓶包括解析API例外: $e');
       logger.shout('スタックトレース: $stackTrace');
       return null;
     }
@@ -225,4 +288,30 @@ class SakeMenuRecognitionRepository {
       return null;
     }
   }
+
+  String _extractBottleErrorMessage(dynamic payload) {
+    if (payload is Map<String, dynamic>) {
+      final error = payload['error'];
+      if (error is String && error.isNotEmpty) {
+        return error;
+      }
+    } else if (payload is String && payload.isNotEmpty) {
+      return payload;
+    }
+    return '酒瓶の認識に失敗しました';
+  }
+}
+
+class SakeBottleRecognitionException implements Exception {
+  SakeBottleRecognitionException({
+    required this.statusCode,
+    required this.message,
+  });
+
+  final int statusCode;
+  final String message;
+
+  @override
+  String toString() =>
+      'SakeBottleRecognitionException(statusCode: $statusCode, message: $message)';
 }

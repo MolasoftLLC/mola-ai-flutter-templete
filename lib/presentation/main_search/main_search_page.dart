@@ -20,6 +20,7 @@ class MainSearchPage extends StatelessWidget {
   const MainSearchPage._({Key? key}) : super(key: key);
 
   static final ScrollController _scrollController = ScrollController();
+  static final GlobalKey _resultSectionKey = GlobalKey();
 
   static Widget wrapped() {
     return MultiProvider(
@@ -68,6 +69,23 @@ class MainSearchPage extends StatelessWidget {
       });
     }
 
+    final bool showLoadingIndicator = isLoading || isAdLoading;
+    final double contentMinHeight =
+        MediaQuery.of(context).size.height - kToolbarHeight - 48;
+    final Widget loadingContent = SizedBox(
+      height: contentMinHeight < 0 ? null : contentMinHeight,
+      child: Align(
+        alignment: const Alignment(0, -0.35),
+        child: isAdLoading
+            ? const AILoading(
+                loadingText: '解析中...時々出る広告の表示にご協力ください...',
+              )
+            : isAnalyzingInBackground
+                ? const AILoading(loadingText: '日本酒情報を取得しています...')
+                : const AILoading(loadingText: '日本酒情報を取得しています...'),
+      ),
+    );
+
     return Scaffold(
       appBar: PrimaryAppBar(
         title: '日本酒検索',
@@ -95,12 +113,11 @@ class MainSearchPage extends StatelessWidget {
         ),
         child: SingleChildScrollView(
           controller: _scrollController,
-          child: isLoading || isAdLoading
-              ? isAdLoading
-                  ? const AILoading(loadingText: '解析中...時々出る広告の表示にご協力ください...')
-                  : isAnalyzingInBackground
-                      ? const AILoading(loadingText: '日本酒情報を取得しています...')
-                      : const AILoading(loadingText: '日本酒情報を取得しています...')
+          physics: showLoadingIndicator
+              ? const NeverScrollableScrollPhysics()
+              : const BouncingScrollPhysics(),
+          child: showLoadingIndicator
+              ? loadingContent
               : Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -183,14 +200,17 @@ class MainSearchPage extends StatelessWidget {
 
                       // 検索結果表示
                       if (sakeInfo != null)
-                        _buildSakeInfoCard(
-                          context,
-                          notifier,
-                          favNotifier,
-                          savedNotifier,
-                          sakeInfo,
-                          myFavoriteList,
-                          savedSakeList,
+                        Container(
+                          key: _resultSectionKey,
+                          child: _buildSakeInfoCard(
+                            context,
+                            notifier,
+                            favNotifier,
+                            savedNotifier,
+                            sakeInfo,
+                            myFavoriteList,
+                            savedSakeList,
+                          ),
                         ),
 
                       if (errorMessage != null)
@@ -540,18 +560,6 @@ class MainSearchPage extends StatelessWidget {
             ),
           ),
 
-          // 画像がある場合はクリアボタンを表示
-          if (sakeImage != null)
-            TextButton.icon(
-              onPressed: () {
-                notifier.clearImage();
-              },
-              icon: const Icon(Icons.clear, size: 16),
-              label: const Text('画像をクリア'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey.shade700,
-              ),
-            ),
 
           const SizedBox(height: 16),
 
@@ -646,15 +654,15 @@ class MainSearchPage extends StatelessWidget {
     IconData recommendationIcon = Icons.star;
 
     if (sakeInfo.recommendationScore != null) {
-      if (sakeInfo.recommendationScore! >= 9) {
+      if (sakeInfo.recommendationScore! >= 8) {
         recommendationText = '超おすすめ！';
         recommendationColor = Colors.red;
         recommendationIcon = Icons.star;
-      } else if (sakeInfo.recommendationScore! >= 7) {
+      } else if (sakeInfo.recommendationScore! >= 6) {
         recommendationText = 'おすすめ！';
         recommendationColor = Colors.orange;
         recommendationIcon = Icons.star;
-      } else if (sakeInfo.recommendationScore! >= 5) {
+      } else if (sakeInfo.recommendationScore! >= 4) {
         recommendationText = '良い日本酒';
         recommendationColor = Colors.amber;
         recommendationIcon = Icons.star_half;
@@ -1048,6 +1056,16 @@ class MainSearchPage extends StatelessWidget {
   }
 
   static void _scrollToResults() {
+    final context = _resultSectionKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+        alignment: 0.05,
+      );
+      return;
+    }
     if (_scrollController.hasClients) {
       final double targetPosition =
           _scrollController.position.maxScrollExtent * 0.6;

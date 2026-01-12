@@ -1,13 +1,17 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'envy_result.dart';
@@ -63,6 +67,203 @@ class TimelinePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _TimelinePageContent(
+      feedType: feedType,
+      title: title,
+      emptyMessage: emptyMessage,
+    );
+  }
+}
+
+class _TimelinePageContent extends StatefulWidget {
+  const _TimelinePageContent({
+    required this.feedType,
+    required this.title,
+    required this.emptyMessage,
+  });
+
+  final TimelineFeedType feedType;
+  final String title;
+  final String emptyMessage;
+
+  @override
+  State<_TimelinePageContent> createState() => _TimelinePageContentState();
+}
+
+class _TimelinePageContentState extends State<_TimelinePageContent> {
+  static const _envyTutorialPrefKey = 'timeline_envy_button_tutorial_shown';
+  final GlobalKey _envyCoachMarkKey = GlobalKey();
+  TutorialCoachMark? _tutorialCoachMark;
+  bool _hasShownTutorial = false;
+  bool _isTutorialVisible = false;
+  bool _isTutorialScheduled = false;
+  bool _hasLoadedTutorialPreference = false;
+
+  bool _isTimelineTabActive(BuildContext context) {
+    try {
+      return context.select((AppPageState state) => state.currentIndex == 1);
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
+
+  bool _hasReadTimelineIntro(BuildContext context) {
+    try {
+      return context.select((AppPageState state) => state.hasReadTimelineIntro);
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreTutorialPreference();
+  }
+
+  @override
+  void dispose() {
+    _tutorialCoachMark?.finish();
+    super.dispose();
+  }
+
+  void _scheduleEnvyCoachMark(bool shouldShow) {
+    if (!shouldShow ||
+        _hasShownTutorial ||
+        _isTutorialVisible ||
+        _isTutorialScheduled ||
+        !_hasLoadedTutorialPreference) {
+      return;
+    }
+    _isTutorialScheduled = true;
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (!mounted) {
+        _isTutorialScheduled = false;
+        return;
+      }
+      _isTutorialScheduled = false;
+      _showEnvyCoachMark();
+    });
+  }
+
+  void _showEnvyCoachMark() {
+    if (!mounted || _hasShownTutorial || _isTutorialVisible) {
+      return;
+    }
+    final targetContext = _envyCoachMarkKey.currentContext;
+    final renderObject = targetContext?.findRenderObject();
+    if (renderObject == null || !renderObject.attached) {
+      _scheduleEnvyCoachMark(true);
+      return;
+    }
+    _tutorialCoachMark = TutorialCoachMark(
+      targets: _buildEnvyTargets(),
+      alignSkip: Alignment.topRight,
+      textSkip: '了解',
+      colorShadow: Colors.black87,
+      opacityShadow: 0.85,
+      onFinish: _markTutorialComplete,
+      onSkip: () {
+        _markTutorialComplete();
+        return true;
+      },
+    )..show(context: context);
+    _isTutorialVisible = true;
+  }
+
+  void _markTutorialComplete() {
+    _isTutorialVisible = false;
+    _hasShownTutorial = true;
+    _tutorialCoachMark = null;
+    unawaited(_persistTutorialShown());
+  }
+
+  Future<void> _restoreTutorialPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShown = prefs.getBool(_envyTutorialPrefKey) ?? false;
+    if (mounted) {
+      setState(() {
+        _hasShownTutorial = hasShown;
+        _hasLoadedTutorialPreference = true;
+      });
+    } else {
+      _hasShownTutorial = hasShown;
+      _hasLoadedTutorialPreference = true;
+    }
+  }
+
+  Future<void> _persistTutorialShown() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_envyTutorialPrefKey, true);
+  }
+
+  List<TargetFocus> _buildEnvyTargets() {
+    return [
+      TargetFocus(
+        identify: 'timeline-envy-button',
+        keyTarget: _envyCoachMarkKey,
+        shape: ShapeLightFocus.Circle,
+        paddingFocus: 12,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: _buildEnvyCoachMarkContent(),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildEnvyCoachMarkContent() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 260),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '「うらやま」を送ってみよう',
+              style: TextStyle(
+                color: Color(0xFF1D3567),
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '気になった羨ましい日本酒に気軽Goodを送ろう！\n匿名だから気にせずどんどん押してね。',
+              style: TextStyle(
+                color: Color(0xFF1D3567),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final feedType = widget.feedType;
+    final title = widget.title;
+    final emptyMessage = widget.emptyMessage;
+    final bool isTimelineTabActive = _isTimelineTabActive(context);
+    final bool hasReadTimelineIntro = _hasReadTimelineIntro(context);
     final notifier = context.watch<TimelinePageNotifier>();
     final isLoading =
         context.select((TimelinePageState state) => state.isLoading);
@@ -109,6 +310,12 @@ class TimelinePage extends StatelessWidget {
     final int baseItemCount =
         showFallback ? 1 : sakes.length + (showLoadingIndicator ? 1 : 0);
     final int itemCount = rankingOffset + baseItemCount;
+    final bool shouldShowEnvyTutorial = isTimelineTabActive &&
+        hasReadTimelineIntro &&
+        feedType == TimelineFeedType.public &&
+        sakes.isNotEmpty &&
+        !showFallback;
+    _scheduleEnvyCoachMark(shouldShowEnvyTutorial);
 
     Widget buildFallbackItem() {
       if (showInitialLoading) {
@@ -129,7 +336,7 @@ class TimelinePage extends StatelessWidget {
       return _TimelineMessageView(message: emptyMessage);
     }
 
-    Widget buildCard(int index) {
+    Widget buildCard(int index, {GlobalKey? envyCoachMarkKey}) {
       final sake = sakes[index];
       final normalizedName =
           sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明';
@@ -169,6 +376,7 @@ class TimelinePage extends StatelessWidget {
         isFavorite: isFavorite,
         isEnvied: isEnvied,
         isEnvyPending: isEnvyPending,
+        envyCoachMarkKey: envyCoachMarkKey,
         envyCount: envyCount,
         isReportPending: isReportPending,
         onToggleSaved: () async {
@@ -357,7 +565,12 @@ class TimelinePage extends StatelessWidget {
             ),
           );
         }
-        return buildCard(dataIndex);
+        final attachTutorialKey =
+            feedType == TimelineFeedType.public && dataIndex == 0;
+        return buildCard(
+          dataIndex,
+          envyCoachMarkKey: attachTutorialKey ? _envyCoachMarkKey : null,
+        );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 16),
     );
@@ -565,6 +778,7 @@ class _TimelineSakeCard extends StatefulWidget {
     required this.envyCount,
     required this.isEnvied,
     required this.isEnvyPending,
+    this.envyCoachMarkKey,
     this.isReportPending = false,
     required this.onToggleSaved,
     required this.onToggleFavorite,
@@ -578,6 +792,7 @@ class _TimelineSakeCard extends StatefulWidget {
   final int envyCount;
   final bool isEnvied;
   final bool isEnvyPending;
+  final GlobalKey? envyCoachMarkKey;
   final bool isReportPending;
   final VoidCallback onToggleSaved;
   final VoidCallback onToggleFavorite;
@@ -726,6 +941,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                     GestureDetector(
                       onTap: isInteractable ? widget.onToggleEnvy : null,
                       child: AnimatedContainer(
+                        key: widget.envyCoachMarkKey,
                         duration: const Duration(milliseconds: 180),
                         width: 44,
                         height: 44,

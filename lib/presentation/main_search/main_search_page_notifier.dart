@@ -12,6 +12,7 @@ import '../../common/services/ad_counter_service.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
+import '../../domain/eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
@@ -654,7 +655,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       if (analysisFile == null || !analysisFile.existsSync()) {
         logger.info('酒瓶解析: 解析に使用する画像が見つかりませんでした');
         if (currentPendingId != null) {
-          _handleAnalysisFailure(
+          await _handleAnalysisFailure(
             currentPendingId,
             '解析に使用する画像が見つかりませんでした',
           );
@@ -667,45 +668,42 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
-      final response =
-          await sakeMenuRecognitionRepository.recognizeSakeBottle(analysisFile);
+      final preferenceText =
+          read<MyPageNotifier>().state.preferences?.trim();
+      final normalizedPreferences =
+          (preferenceText != null && preferenceText.isNotEmpty)
+              ? preferenceText
+              : null;
 
-      if (response == null) {
-        logger.shout('酒瓶解析: APIレスポンスがnullです');
-        _handleAnalysisFailure(
+      SakeBottleComprehensiveResponse? response;
+      try {
+        response = await sakeMenuRecognitionRepository
+            .comprehensiveSakeBottleAnalysis(
+          analysisFile,
+          preferences: normalizedPreferences,
+        );
+      } on SakeBottleRecognitionException catch (e) {
+        await _handleAnalysisFailure(
           currentPendingId,
-          '酒瓶の認識に失敗しました',
+          e.message,
+          removeEntry: e.statusCode == 400 || e.statusCode == 422,
         );
         return;
       }
 
-      if (response.sakeName == null) {
-        logger.shout('酒瓶解析: 日本酒名が認識できませんでした');
-        _handleAnalysisFailure(
-          currentPendingId,
-          '酒瓶から日本酒名を認識できませんでした',
-        );
-        return;
-      }
-
-      logger
-          .info('酒瓶解析: 認識成功 - 日本酒名=${response.sakeName}, タイプ=${response.type}');
-
-      // 認識された日本酒情報を取得
-      logger.info('酒瓶解析: 日本酒情報取得開始');
-      final sakeInfo = await sakeMenuRecognitionRepository.getSakeInfo(
-        response.sakeName!,
-        type: response.type,
-      );
-
-      if (sakeInfo == null) {
+      if (response == null || response.sakeInfo == null) {
         logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
-        _handleAnalysisFailure(
+        await _handleAnalysisFailure(
           currentPendingId,
           '日本酒情報が見つかりませんでした',
         );
         return;
       }
+
+      final sakeInfo = response.sakeInfo!;
+      final recognizedName = response.sakeName ?? sakeInfo.name ?? '名称不明';
+      final recognizedType = response.type ?? sakeInfo.type ?? 'タイプ不明';
+      logger.info('酒瓶解析: 認識成功 - 日本酒名=$recognizedName, タイプ=$recognizedType');
 
       state = state.copyWith(
         sakeInfo: sakeInfo,
@@ -768,7 +766,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');
       logger.shout('スタックトレース: $stackTrace');
-      _handleAnalysisFailure(
+      await _handleAnalysisFailure(
         currentPendingId,
         '酒瓶解析に失敗しました: ${e.toString()}',
       );
@@ -837,12 +835,30 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     return updated;
   }
 
-  void _handleAnalysisFailure(String? savedId, String message) {
+  Future<void> _handleAnalysisFailure(
+    String? savedId,
+    String message, {
+    bool removeEntry = false,
+  }) async {
+    logger.warning(
+      '酒瓶解析: 解析失敗 (savedId=${savedId ?? 'unknown'}) reason=$message',
+    );
+    bool keepEntry = false;
+    Sake? failedSake;
     if (savedId != null) {
-      read<SavedSakeNotifier>().removeById(savedId);
+      if (removeEntry) {
+        await _deleteSavedSakeFully(savedId);
+      } else {
+        failedSake =
+            await read<SavedSakeNotifier>().markAnalysisFailed(savedId);
+        keepEntry = failedSake != null;
+        if (failedSake != null) {
+          await _syncFailedSakeToServer(failedSake, message);
+        }
+      }
     }
     final path = state.analyzingImagePath;
-    if (path != null) {
+    if (path != null && !keepEntry) {
       try {
         final file = File(path);
         if (file.existsSync()) {
@@ -861,6 +877,59 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     );
     if (savedId != null) {
       _savedIdPublicFlags.remove(savedId);
+    }
+  }
+
+  Future<void> _deleteSavedSakeFully(String savedId) async {
+    final notifier = read<SavedSakeNotifier>();
+    await notifier.removeById(savedId);
+    final authNotifier = read<AuthRepository>();
+    final user = authNotifier.currentUser;
+    if (user == null) {
+      logger.warning('保存酒削除: ログインしていないためサーバー削除をスキップしました (id=$savedId)');
+      return;
+    }
+    try {
+      final syncRepository = read<SavedSakeSyncRepository>();
+      final success = await syncRepository.deleteSavedSakeRecord(
+        userId: user.uid,
+        savedId: savedId,
+      );
+      if (!success) {
+        logger.warning('保存酒削除APIが失敗しました (id=$savedId)');
+      } else {
+        logger.info('保存酒をサーバーから削除しました (id=$savedId)');
+      }
+    } catch (error, stackTrace) {
+      logger.warning('保存酒削除API呼び出しで例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
+  Future<void> _syncFailedSakeToServer(Sake failedSake, String reason) async {
+    final savedId = failedSake.savedId;
+    if (savedId == null || savedId.isEmpty) {
+      return;
+    }
+    final user = authRepository.currentUser;
+    if (user == null) {
+      logger.info('解析失敗のサーバー反映をスキップ (未ログイン) id=$savedId');
+      return;
+    }
+    try {
+      final shareFlag = _savedIdPublicFlags[savedId] ?? failedSake.isPublic;
+      final success = await savedSakeSyncRepository.markAnalysisFailedOnServer(
+        userId: user.uid,
+        savedId: savedId,
+        failureReason: reason,
+        isPublic: shareFlag,
+      );
+      if (!success) {
+        logger.warning('解析失敗のサーバー反映に失敗しました: id=$savedId');
+      }
+    } catch (error, stackTrace) {
+      logger.warning('解析失敗のサーバー同期で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
     }
   }
 

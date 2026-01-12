@@ -40,6 +40,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   static const int guestSavedLimit = 8;
   static const int memberSavedLimit = 50;
+  static const String analysisFailedLabel = '解析失敗(名前変更して解析可能)';
 
   final Random _random = Random();
   final Set<String> _syncingImageIds = <String>{};
@@ -333,6 +334,29 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
     await updateSavedSake(updated);
     logger.info('保存酒の画像を削除: id=$savedId path=$imagePath');
+    return updated;
+  }
+
+  Future<Sake?> markAnalysisFailed(String savedId) async {
+    final index = state.savedSakeList
+        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    if (index == -1) {
+      logger.warning('解析失敗状態に更新する保存酒が見つかりません: id=$savedId');
+      return null;
+    }
+
+    final target = state.savedSakeList[index];
+    final updated = target.copyWith(
+      name: analysisFailedLabel,
+      syncStatus: SavedSakeSyncStatus.localOnly,
+    );
+
+    final updatedList = [...state.savedSakeList];
+    updatedList[index] = updated;
+    state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
+    await _persistSavedSakes();
+    logger.info('保存済み日本酒を解析失敗状態に更新しました: id=$savedId');
     return updated;
   }
 

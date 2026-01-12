@@ -61,6 +61,12 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'saved-sakes/{savedId}/analysis-failed')
+  Future<Response> markSavedSakeAnalysisFailed(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Get(path: 'saved-sakes')
   Future<Response> fetchSavedSakes(
     @Query('userId') String userId,
@@ -111,6 +117,11 @@ abstract class ApiClient extends ChopperService {
   @Post(path: 'saved-sakes/{savedId}/images/delete')
   Future<Response> deleteSavedSakeImage(
     @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Post(path: 'sake-bottle/comprehensive-analysis')
+  Future<Response> comprehensiveSakeBottleAnalysis(
     @Body() Map<String, dynamic> body,
   );
 

@@ -184,6 +184,22 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> markSavedSakeAnalysisFailed(
+    String savedId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/saved-sakes/${savedId}/analysis-failed');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> fetchSavedSakes(String userId) {
     final Uri $url = Uri.parse('/saved-sakes');
     final Map<String, dynamic> $params = <String, dynamic>{'userId': userId};
@@ -203,16 +219,11 @@ class _$ApiClient extends ApiClient {
     int? limit,
   }) {
     final Uri $url = Uri.parse('/saved-sakes/timeline');
-    final Map<String, dynamic> $params = <String, dynamic>{};
-    if (userId != null) {
-      $params['userId'] = userId;
-    }
-    if (cursor != null) {
-      $params['cursor'] = cursor;
-    }
-    if (limit != null) {
-      $params['limit'] = limit;
-    }
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'userId': userId,
+      'cursor': cursor,
+      'limit': limit,
+    };
     final Request $request = Request(
       'GET',
       $url,
@@ -225,10 +236,7 @@ class _$ApiClient extends ApiClient {
   @override
   Future<Response<dynamic>> fetchTimelineEnvyRanking({int? limit}) {
     final Uri $url = Uri.parse('/saved-sakes/timeline/envy-ranking');
-    final Map<String, dynamic> $params = <String, dynamic>{};
-    if (limit != null) {
-      $params['limit'] = limit;
-    }
+    final Map<String, dynamic> $params = <String, dynamic>{'limit': limit};
     final Request $request = Request(
       'GET',
       $url,
@@ -324,6 +332,20 @@ class _$ApiClient extends ApiClient {
     Map<String, dynamic> body,
   ) {
     final Uri $url = Uri.parse('/saved-sakes/${savedId}/images/delete');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> comprehensiveSakeBottleAnalysis(
+      Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/sake-bottle/comprehensive-analysis');
     final $body = body;
     final Request $request = Request(
       'POST',
@@ -492,8 +514,7 @@ class _$ApiClient extends ApiClient {
 
   @override
   Future<Response<dynamic>> fetchAchievementStats(String userId) {
-    final Uri $url =
-        Uri.parse('/users/${Uri.encodeComponent(userId)}/achievement-stats');
+    final Uri $url = Uri.parse('/users/${userId}/achievement-stats');
     final Request $request = Request(
       'GET',
       $url,

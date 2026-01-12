@@ -101,6 +101,41 @@ class SavedSakeSyncRepository {
     }
   }
 
+  Future<bool> markAnalysisFailedOnServer({
+    required String userId,
+    required String savedId,
+    required String failureReason,
+    required bool isPublic,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'userId': userId,
+        'failureReason': failureReason,
+        'isPublic': isPublic,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _apiClient.markSavedSakeAnalysisFailed(
+        savedId,
+        payload,
+      );
+
+      if (!response.isSuccessful) {
+        logger.warning(
+          '解析失敗状態の更新に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return false;
+      }
+
+      logger.info('保存酒を解析失敗として更新しました: id=$savedId');
+      return true;
+    } catch (error, stackTrace) {
+      logger.warning('解析失敗更新のAPI呼び出しで例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
+  }
+
   Future<List<Sake>> fetchSavedSakes(String userId) async {
     try {
       final response = await _apiClient.fetchSavedSakes(userId);

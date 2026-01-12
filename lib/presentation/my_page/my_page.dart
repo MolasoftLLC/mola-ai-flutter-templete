@@ -2417,7 +2417,10 @@ class _SavedSakeList extends StatelessWidget {
       itemBuilder: (context, index) {
         final sake = savedSakeList[index];
         final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
-        final isRecommended = (sake.recommendationScore ?? 0) >= 7;
+        final double recommendationScore =
+            (sake.recommendationScore ?? 0).toDouble();
+        final bool isRecommended = recommendationScore >= 6;
+        final bool isSuperRecommended = recommendationScore >= 8;
         final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -2495,9 +2498,7 @@ class _SavedSakeList extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          (sake.recommendationScore ?? 0) >= 8
-                              ? '超おすすめ！'
-                              : 'おすすめ！',
+                          isSuperRecommended ? '超おすすめ！' : 'おすすめ！',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -2672,7 +2673,10 @@ class _SavedSakeGrid extends StatelessWidget {
         }
 
         final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
-        final isRecommended = (sake.recommendationScore ?? 0) >= 7;
+        final double recommendationScore =
+            (sake.recommendationScore ?? 0).toDouble();
+        final bool isRecommended = recommendationScore >= 6;
+        final bool isSuperRecommended = recommendationScore >= 8;
 
         return GestureDetector(
           onTap: () => onTap(sake),
@@ -2692,9 +2696,9 @@ class _SavedSakeGrid extends StatelessWidget {
                       color: Colors.redAccent.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      'おすすめ',
-                      style: TextStyle(
+                    child: Text(
+                      isSuperRecommended ? '超おすすめ！' : 'おすすめ！',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,

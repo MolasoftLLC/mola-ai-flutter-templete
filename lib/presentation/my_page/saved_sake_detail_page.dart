@@ -47,6 +47,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   bool _hasNameChanged = false;
   final GlobalKey _memoryHeadingKey = GlobalKey();
 
+  bool get _isNameAnalyzing => (_currentSake.name?.trim() ?? '') == '解析中';
+  bool get _isNameAnalysisFailed =>
+      (_currentSake.name?.trim() ?? '') ==
+      SavedSakeNotifier.analysisFailedLabel;
+  bool get _canUploadMemoryImage =>
+      (_currentSake.savedId?.isNotEmpty ?? false) &&
+      _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced;
+
   bool _isRemotePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
 
@@ -227,13 +235,25 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     required bool showSyncButton,
     required bool isLoggedIn,
   }) {
-    final isRecommended = (_currentSake.recommendationScore ?? 0) >= 7;
+    final double recommendationScore =
+        (_currentSake.recommendationScore ?? 0).toDouble();
+    final isRecommended = recommendationScore >= 6;
     final canReanalyze =
         isLoggedIn && (_currentSake.savedId?.isNotEmpty ?? false);
     final savedDateText = _formatSavedDate(_currentSake.savedId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_isNameAnalyzing)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildNameAnalyzingNotice(),
+          )
+        else if (_isNameAnalysisFailed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildAnalysisFailedNotice(),
+          ),
         if (savedDateText != null)
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -321,7 +341,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                           color: Colors.white, size: 18),
                       const SizedBox(width: 6),
                       Text(
-                        (_currentSake.recommendationScore ?? 0) >= 8
+                        recommendationScore >= 8
                             ? '超おすすめ！'
                             : 'おすすめ！',
                         style: const TextStyle(
@@ -410,6 +430,69 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNameAnalyzingNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD54F),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: const [
+          Icon(
+            Icons.info_outline,
+            color: Color(0xFF1D3567),
+            size: 18,
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '名前を手動で検索可能です',
+              style: TextStyle(
+                color: Color(0xFF1D3567),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisFailedNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.22),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.6)),
+      ),
+      child: Row(
+        children: const [
+          Icon(
+            Icons.error_outline,
+            color: Colors.white,
+            size: 18,
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              SavedSakeNotifier.analysisFailedLabel,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -981,9 +1064,25 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Widget _buildAddTile({required bool isPrimary}) {
     final borderRadius = BorderRadius.circular(12);
     final canAdd = _imagePaths.length < 3;
+    final isLocked = !_canUploadMemoryImage;
+    final borderColor = isLocked
+        ? Colors.white24
+        : (isPrimary ? const Color(0xFFFFD54F) : Colors.white24);
+    final accentColor = isLocked
+        ? Colors.white38
+        : (isPrimary ? const Color(0xFFFFD54F) : Colors.white60);
+    final backgroundColor = isLocked
+        ? Colors.white.withOpacity(0.02)
+        : Colors.white.withOpacity(0.05);
 
     return InkWell(
-      onTap: canAdd ? _showImageSourceSheet : null,
+      onTap: () {
+        if (!canAdd) {
+          _showSnack('画像は最大3枚までです');
+          return;
+        }
+        _handleAddImageTap();
+      },
       borderRadius: borderRadius,
       child: AspectRatio(
         aspectRatio: 1,
@@ -991,10 +1090,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           decoration: BoxDecoration(
             borderRadius: borderRadius,
             border: Border.all(
-              color: isPrimary ? const Color(0xFFFFD54F) : Colors.white24,
+              color: borderColor,
               width: 1.5,
             ),
-            color: Colors.white.withOpacity(0.05),
+            color: backgroundColor,
           ),
           child: Center(
             child: Column(
@@ -1002,14 +1101,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               children: [
                 Icon(
                   Icons.add_a_photo,
-                  color: isPrimary ? const Color(0xFFFFD54F) : Colors.white60,
+                  color: accentColor,
                   size: 28,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '追加',
                   style: TextStyle(
-                    color: isPrimary ? const Color(0xFFFFD54F) : Colors.white60,
+                    color: accentColor,
                     fontSize: 13,
                   ),
                 ),
@@ -1019,6 +1118,21 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         ),
       ),
     );
+  }
+
+  void _handleAddImageTap() {
+    if (_imagePaths.length >= 3) {
+      _showSnack('画像は最大3枚までです');
+      return;
+    }
+    if (!_canUploadMemoryImage) {
+      _showSnack('サーバー同期をすると画像を追加できます');
+      return;
+    }
+    if (_isImageProcessing || _isSyncing) {
+      return;
+    }
+    _showImageSourceSheet();
   }
 
   Widget _buildSection(
