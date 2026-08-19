@@ -21,6 +21,7 @@ import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
+import '../../domain/repository/sake_user_repository.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
@@ -53,6 +54,9 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     @Default([]) List<String> pendingSavedSakeIds,
     String? analyzingImagePath,
     @Default(true) bool shareToTimeline,
+    bool? autoTweetEnabled,
+    DateTime? autoTweetConsentAt,
+    @Default(false) bool isAutoTweetUpdating,
   }) = _MainSearchPageState;
 }
 
@@ -75,6 +79,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   SavedSakeSyncRepository get savedSakeSyncRepository =>
       read<SavedSakeSyncRepository>();
   AuthRepository get authRepository => read<AuthRepository>();
+  SakeUserRepository get sakeUserRepository => read<SakeUserRepository>();
 
   final Map<String, bool> _savedIdPublicFlags = <String, bool>{};
   static const String _timelineSharePreferenceKey =
@@ -84,6 +89,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   Future<void> initState() async {
     super.initState();
     unawaited(_restoreTimelineSharePreference());
+    unawaited(_loadAutoTweetSetting());
   }
 
   @override
@@ -372,6 +378,31 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
   }
 
+  Future<void> _loadAutoTweetSetting() async {
+    final user = authRepository.currentUser;
+    if (user == null) {
+      state = state.copyWith(
+        autoTweetEnabled: null,
+        autoTweetConsentAt: null,
+        isAutoTweetUpdating: false,
+      );
+      return;
+    }
+
+    try {
+      final remote = await sakeUserRepository.fetchUser(user.uid);
+      final enabled = _parseAutoTweetEnabled(remote?['autoTweetEnabled']);
+      final consentAt = _parseAutoTweetConsentAt(remote?['autoTweetConsentAt']);
+      state = state.copyWith(
+        autoTweetEnabled: enabled ?? state.autoTweetEnabled ?? true,
+        autoTweetConsentAt: consentAt,
+      );
+    } catch (error, stackTrace) {
+      logger.warning('自動ツイート設定の取得に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
   Future<bool> _showTimelineOptOutDialog() async {
     final result = await showDialog<bool>(
       context: context,
@@ -390,6 +421,90 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('チェックを外す'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> onAutoTweetToggle(bool newValue) async {
+    final user = authRepository.currentUser;
+    if (user == null) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: 'ログインすると自動投稿を切り替えられます。',
+      );
+      return;
+    }
+
+    if (!newValue) {
+      final shouldDisable = await _showAutoTweetOptOutDialog();
+      if (!shouldDisable) {
+        return;
+      }
+    }
+
+    state = state.copyWith(isAutoTweetUpdating: true);
+
+    try {
+      final response = await sakeUserRepository.updateAutoTweet(newValue);
+      if (response == null) {
+        state = state.copyWith(isAutoTweetUpdating: false);
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '自動投稿の更新に失敗しました。時間をおいて再試行してください。',
+        );
+        return;
+      }
+
+      final resolvedEnabled =
+          _parseAutoTweetEnabled(response['autoTweetEnabled']) ?? newValue;
+      final consentAt =
+          _parseAutoTweetConsentAt(response['autoTweetConsentAt']) ??
+              DateTime.now();
+
+      state = state.copyWith(
+        autoTweetEnabled: resolvedEnabled,
+        autoTweetConsentAt: consentAt,
+        isAutoTweetUpdating: false,
+      );
+
+      SnackBarUtils.showInfoSnackBar(
+        context,
+        message: 'Xへの自動投稿を${resolvedEnabled ? 'オン' : 'オフ'}にしました。',
+      );
+    } catch (error, stackTrace) {
+      logger.warning('自動ツイート設定の更新で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      state = state.copyWith(isAutoTweetUpdating: false);
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: '自動投稿の更新に失敗しました。時間をおいて再試行してください。',
+      );
+    }
+  }
+
+  Future<bool> _showAutoTweetOptOutDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Xへの自動投稿について'),
+          content: const Text(
+            'この画像と解析結果だけがツイートされます。\n'
+            '日本酒を広めるためにご協力お願いします。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('このまま投稿する'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('自動投稿をオフにする'),
             ),
           ],
         );
@@ -668,8 +783,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
-      final preferenceText =
-          read<MyPageNotifier>().state.preferences?.trim();
+      final preferenceText = read<MyPageNotifier>().state.preferences?.trim();
       final normalizedPreferences =
           (preferenceText != null && preferenceText.isNotEmpty)
               ? preferenceText
@@ -677,8 +791,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
       SakeBottleComprehensiveResponse? response;
       try {
-        response = await sakeMenuRecognitionRepository
-            .comprehensiveSakeBottleAnalysis(
+        response =
+            await sakeMenuRecognitionRepository.comprehensiveSakeBottleAnalysis(
           analysisFile,
           preferences: normalizedPreferences,
         );
@@ -931,6 +1045,35 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       logger.warning('解析失敗のサーバー同期で例外が発生しました: $error');
       logger.info(stackTrace.toString());
     }
+  }
+
+  bool? _parseAutoTweetEnabled(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0') {
+        return false;
+      }
+    }
+    return null;
+  }
+
+  DateTime? _parseAutoTweetConsentAt(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) {
+      return DateTime.tryParse(value.trim());
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return null;
   }
 
   Future<bool> _ensureSakePreferencesReady() async {

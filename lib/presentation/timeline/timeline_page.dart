@@ -805,7 +805,6 @@ class _TimelineSakeCard extends StatefulWidget {
 
 class _TimelineSakeCardState extends State<_TimelineSakeCard> {
   bool _isTasteExpanded = false;
-  bool _isTasteDetailVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -817,8 +816,6 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     final hasTaste = tasteText != null && tasteText.isNotEmpty;
     final place = sake.place?.trim();
     final hasPlace = place != null && place.isNotEmpty;
-    final impression = sake.impression?.trim();
-    final hasImpression = impression != null && impression.isNotEmpty;
     final tags = sake.userTags
             ?.map((tag) => tag.trim())
             .where((tag) => tag.isNotEmpty)
@@ -1055,7 +1052,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                 ],
               ),
             ),
-          if (hasTaste && !hasImpression)
+          if (hasTaste)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: LayoutBuilder(
@@ -1112,65 +1109,6 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                     ],
                   );
                 },
-              ),
-            ),
-          if (hasImpression)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                impression!,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: bodyStyle,
-              ),
-            ),
-          if (hasImpression && hasTaste)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          final nextValue = !_isTasteDetailVisible;
-                          _isTasteDetailVisible = nextValue;
-                          if (!nextValue) {
-                            _isTasteExpanded = false;
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        _isTasteDetailVisible
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        _isTasteDetailVisible ? '閉じる' : '詳細を見る',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        minimumSize: const Size(0, 32),
-                      ),
-                    ),
-                  ),
-                  if (_isTasteDetailVisible)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        '味わい: $tasteText',
-                        style: bodyStyle,
-                      ),
-                    ),
-                ],
               ),
             ),
           if (hasTags)

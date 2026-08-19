@@ -180,6 +180,11 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'sake-users/auto-tweet')
+  Future<Response> updateAutoTweetSetting(
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'sake-users/delete')
   Future<Response> deleteSakeUser(
     @Body() Map<String, dynamic> body,

@@ -62,6 +62,10 @@ class MainSearchPage extends StatelessWidget {
         context.select((MainSearchPageState state) => state.sakeImage);
     final shareToTimeline =
         context.select((MainSearchPageState state) => state.shareToTimeline);
+    final autoTweetEnabled =
+        context.select((MainSearchPageState state) => state.autoTweetEnabled);
+    final isAutoTweetUpdating = context
+        .select((MainSearchPageState state) => state.isAutoTweetUpdating);
 
     if (sakeInfo != null && !isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -192,6 +196,8 @@ class MainSearchPage extends StatelessWidget {
                                       sakeImage,
                                       isAnalyzingInBackground,
                                       shareToTimeline,
+                                      autoTweetEnabled,
+                                      isAutoTweetUpdating,
                                     ),
                             ),
                           ],
@@ -417,6 +423,8 @@ class MainSearchPage extends StatelessWidget {
     File? sakeImage,
     bool isAnalyzingInBackground,
     bool shareToTimeline,
+    bool? autoTweetEnabled,
+    bool isAutoTweetUpdating,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -444,7 +452,6 @@ class MainSearchPage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-
           SizedBox(
             height: 220,
             width: double.infinity,
@@ -518,7 +525,6 @@ class MainSearchPage extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 16),
-
           if (sakeImage == null)
             ElevatedButton.icon(
               onPressed: () {
@@ -538,7 +544,6 @@ class MainSearchPage extends StatelessWidget {
                 ),
               ),
             ),
-
           const SizedBox(height: 8),
           CheckboxListTile(
             value: shareToTimeline,
@@ -559,10 +564,64 @@ class MainSearchPage extends StatelessWidget {
               '画像は1枚目だけしか共有されません！',
             ),
           ),
-
-
+          CheckboxListTile(
+            value: autoTweetEnabled ?? true,
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              if (autoTweetEnabled == null || isAutoTweetUpdating) {
+                return;
+              }
+              notifier.onAutoTweetToggle(value);
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF1D3567),
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'Xに自動投稿',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '解析完了時に結果をXにも自動投稿します。',
+                ),
+                if (autoTweetEnabled == null)
+                  const Text(
+                    'ログインすると設定を変更できます。',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                if (isAutoTweetUpdating)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(
+                              Color(0xFF1D3567),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '設定を更新中...',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
-
           Column(
             children: [
               SizedBox(

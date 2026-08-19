@@ -1,0 +1,74 @@
+Sakepedia機能仕様（2026-01-22時点）
+
+1. アプリ全体構成
+- Flutter（Material 3）+ Provider/StateNotifier構成。DIは`config/di_container.dart`でまとめ、`AppPage`のボトムタブで主要5画面（日本酒検索・メニュー解析・タイムライン・お気に入り検索・マイページ）を`IndexedStack`に載せる。
+- Firebase Authでメール/パスワード認証。`client_creator.dart`のChopperインターセプターで全REST APIリクエストにFirebase IDトークンを`Authorization: Bearer`ヘッダーとして自動付与。ベースURLは`https://{環境}/api`（ローカルはhttp://host:8080/api）。
+- 共通ユーティリティ: `SharedPreferences`を多用（広告カウンタ、タイムライン共有設定、好み、報告済みIDなど）、画像処理は`ImageCropperService`+`ImageUtils`（WebP圧縮、Base64化）、広告はAdMobのリワード広告を`AdUtils`経由で制御。
+
+2. 認証・起動フロー
+- 起動時に`FirstLaunchGate`でオンボーディング実施。案内を読みログイン（Email+Password）またはスキップで`AppPage`へ遷移。
+- 新規登録はメール認証必須。`AuthNotifier`は検証メール送信後に暫定サインアウトし、確認URLを踏んだユーザーのみ`state.user`に保持。ログイン後は`SakeUserRepository.registerUser`でサーバープロファイルを自動生成し、`SavedSakeNotifier`/`FavoriteNotifier`/`MyPageNotifier`へ同期トリガーを送る。
+- アカウント設定画面からニックネーム変更、アイコン画像アップロード（Base64化して`/sake-users/icon`）、ログアウト、パスワード再認証付きのアカウント削除（Firebaseユーザー削除 + `/sake-users/delete`）が可能。
+
+3. 日本酒検索（lib/presentation/main_search）
+- タブ: `SearchMode.name`と`SearchMode.bottle`。前者はテキスト検索、後者は酒瓶画像解析。
+- テキスト検索:`searchSake()`→`SakeMenuRecognitionRepository.getSakeInfo`。検索ボタン押下5回ごとに`AdCounterService`がtrueを返し、リワード広告と同意ダイアログ（`AdConsentDialog`）を挟む。取得失敗時はエラーSnackBar。
+- 酒瓶解析: 画像を`CustomImagePicker`で取得→クロップ→ギャラリー保存。`saveAndAnalyzeBottle()`でローカル保存酒を作成（`SavedSakeNotifier.addSavedSake`、名称"解析中"）、タイムライン公開フラグを保持。バックグラウンド解析中は`pendingSavedSakeIds`で追跡し、`SakeBottleComprehensiveResponse`取得後に`SavedSakeNotifier.updateSavedSakeWithInfo`を呼び分析結果を結合。
+- 好み必須: 解析や保存前に`_ensureSakePreferencesReady()`が`SakePreferencesDialog`を出し、`SharedPreferences`/サーバーへ好み文字列（例: "甘口、フルーティ"）を保存。
+- タイムライン共有チェックボックス: 初期値ON、`SharedPreferences('timeline_share_checkbox_preference')`で保持。OFFにしようとすると「画像＋1枚目だけ公開、協力して」の確認ダイアログを表示。
+- X自動投稿チェック: `autoTweetEnabled`はユーザー取得時に`/sake-users/me`の`autoTweetEnabled`があれば採用、無ければON扱い。OFFにすると「この画像と解析結果だけがツイート…」ダイアログでユーザーに再確認。更新は`POST /sake-users/auto-tweet {enabled}`で行い、レスポンス`autoTweetConsentAt`は保持のみ（UIでは非表示要求により未使用）。未ログイン時は警告のみ。
+- 解析失敗時: `SavedSakeNotifier.markAnalysisFailed`で名称を「解析失敗(名前変更して解析可能)」へ変更し、ログイン済みなら`/saved-sakes/{id}/analysis-failed`へ理由と公開フラグを送信。HTTP 400/422等で致命的な場合は保存酒ごと削除。
+
+4. メニュー解析（lib/presentation/menu_search）
+- カメラ/ギャラリーからメニュー画像を取得し、毎回`_ensureSakePreferencesReady()`で好みをチェック。解析開始でもAdCounterが5回に1度リワード広告視聴を要求。広告視聴中はバックグラウンドで`SakeMenuRecognitionRepository.extractSakeInfo`を非同期実行し、視聴終了後に詳細取得へ遷移。
+- 取得フロー: ①画像から日本酒候補リスト抽出（名前+タイプ）。②各銘柄について`getSakeInfo`を個別呼び出し、好みに基づく補足説明を取得。③`state.sakes`を更新しUI表示。
+- 解析履歴: `MenuAnalysisHistoryItem`をJSON+Base64化した画像付きで`SharedPreferences(MENU_ANALYSIS_HISTORY)`に保存。最大20件、日付降順。店舗名編集、履歴選択、削除に対応。画像ファイルはDocumentsへ移行しつつBase64も保持するため、ファイル欠損時でも再表示可能。
+
+5. タイムライン/共有機能
+- `TimelinePageNotifier`は`TimelineFeedType.public`（みんなの投稿）と`mine`（自分が公開した保存酒）を切替。バックエンド: `GET /saved-sakes/timeline?cursor&limit`。カーソルと`hasMore`でページングし、`SharedPreferences('timeline_reported_saved_ids')`に保存済み報告IDを保持して再表示をブロック。
+- 行動: 「うらやま（envy）」ボタンで`POST /saved-sakes/{savedId}/envy`。結果は`envyCount`をインクリメントし、同じ`envyKey`（savedIdが無ければ名前+タイプ）への二重送信を防止。`timeline_envy_ranking_page.dart`では`GET /saved-sakes/timeline/envy-ranking`を表示し、ログイン済みならその場で保存/うらやま送信可能。
+- 通報: `reportSavedSake()`はログイン必須で`POST /saved-sakes/{id}/report`。成功したIDはローカルに記録しタイムラインから除外。
+- チュートリアル: うらやまボタンにチュートリアルコーチマークを実装し、`SharedPreferences('timeline_envy_button_tutorial_shown')`で一度だけ表示。
+
+6. お気に入り体験
+- Favorite管理（`FavoriteNotifier`）: ゲストは8件、会員は無制限。`SharedPreferences('favorites')`にJSONを保存し、ログイン時は`FavoriteSyncRepository`で`GET/POST /favorites`へ同期。`favorite_search`画面は複数の味/デザイン/香り/都道府県フィルタを組み合わせ、`GeminiMolaApiRepository.promptWithFavorite`でレコメンド文（`geminiResponse`）を取得。
+- 好み分析: `MyPageNotifier.analyzeSakePreference`が`FavoriteNotifier`のリストを使い1日3回まで実行（`_maxDailyAnalyses`で制御）。まず`/preferences/taste-profile/analyze`で6軸の`TastePreferenceProfile`を取得し、結果が出ない場合は`/analyze-sake-preference`（文章診断）でフォールバック。生成した文章を「好み」として保存し、`saveSakePreferenceAsPreferences()`でMyPageのテキストエリアへ反映可能。
+
+7. マイページ（lib/presentation/my_page）
+- 保存酒閲覧: `SavedSakeNotifier`の一覧をグリッド/リスト切替。ユーザータグでフィルタリング可。保存酒の画像追加/削除、タグ編集、再解析等の操作は別UI（`saved_sake_detail_page.dart`）で提供。
+- プロフィール: ニックネーム・アイコン表示、`AccountSettingsPage`へ遷移し更新可能。`SakeUserRepository.fetchUser`からdisplayName・iconUrl・`autoTweetEnabled`などを取得。実績（ログイン回数、酒瓶解析数、メニュー解析数、うらやまポイント）は`GET /users/{uid}/achievement-stats`で取得しUIに表示。
+- 好みテキストエリア: `SharedPreferences('sake_preferences')`と連動し、テキスト編集後は`savePreferences()`でサーバー`/preferences`へPOST。`MyPageNotifier.preferencesController`でフォームとStateを同期。
+- 解析クォータ: `hasAnalysisQuota`で1日3回制限を管理し、超過時は何も実行しない。
+- その他リンク: 使い方ガイド、`TimelinePage.myPosts()`、`SakeBottleListPage`、`HowToUse`等を提供。
+
+8. 保存酒・同期基盤
+- エンティティ`Sake`（Freezed）: name/brewery/type/taste/price/description/impression/place/userTags/savedId/imagePaths/envyCount/isPublic/syncStatus等を保持。
+- ローカル保存: `SavedSakeNotifier`が`SharedPreference.staticGetStringList(SAVED_SAKE_LIST)`を読み書き。ゲストは8件、会員は50件上限。`syncStatus`は`localOnly`/`serverSynced`で管理。
+- サーバー同期: `SavedSakeSyncRepository`が`SavedSakeSyncStage`に応じて`/saved-sakes/analysis-start` or `analysis-complete`をPOST。画像は`imageBase64`として送信。公開設定の変更・画像追加/削除・エントリ削除・うらやま・通報APIも同リポジトリに集約。
+- タイムライン共有: 保存酒ごとの`isPublic`フラグを`_savedIdPublicFlags`にキャッシュ。解析後に`SyncStage.analysisComplete`を成功させた際、`SavedSakeNotifier`上の`syncStatus`と`isPublic`を最新化。
+- 保存酒画像管理: `SakeBottleImageRepository`がDocuments配下へ画像を永続化し、Base64も`SharedPreferences(SAKE_BOTTLE_IMAGES)`へ保存。`SakeBottleListPage`で閲覧・削除できるが、画面上で「保存酒と機能重複のためクローズ予定」と明記。
+
+9. API/外部サービス一覧（代表）
+- 保存酒: `/saved-sakes/*`（一覧取得、画像追加/削除、削除、公開設定変更、タイムライン取得、うらやま、報告、解析開始/完了、解析失敗登録）。
+- 酒瓶解析: `/sake-bottle/comprehensive-analysis`（Base64画像+好み）で詳細取得。`SakeMenuRecognitionRepository`は`recognizeSakeBottle`の軽量版も保持。
+- メニュー関連: `/prompt_with_menu`, `/extract-sake-info`（Chopperクライアント名`sake_menu_recognition_api_client`）でGemini/OpenAI向け問い合わせ。
+- 好み/お気に入り: `/favorites`, `/preferences`, `/preferences/taste-profile`, `/preferences/taste-profile/analyze`。
+- ユーザー: `/sake-users/register`, `/sake-users/me`, `/sake-users/username`, `/sake-users/icon`, `/sake-users/auto-tweet`, `/sake-users/delete`, `/users/{userId}/achievement-stats`。
+- 認証付与: すべてのChopperリクエストでFirebaseトークンを付与するため、バックエンド側は誰の解析/保存かを把握でき、自動ツイート・タイムライン紐付けが可能。
+
+10. データ保存・制限・UI補助
+- `SharedPreferences`キー例: `timeline_share_checkbox_preference`, `ad_search_counter`, `sake_preferences`, `favorites`, `sake_preferences`（好みテキスト）, `timeline_reported_saved_ids`, `timeline_envy_button_tutorial_shown`, `MENU_ANALYSIS_HISTORY`, `SAKE_BOTTLE_IMAGES`, `auth.lastEmail`など。
+- ゲスト制限: 保存酒8件・お気に入り8件、タイムライン共有や保存酒追加時に`GuestLimitDialog`で課金/ログインを促す。会員上限は保存酒50件。
+- UIヘルプ: 主要画面のAppBarに「使い方ガイド」ボタンを設置し、`HelpGuideDialog`で操作方法を提示。マイページには`HowToUsePage`や`EmailLinkAuthPage`への導線。
+- アプリ更新必須: `AppPage`は`needUpDate`フラグでGoogle Play / App Storeリンクを出し、未更新バージョンを遮断。
+
+11. 広告・トラッキング
+- `AdCounterService`で検索/解析の利用回数を加算し、5回ごとにリワード広告視聴を要求。同意ウィンドウを出してから`AdUtils.loadRewardedAd`→`AdUtils.showRewardedAd`の順に実行。広告失敗時は処理続行しつつユーザーへ通知。
+- iOSでは起動時に`AppTrackingTransparency.requestTrackingAuthorization()`を呼びATT許諾を取得。`GoogleMobileAds`のテスト端末IDは`main.dart`で設定。
+
+12. その他画面
+- `TimelinePage.myPosts()`で自分の公開投稿のみを表示。`TimelineEnvyRankingPage`で羨ましがられた銘柄ランキングを表示し、保存/うらやま操作が可能。
+- `SakeBottleListPage`（クローズ予定）や`SakeBottleImageRepository`で端末内の酒瓶画像一覧を維持。
+- `HelpGuideDialog`や`GuestLimitDialog`など、ユーザー導線を塞がない形で機能説明・課金訴求を実施。
+
+本仕様を参照すれば、主要APIの前提（Firebaseトークン必須、自動投稿/タイムライン共有フラグ、保存酒の同期ステージ）、UI挙動（広告挿入、ダイアログ文言、履歴管理、味覚クォータ）を把握でき、追加実装やテスト観点（例: ゲスト上限、うらやまの多重送信抑止、履歴Base64移行）を立てやすくなる。

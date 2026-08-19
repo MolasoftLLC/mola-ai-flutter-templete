@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.3.0+55
+version: 4.4.0+56
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -100,6 +100,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lottie/
+    - assets/data/
 
 flutter_icons:
   android: true

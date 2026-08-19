@@ -500,6 +500,19 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> updateAutoTweetSetting(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/sake-users/auto-tweet');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> deleteSakeUser(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/sake-users/delete');
     final $body = body;

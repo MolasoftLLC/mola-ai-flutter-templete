@@ -209,4 +209,32 @@ class SakeUserRepository {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> updateAutoTweet(bool enabled) async {
+    try {
+      final payload = <String, dynamic>{'enabled': enabled};
+      final response = await _apiClient.updateAutoTweetSetting(payload);
+
+      if (!response.isSuccessful) {
+        logger.warning(
+          '自動ツイート設定の更新に失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return null;
+      }
+
+      final body = response.body;
+      if (body is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(body);
+      }
+      if (body is Map) {
+        return Map<String, dynamic>.from(body.cast<String, dynamic>());
+      }
+
+      return {'autoTweetEnabled': enabled};
+    } catch (error, stackTrace) {
+      logger.warning('自動ツイート設定の更新で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return null;
+    }
+  }
 }
