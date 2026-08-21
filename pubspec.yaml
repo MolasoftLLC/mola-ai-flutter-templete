@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.4.0+56
+version: 4.5.0+57
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -17,10 +17,10 @@ dependencies:
   freezed_annotation: ^2.4.1
 
   #AppIcon
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
   #Splash
-  flutter_native_splash: ^2.4.0
+  flutter_native_splash: ^2.4.8
 
   #ローカルDB
   shared_preferences: ^2.2.2
@@ -35,10 +35,10 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   #lottie
-  lottie: ^2.7.0
+  lottie: ^3.5.1
 
   #画像選択
-  image_picker: ^1.0.7
+  image_picker: ^1.2.3
 
   #Slider
   syncfusion_flutter_sliders: ^25.2.3
@@ -59,10 +59,10 @@ dependencies:
   flutter_image_compress: ^2.2.0
   
   #広告
-  google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^7.0.0
   
   #画像をギャラリーに保存
-  image_gallery_saver_plus: ^3.0.5
+  image_gallery_saver_plus: ^5.1.1
 
   
   #画像のクロップと回転
@@ -94,6 +94,9 @@ dev_dependencies:
   json_annotation: ^4.9.0
 
 flutter:
+  config:
+    # 一部のiOSプラグインがCocoaPodsのみ対応のため、依存管理をCocoaPodsへ統一する。
+    enable-swift-package-manager: false
   uses-material-design: true
   assets:
     - .env
