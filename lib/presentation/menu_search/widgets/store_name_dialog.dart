@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/localization/localization_extensions.dart';
+
 class StoreNameDialog extends StatefulWidget {
   final String? initialStoreName;
   final Function(String) onSave;
@@ -32,19 +34,19 @@ class _StoreNameDialogState extends State<StoreNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('店舗名を入力'),
+      title: Text(context.l10n.enterStoreName),
       content: TextField(
         controller: _controller,
-        decoration: const InputDecoration(
-          hintText: '店舗名を入力してください',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText: context.l10n.enterStoreNameHint,
+          border: const OutlineInputBorder(),
         ),
         autofocus: true,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(context.l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () {
@@ -54,7 +56,7 @@ class _StoreNameDialogState extends State<StoreNameDialog> {
             }
             Navigator.of(context).pop();
           },
-          child: const Text('保存'),
+          child: Text(context.l10n.save),
         ),
       ],
     );

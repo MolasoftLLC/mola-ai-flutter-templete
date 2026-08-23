@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
@@ -47,7 +48,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   bool _hasNameChanged = false;
   final GlobalKey _memoryHeadingKey = GlobalKey();
 
-  bool get _isNameAnalyzing => (_currentSake.name?.trim() ?? '') == '解析中';
+  bool get _isNameAnalyzing {
+    final name = _currentSake.name?.trim() ?? '';
+    return name == '解析中' || name == context.l10n.processing;
+  }
+
   bool get _isNameAnalysisFailed =>
       (_currentSake.name?.trim() ?? '') ==
       SavedSakeNotifier.analysisFailedLabel;
@@ -104,18 +109,23 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     final infoRows = <Widget>[];
     if (_isValid(_currentSake.brewery)) {
       infoRows.add(
-        _buildInfoRow('蔵元', _currentSake.brewery!, Icons.home_work),
+        _buildInfoRow(
+          context.l10n.brewery,
+          _currentSake.brewery!,
+          Icons.home_work,
+        ),
       );
     }
     if (_isValid(_currentSake.price)) {
       infoRows.add(
-        _buildInfoRow('価格', _currentSake.price!, Icons.price_check),
+        _buildInfoRow(
+            context.l10n.price, _currentSake.price!, Icons.price_check),
       );
     }
     if (_currentSake.sakeMeterValue != null) {
       infoRows.add(
         _buildInfoRow(
-          '日本酒度',
+          context.l10n.sakeMeterValue,
           _currentSake.sakeMeterValue!.toString(),
           Icons.science,
         ),
@@ -124,7 +134,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     if (_currentSake.recommendationScore != null) {
       infoRows.add(
         _buildInfoRow(
-          'おすすめ度',
+          context.l10n.recommendationScore,
           '${_currentSake.recommendationScore}',
           Icons.star,
         ),
@@ -133,10 +143,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     final featureWidgets = <Widget>[];
     if (_isValid(_currentSake.taste)) {
-      featureWidgets.add(_buildBodyText('味わい', _currentSake.taste!));
+      featureWidgets.add(
+        _buildBodyText(context.l10n.taste, _currentSake.taste!),
+      );
     }
     if (_isValid(_currentSake.description)) {
-      featureWidgets.add(_buildBodyText('説明', _currentSake.description!));
+      featureWidgets.add(
+        _buildBodyText(context.l10n.description, _currentSake.description!),
+      );
     }
     if (_currentSake.types != null && _currentSake.types!.isNotEmpty) {
       featureWidgets.add(_buildTypesSection(_currentSake.types!));
@@ -144,7 +158,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     return Scaffold(
       appBar: PrimaryAppBar(
-        title: _currentSake.name ?? '日本酒詳細',
+        title: _currentSake.name ?? context.l10n.sakeDetails,
         titleFontSize: 21,
         actions: [
           IconButton(
@@ -175,12 +189,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   ),
                   if (infoRows.isNotEmpty)
                     _buildSection(
-                      title: '基本情報',
+                      title: context.l10n.basicInformation,
                       children: infoRows,
                     ),
                   if (featureWidgets.isNotEmpty)
                     _buildSection(
-                      title: 'テイスト・特徴',
+                      title: context.l10n.tasteAndFeatures,
                       children: featureWidgets,
                     ),
                   if (infoRows.isEmpty && featureWidgets.isEmpty)
@@ -194,9 +208,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                         color: Colors.white.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Text(
-                        '詳細情報が登録されていません。',
-                        style: TextStyle(color: Colors.white70),
+                      child: Text(
+                        context.l10n.noDetailedInformation,
+                        style: const TextStyle(color: Colors.white70),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -217,7 +231,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       const CircularProgressIndicator(),
                       const SizedBox(height: 12),
                       Text(
-                        _progressMessage ?? (_isSyncing ? '処理中…' : '処理中…'),
+                        _progressMessage ?? context.l10n.processing,
                         style: const TextStyle(color: Colors.white70),
                       ),
                     ],
@@ -258,7 +272,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
-              '保存日 $savedDateText',
+              context.l10n.savedDate(savedDateText),
               style: const TextStyle(
                 color: Color(0xFFFFD54F),
                 fontSize: 13,
@@ -342,8 +356,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       const SizedBox(width: 6),
                       Text(
                         recommendationScore >= 8
-                            ? '超おすすめ！'
-                            : 'おすすめ！',
+                            ? context.l10n.highlyRecommended
+                            : context.l10n.recommended,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -392,8 +406,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     child: Text(
                       _currentSake.syncStatus ==
                               SavedSakeSyncStatus.serverSynced
-                          ? 'サーバーに保存済み'
-                          : '未同期（この端末にのみ保存されています）',
+                          ? context.l10n.syncedToServer
+                          : context.l10n.localOnly,
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -404,7 +418,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     TextButton.icon(
                       onPressed: _isSyncing ? null : _handleManualSync,
                       icon: const Icon(Icons.cloud_upload, size: 16),
-                      label: const Text('サーバーへ同期'),
+                      label: Text(context.l10n.syncToServer),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -442,17 +456,17 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
-        children: const [
-          Icon(
+        children: [
+          const Icon(
             Icons.info_outline,
             color: Color(0xFF1D3567),
             size: 18,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '名前を手動で検索可能です',
-              style: TextStyle(
+              context.l10n.manualNameSearchHint,
+              style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -509,11 +523,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     final bool needsSync = !hasSavedId || !isServerSynced;
     final String helperText;
     if (needsSync) {
-      helperText = 'サーバーに同期するとタイムライン公開を切り替えられます。';
+      helperText = context.l10n.syncToChangeVisibility;
     } else if (!isLoggedIn) {
-      helperText = 'ログインすると公開設定を変更できます。';
+      helperText = context.l10n.loginToChangeVisibility;
     } else {
-      helperText = 'タイムラインへの公開／非公開をいつでも切り替えられます。';
+      helperText = context.l10n.visibilityChangeHint;
     }
 
     return Column(
@@ -523,10 +537,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           children: [
             const Icon(Icons.public, color: Color(0xFFFFD54F), size: 20),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'タイムラインに表示する',
-                style: TextStyle(
+                context.l10n.showOnTimeline,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -585,8 +599,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       foregroundColor: const Color(0xFF1D3567),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
-    final String buttonLabel =
-        hasChanged ? (allowReanalyze ? '再解析' : '保存') : '変更';
+    final String buttonLabel = hasChanged
+        ? (allowReanalyze ? context.l10n.reanalyze : context.l10n.save)
+        : context.l10n.change;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -607,7 +622,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     fontWeight: FontWeight.w700,
                   ),
                   decoration: InputDecoration(
-                    labelText: '日本酒の名前',
+                    labelText: context.l10n.sakeName,
                     labelStyle: TextStyle(
                       color: Colors.white.withOpacity(0.7),
                       fontSize: 14,
@@ -639,7 +654,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                         }
                         if (!canReanalyze) {
                           await _handleSaveName(reanalyze: false);
-                          _showSnack('ログインすると再解析できます');
+                          _showSnack(context.l10n.loginToReanalyze);
                           return;
                         }
                         await _handleSaveName(reanalyze: true);
@@ -654,7 +669,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'ログインすると名前変更後に再解析できます',
+              context.l10n.loginToReanalyzeAfterRename,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.6),
                 fontSize: 13,
@@ -665,7 +680,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              '保存IDが未設定のため再解析は利用できません',
+              context.l10n.missingSavedIdReanalyze,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.6),
                 fontSize: 13,
@@ -679,11 +694,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Future<void> _handleVisibilityToggle(bool isPublic) async {
     final savedId = _currentSake.savedId;
     if (savedId == null || savedId.isEmpty) {
-      _showSnack('サーバーに同期するとタイムライン公開を設定できます');
+      _showSnack(context.l10n.syncBeforeVisibility);
       return;
     }
     if (_currentSake.syncStatus != SavedSakeSyncStatus.serverSynced) {
-      _showSnack('サーバーに同期するとタイムライン公開を設定できます');
+      _showSnack(context.l10n.syncBeforeVisibility);
       return;
     }
 
@@ -706,7 +721,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     });
 
     if (!success) {
-      _showSnack('公開設定の更新に失敗しました。通信環境をご確認ください。');
+      _showSnack(context.l10n.errorVisibilityUpdate);
       return;
     }
 
@@ -714,7 +729,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       _currentSake = _currentSake.copyWith(isPublic: isPublic);
     });
 
-    _showSnack(isPublic ? 'タイムラインに公開しました' : 'タイムラインでの表示をオフにしました');
+    _showSnack(
+      isPublic
+          ? context.l10n.publishedToTimeline
+          : context.l10n.hiddenFromTimeline,
+    );
   }
 
   Widget _buildMemoSection() {
@@ -734,9 +753,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'メモ',
-                style: TextStyle(
+              Text(
+                context.l10n.memo,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -744,9 +763,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               ),
               GestureDetector(
                 onTap: _saveMemo,
-                child: const Text(
-                  '保存',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.save,
+                  style: const TextStyle(
                     color: Color(0xFFFFD54F),
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -757,7 +776,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            '設定しておくと一覧でフィルタリングができる！',
+            context.l10n.memoFilterHint,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 13,
@@ -784,12 +803,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             maxLines: 4,
             style: const TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
-              labelText: '感想 (200文字まで)',
+              labelText: context.l10n.impressionLabel,
               labelStyle: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 14,
               ),
-              hintText: '味わいや香りの印象を記録しましょう',
+              hintText: context.l10n.impressionHint,
               hintStyle: TextStyle(
                 color: Colors.white.withOpacity(0.5),
                 fontSize: 14,
@@ -810,12 +829,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             maxLength: 30,
             style: const TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
-              labelText: '飲んだ場所',
+              labelText: context.l10n.placeConsumed,
               labelStyle: TextStyle(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 14,
               ),
-              hintText: 'お店やイベント名などを記録できます',
+              hintText: context.l10n.placeConsumedHint,
               hintStyle: TextStyle(
                 color: Colors.white.withOpacity(0.5),
                 fontSize: 14,
@@ -842,7 +861,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '思い出も残そう',
+            context.l10n.saveMemories,
             key: _memoryHeadingKey,
             style: const TextStyle(
               color: Colors.white,
@@ -981,10 +1000,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Text(
-                          'このお酒の記録を残しませんか？',
-                          style: TextStyle(
+                          context.l10n.recordPrompt,
+                          style: const TextStyle(
                             color: Color(0xFF1D3567),
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -1078,7 +1097,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     return InkWell(
       onTap: () {
         if (!canAdd) {
-          _showSnack('画像は最大3枚までです');
+          _showSnack(context.l10n.maxThreeImages);
           return;
         }
         _handleAddImageTap();
@@ -1106,7 +1125,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '追加',
+                  context.l10n.add,
                   style: TextStyle(
                     color: accentColor,
                     fontSize: 13,
@@ -1122,11 +1141,11 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   void _handleAddImageTap() {
     if (_imagePaths.length >= 3) {
-      _showSnack('画像は最大3枚までです');
+      _showSnack(context.l10n.maxThreeImages);
       return;
     }
     if (!_canUploadMemoryImage) {
-      _showSnack('サーバー同期をすると画像を追加できます');
+      _showSnack(context.l10n.syncToAddImages);
       return;
     }
     if (_isImageProcessing || _isSyncing) {
@@ -1232,9 +1251,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'タイプ',
-          style: TextStyle(
+        Text(
+          context.l10n.type,
+          style: const TextStyle(
             color: Colors.white70,
             fontSize: 13,
           ),
@@ -1311,7 +1330,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     _applySakeUpdate(
       updatedSake,
-      toastMessage: isLoggedIn ? null : 'メモを保存しました',
+      toastMessage: isLoggedIn ? null : context.l10n.memoSaved,
     );
 
     if (!isLoggedIn) {
@@ -1320,13 +1339,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     final savedId = updatedSake.savedId;
     if (savedId == null || savedId.isEmpty) {
-      _showSnack('保存IDが未設定のためサーバー保存はできません');
+      _showSnack(context.l10n.missingSavedIdServerSave);
       return;
     }
 
     setState(() {
       _isSyncing = true;
-      _progressMessage = 'サーバーに保存中…';
+      _progressMessage = context.l10n.savingToServer;
     });
 
     final notifier = context.read<SavedSakeNotifier>();
@@ -1348,13 +1367,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     });
 
     if (synced == null) {
-      _showSnack('サーバーへの保存に失敗しました。通信環境をご確認ください。');
+      _showSnack(context.l10n.errorSaveToServer);
       return;
     }
 
     _applySakeUpdate(
       synced,
-      toastMessage: 'サーバーに保存しました',
+      toastMessage: context.l10n.savedToServer,
     );
   }
 
@@ -1363,7 +1382,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     if (date == null) {
       return null;
     }
-    return DateFormat('yyyy/MM/dd').format(date);
+    return DateFormat.yMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(date);
   }
 
   DateTime? _savedDateFromId(String? savedId) {
@@ -1385,7 +1406,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     FocusScope.of(context).unfocus();
     final trimmed = _nameController.text.trim();
     if (trimmed.isEmpty) {
-      _showSnack('日本酒の名前を入力してください');
+      _showSnack(context.l10n.errorEnterSakeNameDetail);
       return;
     }
 
@@ -1393,7 +1414,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     final nameChanged = trimmed != originalName;
 
     if (!nameChanged && !reanalyze) {
-      _showSnack('変更された内容がありません');
+      _showSnack(context.l10n.noChanges);
       return;
     }
 
@@ -1410,7 +1431,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     _applySakeUpdate(
       updated,
-      toastMessage: !reanalyze ? '名前を保存しました' : null,
+      toastMessage: !reanalyze ? context.l10n.nameSaved : null,
       refreshTags: false,
     );
 
@@ -1424,7 +1445,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     if (!isLoggedIn) {
-      _showSnack('ログインするとサーバー再解析を利用できます');
+      _showSnack(context.l10n.loginForServerReanalyze);
       if (mounted && _hasNameChanged) {
         setState(() {
           _hasNameChanged = false;
@@ -1435,13 +1456,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     final savedId = updated.savedId;
     if (savedId == null || savedId.isEmpty) {
-      _showSnack('保存IDが見つかりませんでした');
+      _showSnack(context.l10n.savedIdNotFound);
       return;
     }
 
     setState(() {
       _isSyncing = true;
-      _progressMessage = '再解析中…';
+      _progressMessage = context.l10n.reanalyzing;
     });
 
     final notifier = context.read<SavedSakeNotifier>();
@@ -1462,7 +1483,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         _isSyncing = false;
         _progressMessage = null;
       });
-      _showSnack('再解析に失敗しました。通信環境をご確認のうえ再度お試しください。');
+      _showSnack(context.l10n.errorReanalyze);
       return;
     }
 
@@ -1501,12 +1522,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         name: trimmed,
         syncStatus: SavedSakeSyncStatus.serverSynced,
       ),
-      toastMessage: fetched != null ? '再解析が完了しました' : 'サーバーに保存しました',
+      toastMessage: fetched != null
+          ? context.l10n.reanalyzeCompleted
+          : context.l10n.savedToServer,
       updateNotifier: false,
     );
 
     if (fetched == null) {
-      _showSnack('詳細情報の取得に失敗しました');
+      _showSnack(context.l10n.errorSakeDetailFetch);
     }
 
     if (mounted) {
@@ -1521,13 +1544,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Future<void> _handleManualSync() async {
     final savedId = _currentSake.savedId;
     if (savedId == null || savedId.isEmpty) {
-      _showSnack('同期できる保存IDが見つかりませんでした。');
+      _showSnack(context.l10n.syncableSavedIdNotFound);
       return;
     }
 
     setState(() {
       _isSyncing = true;
-      _progressMessage = 'サーバーと同期中…';
+      _progressMessage = context.l10n.syncingWithServer;
     });
 
     final notifier = context.read<SavedSakeNotifier>();
@@ -1543,13 +1566,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     });
 
     if (synced == null) {
-      _showSnack('同期に失敗しました。通信環境をご確認のうえ再度お試しください。');
+      _showSnack(context.l10n.errorSync);
       return;
     }
 
     _applySakeUpdate(
       synced,
-      toastMessage: 'サーバーと同期しました！',
+      toastMessage: context.l10n.syncedWithServer,
       updateNotifier: false,
     );
   }
@@ -1608,7 +1631,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   void _showImageSourceSheet() {
     if (_imagePaths.length >= 3) {
-      _showSnack('画像は最大3枚までです');
+      _showSnack(context.l10n.maxThreeImages);
       return;
     }
 
@@ -1626,7 +1649,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               ListTile(
                 leading:
                     const Icon(Icons.photo_camera, color: Color(0xFF1D3567)),
-                title: const Text('カメラで撮影'),
+                title: Text(context.l10n.takePhoto),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   _pickAndAddImage(ImageSource.camera);
@@ -1635,7 +1658,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               ListTile(
                 leading:
                     const Icon(Icons.photo_library, color: Color(0xFF1D3567)),
-                title: const Text('フォトライブラリから選択'),
+                title: Text(context.l10n.selectFromPhotoLibrary),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   _pickAndAddImage(ImageSource.gallery);
@@ -1650,7 +1673,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   Future<void> _pickAndAddImage(ImageSource source) async {
     if (_imagePaths.length >= 3) {
-      _showSnack('画像は最大3枚までです');
+      _showSnack(context.l10n.maxThreeImages);
       return;
     }
 
@@ -1671,13 +1694,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
 
     if (!mounted || savedPath == null) {
-      _showSnack('画像の保存に失敗しました');
+      _showSnack(context.l10n.imageSaveFailed);
       return;
     }
 
     final savedId = _currentSake.savedId;
     if (savedId == null) {
-      _showSnack('保存情報が見つかりません');
+      _showSnack(context.l10n.savedInformationNotFound);
       return;
     }
 
@@ -1715,13 +1738,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       } catch (_) {
         // ignore delete errors
       }
-      _showSnack('画像の追加に失敗しました');
+      _showSnack(context.l10n.errorImageAdd);
       return;
     }
 
     _applySakeUpdate(
       updated,
-      toastMessage: '画像を追加しました',
+      toastMessage: context.l10n.imageAdded,
       refreshTags: false,
       updateNotifier: false,
     );
@@ -1732,16 +1755,16 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('画像を削除しますか？'),
-          content: const Text('この画像をリストから削除します。'),
+          title: Text(context.l10n.deleteImageConfirmation),
+          content: Text(context.l10n.deleteImageDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('削除'),
+              child: Text(context.l10n.delete),
             ),
           ],
         );
@@ -1762,7 +1785,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   }) async {
     final savedId = _currentSake.savedId;
     if (savedId == null) {
-      _showSnack('保存情報が見つかりません');
+      _showSnack(context.l10n.savedInformationNotFound);
       return;
     }
 
@@ -1792,7 +1815,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     if (updated == null) {
-      _showSnack('画像の削除に失敗しました');
+      _showSnack(context.l10n.errorImageDelete);
       return;
     }
 
@@ -1809,7 +1832,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     _applySakeUpdate(
       updated,
-      toastMessage: showToast ? '画像を削除しました' : null,
+      toastMessage: showToast ? context.l10n.imageDeleted : null,
       refreshTags: false,
       updateNotifier: false,
     );
@@ -1872,9 +1895,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       color: Colors.black.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Text(
-                      '画像を削除',
-                      style: TextStyle(
+                    child: Text(
+                      context.l10n.deleteImage,
+                      style: const TextStyle(
                         color: Colors.redAccent,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1913,7 +1936,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       return;
     }
     _showSnack(
-      isFavorited ? 'お気に入りから削除しました' : 'お気に入りに追加しました',
+      isFavorited
+          ? context.l10n.removedFromFavoritesToast
+          : context.l10n.addedToFavorites,
     );
   }
 }

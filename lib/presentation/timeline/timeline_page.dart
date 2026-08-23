@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../../common/utils/snack_bar_utils.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -22,34 +23,20 @@ class TimelinePage extends StatelessWidget {
   const TimelinePage._({
     super.key,
     required this.feedType,
-    required this.title,
-    required this.emptyMessage,
   });
 
   final TimelineFeedType feedType;
-  final String title;
-  final String emptyMessage;
 
   static Widget wrapped() {
-    return _build(
-      feedType: TimelineFeedType.public,
-      title: 'みんなの日本酒',
-      emptyMessage: 'まだタイムラインには保存酒がありません。\nほかのユーザーが保存するとここに表示されます。',
-    );
+    return _build(feedType: TimelineFeedType.public);
   }
 
   static Widget myPosts() {
-    return _build(
-      feedType: TimelineFeedType.mine,
-      title: '自分の投稿',
-      emptyMessage: 'まだタイムラインに公開した投稿がありません。\nお気に入りのお酒をシェアしてみましょう。',
-    );
+    return _build(feedType: TimelineFeedType.mine);
   }
 
   static Widget _build({
     required TimelineFeedType feedType,
-    required String title,
-    required String emptyMessage,
   }) {
     return MultiProvider(
       providers: [
@@ -57,34 +44,22 @@ class TimelinePage extends StatelessWidget {
           create: (_) => TimelinePageNotifier(feedType: feedType),
         ),
       ],
-      child: TimelinePage._(
-        feedType: feedType,
-        title: title,
-        emptyMessage: emptyMessage,
-      ),
+      child: TimelinePage._(feedType: feedType),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return _TimelinePageContent(
-      feedType: feedType,
-      title: title,
-      emptyMessage: emptyMessage,
-    );
+    return _TimelinePageContent(feedType: feedType);
   }
 }
 
 class _TimelinePageContent extends StatefulWidget {
   const _TimelinePageContent({
     required this.feedType,
-    required this.title,
-    required this.emptyMessage,
   });
 
   final TimelineFeedType feedType;
-  final String title;
-  final String emptyMessage;
 
   @override
   State<_TimelinePageContent> createState() => _TimelinePageContentState();
@@ -159,7 +134,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     _tutorialCoachMark = TutorialCoachMark(
       targets: _buildEnvyTargets(),
       alignSkip: Alignment.topRight,
-      textSkip: '了解',
+      textSkip: context.l10n.understood,
       colorShadow: Colors.black87,
       opacityShadow: 0.85,
       onFinish: _markTutorialComplete,
@@ -230,22 +205,22 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
             ),
           ],
         ),
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '「うらやま」を送ってみよう',
-              style: TextStyle(
+              context.l10n.envyTutorialTitle,
+              style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              '気になった羨ましい日本酒に気軽Goodを送ろう！\n匿名だから気にせずどんどん押してね。',
-              style: TextStyle(
+              context.l10n.envyTutorialDescription,
+              style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontSize: 13,
                 height: 1.4,
@@ -260,8 +235,11 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
   @override
   Widget build(BuildContext context) {
     final feedType = widget.feedType;
-    final title = widget.title;
-    final emptyMessage = widget.emptyMessage;
+    final isMyPosts = feedType == TimelineFeedType.mine;
+    final title = isMyPosts ? context.l10n.myPosts : context.l10n.everyoneSake;
+    final emptyMessage = isMyPosts
+        ? context.l10n.myPostsEmpty
+        : context.l10n.publicTimelineEmpty;
     final bool isTimelineTabActive = _isTimelineTabActive(context);
     final bool hasReadTimelineIntro = _hasReadTimelineIntro(context);
     final notifier = context.watch<TimelinePageNotifier>();
@@ -295,8 +273,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
       }
       await GuestLimitDialog.show(
         context,
-        title: 'ログインでさらに楽しもう',
-        message: 'タイムラインから保存・お気に入り・うらやま・報告するにはログインが必要です。',
+        title: context.l10n.timelineLoginTitle,
+        message: context.l10n.timelineLoginMessage,
       );
       return false;
     }
@@ -328,8 +306,10 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
       }
       if (showErrorState) {
         return _TimelineMessageView(
-          message: errorMessage ?? 'データの取得に失敗しました。通信環境をご確認ください。',
-          actionLabel: '再読み込み',
+          message: errorMessage == null
+              ? context.l10n.dataFetchFailed
+              : localizeLegacyMessage(context.l10n, errorMessage),
+          actionLabel: context.l10n.reload,
           onPressed: () => notifier.fetchTimeline(isRefresh: false),
         );
       }
@@ -338,8 +318,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
 
     Widget buildCard(int index, {GlobalKey? envyCoachMarkKey}) {
       final sake = sakes[index];
-      final normalizedName =
-          sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明';
+      final normalizedName = sake.name?.trim().isNotEmpty == true
+          ? sake.name!.trim()
+          : context.l10n.unknownName;
       final envyKey = TimelinePageNotifier.envyKey(sake);
       final savedId = sake.savedId?.trim();
       final isSaved = savedList.any((item) {
@@ -349,8 +330,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         if (hasSameId) {
           return true;
         }
-        final itemName =
-            item.name?.trim().isNotEmpty == true ? item.name!.trim() : '名称不明';
+        final itemName = item.name?.trim().isNotEmpty == true
+            ? item.name!.trim()
+            : context.l10n.unknownName;
         final itemType = item.type?.trim();
         final targetType = sake.type?.trim();
         return itemName == normalizedName && itemType == targetType;
@@ -393,8 +375,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           if (!isSaved && savedNotifier.hasReachedMemberLimit) {
             SnackBarUtils.showWarningSnackBar(
               context,
-              message:
-                  '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+              message: context.l10n
+                  .savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
             );
             return;
           }
@@ -411,7 +393,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
             if (shouldShowSavedToast) {
               SnackBarUtils.showInfoSnackBar(
                 context,
-                message: 'マイページに保存しました！',
+                message: context.l10n.savedToMyPage,
               );
             }
           } on SavedSakeGuestLimitReachedException {
@@ -422,8 +404,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           } on SavedSakeMemberLimitReachedException {
             SnackBarUtils.showWarningSnackBar(
               context,
-              message:
-                  '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+              message: context.l10n
+                  .savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
             );
           }
         },
@@ -461,19 +443,19 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                   case EnvyResult.success:
                     SnackBarUtils.showInfoSnackBar(
                       context,
-                      message: 'うらやまを送信しました！',
+                      message: context.l10n.envySent,
                     );
                     break;
                   case EnvyResult.failed:
                     SnackBarUtils.showWarningSnackBar(
                       context,
-                      message: 'うらやまの送信に失敗しました。通信環境をご確認ください。',
+                      message: context.l10n.envySendFailed,
                     );
                     break;
                   case EnvyResult.already:
                     SnackBarUtils.showInfoSnackBar(
                       context,
-                      message: 'すでにうらやま済みです！',
+                      message: context.l10n.envyAlready,
                     );
                     break;
                   case EnvyResult.pending:
@@ -502,13 +484,13 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                   case ReportResult.success:
                     SnackBarUtils.showInfoSnackBar(
                       context,
-                      message: 'ありがとうございました。報告を受け付けました。',
+                      message: context.l10n.reportAccepted,
                     );
                     break;
                   case ReportResult.already:
                     SnackBarUtils.showInfoSnackBar(
                       context,
-                      message: 'この投稿は既に報告済みです。',
+                      message: context.l10n.reportAlready,
                     );
                     break;
                   case ReportResult.pending:
@@ -519,7 +501,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                   case ReportResult.failed:
                     SnackBarUtils.showWarningSnackBar(
                       context,
-                      message: '報告に失敗しました。通信環境をご確認ください。',
+                      message: context.l10n.reportFailed,
                     );
                     break;
                 }
@@ -604,7 +586,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     if (showShortcutButton) {
       leadingButton = _TimelineHeaderShortcutButton(
         icon: Icons.person_outline,
-        label: '自分の投稿',
+        label: context.l10n.myPosts,
         color: const Color(0xFFFFD54F),
         onTap: () async {
           if (!await ensureLoggedIn()) {
@@ -621,7 +603,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     } else if (showBackButton) {
       leadingButton = _TimelineHeaderShortcutButton(
         icon: Icons.arrow_back_ios_new,
-        label: 'みんなの日本酒',
+        label: context.l10n.everyoneSake,
         color: const Color(0xFFFFD54F),
         onTap: () {
           if (navigator.canPop()) {
@@ -641,7 +623,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         leading: leadingButton,
         actions: [
           IconButton(
-            tooltip: '更新',
+            tooltip: context.l10n.refresh,
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => notifier.fetchTimeline(isRefresh: true),
           ),
@@ -739,19 +721,19 @@ class _TimelineRankingShortcut extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    '羨ましい日本酒ランキング',
-                    style: TextStyle(
+                    context.l10n.envyRankingTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'うらやまが多い投稿ベスト20をチェック',
-                    style: TextStyle(
+                    context.l10n.envyRankingSubtitle,
+                    style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
                     ),
@@ -999,7 +981,9 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
           ),
           const SizedBox(height: 16),
           Text(
-            sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明',
+            sake.name?.trim().isNotEmpty == true
+                ? sake.name!.trim()
+                : context.l10n.unknownName,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -1057,7 +1041,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               padding: const EdgeInsets.only(top: 8),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final tasteContent = '味わい: $tasteText';
+                  final tasteContent = context.l10n.tasteLabel(tasteText);
                   final painter = TextPainter(
                     text: TextSpan(text: tasteContent, style: bodyStyle),
                     maxLines: 2,
@@ -1092,7 +1076,9 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                               color: Colors.white,
                             ),
                             label: Text(
-                              _isTasteExpanded ? '閉じる' : '続きを読む',
+                              _isTasteExpanded
+                                  ? context.l10n.close
+                                  : context.l10n.readMore,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -1157,7 +1143,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     if (displayName != null && displayName.isNotEmpty) {
       return displayName;
     }
-    return '名無しユーザー';
+    return context.l10n.anonymousUser;
   }
 
   Widget _buildImage(String? path) {
@@ -1439,16 +1425,16 @@ class _TimelineReportConfirmDialog {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
-            '投稿を報告しますか？',
-            style: TextStyle(
+          title: Text(
+            context.l10n.reportPostTitle,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: const Text(
-            '問題のある投稿として運営に報告します。よろしいですか？',
-            style: TextStyle(
+          content: Text(
+            context.l10n.reportPostDescription,
+            style: const TextStyle(
               color: Colors.white70,
               height: 1.5,
             ),
@@ -1458,9 +1444,9 @@ class _TimelineReportConfirmDialog {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text(
-                'いいえ',
-                style: TextStyle(color: Colors.white70),
+              child: Text(
+                context.l10n.no,
+                style: const TextStyle(color: Colors.white70),
               ),
             ),
             ElevatedButton(
@@ -1472,9 +1458,9 @@ class _TimelineReportConfirmDialog {
                 ),
               ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text(
-                'はい',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: Text(
+                context.l10n.yes,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],

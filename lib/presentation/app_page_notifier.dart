@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:version/version.dart';
 
 import '../common/logger.dart';
+import '../common/localization/localization_extensions.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
 import '../domain/repository/mola_api_repository.dart';
 import 'common/dialogs/sake_preferences_dialog.dart';
@@ -248,12 +249,12 @@ class AppPageNotifier extends StateNotifier<AppPageState>
               borderRadius: BorderRadius.circular(20),
             ),
             title: Row(
-              children: const [
-                Icon(Icons.timeline, color: Colors.white),
-                SizedBox(width: 8),
+              children: [
+                const Icon(Icons.timeline, color: Colors.white),
+                const SizedBox(width: 8),
                 Text(
-                  'タイムラインへようこそ',
-                  style: TextStyle(
+                  context.l10n.timelineIntroTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                   ),
@@ -263,15 +264,15 @@ class AppPageNotifier extends StateNotifier<AppPageState>
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'みんなが飲んだお酒がここにずらり。\n気になる一杯は保存して、あなただけのリストに加えましょう！',
-                  style: TextStyle(color: Colors.white70, height: 1.5),
+                  context.l10n.timelineIntroDescription,
+                  style: const TextStyle(color: Colors.white70, height: 1.5),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
-                  'うらやましい日本酒は気軽に👍ボタンしてあげよう。',
-                  style: TextStyle(color: Colors.white70, height: 1.5),
+                  context.l10n.timelineIntroEnvyHint,
+                  style: const TextStyle(color: Colors.white70, height: 1.5),
                 ),
               ],
             ),
@@ -281,7 +282,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
+                child: Text(context.l10n.close),
               ),
             ],
           );

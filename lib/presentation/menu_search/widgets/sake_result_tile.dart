@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
 import '../../../common/utils/snack_bar_utils.dart';
+import '../../../common/localization/localization_extensions.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
@@ -80,8 +81,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       Expanded(
                         child: Text(
                           widget.hasDetails
-                              ? (widget.detailedSake!.name ?? 'Unknown')
-                              : (widget.sake.name ?? 'Unknown'),
+                              ? (widget.detailedSake!.name ??
+                                  context.l10n.unknown)
+                              : (widget.sake.name ?? context.l10n.unknown),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -113,8 +115,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           const SizedBox(width: 4),
                           Text(
                             (widget.recommendationScore ?? 0) >= 8
-                                ? '超おすすめ！'
-                                : 'おすすめ！',
+                                ? context.l10n.highlyRecommended
+                                : context.l10n.recommended,
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontWeight: FontWeight.bold,
@@ -127,7 +129,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                 ],
               ),
               subtitle: Text(
-                widget.sake.type ?? '種類不明',
+                widget.sake.type ?? context.l10n.unknownType,
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
@@ -138,7 +140,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          tooltip: widget.isSaved ? '保存を解除' : '保存',
+                          tooltip: widget.isSaved
+                              ? context.l10n.removeSavedSake
+                              : context.l10n.saveSake,
                           icon: Icon(
                             widget.isSaved
                                 ? Icons.bookmark
@@ -154,14 +158,16 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             if (success && !wasSaved) {
                               SnackBarUtils.showInfoSnackBar(
                                 context,
-                                message: 'マイページに保存しました！',
+                                message: context.l10n.savedToMyPage,
                               );
                             }
                           },
                         ),
                         const SizedBox(width: 4),
                         IconButton(
-                          tooltip: widget.isFavorited ? 'お気に入り解除' : 'お気に入り',
+                          tooltip: widget.isFavorited
+                              ? context.l10n.removeFavorite
+                              : context.l10n.favorite,
                           icon: Icon(
                             widget.isFavorited
                                 ? Icons.favorite
@@ -205,19 +211,19 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       children: [
                         if (widget.detailedSake!.brewery != null)
                           widget.buildInfoRow(
-                            '蔵元',
+                            context.l10n.brewery,
                             widget.detailedSake!.brewery!,
                             Icons.home_work,
                           ),
                         if (widget.detailedSake!.taste != null)
                           widget.buildInfoRow(
-                            '味わい',
+                            context.l10n.taste,
                             widget.detailedSake!.taste!,
                             Icons.restaurant,
                           ),
                         if (widget.detailedSake!.sakeMeterValue != null)
                           widget.buildInfoRow(
-                            '日本酒度',
+                            context.l10n.sakeMeterValue,
                             '${widget.detailedSake!.sakeMeterValue}',
                             Icons.science,
                           ),
@@ -245,8 +251,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         Expanded(
                           child: Text(
                             widget.isItemLoading
-                                ? '詳細情報を取得中...'
-                                : '詳細情報を取得できませんでした',
+                                ? context.l10n.loadingDetails
+                                : context.l10n.detailsUnavailable,
                             style: TextStyle(
                               color: widget.isItemLoading
                                   ? const Color(0xFF1D3567)
@@ -275,7 +281,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                 child: Material(
                   color: Colors.transparent,
                   child: IconButton(
-                    tooltip: '展開',
+                    tooltip: context.l10n.expand,
                     padding: const EdgeInsets.all(8),
                     constraints:
                         const BoxConstraints(minWidth: 36, minHeight: 36),

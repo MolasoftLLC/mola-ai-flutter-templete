@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/localization/localization_extensions.dart';
 import '../../common/widgets/primary_app_bar.dart';
 
 class HowToUse extends StatelessWidget {
@@ -8,66 +9,54 @@ class HowToUse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const PrimaryAppBar(
-        title: '使い方ガイド',
+      appBar: PrimaryAppBar(
+        title: context.l10n.termsOfUse,
         titleFontSize: 18,
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
         color: const Color(0xFF1D3567),
-        child: Column(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
           children: [
             Text(
-              'SAKEPEDIA利用規約',
-              style: TextStyle(color: Colors.white),
-            ),
-            SizedBox(
-              height: 40,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'SAKEPEDIAはGoogle LLCおよびOpenAI社が提供するAIを利用した日本酒特化型のアプリです。以下の内容に抵触する場合サービスがご利用いただけなくなる場合があります。\n\n・不必要な回数のリクエストを送る\n・生成されたデータの商用利用\n・その他Google LLCやOpenAI社が定める規約の違反\n',
-                style: TextStyle(color: Colors.white),
+              context.l10n.termsTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                'また、利用するAIの状況によっては応答しない、誤情報、信憑性が疑わしい情報が回答されるなどが発生する可能性がありますが、ユーザーの不都合について開発陣は一切の責任を負いません。ご了承ください。',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                '本サービスではメールアドレスとパスワードによるログインを採用しており、不正利用が疑われる場合には機能の制限またはご利用を停止させていただくことがあります。',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                'ユーザーは以下のような不適切な写真や情報を投稿できません。\n\n・人物が写っている写真\n・暴力、脅迫、差別、ハラスメントなどの表現\n・性的内容（アルコール関連を除く）\n・著作権その他の知的財産権を侵害する内容\n・その他、当社が不適切と判断する内容\n\n本アプリではAIによって酒瓶以外の写真は投稿できない仕組みを採用していますが、不適切な投稿が確認された場合は投稿の非表示や削除を行うことがあります。',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                '運営上の都合により予告なくサービスを停止・終了する場合があり、その際はサーバーに保存された解析画像や各種データが消去されることがあります。重要なデータは必ずご自身でも保管してください。',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                '以上をご承諾の上、SAKEPEDIAを楽しく使っていただけたらと思います。',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
+            const SizedBox(height: 28),
+            _TermsParagraph(context.l10n.termsAiUsage),
+            _TermsParagraph(context.l10n.termsAiDisclaimer),
+            _TermsParagraph(context.l10n.termsAccount),
+            _TermsParagraph(context.l10n.termsContentPolicy),
+            _TermsParagraph(context.l10n.termsServiceAvailability),
+            _TermsParagraph(context.l10n.termsClosing),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TermsParagraph extends StatelessWidget {
+  const _TermsParagraph(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          height: 1.65,
         ),
       ),
     );

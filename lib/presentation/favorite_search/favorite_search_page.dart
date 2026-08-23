@@ -4,6 +4,8 @@ import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_load
 import 'package:provider/provider.dart';
 
 import '../../common/prefecture.dart';
+import '../../common/localization/localization_extensions.dart';
+import '../../common/localization/sake_filter_localizations.dart';
 import '../../common/sake/master.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'favorite_search_page_notifier.dart';
@@ -44,8 +46,8 @@ class FavoriteSearchPage extends StatelessWidget {
     final selectedPrefecture = context
         .select((FavoriteSearchPageState state) => state.selectedPrefecture);
     return Scaffold(
-      appBar: const PrimaryAppBar(
-        title: '好みで検索',
+      appBar: PrimaryAppBar(
+        title: context.l10n.preferenceSearchPageTitle,
         automaticallyImplyLeading: false,
       ),
       body: Container(
@@ -53,12 +55,12 @@ class FavoriteSearchPage extends StatelessWidget {
         color: const Color(0xFF1D3567),
         child: SingleChildScrollView(
           child: isLoading
-              ? const AILoading(loadingText: 'AIに問い合わせています')
+              ? AILoading(loadingText: context.l10n.loadingSakeInfo)
               : Column(
                   children: [
                     const SizedBox(height: 24),
                     Text(
-                      '産地で検索',
+                      context.l10n.searchByRegion,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 18,
@@ -69,7 +71,7 @@ class FavoriteSearchPage extends StatelessWidget {
                       height: 4,
                     ),
                     Text(
-                      '産地や味わいから好きな日本酒を見つけよう！',
+                      context.l10n.preferenceSearchDescription,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -90,7 +92,7 @@ class FavoriteSearchPage extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 40, top: 40),
                         child: Text(
-                          '続けて問い合わせる',
+                          context.l10n.continueInquiry,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 18,
@@ -104,7 +106,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 24, bottom: 24),
                           child: Text(
-                            '産地',
+                            context.l10n.region,
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -122,7 +124,7 @@ class FavoriteSearchPage extends StatelessWidget {
                       ),
                       child: Center(
                         child: DropdownButton(
-                          hint: Text('産地を選択'),
+                          hint: Text(context.l10n.selectRegion),
                           underline: SizedBox(),
                           value: selectedPrefecture,
                           items: prefectures
@@ -132,7 +134,12 @@ class FavoriteSearchPage extends StatelessWidget {
                                         width:
                                             MediaQuery.of(context).size.width *
                                                 0.8,
-                                        child: Text(prefecture)),
+                                        child: Text(
+                                          localizeSakeFilterLabel(
+                                            context,
+                                            prefecture,
+                                          ),
+                                        )),
                                   ))
                               .toList(),
                           onChanged: (value) {
@@ -150,7 +157,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 24, bottom: 0),
                           child: Text(
-                            '味わい 1',
+                            context.l10n.flavorGroupOne,
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -189,7 +196,7 @@ class FavoriteSearchPage extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    flavor,
+                                    localizeSakeFilterLabel(context, flavor),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -210,7 +217,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 24, bottom: 0),
                           child: Text(
-                            '味わい 2',
+                            context.l10n.flavorGroupTwo,
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -249,7 +256,7 @@ class FavoriteSearchPage extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    taste,
+                                    localizeSakeFilterLabel(context, taste),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -270,7 +277,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(left: 24, bottom: 0),
                           child: Text(
-                            '特定名称ほか',
+                            context.l10n.specificDesignation,
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -309,7 +316,7 @@ class FavoriteSearchPage extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    design,
+                                    localizeSakeFilterLabel(context, design),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -335,7 +342,7 @@ class FavoriteSearchPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(40),
                           ),
                         ),
-                        child: Text('AIに質問'),
+                        child: Text(context.l10n.askAi),
                       ),
                     ),
                     const SizedBox(

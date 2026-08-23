@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../common/services/ad_counter_service.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
@@ -124,7 +125,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     final sakeName = state.sakeName;
     if (sakeName == null || sakeName.isEmpty) {
       state = state.copyWith(
-        errorMessage: '日本酒名を入力してください',
+        errorMessage: context.l10n.errorEnterSakeName,
       );
       return;
     }
@@ -144,8 +145,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       // Show consent dialog before ad
       final consent = await AdConsentDialog.show(
         context,
-        title: '広告視聴の確認',
-        description: '広告を視聴すると、日本酒情報の検索が可能になります。広告の視聴にご協力ください！',
+        title: context.l10n.adConfirmation,
+        description: context.l10n.searchAdDescription,
         icon: Icons.wine_bar,
       );
 
@@ -198,7 +199,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         // User declined ad, cancel search completely
         SnackBarUtils.showWarningSnackBar(
           context,
-          message: '検索をキャンセルしました。検索機能向上のため、次回は広告視聴にご協力ください。',
+          message: context.l10n.searchCancelled,
           duration: const Duration(seconds: 4),
         );
 
@@ -228,7 +229,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       if (sakeInfo == null) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: '日本酒情報が見つかりませんでした',
+          errorMessage: context.l10n.errorSakeNotFound,
         );
         return;
       }
@@ -241,7 +242,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       logger.info('日本酒情報の取得に失敗: $e');
       state = state.copyWith(
         isLoading: false,
-        errorMessage: '日本酒情報の取得に失敗しました',
+        errorMessage: context.l10n.errorSakeFetch,
       );
     }
   }
@@ -269,7 +270,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       if (sakeInfo == null) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: '日本酒情報が見つかりませんでした',
+          errorMessage: context.l10n.errorSakeNotFound,
         );
         return;
       }
@@ -282,7 +283,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       logger.info('日本酒情報の取得に失敗: $e');
       state = state.copyWith(
         isLoading: false,
-        errorMessage: '日本酒情報の取得に失敗しました',
+        errorMessage: context.l10n.errorSakeFetch,
       );
     }
   }
@@ -441,19 +442,16 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('タイムラインへの掲載について'),
-          content: const Text(
-            'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。'
-            'あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。',
-          ),
+          title: Text(context.l10n.timelinePublishingTitle),
+          content: Text(context.l10n.timelinePublishingDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('このまま解析'),
+              child: Text(context.l10n.continueAnalysis),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('チェックを外す'),
+              child: Text(context.l10n.removeCheck),
             ),
           ],
         );
@@ -468,7 +466,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (user == null) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: 'ログインすると自動投稿を切り替えられます。',
+        message: context.l10n.loginToToggleAutoPost,
       );
       return;
     }
@@ -488,7 +486,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         state = state.copyWith(isAutoTweetUpdating: false);
         SnackBarUtils.showWarningSnackBar(
           context,
-          message: '自動投稿の更新に失敗しました。時間をおいて再試行してください。',
+          message: context.l10n.autoPostUpdateFailed,
         );
         return;
       }
@@ -507,7 +505,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
       SnackBarUtils.showInfoSnackBar(
         context,
-        message: 'Xへの自動投稿を${resolvedEnabled ? 'オン' : 'オフ'}にしました。',
+        message: context.l10n.autoPostUpdated(
+          resolvedEnabled ? context.l10n.statusOn : context.l10n.statusOff,
+        ),
       );
     } catch (error, stackTrace) {
       logger.warning('自動ツイート設定の更新で例外が発生しました: $error');
@@ -515,7 +515,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       state = state.copyWith(isAutoTweetUpdating: false);
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '自動投稿の更新に失敗しました。時間をおいて再試行してください。',
+        message: context.l10n.autoPostUpdateFailed,
       );
     }
   }
@@ -525,19 +525,16 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Xへの自動投稿について'),
-          content: const Text(
-            'この画像と解析結果だけがツイートされます。\n'
-            '日本酒を広めるためにご協力お願いします。',
-          ),
+          title: Text(context.l10n.autoPostDialogTitle),
+          content: Text(context.l10n.autoPostDialogDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('このまま投稿する'),
+              child: Text(context.l10n.continuePosting),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('自動投稿をオフにする'),
+              child: Text(context.l10n.disableAutoPost),
             ),
           ],
         );
@@ -563,7 +560,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (savedPath == null) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '画像の保存に失敗しました',
+        message: context.l10n.imageSaveFailed,
       );
       return false;
     }
@@ -579,8 +576,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (savedNotifier.hasReachedMemberLimit) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message:
-            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+        message: context.l10n.savedSakeLimit(
+          SavedSakeNotifier.memberSavedLimit,
+        ),
       );
       return false;
     }
@@ -588,7 +586,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
     final placeholder = Sake(
       savedId: null,
-      name: '解析中',
+      name: context.l10n.processing,
       imagePaths: [savedPath],
       isPublic: shouldShareTimeline,
     );
@@ -604,8 +602,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     } on SavedSakeMemberLimitReachedException {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message:
-            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+        message: context.l10n.savedSakeLimit(
+          SavedSakeNotifier.memberSavedLimit,
+        ),
       );
       return false;
     }
@@ -623,7 +622,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
     SnackBarUtils.showInfoSnackBar(
       context,
-      message: 'マイページに保存しました！',
+      message: context.l10n.savedToMyPage,
     );
 
     // 保存後は選択画像をクリア
@@ -657,7 +656,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: '解析に使用する画像が見つかりませんでした',
+        errorMessage: context.l10n.errorImageNotFound,
         isAnalyzingInBackground: false,
       );
       return;
@@ -686,8 +685,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       // Show consent dialog before ad
       final consent = await AdConsentDialog.show(
         context,
-        title: '広告視聴の確認',
-        description: '広告を視聴すると、酒瓶の解析が可能になります。広告の視聴に同意しますか？',
+        title: context.l10n.adConfirmation,
+        description: context.l10n.bottleAdDescription,
         icon: Icons.camera_alt,
       );
 
@@ -755,7 +754,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         // User declined ad, cancel analysis completely
         SnackBarUtils.showWarningSnackBar(
           context,
-          message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
+          message: context.l10n.analysisCancelled,
           duration: const Duration(seconds: 4),
         );
 
@@ -848,8 +847,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       }
 
       final sakeInfo = response.sakeInfo!;
-      final recognizedName = response.sakeName ?? sakeInfo.name ?? '名称不明';
-      final recognizedType = response.type ?? sakeInfo.type ?? 'タイプ不明';
+      final recognizedName =
+          response.sakeName ?? sakeInfo.name ?? context.l10n.unknownName;
+      final recognizedType =
+          response.type ?? sakeInfo.type ?? context.l10n.unknownType;
       logger.info('酒瓶解析: 認識成功 - 日本酒名=$recognizedName, タイプ=$recognizedType');
 
       state = state.copyWith(
@@ -1119,7 +1120,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (!ensured) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '好みの設定が完了していません。好みを登録してからお試しください。',
+        message: context.l10n.noPreferenceConfigured,
         duration: const Duration(seconds: 3),
       );
     }

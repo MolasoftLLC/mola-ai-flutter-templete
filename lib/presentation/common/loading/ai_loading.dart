@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../common/logger.dart';
+import '../../../common/localization/localization_extensions.dart';
 
 // 半透明のローディング
 class AILoading extends StatefulWidget {
@@ -22,16 +23,10 @@ class AILoading extends StatefulWidget {
 }
 
 class _AILoadingState extends State<AILoading> {
-  static const _factsAssetPath = 'assets/data/sake_facts.json';
+  static const _japaneseFactsAssetPath = 'assets/data/sake_facts.json';
+  static const _englishFactsAssetPath = 'assets/data/sake_facts_en.json';
   static const _slideInterval = Duration(seconds: 7);
   static const _factTransitionDuration = Duration(milliseconds: 450);
-  static const List<String> _tailPhrases = [
-    '覚えておくと注文のときにちょっと通っぽく語れるんだ。',
-    '知っているとペアリングの幅がぐっと広がるんだよね。',
-    '友だちに披露すると話のタネとして盛り上がるよ。',
-    '蔵見学や試飲会で自信を持って語れる小ネタなんだ。',
-    '頭の片隅に入れておくと日本酒選びがもっと楽しくなるんだ。',
-  ];
 
   final Random _random = Random();
 
@@ -39,12 +34,17 @@ class _AILoadingState extends State<AILoading> {
   int _currentIndex = 0;
   Timer? _slideTimer;
   bool _isLoadingFacts = false;
-  String? _loadErrorMessage;
+  bool _hasLoadError = false;
+  String? _loadedLanguageCode;
 
   @override
-  void initState() {
-    super.initState();
-    _loadFacts();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final languageCode = Localizations.localeOf(context).languageCode;
+    if (_loadedLanguageCode != languageCode) {
+      _loadedLanguageCode = languageCode;
+      unawaited(_loadFacts(languageCode));
+    }
   }
 
   @override
@@ -53,46 +53,49 @@ class _AILoadingState extends State<AILoading> {
     super.dispose();
   }
 
-  Future<void> _loadFacts() async {
+  Future<void> _loadFacts(String languageCode) async {
     setState(() {
       _isLoadingFacts = true;
-      _loadErrorMessage = null;
+      _hasLoadError = false;
     });
     try {
-      final rawJson = await rootBundle.loadString(_factsAssetPath);
+      final assetPath = languageCode == 'ja'
+          ? _japaneseFactsAssetPath
+          : _englishFactsAssetPath;
+      final rawJson = await rootBundle.loadString(assetPath);
       final List<dynamic> decoded = jsonDecode(rawJson) as List<dynamic>;
       final facts = decoded
           .map((e) => _SakeFact.fromJson(e as Map<String, dynamic>))
           .where((fact) => fact.body.isNotEmpty || fact.title.isNotEmpty)
           .toList();
+      if (!mounted || _loadedLanguageCode != languageCode) {
+        return;
+      }
       if (facts.isEmpty) {
         setState(() {
           _facts = const <_SakeFact>[];
           _isLoadingFacts = false;
-          _loadErrorMessage = '豆知識の読み込みに失敗しました';
+          _hasLoadError = true;
         });
         return;
       }
       facts.shuffle(_random);
-      if (!mounted) {
-        return;
-      }
       setState(() {
         _facts = facts;
         _currentIndex = 0;
         _isLoadingFacts = false;
-        _loadErrorMessage = null;
+        _hasLoadError = false;
       });
       _startSlideTimer();
     } catch (error, stackTrace) {
       logger.warning('豆知識アセットの読み込みに失敗しました: $error');
       logger.info(stackTrace.toString());
-      if (!mounted) {
+      if (!mounted || _loadedLanguageCode != languageCode) {
         return;
       }
       setState(() {
         _isLoadingFacts = false;
-        _loadErrorMessage = '豆知識の読み込みに失敗しました';
+        _hasLoadError = true;
       });
     }
   }
@@ -160,11 +163,11 @@ class _AILoadingState extends State<AILoading> {
         ),
       );
     }
-    if (_loadErrorMessage != null) {
+    if (_hasLoadError) {
       return SizedBox(
         width: 300,
         child: Text(
-          _loadErrorMessage!,
+          context.l10n.triviaLoadFailed,
           style: const TextStyle(color: Colors.white60, fontSize: 12),
           textAlign: TextAlign.center,
         ),
@@ -174,6 +177,14 @@ class _AILoadingState extends State<AILoading> {
       return const SizedBox.shrink();
     }
     final fact = _facts[_currentIndex];
+    final isJapanese = Localizations.localeOf(context).languageCode == 'ja';
+    final tailPhrases = [
+      context.l10n.triviaTailOne,
+      context.l10n.triviaTailTwo,
+      context.l10n.triviaTailThree,
+      context.l10n.triviaTailFour,
+      context.l10n.triviaTailFive,
+    ];
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 320),
@@ -186,9 +197,9 @@ class _AILoadingState extends State<AILoading> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'SAKE豆知識',
-            style: TextStyle(
+          Text(
+            context.l10n.sakeTrivia,
+            style: const TextStyle(
               color: Colors.amberAccent,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -216,7 +227,11 @@ class _AILoadingState extends State<AILoading> {
               key: ValueKey('${fact.title}_${fact.body}_$_currentIndex'),
               children: [
                 Text(
-                  _buildQuestionText(fact.title),
+                  _buildQuestionText(
+                    fact.title,
+                    isJapanese: isJapanese,
+                    fallback: context.l10n.triviaQuestionFallback,
+                  ),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
@@ -228,7 +243,8 @@ class _AILoadingState extends State<AILoading> {
                 Text(
                   _buildAnswerText(
                     fact.body,
-                    tail: _tailPhrases[_currentIndex % _tailPhrases.length],
+                    isJapanese: isJapanese,
+                    tail: tailPhrases[_currentIndex % tailPhrases.length],
                   ),
                   style: const TextStyle(
                     color: Colors.white70,
@@ -262,21 +278,32 @@ class _SakeFact {
   final String body;
 }
 
-String _buildQuestionText(String rawTitle) {
+String _buildQuestionText(
+  String rawTitle, {
+  required bool isJapanese,
+  required String fallback,
+}) {
   final trimmed = rawTitle.trim();
   if (trimmed.isEmpty) {
-    return 'この豆知識って何？';
+    return fallback;
   }
-  if (trimmed.endsWith('？') || trimmed.endsWith('?')) {
+  if (!isJapanese || trimmed.endsWith('？') || trimmed.endsWith('?')) {
     return trimmed;
   }
   return '$trimmedって何？';
 }
 
-String _buildAnswerText(String rawBody, {required String tail}) {
+String _buildAnswerText(
+  String rawBody, {
+  required bool isJapanese,
+  required String tail,
+}) {
   final base = rawBody.trim().replaceAll(RegExp(r'。+$'), '');
   if (base.isEmpty) {
-    return '日本酒の世界は奥深いんだよ。$tail';
+    return tail;
+  }
+  if (!isJapanese) {
+    return '$base $tail';
   }
   return '${_wrapWithFriendlyEnding(base)} $tail';
 }

@@ -16,6 +16,8 @@ import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../common/assets.dart';
+import '../../common/localization/app_locale_controller.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
@@ -166,7 +168,7 @@ class MyPage extends StatelessWidget {
         if (result == true) {
           _showToast(
             navigator.context,
-            message: 'ログインしました。',
+            message: context.l10n.loginCompleted,
             icon: Icons.login,
           );
           notifier.fetchUserProfile();
@@ -192,11 +194,11 @@ class MyPage extends StatelessWidget {
       },
       child: Scaffold(
         appBar: PrimaryAppBar(
-          title: 'マイページ',
+          title: context.l10n.navigationMyPage,
           automaticallyImplyLeading: false,
           actions: [
             IconButton(
-              tooltip: '使い方ガイド',
+              tooltip: context.l10n.helpGuide,
               icon: const Icon(
                 Icons.help_outline,
                 color: Color(0xFFFFD54F),
@@ -264,21 +266,21 @@ class MyPage extends StatelessWidget {
                             if (result == AccountSettingsResult.loggedOut) {
                               _showToast(
                                 navigator.context,
-                                message: 'ログアウトしました。',
+                                message: context.l10n.logoutCompleted,
                                 icon: Icons.logout,
                               );
                             } else if (result ==
                                 AccountSettingsResult.accountDeleted) {
                               _showToast(
                                 navigator.context,
-                                message: 'アカウントを削除しました。',
+                                message: context.l10n.accountDeleted,
                                 icon: Icons.delete_forever,
                               );
                             } else if (result ==
                                 AccountSettingsResult.usernameUpdated) {
                               _showToast(
                                 navigator.context,
-                                message: 'ニックネームを更新しました。',
+                                message: context.l10n.nicknameUpdated,
                                 icon: Icons.person,
                               );
                               notifier.fetchUserProfile();
@@ -315,8 +317,8 @@ class MyPage extends StatelessWidget {
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  '保存酒',
+                                Text(
+                                  context.l10n.savedSake,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -344,7 +346,7 @@ class MyPage extends StatelessWidget {
                                             : Colors.white),
                                   ),
                                   label: Text(
-                                    '並び替え',
+                                    context.l10n.sort,
                                     style: TextStyle(
                                       fontSize: 10,
                                       color: isFiltering
@@ -375,7 +377,7 @@ class MyPage extends StatelessWidget {
                                   child: Row(
                                     children: [
                                       IconButton(
-                                        tooltip: 'グリッド表示',
+                                        tooltip: context.l10n.gridView,
                                         splashRadius: 18,
                                         icon: Icon(
                                           Icons.grid_view,
@@ -388,7 +390,7 @@ class MyPage extends StatelessWidget {
                                         },
                                       ),
                                       IconButton(
-                                        tooltip: 'リスト表示',
+                                        tooltip: context.l10n.listView,
                                         splashRadius: 18,
                                         icon: Icon(
                                           Icons.view_list,
@@ -410,11 +412,11 @@ class MyPage extends StatelessWidget {
                             Container(
                               width: MediaQuery.of(context).size.width,
                               padding: const EdgeInsets.only(bottom: 24),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
-                                  'まだ保存したお酒はありません。\nメニュー検索からブックマークしてみましょう！',
+                                  context.l10n.savedSakeEmptyHint,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 14,
                                   ),
@@ -446,7 +448,10 @@ class MyPage extends StatelessWidget {
                                             _showToast(
                                               context,
                                               message:
-                                                  '${sake.name ?? '名称不明'} を保存リストから削除しました',
+                                                  context.l10n.removedFromSaved(
+                                                sake.name ??
+                                                    context.l10n.unknownName,
+                                              ),
                                               icon: Icons.bookmark_remove,
                                             );
                                           },
@@ -468,7 +473,10 @@ class MyPage extends StatelessWidget {
                                             _showToast(
                                               context,
                                               message:
-                                                  '${sake.name ?? '名称不明'} を保存リストから削除しました',
+                                                  context.l10n.removedFromSaved(
+                                                sake.name ??
+                                                    context.l10n.unknownName,
+                                              ),
                                               icon: Icons.bookmark_remove,
                                             );
                                           },
@@ -514,8 +522,8 @@ class MyPage extends StatelessWidget {
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
-                              const Text(
-                                '酒瓶リスト',
+                              Text(
+                                context.l10n.bottleList,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -554,8 +562,8 @@ class MyPage extends StatelessWidget {
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  'お気に入りのお酒',
+                                Text(
+                                  context.l10n.favoriteSake,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
@@ -570,9 +578,9 @@ class MyPage extends StatelessWidget {
                             Container(
                               width: MediaQuery.of(context).size.width,
                               padding: const EdgeInsets.only(bottom: 24),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
-                                  'まだお気に入りはありません。\n日本酒を検索して♡マークを押してみましょう！',
+                                  context.l10n.favoriteEmpty,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white70,
@@ -616,8 +624,10 @@ class MyPage extends StatelessWidget {
                                               .addOrRemoveFavorite(target);
                                           _showToast(
                                             context,
-                                            message:
-                                                '${target.name} をお気に入りから削除しました',
+                                            message: context.l10n
+                                                .removedFromFavorites(
+                                              target.name,
+                                            ),
                                             icon: Icons.favorite_border,
                                           );
                                         },
@@ -644,9 +654,10 @@ class MyPage extends StatelessWidget {
                           if (myFavoriteSakeList.length >= 2) {
                             if (!notifier.hasAnalysisQuota) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('診断は1日に3回までです。時間をおいてお試しください。'),
-                                  duration: Duration(seconds: 2),
+                                SnackBar(
+                                  content:
+                                      Text(context.l10n.diagnosisDailyLimit),
+                                  duration: const Duration(seconds: 2),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
@@ -659,17 +670,17 @@ class MyPage extends StatelessWidget {
                           } else {
                             // 2つ未満の場合はトーストメッセージのみ表示
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('もう少しお気に入りのお酒を登録してね！'),
-                                duration: Duration(seconds: 2),
+                              SnackBar(
+                                content: Text(context.l10n.needMoreFavorites),
+                                duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
                         },
                         icon: const Icon(Icons.psychology),
-                        label: const Text(
-                          'あなたにぴったりのお酒診断',
+                        label: Text(
+                          context.l10n.favoriteDiagnosis,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                           ),
@@ -708,8 +719,8 @@ class MyPage extends StatelessWidget {
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
-                              const Text(
-                                '好きなお酒の傾向',
+                              Text(
+                                context.l10n.tastePreferences,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -719,8 +730,8 @@ class MyPage extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            '好みのお酒の特徴を入力すると、おすすめの日本酒を探しやすくなります。',
+                          Text(
+                            context.l10n.tastePreferencesDescription,
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
@@ -729,12 +740,16 @@ class MyPage extends StatelessWidget {
                           const SizedBox(height: 12),
                           if (isLoggedIn)
                             _buildPreferenceChartPreview(
+                              context,
                               context.select(
                                 (MyPageState state) => state.tasteProfile,
                               ),
                             )
                           else
-                            _buildPreferenceChartLoginPrompt(openLogin),
+                            _buildPreferenceChartLoginPrompt(
+                              context,
+                              openLogin,
+                            ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: preferencesController,
@@ -742,7 +757,7 @@ class MyPage extends StatelessWidget {
                             maxLines: 3,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              hintText: '例: 甘口でフルーティな香りが好きです。辛すぎるのは苦手です。',
+                              hintText: context.l10n.tastePreferencesHint,
                               hintStyle: TextStyle(
                                   color: Colors.white.withOpacity(0.5)),
                               filled: true,
@@ -765,9 +780,10 @@ class MyPage extends StatelessWidget {
                                 // 保存処理
                                 notifier.savePreferences();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('好みを保存しました'),
-                                    duration: Duration(seconds: 2),
+                                  SnackBar(
+                                    content:
+                                        Text(context.l10n.preferencesSaved),
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
                               },
@@ -780,7 +796,7 @@ class MyPage extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text('保存する'),
+                              child: Text(context.l10n.saveAction),
                             ),
                           ),
                         ],
@@ -867,43 +883,46 @@ class MyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPreferenceChartPreview(TastePreferenceProfile? profile) {
+  Widget _buildPreferenceChartPreview(
+    BuildContext context,
+    TastePreferenceProfile? profile,
+  ) {
     final effectiveProfile = profile ?? TastePreferenceProfile.sample();
     final axes = <_PreferenceAxisData>[
       _PreferenceAxisData(
-        title: 'フルーティ',
-        leftLabel: '穏やか',
-        rightLabel: 'フルーティ',
+        title: context.l10n.axisFruity,
+        leftLabel: context.l10n.axisCalm,
+        rightLabel: context.l10n.axisFruity,
         value: effectiveProfile.fruity,
       ),
       _PreferenceAxisData(
-        title: '甘味',
-        leftLabel: '辛口',
-        rightLabel: '甘口',
+        title: context.l10n.axisSweetness,
+        leftLabel: context.l10n.axisDry,
+        rightLabel: context.l10n.axisSweet,
         value: effectiveProfile.sweetness,
       ),
       _PreferenceAxisData(
-        title: '酸味',
-        leftLabel: '低酸',
-        rightLabel: '高酸',
+        title: context.l10n.axisAcidity,
+        leftLabel: context.l10n.axisLowAcid,
+        rightLabel: context.l10n.axisHighAcid,
         value: effectiveProfile.acidity,
       ),
       _PreferenceAxisData(
-        title: '旨味',
-        leftLabel: '淡麗',
-        rightLabel: '濃醇',
+        title: context.l10n.axisUmami,
+        leftLabel: context.l10n.axisLight,
+        rightLabel: context.l10n.axisRich,
         value: effectiveProfile.umami,
       ),
       _PreferenceAxisData(
-        title: 'キレ',
-        leftLabel: 'まろやか',
-        rightLabel: 'シャープ',
+        title: context.l10n.axisFinish,
+        leftLabel: context.l10n.axisMellow,
+        rightLabel: context.l10n.axisSharp,
         value: effectiveProfile.kire,
       ),
       _PreferenceAxisData(
-        title: '辛さ',
-        leftLabel: '穏やか',
-        rightLabel: 'ピリッ',
+        title: context.l10n.axisSpiciness,
+        leftLabel: context.l10n.axisGentle,
+        rightLabel: context.l10n.axisKick,
         value: effectiveProfile.spiciness,
       ),
     ];
@@ -920,7 +939,9 @@ class MyPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            profile == null ? '好きなお酒の傾向（サンプル表示）' : '好きなお酒の傾向',
+            profile == null
+                ? context.l10n.tasteTrendSample
+                : context.l10n.tasteTrend,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -930,8 +951,8 @@ class MyPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             profile == null
-                ? 'お気に入りデータがそろったら、あなた専用のチャートをここに表示します。'
-                : 'お気に入りの日本酒から算出した平均傾向です。あくまでAIの解析なのでお手柔らかに。',
+                ? context.l10n.tasteTrendSampleDescription
+                : context.l10n.tasteTrendDescription,
             style: TextStyle(
               color: Colors.white.withOpacity(0.65),
               fontSize: 12,
@@ -946,7 +967,10 @@ class MyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPreferenceChartLoginPrompt(VoidCallback onAuthenticate) {
+  Widget _buildPreferenceChartLoginPrompt(
+    BuildContext context,
+    VoidCallback onAuthenticate,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -958,9 +982,9 @@ class MyPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'ログインユーザー限定',
-            style: TextStyle(
+          Text(
+            context.l10n.signedInUsersOnly,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -968,7 +992,7 @@ class MyPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'お気に入りの日本酒から傾向チャートを自動生成します。ログインして自分専用の分析を確認しましょう。',
+            context.l10n.tasteChartLoginDescription,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 13,
@@ -981,9 +1005,9 @@ class MyPage extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onAuthenticate,
               icon: const Icon(Icons.login),
-              label: const Text(
-                'ログインしてチャートを見る',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              label: Text(
+                context.l10n.loginToViewChart,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFD54F),
@@ -1030,9 +1054,9 @@ class MyPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          'タグで絞り込む',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.filterByTag,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1047,10 +1071,10 @@ class MyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     if (!hasTags)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
-                          '利用可能なタグがまだありません。',
+                          context.l10n.noAvailableTags,
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -1111,7 +1135,7 @@ class MyPage extends StatelessWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.white70,
                           ),
-                          child: const Text('絞り込みを解除'),
+                          child: Text(context.l10n.clearFilters),
                         ),
                         const Spacer(),
                         ElevatedButton(
@@ -1130,7 +1154,7 @@ class MyPage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('適用する'),
+                          child: Text(context.l10n.apply),
                         ),
                       ],
                     ),
@@ -1153,13 +1177,14 @@ class MyPage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
+        final localeController = context.watch<AppLocaleController>();
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '設定',
+              Text(
+                context.l10n.settings,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1168,9 +1193,17 @@ class MyPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               ListTile(
+                leading: const Icon(Icons.language, color: Color(0xFF1D3567)),
+                title: Text(context.l10n.language),
+                subtitle: Text(
+                  _languageLabel(context, localeController.language),
+                ),
+                onTap: () => _showLanguageDialog(context),
+              ),
+              ListTile(
                 leading:
                     const Icon(Icons.description, color: Color(0xFF1D3567)),
-                title: const Text('利用規約'),
+                title: Text(context.l10n.termsOfUse),
                 onTap: () async {
                   Navigator.pop(context); // 設定メニューを閉じる
                   await Navigator.of(context, rootNavigator: true).push<void>(
@@ -1180,7 +1213,7 @@ class MyPage extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.business, color: Color(0xFF1D3567)),
-                title: const Text('開発会社'),
+                title: Text(context.l10n.developer),
                 onTap: () async {
                   Navigator.pop(context); // 設定メニューを閉じる
                   await launchUrl(Uri.parse('https://molasoft.jp'));
@@ -1191,8 +1224,8 @@ class MyPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context); // 設定メニューを閉じる
                 },
-                child: const Text(
-                  'キャンセル',
+                child: Text(
+                  context.l10n.cancel,
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 16,
@@ -1204,6 +1237,37 @@ class MyPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _languageLabel(BuildContext context, AppLanguage language) {
+    return switch (language) {
+      AppLanguage.system => context.l10n.languageSystem,
+      AppLanguage.japanese => context.l10n.languageJapanese,
+      AppLanguage.english => context.l10n.languageEnglish,
+    };
+  }
+
+  Future<void> _showLanguageDialog(BuildContext context) async {
+    final controller = context.read<AppLocaleController>();
+    final selected = await showDialog<AppLanguage>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: Text(dialogContext.l10n.language),
+        children: AppLanguage.values
+            .map(
+              (language) => RadioListTile<AppLanguage>(
+                value: language,
+                groupValue: controller.language,
+                title: Text(_languageLabel(dialogContext, language)),
+                onChanged: (value) => Navigator.of(dialogContext).pop(value),
+              ),
+            )
+            .toList(),
+      ),
+    );
+    if (selected != null) {
+      await controller.setLanguage(selected);
+    }
   }
 
   // お酒診断結果ダイアログを表示するメソッド
@@ -1223,9 +1287,9 @@ class MyPage extends StatelessWidget {
                 context.select((MyPageState state) => state.tasteProfile);
 
             return AlertDialog(
-              title: const Text(
-                'あなたにぴったりのお酒診断',
-                style: TextStyle(
+              title: Text(
+                context.l10n.sakeDiagnosisTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1D3567),
@@ -1247,16 +1311,16 @@ class MyPage extends StatelessWidget {
                               ),
                             )
                           : tasteProfile != null
-                              ? const Text(
-                                  '味覚チャートを更新しました！\nお気に入りを増やすとさらに精度が上がります。',
-                                  style: TextStyle(
+                              ? Text(
+                                  context.l10n.tasteChartUpdated,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.black87,
                                   ),
                                 )
-                              : const Text(
-                                  'お気に入りのお酒から診断できませんでした。別のお酒を登録してみてください。',
-                                  style: TextStyle(
+                              : Text(
+                                  context.l10n.sakeDiagnosisFailed,
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.black87,
                                   ),
@@ -1268,9 +1332,9 @@ class MyPage extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(context); // ダイアログを閉じる
                   },
-                  child: const Text(
-                    '閉じる',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.close,
+                    style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 16,
                     ),
@@ -1282,9 +1346,9 @@ class MyPage extends StatelessWidget {
                       notifier.saveSakePreferenceAsPreferences();
                       Navigator.pop(context); // ダイアログを閉じる
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('好みを保存しました'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text(context.l10n.preferencesSaved),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },
@@ -1292,7 +1356,7 @@ class MyPage extends StatelessWidget {
                       backgroundColor: const Color(0xFF1D3567),
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('好きな傾向に保存して閉じる'),
+                    child: Text(context.l10n.savePreferenceAndClose),
                   ),
               ],
             );
@@ -1586,15 +1650,11 @@ class _AchievementData {
 class _AchievementDefinition {
   const _AchievementDefinition({
     required this.id,
-    required this.title,
-    required this.description,
     required this.asset,
     required this.thresholds,
   });
 
   final String id;
-  final String title;
-  final String description;
   final AssetImage asset;
   final List<int> thresholds;
 }
@@ -1602,22 +1662,16 @@ class _AchievementDefinition {
 const List<_AchievementDefinition> _achievementDefinitions = [
   _AchievementDefinition(
     id: 'login',
-    title: 'ウェルカム乾杯',
-    description: 'たくさん利用してバッジを集めましょう',
     asset: Assets.sakeLogoColor,
     thresholds: [1, 3, 7],
   ),
   _AchievementDefinition(
     id: 'analyzedBottle',
-    title: 'ボトルマスター',
-    description: '酒瓶解析で日本酒の知識を深めよう',
     asset: Assets.medalBin,
     thresholds: [1, 5, 15],
   ),
   _AchievementDefinition(
     id: 'envyPoint',
-    title: 'うらやまコレクター',
-    description: 'うらやまを集めて注目の的になろう',
     asset: Assets.medalLike,
     thresholds: [3, 7, 15],
   ),
@@ -1691,12 +1745,16 @@ class _AchievementsCardState extends State<_AchievementsCard>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                children: const [
-                  Icon(Icons.emoji_events, color: Colors.amberAccent, size: 22),
-                  SizedBox(width: 8),
+                children: [
+                  const Icon(
+                    Icons.emoji_events,
+                    color: Colors.amberAccent,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    'バッジ',
-                    style: TextStyle(
+                    context.l10n.badges,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1723,8 +1781,8 @@ class _AchievementsCardState extends State<_AchievementsCard>
 
       return _AchievementData(
         id: definition.id,
-        title: definition.title,
-        description: definition.description,
+        title: _achievementTitle(definition.id),
+        description: _achievementDescription(definition.id),
         current: current,
         target: target,
         asset: definition.asset,
@@ -1732,6 +1790,24 @@ class _AchievementsCardState extends State<_AchievementsCard>
         hasProgress: hasProgress,
       );
     }).toList();
+  }
+
+  String _achievementTitle(String id) {
+    return switch (id) {
+      'login' => context.l10n.achievementWelcomeTitle,
+      'analyzedBottle' => context.l10n.achievementBottleTitle,
+      'envyPoint' => context.l10n.achievementEnvyTitle,
+      _ => '',
+    };
+  }
+
+  String _achievementDescription(String id) {
+    return switch (id) {
+      'login' => context.l10n.achievementWelcomeDescription,
+      'analyzedBottle' => context.l10n.achievementBottleDescription,
+      'envyPoint' => context.l10n.achievementEnvyDescription,
+      _ => '',
+    };
   }
 
   int _countFor(String id) {
@@ -1879,10 +1955,10 @@ class _AchievementsCardState extends State<_AchievementsCard>
                     const SizedBox(height: 6),
                     Text(
                       achievement.isComplete
-                          ? 'コンプリート！バッジを獲得しました'
+                          ? context.l10n.badgeComplete
                           : hasProgress
-                              ? 'あと$remaining回で次のバッジ'
-                              : 'まずは最初の挑戦から始めてみましょう',
+                              ? context.l10n.badgeRemaining(remaining)
+                              : context.l10n.badgeStart,
                       style: TextStyle(
                         color: tier == _MedalTier.none
                             ? Colors.white60
@@ -1934,13 +2010,13 @@ class _AchievementsCardState extends State<_AchievementsCard>
   String _tierLabel(_MedalTier tier) {
     switch (tier) {
       case _MedalTier.gold:
-        return 'ゴールドバッジ';
+        return context.l10n.goldBadge;
       case _MedalTier.silver:
-        return 'シルバーバッジ';
+        return context.l10n.silverBadge;
       case _MedalTier.bronze:
-        return 'ブロンズバッジ';
+        return context.l10n.bronzeBadge;
       case _MedalTier.none:
-        return '未獲得';
+        return context.l10n.badgeNotEarned;
     }
   }
 }
@@ -2140,12 +2216,12 @@ class _AuthCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          children: const [
-            Icon(Icons.mail_outline, color: Color(0xFFFFD54F)),
-            SizedBox(width: 8),
+          children: [
+            const Icon(Icons.mail_outline, color: Color(0xFFFFD54F)),
+            const SizedBox(width: 8),
             Text(
-              'ログインでさらに便利に',
-              style: TextStyle(
+              context.l10n.loginBenefitsTitle,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -2154,9 +2230,9 @@ class _AuthCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        const Text(
-          '登録なしでも利用できますが、ログインすると保存数UP、保存酒リストのバックアップや端末間での同期が可能になります！',
-          style: TextStyle(
+        Text(
+          context.l10n.loginBenefitsDescription,
+          style: const TextStyle(
             color: Colors.white70,
             fontSize: 13,
             height: 1.5,
@@ -2175,9 +2251,9 @@ class _AuthCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: const Text(
-              'メールアドレスでログイン・登録',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Text(
+              context.l10n.loginOrRegisterWithEmail,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -2198,7 +2274,7 @@ class _AuthCard extends StatelessWidget {
       if (email != null && email.isNotEmpty) {
         return email;
       }
-      return 'ユーザー';
+      return context.l10n.userFallbackName;
     }();
 
     const double avatarSize = 48;
@@ -2256,9 +2332,9 @@ class _AuthCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'ログイン中',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.signedIn,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -2266,7 +2342,7 @@ class _AuthCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'こんにちは${resolvedName}さん！',
+                    context.l10n.helloUser(resolvedName),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
@@ -2280,7 +2356,7 @@ class _AuthCard extends StatelessWidget {
             ),
             IconButton(
               onPressed: onOpenAccountSettings,
-              tooltip: 'アカウント設定',
+              tooltip: context.l10n.accountSettings,
               icon: const Icon(
                 size: 28,
                 Icons.manage_accounts,
@@ -2304,9 +2380,11 @@ class _EnvyPointHighlight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasPoints = count > 0;
-    final headline = hasPoints ? '累計うらやまポイント' : 'うらやまを集めよう';
-    final detail =
-        hasPoints ? 'これまでに $count 件のうらやまを獲得しています' : 'タイムラインで共有すると仲間からうらやまが届きます';
+    final headline =
+        hasPoints ? context.l10n.totalEnvyPoints : context.l10n.collectEnvy;
+    final detail = hasPoints
+        ? context.l10n.envyEarnedCount(count)
+        : context.l10n.envyShareHint;
     final highlightColor = hasPoints ? Colors.pinkAccent : Colors.white54;
 
     return Container(
@@ -2383,7 +2461,9 @@ class _EnvyPointHighlight extends StatelessWidget {
                 ),
               ),
               Text(
-                hasPoints ? 'みんなが賞賛！' : '集めてみよう',
+                hasPoints
+                    ? context.l10n.everyonePraises
+                    : context.l10n.tryCollecting,
                 style: const TextStyle(
                   color: Colors.white60,
                   fontSize: 10,
@@ -2431,7 +2511,7 @@ class _SavedSakeList extends StatelessWidget {
           child: ListTile(
             onTap: () => onTap(sake),
             title: Text(
-              sake.name ?? '名称不明',
+              sake.name ?? context.l10n.unknownName,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -2451,8 +2531,8 @@ class _SavedSakeList extends StatelessWidget {
                       color: Colors.orangeAccent.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      '未同期',
+                    child: Text(
+                      context.l10n.notSynced,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -2498,7 +2578,9 @@ class _SavedSakeList extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          isSuperRecommended ? '超おすすめ！' : 'おすすめ！',
+                          isSuperRecommended
+                              ? context.l10n.highlyRecommended
+                              : context.l10n.recommended,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -2512,7 +2594,7 @@ class _SavedSakeList extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '飲んだ場所: ${sake.place}',
+                      context.l10n.consumedAt(sake.place!),
                       style: const TextStyle(
                         color: Colors.white60,
                         fontSize: 12,
@@ -2576,8 +2658,8 @@ class _SavedSakeFilterEmptyView extends StatelessWidget {
             size: 36,
           ),
           const SizedBox(height: 12),
-          const Text(
-            '選択中のタグに該当するお酒がありません。',
+          Text(
+            context.l10n.noMatchingTags,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white70,
@@ -2591,7 +2673,7 @@ class _SavedSakeFilterEmptyView extends StatelessWidget {
               foregroundColor: Colors.amber,
               side: const BorderSide(color: Colors.amber),
             ),
-            child: const Text('絞り込みを解除'),
+            child: Text(context.l10n.clearFilters),
           ),
         ],
       ),
@@ -2697,7 +2779,9 @@ class _SavedSakeGrid extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      isSuperRecommended ? '超おすすめ！' : 'おすすめ！',
+                      isSuperRecommended
+                          ? context.l10n.highlyRecommended
+                          : context.l10n.recommended,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -2756,8 +2840,8 @@ class _SavedSakeGrid extends StatelessWidget {
                             color: Colors.orangeAccent.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            '未同期',
+                          child: Text(
+                            context.l10n.notSynced,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -2766,7 +2850,7 @@ class _SavedSakeGrid extends StatelessWidget {
                           ),
                         ),
                       Text(
-                        sake.name ?? '名称不明',
+                        sake.name ?? context.l10n.unknownName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -2867,24 +2951,24 @@ class _MyTimelineEntryTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
-              children: const [
-                Icon(
+              children: [
+                const Icon(
                   Icons.person_pin_circle,
                   color: Colors.amber,
                   size: 24,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '自分の投稿',
-                    style: TextStyle(
+                    context.l10n.myPosts,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.white,
                   size: 16,

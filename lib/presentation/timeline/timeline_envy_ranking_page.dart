@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -70,8 +71,8 @@ class TimelineEnvyRankingPage extends StatelessWidget {
       }
       await GuestLimitDialog.show(
         context,
-        title: 'ログインでさらに楽しもう',
-        message: 'ランキングからうらやまを送るにはログインが必要です。',
+        title: context.l10n.timelineLoginTitle,
+        message: context.l10n.rankingLoginMessage,
       );
       return false;
     }
@@ -84,8 +85,9 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         if (hasSameId) {
           return true;
         }
-        final itemName =
-            item.name?.trim().isNotEmpty == true ? item.name!.trim() : '名称不明';
+        final itemName = item.name?.trim().isNotEmpty == true
+            ? item.name!.trim()
+            : context.l10n.unknownName;
         final itemType = item.type?.trim();
         final targetType = target.type?.trim();
         return itemName == normalizedName && itemType == targetType;
@@ -111,7 +113,7 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         SnackBarUtils.showWarningSnackBar(
           context,
           message:
-              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+              context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
         );
         return;
       }
@@ -131,7 +133,7 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         if (shouldShowSavedToast) {
           SnackBarUtils.showInfoSnackBar(
             context,
-            message: 'マイページに保存しました！',
+            message: context.l10n.savedToMyPage,
           );
         }
       } on SavedSakeGuestLimitReachedException {
@@ -149,7 +151,7 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         SnackBarUtils.showWarningSnackBar(
           context,
           message:
-              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+              context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
         );
       }
     }
@@ -166,19 +168,19 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         case EnvyResult.success:
           SnackBarUtils.showInfoSnackBar(
             context,
-            message: 'うらやまを送信しました！',
+            message: context.l10n.envySent,
           );
           break;
         case EnvyResult.failed:
           SnackBarUtils.showWarningSnackBar(
             context,
-            message: 'うらやまの送信に失敗しました。通信環境をご確認ください。',
+            message: context.l10n.envySendFailed,
           );
           break;
         case EnvyResult.already:
           SnackBarUtils.showInfoSnackBar(
             context,
-            message: 'すでにうらやま済みです！',
+            message: context.l10n.envyAlready,
           );
           break;
         case EnvyResult.pending:
@@ -198,8 +200,8 @@ class TimelineEnvyRankingPage extends StatelessWidget {
       }
       if (showError) {
         return _RankingMessageView(
-          message: errorMessage!,
-          actionLabel: '再読み込み',
+          message: localizeLegacyMessage(context.l10n, errorMessage!),
+          actionLabel: context.l10n.reload,
           onRetry: () => notifier.fetchRanking(isRefresh: false),
         );
       }
@@ -219,7 +221,7 @@ class TimelineEnvyRankingPage extends StatelessWidget {
             final sake = sakes[index];
             final normalizedName = sake.name?.trim().isNotEmpty == true
                 ? sake.name!.trim()
-                : '名称不明';
+                : context.l10n.unknownName;
             final envyKey = TimelineEnvyRankingNotifier.envyKey(sake);
             final canSendEnvy = envyKey.isNotEmpty &&
                 (sake.savedId?.trim().isNotEmpty ?? false);
@@ -251,8 +253,8 @@ class TimelineEnvyRankingPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF1D3567),
-      appBar: const PrimaryAppBar(
-        title: '羨ましい日本酒ランキング',
+      appBar: PrimaryAppBar(
+        title: context.l10n.envyRankingTitle,
         automaticallyImplyLeading: true,
       ),
       body: SafeArea(child: buildBody()),
@@ -283,8 +285,9 @@ class _RankingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalizedName =
-        sake.name?.trim().isNotEmpty == true ? sake.name!.trim() : '名称不明';
+    final normalizedName = sake.name?.trim().isNotEmpty == true
+        ? sake.name!.trim()
+        : context.l10n.unknownName;
     final typeText = sake.type ?? (sake.types?.join(' / '));
     final envyCount = sake.envyCount < 0 ? 0 : sake.envyCount;
     final Color accentColor = rank == 1
@@ -592,17 +595,17 @@ class _RankingEmptyView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.emoji_events_outlined,
               color: Colors.white38,
               size: 48,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'まだランキングを表示できる投稿がありません。',
+              context.l10n.rankingEmpty,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
                 height: 1.5,

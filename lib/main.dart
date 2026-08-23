@@ -10,9 +10,11 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 import 'app_config.dart';
 import 'common/access_url.dart';
+import 'common/localization/app_locale_controller.dart';
 import 'common/utils/ad_utils.dart';
 import 'config/di_container.dart';
 import 'firebase_options.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'presentation/startup/first_launch_gate.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -65,10 +67,15 @@ void main() async {
 
   // DIコンテナからプロバイダーを取得
   final providerList = await providers;
+  final localeController = AppLocaleController();
+  await localeController.load();
 
   runApp(
     MultiProvider(
-      providers: providerList,
+      providers: [
+        ChangeNotifierProvider.value(value: localeController),
+        ...providerList,
+      ],
       child: const MyApp(),
     ),
   );
@@ -92,8 +99,18 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<AppLocaleController>().locale;
     return MaterialApp(
-      title: 'MolaAI',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (deviceLocale?.languageCode == 'ja') {
+          return const Locale('ja');
+        }
+        return const Locale('en');
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,

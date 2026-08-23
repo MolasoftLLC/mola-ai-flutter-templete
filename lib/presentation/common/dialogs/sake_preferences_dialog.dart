@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../common/localization/localization_extensions.dart';
 import '../../../domain/notifier/my_page/my_page_notifier.dart';
 
-const List<String> _sakePreferenceOptions = <String>[
-  '甘口',
-  '辛口',
-  'スッキリ',
-  'フルーティ',
-  'にごり',
-  '微発泡',
-  '酸味',
-];
+class _SakePreferenceOption {
+  const _SakePreferenceOption(this.value, this.label);
+
+  final String value;
+  final String label;
+}
 
 Future<bool> showSakePreferencesSelectionDialog({
   required BuildContext context,
   required MyPageNotifier myPageNotifier,
 }) async {
+  final options = <_SakePreferenceOption>[
+    _SakePreferenceOption('甘口', context.l10n.preferenceSweet),
+    _SakePreferenceOption('辛口', context.l10n.preferenceDry),
+    _SakePreferenceOption('スッキリ', context.l10n.preferenceClean),
+    _SakePreferenceOption('フルーティ', context.l10n.preferenceFruity),
+    _SakePreferenceOption('にごり', context.l10n.preferenceNigori),
+    _SakePreferenceOption('微発泡', context.l10n.preferenceSparkling),
+    _SakePreferenceOption('酸味', context.l10n.preferenceAcidic),
+  ];
   final Iterable<String> existing = myPageNotifier.state.preferences
           ?.split('、')
           .map((String e) => e.trim())
@@ -34,9 +41,9 @@ Future<bool> showSakePreferencesSelectionDialog({
         builder: (BuildContext dialogContext,
             void Function(void Function()) setState) {
           return AlertDialog(
-            title: const Text(
-              'どんな日本酒が好き？',
-              style: TextStyle(
+            title: Text(
+              context.l10n.favoriteSakeQuestion,
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1D3567),
               ),
@@ -46,19 +53,19 @@ Future<bool> showSakePreferencesSelectionDialog({
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  const Text(
-                    '好みの特徴を選んでください（複数選択可）',
-                    style: TextStyle(fontSize: 14),
+                  Text(
+                    context.l10n.selectPreferenceFeatures,
+                    style: const TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _sakePreferenceOptions.map((String option) {
+                    children: options.map((_SakePreferenceOption option) {
                       final bool isSelected =
-                          selectedPreferences.contains(option);
+                          selectedPreferences.contains(option.value);
                       return FilterChip(
-                        label: Text(option),
+                        label: Text(option.label),
                         selected: isSelected,
                         selectedColor: const Color(0xFF1D3567).withOpacity(0.2),
                         checkmarkColor: const Color(0xFF1D3567),
@@ -73,11 +80,11 @@ Future<bool> showSakePreferencesSelectionDialog({
                         onSelected: (bool selected) {
                           setState(() {
                             if (selected) {
-                              if (!selectedPreferences.contains(option)) {
-                                selectedPreferences.add(option);
+                              if (!selectedPreferences.contains(option.value)) {
+                                selectedPreferences.add(option.value);
                               }
                             } else {
-                              selectedPreferences.remove(option);
+                              selectedPreferences.remove(option.value);
                             }
                           });
                         },
@@ -93,9 +100,9 @@ Future<bool> showSakePreferencesSelectionDialog({
                   if (selectedPreferences.isEmpty) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('少なくとも1つは選択してください'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text(context.l10n.selectAtLeastOne),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     }
@@ -112,9 +119,9 @@ Future<bool> showSakePreferencesSelectionDialog({
 
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('MyPageからいつでも変更できるよ！'),
-                        duration: Duration(seconds: 3),
+                      SnackBar(
+                        content: Text(context.l10n.preferencesChangeAnytime),
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   }
@@ -124,7 +131,7 @@ Future<bool> showSakePreferencesSelectionDialog({
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFF1D3567),
                 ),
-                child: const Text('完了'),
+                child: Text(context.l10n.done),
               ),
             ],
           );

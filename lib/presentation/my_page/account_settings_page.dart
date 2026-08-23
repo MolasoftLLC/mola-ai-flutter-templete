@@ -10,6 +10,7 @@ import '../../domain/notifier/auth/auth_notifier.dart'
     show AuthNotifier, AuthState;
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../common/utils/custom_image_picker.dart';
+import '../../common/localization/localization_extensions.dart';
 
 enum AccountSettingsResult { loggedOut, usernameUpdated, accountDeleted }
 
@@ -71,13 +72,13 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     final newName = _usernameController.text.trim();
     if (newName.isEmpty) {
       setState(() {
-        _errorMessage = 'ニックネームを入力してください。';
+        _errorMessage = context.l10n.errorEnterNickname;
       });
       return;
     }
     if (newName.characters.length > 10) {
       setState(() {
-        _errorMessage = 'ニックネームは10文字以内で入力してください。';
+        _errorMessage = context.l10n.errorNicknameLength;
       });
       return;
     }
@@ -105,7 +106,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       Navigator.of(context).pop(AccountSettingsResult.usernameUpdated);
     } else {
       setState(() {
-        _errorMessage = 'ニックネームの更新に失敗しました。時間をおいて再度お試しください。';
+        _errorMessage = context.l10n.errorNicknameUpdate;
       });
     }
   }
@@ -198,8 +199,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: const Color(0xFF1D3567),
-              title: const Text(
-                'アカウント削除の確認',
+              title: Text(
+                context.l10n.accountDeletionConfirmation,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -211,13 +212,13 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'アカウントを削除すると、保存酒・お気に入り・嗜好設定などのデータはすべて削除されます。',
+                    Text(
+                      context.l10n.accountDeletionWarningShort,
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      '確認のため、パスワードを入力してください。',
+                    Text(
+                      context.l10n.enterPasswordToConfirm,
                       style: TextStyle(color: Colors.white, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
@@ -228,7 +229,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.1),
-                        hintText: 'パスワード',
+                        hintText: context.l10n.password,
                         hintStyle: const TextStyle(color: Colors.white54),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -269,8 +270,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   onPressed: () {
                     Navigator.of(dialogContext).pop(null);
                   },
-                  child: const Text(
-                    'キャンセル',
+                  child: Text(
+                    context.l10n.cancel,
                     style: TextStyle(color: Colors.white70),
                   ),
                 ),
@@ -279,20 +280,20 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                     final password = _deletePasswordController.text.trim();
                     if (password.isEmpty) {
                       setState(() {
-                        validationMessage = 'パスワードを入力してください。';
+                        validationMessage = context.l10n.errorEnterPassword;
                       });
                       return;
                     }
                     if (password.length < 6) {
                       setState(() {
-                        validationMessage = 'パスワードは6文字以上で入力してください。';
+                        validationMessage = context.l10n.errorPasswordLength;
                       });
                       return;
                     }
                     Navigator.of(dialogContext).pop(password);
                   },
-                  child: const Text(
-                    '削除する',
+                  child: Text(
+                    context.l10n.deleteAction,
                     style: TextStyle(color: Color(0xFFFF8A65)),
                   ),
                 ),
@@ -333,13 +334,13 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       _isAvatarUpdating = false;
       _pendingAvatarFile = null;
       if (!success) {
-        _avatarErrorMessage = 'アイコンの更新に失敗しました。時間をおいて再度お試しください。';
+        _avatarErrorMessage = context.l10n.errorIconUpdate;
       }
     });
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('アイコンを更新しました。')),
+        SnackBar(content: Text(context.l10n.iconUpdated)),
       );
     }
   }
@@ -358,16 +359,16 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             children: [
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.white70),
-                title: const Text(
-                  'フォトライブラリから選択',
+                title: Text(
+                  context.l10n.selectFromPhotoLibrary,
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () => Navigator.of(context).pop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera, color: Colors.white70),
-                title: const Text(
-                  'カメラで撮影',
+                title: Text(
+                  context.l10n.takePhoto,
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () => Navigator.of(context).pop(ImageSource.camera),
@@ -432,7 +433,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthState>();
-    final email = authState.user?.email ?? '未設定';
+    final email = authState.user?.email ?? context.l10n.notSet;
     final myPageState = context.watch<MyPageState>();
     final iconUrl = myPageState.userIconUrl;
 
@@ -446,8 +447,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const PrimaryAppBar(
-          title: 'アカウント設定',
+        appBar: PrimaryAppBar(
+          title: context.l10n.accountSettings,
           titleFontSize: 18,
         ),
         body: SafeArea(
@@ -524,7 +525,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                           color: Colors.white70,
                         ),
                         label: Text(
-                          _isAvatarUpdating ? '更新中...' : 'アイコンを変更',
+                          _isAvatarUpdating
+                              ? context.l10n.updating
+                              : context.l10n.changeIcon,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -546,8 +549,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'ニックネーム',
+                      Text(
+                        context.l10n.nickname,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -563,7 +566,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                           counterText: '',
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.1),
-                          hintText: '例）日本酒好き太郎',
+                          hintText: context.l10n.nicknameHint,
                           hintStyle: const TextStyle(color: Colors.white38),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -581,7 +584,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            _errorMessage!,
+                            localizeLegacyMessage(
+                              context.l10n,
+                              _errorMessage!,
+                            ),
                             style: const TextStyle(
                               color: Colors.redAccent,
                               fontSize: 12,
@@ -613,15 +619,15 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                         ),
                                       ),
                                     )
-                                  : const Text(
-                                      'ニックネームを保存',
+                                  : Text(
+                                      context.l10n.saveNickname,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
                                     )
-                              : const Text(
-                                  'ニックネームを保存',
+                              : Text(
+                                  context.l10n.saveNickname,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
@@ -654,8 +660,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'メールアドレス',
+                                Text(
+                                  context.l10n.emailAddress,
                                   style: TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12,
@@ -671,8 +677,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
-                                  '※ 現在アプリ内でメールアドレスの変更はできません。',
+                                Text(
+                                  context.l10n.emailChangeUnavailable,
                                   style: TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -713,8 +719,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                   color: Color(0xFFFF8A65)),
                           label: Text(
                             _activeAction == _AccountSettingsAction.logout
-                                ? 'ログアウト中...'
-                                : 'ログアウト',
+                                ? context.l10n.signingOut
+                                : context.l10n.signOut,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
@@ -739,13 +745,14 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Icon(Icons.delete_forever, color: Color(0xFFFF8A65)),
-                          SizedBox(width: 12),
+                        children: [
+                          const Icon(Icons.delete_forever,
+                              color: Color(0xFFFF8A65)),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'アカウント削除',
-                              style: TextStyle(
+                              context.l10n.accountDeletion,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -755,8 +762,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'アカウントを削除すると、保存酒・お気に入り・嗜好設定などのデータはすべて削除されます。削除後は元に戻せません。',
+                      Text(
+                        context.l10n.accountDeletionWarning,
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 13,
@@ -767,7 +774,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            _deleteErrorMessage!,
+                            localizeLegacyMessage(
+                              context.l10n,
+                              _deleteErrorMessage!,
+                            ),
                             style: const TextStyle(
                               color: Colors.redAccent,
                               fontSize: 12,
@@ -801,8 +811,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                     ),
                                   ),
                                 )
-                              : const Text(
-                                  'アカウントを削除する',
+                              : Text(
+                                  context.l10n.deleteAccountAction,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
