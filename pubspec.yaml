@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.5.1+58
+version: 4.5.4+61
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
@@ -111,6 +111,13 @@ flutter_icons:
   image_path: "assets/icons/sake_icon.jpg"
 
 flutter_native_splash:
+  android: true
+  ios: false
+  web: false
   image: "assets/images/sake_logo.png"
   color: "#1D3567"
-  android_gravity: fill
+  android_gravity: center
+  android_12:
+    # Android 12の円形マスク用余白はdrawable-anydpi-v31で適用する。
+    image: "assets/images/sake_logo.png"
+    color: "#1D3567"

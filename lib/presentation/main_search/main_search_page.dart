@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../common/assets.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
@@ -28,6 +29,7 @@ class MainSearchPage extends StatelessWidget {
         StateNotifierProvider<MainSearchPageNotifier, MainSearchPageState>(
           create: (context) => MainSearchPageNotifier(
             context: context,
+            authNotifier: context.read<AuthNotifier>(),
           ),
         ),
       ],
@@ -62,6 +64,8 @@ class MainSearchPage extends StatelessWidget {
         context.select((MainSearchPageState state) => state.sakeImage);
     final shareToTimeline =
         context.select((MainSearchPageState state) => state.shareToTimeline);
+    final isLoggedIn =
+        context.select((MainSearchPageState state) => state.isLoggedIn);
     final autoTweetEnabled =
         context.select((MainSearchPageState state) => state.autoTweetEnabled);
     final isAutoTweetUpdating = context
@@ -196,6 +200,7 @@ class MainSearchPage extends StatelessWidget {
                                       sakeImage,
                                       isAnalyzingInBackground,
                                       shareToTimeline,
+                                      isLoggedIn,
                                       autoTweetEnabled,
                                       isAutoTweetUpdating,
                                     ),
@@ -423,6 +428,7 @@ class MainSearchPage extends StatelessWidget {
     File? sakeImage,
     bool isAnalyzingInBackground,
     bool shareToTimeline,
+    bool isLoggedIn,
     bool? autoTweetEnabled,
     bool isAutoTweetUpdating,
   ) {
@@ -589,9 +595,14 @@ class MainSearchPage extends StatelessWidget {
                 const Text(
                   '解析完了時に結果をXにも自動投稿します。',
                 ),
-                if (autoTweetEnabled == null)
+                if (!isLoggedIn)
                   const Text(
                     'ログインすると設定を変更できます。',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                if (isLoggedIn && autoTweetEnabled == null)
+                  const Text(
+                    '自動投稿の設定を取得中です...',
                     style: TextStyle(fontSize: 12),
                   ),
                 if (isAutoTweetUpdating)

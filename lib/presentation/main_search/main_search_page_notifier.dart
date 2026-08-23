@@ -14,6 +14,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/gemini_mola_api_repository.dart';
@@ -54,6 +55,7 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     @Default([]) List<String> pendingSavedSakeIds,
     String? analyzingImagePath,
     @Default(true) bool shareToTimeline,
+    @Default(false) bool isLoggedIn,
     bool? autoTweetEnabled,
     DateTime? autoTweetConsentAt,
     @Default(false) bool isAutoTweetUpdating,
@@ -64,9 +66,11 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
   MainSearchPageNotifier({
     required this.context,
+    required this.authNotifier,
   }) : super(const MainSearchPageState());
 
   final BuildContext context;
+  final AuthNotifier authNotifier;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
@@ -84,16 +88,20 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   final Map<String, bool> _savedIdPublicFlags = <String, bool>{};
   static const String _timelineSharePreferenceKey =
       'timeline_share_checkbox_preference';
+  late final RemoveListener _removeAuthListener;
+  String? _observedAuthUserId;
+  int _autoTweetLoadGeneration = 0;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
     unawaited(_restoreTimelineSharePreference());
-    unawaited(_loadAutoTweetSetting());
+    _removeAuthListener = authNotifier.addListener(_handleAuthStateChanged);
   }
 
   @override
   void dispose() {
+    _removeAuthListener();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();
@@ -378,10 +386,18 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
   }
 
-  Future<void> _loadAutoTweetSetting() async {
-    final user = authRepository.currentUser;
-    if (user == null) {
+  void _handleAuthStateChanged(AuthState authState) {
+    final userId = authState.user?.uid;
+    if (_observedAuthUserId == userId) {
+      return;
+    }
+
+    _observedAuthUserId = userId;
+    final loadGeneration = ++_autoTweetLoadGeneration;
+
+    if (userId == null) {
       state = state.copyWith(
+        isLoggedIn: false,
         autoTweetEnabled: null,
         autoTweetConsentAt: null,
         isAutoTweetUpdating: false,
@@ -389,8 +405,25 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return;
     }
 
+    state = state.copyWith(
+      isLoggedIn: true,
+      autoTweetEnabled: null,
+      autoTweetConsentAt: null,
+      isAutoTweetUpdating: false,
+    );
+    unawaited(_loadAutoTweetSetting(userId, loadGeneration));
+  }
+
+  Future<void> _loadAutoTweetSetting(
+    String userId,
+    int loadGeneration,
+  ) async {
     try {
-      final remote = await sakeUserRepository.fetchUser(user.uid);
+      final remote = await sakeUserRepository.fetchUser(userId);
+      if (loadGeneration != _autoTweetLoadGeneration ||
+          _observedAuthUserId != userId) {
+        return;
+      }
       final enabled = _parseAutoTweetEnabled(remote?['autoTweetEnabled']);
       final consentAt = _parseAutoTweetConsentAt(remote?['autoTweetConsentAt']);
       state = state.copyWith(
@@ -431,7 +464,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   }
 
   Future<void> onAutoTweetToggle(bool newValue) async {
-    final user = authRepository.currentUser;
+    final user = authNotifier.state.user;
     if (user == null) {
       SnackBarUtils.showWarningSnackBar(
         context,
