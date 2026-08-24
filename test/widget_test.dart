@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mola_gemini_flutter_template/common/localization/app_locale_controller.dart';
+import 'package:mola_gemini_flutter_template/common/localization/app_locale_resolver.dart';
 import 'package:mola_gemini_flutter_template/common/localization/localization_extensions.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
@@ -38,6 +39,18 @@ void main() {
 
     expect(controller.language, AppLanguage.system);
     expect(controller.locale, isNull);
+  });
+
+  test('APIへ送る言語はアプリ内設定を優先する', () async {
+    SharedPreferences.setMockInitialValues({
+      appLanguageKey: AppLanguage.english.name,
+    });
+    expect(await resolveAppLocaleLanguageCode(), 'en');
+
+    SharedPreferences.setMockInitialValues({
+      appLanguageKey: AppLanguage.japanese.name,
+    });
+    expect(await resolveAppLocaleLanguageCode(), 'ja');
   });
 
   testWidgets('英語ロケールの文言を表示する', (tester) async {

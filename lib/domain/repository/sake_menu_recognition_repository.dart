@@ -4,6 +4,7 @@ import 'package:chopper/chopper.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../common/exception/exception.dart';
+import '../../common/localization/app_locale_resolver.dart';
 import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
 import '../../common/utils/image_cropper_service.dart';
@@ -90,7 +91,10 @@ class SakeMenuRecognitionRepository {
   /// 日本酒名と種類のリストから詳細情報を取得する
   Future<SakeMenuRecognitionResponse?> getSakeInfoBatch(
       List<Map<String, dynamic>> sakes) async {
-    final body = {'sakes': sakes};
+    final body = {
+      'sakes': sakes,
+      'locale': await resolveAppLocaleLanguageCode(),
+    };
 
     final response = await _apiClient.getSakeInfoBatch(body);
 
@@ -111,7 +115,10 @@ class SakeMenuRecognitionRepository {
       return null;
     }
 
-    final Map<String, dynamic> body = {'sakeName': sakeName};
+    final Map<String, dynamic> body = {
+      'sakeName': sakeName,
+      'locale': await resolveAppLocaleLanguageCode(),
+    };
 
     // 種類（タイプ）が指定されている場合は追加
     if (type != null && type.isNotEmpty) {
@@ -217,6 +224,7 @@ class SakeMenuRecognitionRepository {
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
       final payload = <String, dynamic>{
         'file': baseFile,
+        'locale': await resolveAppLocaleLanguageCode(),
       };
       if (preferences != null && preferences.isNotEmpty) {
         payload['preferences'] = preferences;
