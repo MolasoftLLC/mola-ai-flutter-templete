@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/localization/localization_extensions.dart';
+
 class AdConsentDialog extends StatelessWidget {
   const AdConsentDialog({
-    Key? key,
-    this.title = '広告視聴の確認',
-    this.description = '広告を視聴すると、特別な機能が利用できます。',
+    super.key,
+    required this.title,
+    required this.description,
     this.icon = Icons.video_collection,
     this.iconColor,
-    this.acceptButtonText = '同意する',
-    this.declineButtonText = 'キャンセル',
-  }) : super(key: key);
+    required this.acceptButtonText,
+    required this.declineButtonText,
+  });
 
   final String title;
   final String description;
@@ -20,22 +22,22 @@ class AdConsentDialog extends StatelessWidget {
 
   static Future<bool?> show(
     BuildContext context, {
-    String title = '広告視聴の確認',
-    String description = '広告を視聴すると、特別な機能が利用できます。',
+    String? title,
+    String? description,
     IconData icon = Icons.video_collection,
     Color? iconColor,
-    String acceptButtonText = '同意する',
-    String declineButtonText = 'キャンセル',
+    String? acceptButtonText,
+    String? declineButtonText,
   }) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AdConsentDialog(
-        title: title,
-        description: description,
+        title: title ?? context.l10n.adConfirmation,
+        description: description ?? context.l10n.adFeatureDescription,
         icon: icon,
         iconColor: iconColor,
-        acceptButtonText: acceptButtonText,
-        declineButtonText: declineButtonText,
+        acceptButtonText: acceptButtonText ?? context.l10n.agree,
+        declineButtonText: declineButtonText ?? context.l10n.cancel,
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/assets.dart';
+import '../../common/localization/localization_extensions.dart';
 import 'my_favorite_page_notifier.dart';
 
 class MyFavoritePage extends StatelessWidget {
@@ -49,7 +50,7 @@ class MyFavoritePage extends StatelessWidget {
             ),
             Text(
               textAlign: TextAlign.center,
-              'ベータ版 ver0.0.1',
+              context.l10n.betaVersion('ver0.0.1'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -71,7 +72,7 @@ class MyFavoritePage extends StatelessWidget {
                         await launchUrl(Uri.parse('https://molasoft.jp')),
                       },
                       child: Text(
-                        '開発会社',
+                        context.l10n.developer,
                         style: TextStyle(color: Colors.white),
                       ),
                     ),

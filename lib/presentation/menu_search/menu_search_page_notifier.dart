@@ -15,12 +15,12 @@ import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_hist
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_preference.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/services/ad_counter_service.dart';
 
 import '../../common/logger.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -238,8 +238,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         // 広告表示前に同意ダイアログを表示
         final consent = await AdConsentDialog.show(
           context,
-          title: '広告視聴の確認',
-          description: 'メニューから日本酒情報を解析するには広告の視聴が必要です。広告の視聴をお願いします！',
+          title: context.l10n.adConfirmation,
+          description: context.l10n.menuAdDescription,
           icon: Icons.menu_book,
         );
 
@@ -337,7 +337,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           // SnackBarで通知
           SnackBarUtils.showWarningSnackBar(
             context,
-            message: '解析をキャンセルしました。解析精度向上のため、次回は広告視聴にご協力ください。',
+            message: context.l10n.analysisCancelled,
             duration: const Duration(seconds: 4),
           );
 
@@ -367,7 +367,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isGettingDetails: false,
         isAdLoading: false,
         isAnalyzingInBackground: false,
-        errorMessage: '日本酒情報の抽出に失敗しました: $e',
+        errorMessage: context.l10n.errorMenuExtraction,
       );
     }
   }
@@ -382,7 +382,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     if (!ensured) {
       SnackBarUtils.showWarningSnackBar(
         context,
-        message: '好みの設定が完了していません。好みを登録してからお試しください。',
+        message: context.l10n.noPreferenceConfigured,
         duration: const Duration(seconds: 3),
       );
       return false;
@@ -479,7 +479,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       logger.shout('詳細情報の取得中にエラーが発生しました: $e');
       state = state.copyWith(
         isGettingDetails: false,
-        errorMessage: '日本酒の詳細情報の取得に失敗しました',
+        errorMessage: context.l10n.errorSakeDetailFetch,
       );
     }
   }
@@ -497,7 +497,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           isExtractingInfo: false,
           isAdLoading: false,
           isAnalyzingInBackground: false,
-          errorMessage: '日本酒情報を抽出できませんでした',
+          errorMessage: context.l10n.errorNoSakeExtracted,
         );
         return;
       }
@@ -531,7 +531,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isGettingDetails: false,
         isAdLoading: false,
         isAnalyzingInBackground: false,
-        errorMessage: '日本酒情報の抽出に失敗しました: $e',
+        errorMessage: context.l10n.errorMenuExtraction,
       );
     }
   }
@@ -550,7 +550,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           isLoading: false,
           isExtractingInfo: false,
           isAnalyzingInBackground: false,
-          errorMessage: '日本酒情報を抽出できませんでした',
+          errorMessage: context.l10n.errorNoSakeExtracted,
         );
         return;
       }
@@ -599,7 +599,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isLoading: false,
         isExtractingInfo: false,
         isAnalyzingInBackground: false,
-        errorMessage: '日本酒情報の抽出に失敗しました: $e',
+        errorMessage: context.l10n.errorMenuExtraction,
       );
     }
   }

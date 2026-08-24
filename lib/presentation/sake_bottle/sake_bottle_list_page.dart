@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 
+import '../../common/localization/localization_extensions.dart';
 import '../../domain/eintities/sake_bottle_image.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'sake_bottle_list_page_notifier.dart';
@@ -35,7 +36,7 @@ class SakeBottleListPage extends StatelessWidget {
 
     return Scaffold(
       appBar: PrimaryAppBar(
-        title: '酒瓶リスト',
+        title: context.l10n.bottleList,
         automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -67,9 +68,9 @@ class SakeBottleListPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white.withOpacity(0.2)),
                 ),
-                child: const Text(
-                  'こちらの機能は保存酒とかぶってきたためひっそりとクローズ予定です。',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.bottleListClosingNotice,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     height: 1.6,
@@ -86,9 +87,9 @@ class SakeBottleListPage extends StatelessWidget {
                         ),
                       )
                     : errorMessage != null
-                        ? _buildErrorState(errorMessage)
+                        ? _buildErrorState(context, errorMessage)
                         : sakeBottleImages.isEmpty
-                            ? _buildEmptyState()
+                            ? _buildEmptyState(context)
                             : _buildGridView(context, sakeBottleImages),
               ),
             ],
@@ -98,7 +99,7 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -109,17 +110,17 @@ class SakeBottleListPage extends StatelessWidget {
             size: 64,
           ),
           const SizedBox(height: 16),
-          const Text(
-            '保存された酒瓶画像はありません',
-            style: TextStyle(
+          Text(
+            context.l10n.noBottleImages,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            '酒瓶検索で画像を撮影してみましょう',
-            style: TextStyle(
+          Text(
+            context.l10n.captureBottleHint,
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
             ),
@@ -129,7 +130,7 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorState(String message) {
+  Widget _buildErrorState(BuildContext context, String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +142,7 @@ class SakeBottleListPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'エラーが発生しました',
+            context.l10n.errorOccurred,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -149,7 +150,7 @@ class SakeBottleListPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            message,
+            localizeLegacyMessage(context.l10n, message),
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -223,7 +224,12 @@ class SakeBottleListPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    image.sakeName ?? '不明な酒',
+                    image.sakeName == null
+                        ? context.l10n.unknownSake
+                        : localizeLegacyMessage(
+                            context.l10n,
+                            image.sakeName!,
+                          ),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -281,7 +287,12 @@ class SakeBottleListPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  image.sakeName ?? '不明な酒',
+                  image.sakeName == null
+                      ? context.l10n.unknownSake
+                      : localizeLegacyMessage(
+                          context.l10n,
+                          image.sakeName!,
+                        ),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -299,7 +310,7 @@ class SakeBottleListPage extends StatelessWidget {
                 ],
                 const SizedBox(height: 16),
                 Text(
-                  '撮影日: ${_formatDate(image.capturedAt)}',
+                  context.l10n.capturedDate(_formatDate(image.capturedAt)),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -313,7 +324,7 @@ class SakeBottleListPage extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(dialogContext).pop();
                       },
-                      child: const Text('閉じる'),
+                      child: Text(context.l10n.close),
                     ),
                     TextButton(
                       onPressed: () {
@@ -322,7 +333,7 @@ class SakeBottleListPage extends StatelessWidget {
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.red,
                       ),
-                      child: const Text('削除'),
+                      child: Text(context.l10n.delete),
                     ),
                   ],
                 ),
@@ -340,14 +351,14 @@ class SakeBottleListPage extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('画像を削除'),
-          content: const Text('この酒瓶画像を削除してもよろしいですか？'),
+          title: Text(context.l10n.deleteBottleImageTitle),
+          content: Text(context.l10n.deleteBottleImageDescription),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // ダイアログを閉じる
               },
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -359,7 +370,7 @@ class SakeBottleListPage extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
-              child: const Text('削除'),
+              child: Text(context.l10n.delete),
             ),
           ],
         );

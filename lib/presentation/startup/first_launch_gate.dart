@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/constants/storage_keys.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../app_page.dart';
 import '../auth/email_link_auth_page.dart';
@@ -139,8 +140,8 @@ class _OnboardingPrompt extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Center(
-                  child: const Text(
-                    'Sakepediaにようこそ！',
+                  child: Text(
+                    context.l10n.welcomeTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -150,8 +151,8 @@ class _OnboardingPrompt extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'メールアドレスでログインしておくと、保存酒やお気に入りを端末間で同期できます。ログイン後に届く確認メールから認証を完了してください。',
+                Text(
+                  context.l10n.welcomeDescription,
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -161,17 +162,17 @@ class _OnboardingPrompt extends StatelessWidget {
                 const SizedBox(height: 24),
                 _FeatureRow(
                   icon: Icons.volunteer_activism,
-                  text: 'もちろん無料で利用可能',
+                  text: context.l10n.welcomeFree,
                 ),
                 const SizedBox(height: 16),
                 _FeatureRow(
                   icon: Icons.cloud_sync,
-                  text: '保存酒やお気に入りを自動バックアップ',
+                  text: context.l10n.welcomeBackup,
                 ),
                 const SizedBox(height: 16),
                 _FeatureRow(
                   icon: Icons.photo_library,
-                  text: '保存できるお酒が増える！',
+                  text: context.l10n.welcomeMoreStorage,
                 ),
                 const SizedBox(height: 16),
                 const Spacer(),
@@ -198,8 +199,8 @@ class _OnboardingPrompt extends StatelessWidget {
                               ),
                             ),
                           )
-                        : const Text(
-                            'メールアドレスでログイン・登録',
+                        : Text(
+                            context.l10n.loginOrRegisterWithEmail,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -212,17 +213,17 @@ class _OnboardingPrompt extends StatelessWidget {
                   alignment: Alignment.center,
                   child: TextButton(
                     onPressed: onSkip,
-                    child: const Text(
-                      '今はログインせずに使う',
+                    child: Text(
+                      context.l10n.continueAsGuest,
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Align(
+                Align(
                   alignment: Alignment.center,
                   child: Text(
-                    'あとからマイページでもログインできます。',
+                    context.l10n.loginLaterHint,
                     style: TextStyle(
                       color: Colors.white38,
                       fontSize: 12,

@@ -39,7 +39,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   static const int guestSavedLimit = 8;
-  static const int memberSavedLimit = 50;
+  static const int memberSavedLimit = 200;
   static const String analysisFailedLabel = '解析失敗(名前変更して解析可能)';
 
   final Random _random = Random();

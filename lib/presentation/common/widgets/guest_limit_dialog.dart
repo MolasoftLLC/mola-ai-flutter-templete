@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/localization/localization_extensions.dart';
 import '../../auth/email_link_auth_page.dart';
 
 class GuestLimitDialog {
@@ -7,9 +8,8 @@ class GuestLimitDialog {
       {required int maxCount}) async {
     await show(
       context,
-      title: '保存枠が上限に達しました',
-      message:
-          '無料会員登録で保存枠が増えます。\n現在の保存上限は${maxCount}件です。\n解析前に会員登録すると無料で保存がもっとできます！',
+      title: context.l10n.savedLimitTitle,
+      message: context.l10n.savedLimitMessage(maxCount),
     );
   }
 
@@ -17,9 +17,8 @@ class GuestLimitDialog {
       {required int maxCount}) async {
     await show(
       context,
-      title: 'お気に入り枠が上限に達しました',
-      message:
-          '無料会員登録でお気に入り枠が増えます。\n現在の上限は${maxCount}件です。\n会員登録するとお気に入りを無制限に登録できます！',
+      title: context.l10n.favoriteLimitTitle,
+      message: context.l10n.favoriteLimitMessage(maxCount),
     );
   }
 
@@ -55,8 +54,8 @@ class GuestLimitDialog {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text(
-                'キャンセル',
+              child: Text(
+                context.l10n.cancel,
                 style: TextStyle(color: Colors.white70),
               ),
             ),
@@ -69,8 +68,8 @@ class GuestLimitDialog {
                 ),
               ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text(
-                'ログイン・登録へ',
+              child: Text(
+                context.l10n.goToLoginOrRegister,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

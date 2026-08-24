@@ -32,6 +32,7 @@ mixin _$MainSearchPageState {
   List<String> get pendingSavedSakeIds => throw _privateConstructorUsedError;
   String? get analyzingImagePath => throw _privateConstructorUsedError;
   bool get shareToTimeline => throw _privateConstructorUsedError;
+  bool get isLoggedIn => throw _privateConstructorUsedError;
   bool? get autoTweetEnabled => throw _privateConstructorUsedError;
   DateTime? get autoTweetConsentAt => throw _privateConstructorUsedError;
   bool get isAutoTweetUpdating => throw _privateConstructorUsedError;
@@ -64,6 +65,7 @@ abstract class $MainSearchPageStateCopyWith<$Res> {
       List<String> pendingSavedSakeIds,
       String? analyzingImagePath,
       bool shareToTimeline,
+      bool isLoggedIn,
       bool? autoTweetEnabled,
       DateTime? autoTweetConsentAt,
       bool isAutoTweetUpdating});
@@ -100,6 +102,7 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
     Object? pendingSavedSakeIds = null,
     Object? analyzingImagePath = freezed,
     Object? shareToTimeline = null,
+    Object? isLoggedIn = null,
     Object? autoTweetEnabled = freezed,
     Object? autoTweetConsentAt = freezed,
     Object? isAutoTweetUpdating = null,
@@ -169,6 +172,10 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
           ? _value.shareToTimeline
           : shareToTimeline // ignore: cast_nullable_to_non_nullable
               as bool,
+      isLoggedIn: null == isLoggedIn
+          ? _value.isLoggedIn
+          : isLoggedIn // ignore: cast_nullable_to_non_nullable
+              as bool,
       autoTweetEnabled: freezed == autoTweetEnabled
           ? _value.autoTweetEnabled
           : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
@@ -222,6 +229,7 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
       List<String> pendingSavedSakeIds,
       String? analyzingImagePath,
       bool shareToTimeline,
+      bool isLoggedIn,
       bool? autoTweetEnabled,
       DateTime? autoTweetConsentAt,
       bool isAutoTweetUpdating});
@@ -257,6 +265,7 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     Object? pendingSavedSakeIds = null,
     Object? analyzingImagePath = freezed,
     Object? shareToTimeline = null,
+    Object? isLoggedIn = null,
     Object? autoTweetEnabled = freezed,
     Object? autoTweetConsentAt = freezed,
     Object? isAutoTweetUpdating = null,
@@ -326,6 +335,10 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
           ? _value.shareToTimeline
           : shareToTimeline // ignore: cast_nullable_to_non_nullable
               as bool,
+      isLoggedIn: null == isLoggedIn
+          ? _value.isLoggedIn
+          : isLoggedIn // ignore: cast_nullable_to_non_nullable
+              as bool,
       autoTweetEnabled: freezed == autoTweetEnabled
           ? _value.autoTweetEnabled
           : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
@@ -362,6 +375,7 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
       final List<String> pendingSavedSakeIds = const [],
       this.analyzingImagePath,
       this.shareToTimeline = true,
+      this.isLoggedIn = false,
       this.autoTweetEnabled,
       this.autoTweetConsentAt,
       this.isAutoTweetUpdating = false})
@@ -415,6 +429,9 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
   @JsonKey()
   final bool shareToTimeline;
   @override
+  @JsonKey()
+  final bool isLoggedIn;
+  @override
   final bool? autoTweetEnabled;
   @override
   final DateTime? autoTweetConsentAt;
@@ -424,7 +441,7 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 
   @override
   String toString() {
-    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode, pendingSavedSakeIds: $pendingSavedSakeIds, analyzingImagePath: $analyzingImagePath, shareToTimeline: $shareToTimeline, autoTweetEnabled: $autoTweetEnabled, autoTweetConsentAt: $autoTweetConsentAt, isAutoTweetUpdating: $isAutoTweetUpdating)';
+    return 'MainSearchPageState(isLoading: $isLoading, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, searchButtonClickCount: $searchButtonClickCount, analyzeButtonClickCount: $analyzeButtonClickCount, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, sakeType: $sakeType, sakeInfo: $sakeInfo, errorMessage: $errorMessage, geminiResponse: $geminiResponse, searchMode: $searchMode, pendingSavedSakeIds: $pendingSavedSakeIds, analyzingImagePath: $analyzingImagePath, shareToTimeline: $shareToTimeline, isLoggedIn: $isLoggedIn, autoTweetEnabled: $autoTweetEnabled, autoTweetConsentAt: $autoTweetConsentAt, isAutoTweetUpdating: $isAutoTweetUpdating)';
   }
 
   @override
@@ -465,6 +482,8 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
                 other.analyzingImagePath == analyzingImagePath) &&
             (identical(other.shareToTimeline, shareToTimeline) ||
                 other.shareToTimeline == shareToTimeline) &&
+            (identical(other.isLoggedIn, isLoggedIn) ||
+                other.isLoggedIn == isLoggedIn) &&
             (identical(other.autoTweetEnabled, autoTweetEnabled) ||
                 other.autoTweetEnabled == autoTweetEnabled) &&
             (identical(other.autoTweetConsentAt, autoTweetConsentAt) ||
@@ -492,6 +511,7 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
         const DeepCollectionEquality().hash(_pendingSavedSakeIds),
         analyzingImagePath,
         shareToTimeline,
+        isLoggedIn,
         autoTweetEnabled,
         autoTweetConsentAt,
         isAutoTweetUpdating
@@ -523,6 +543,7 @@ abstract class _MainSearchPageState implements MainSearchPageState {
       final List<String> pendingSavedSakeIds,
       final String? analyzingImagePath,
       final bool shareToTimeline,
+      final bool isLoggedIn,
       final bool? autoTweetEnabled,
       final DateTime? autoTweetConsentAt,
       final bool isAutoTweetUpdating}) = _$MainSearchPageStateImpl;
@@ -559,6 +580,8 @@ abstract class _MainSearchPageState implements MainSearchPageState {
   String? get analyzingImagePath;
   @override
   bool get shareToTimeline;
+  @override
+  bool get isLoggedIn;
   @override
   bool? get autoTweetEnabled;
   @override

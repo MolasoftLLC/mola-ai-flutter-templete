@@ -7,8 +7,10 @@ import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_load
 import 'package:provider/provider.dart';
 
 import '../../common/assets.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
@@ -28,6 +30,7 @@ class MainSearchPage extends StatelessWidget {
         StateNotifierProvider<MainSearchPageNotifier, MainSearchPageState>(
           create: (context) => MainSearchPageNotifier(
             context: context,
+            authNotifier: context.read<AuthNotifier>(),
           ),
         ),
       ],
@@ -62,6 +65,8 @@ class MainSearchPage extends StatelessWidget {
         context.select((MainSearchPageState state) => state.sakeImage);
     final shareToTimeline =
         context.select((MainSearchPageState state) => state.shareToTimeline);
+    final isLoggedIn =
+        context.select((MainSearchPageState state) => state.isLoggedIn);
     final autoTweetEnabled =
         context.select((MainSearchPageState state) => state.autoTweetEnabled);
     final isAutoTweetUpdating = context
@@ -81,22 +86,22 @@ class MainSearchPage extends StatelessWidget {
       child: Align(
         alignment: const Alignment(0, -0.35),
         child: isAdLoading
-            ? const AILoading(
-                loadingText: '解析中...時々出る広告の表示にご協力ください...',
+            ? AILoading(
+                loadingText: context.l10n.analyzingWithAd,
               )
             : isAnalyzingInBackground
-                ? const AILoading(loadingText: '日本酒情報を取得しています...')
-                : const AILoading(loadingText: '日本酒情報を取得しています...'),
+                ? AILoading(loadingText: context.l10n.loadingSakeInfo)
+                : AILoading(loadingText: context.l10n.loadingSakeInfo),
       ),
     );
 
     return Scaffold(
       appBar: PrimaryAppBar(
-        title: '日本酒検索',
+        title: context.l10n.searchPageTitle,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            tooltip: '使い方ガイド',
+            tooltip: context.l10n.helpGuide,
             icon: const Icon(
               Icons.help_outline,
               color: Color(0xFFFFD54F),
@@ -153,7 +158,7 @@ class MainSearchPage extends StatelessWidget {
                                     Expanded(
                                       child: _buildTabButton(
                                         context,
-                                        '名前で検索',
+                                        context.l10n.nameSearch,
                                         Icons.search,
                                         SearchMode.name,
                                         searchMode,
@@ -164,7 +169,7 @@ class MainSearchPage extends StatelessWidget {
                                     Expanded(
                                       child: _buildTabButton(
                                         context,
-                                        '酒瓶検索',
+                                        context.l10n.bottleSearch,
                                         Icons.camera_alt,
                                         SearchMode.bottle,
                                         searchMode,
@@ -196,6 +201,7 @@ class MainSearchPage extends StatelessWidget {
                                       sakeImage,
                                       isAnalyzingInBackground,
                                       shareToTimeline,
+                                      isLoggedIn,
                                       autoTweetEnabled,
                                       isAutoTweetUpdating,
                                     ),
@@ -224,8 +230,11 @@ class MainSearchPage extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Text(
                             searchMode == SearchMode.bottle
-                                ? '$errorMessage\n裏のラベルなら解析できるかも！'
-                                : errorMessage,
+                                ? '${localizeLegacyMessage(context.l10n, errorMessage)}\n${context.l10n.tryBackLabelHint}'
+                                : localizeLegacyMessage(
+                                    context.l10n,
+                                    errorMessage,
+                                  ),
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,
@@ -245,8 +254,8 @@ class MainSearchPage extends StatelessWidget {
                             ),
                             child: Column(
                               children: [
-                                const Text(
-                                  'AIの解析結果',
+                                Text(
+                                  context.l10n.aiAnalysisResult,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
@@ -351,8 +360,8 @@ class MainSearchPage extends StatelessWidget {
               notifier.setSakeName(value);
             },
             decoration: InputDecoration(
-              hintText: '日本酒名を入力',
-              labelText: '日本酒名',
+              hintText: context.l10n.enterSakeName,
+              labelText: context.l10n.sakeName,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -369,8 +378,8 @@ class MainSearchPage extends StatelessWidget {
               notifier.setSakeType(value);
             },
             decoration: InputDecoration(
-              hintText: '種類を入力（任意）',
-              labelText: '種類',
+              hintText: context.l10n.enterOptionalSakeType,
+              labelText: context.l10n.sakeType,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -395,14 +404,14 @@ class MainSearchPage extends StatelessWidget {
               ),
               elevation: 4,
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.search),
-                SizedBox(width: 8),
+                const Icon(Icons.search),
+                const SizedBox(width: 8),
                 Text(
-                  '検索',
-                  style: TextStyle(
+                  context.l10n.search,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -423,6 +432,7 @@ class MainSearchPage extends StatelessWidget {
     File? sakeImage,
     bool isAnalyzingInBackground,
     bool shareToTimeline,
+    bool isLoggedIn,
     bool? autoTweetEnabled,
     bool isAutoTweetUpdating,
   ) {
@@ -443,8 +453,8 @@ class MainSearchPage extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          const Text(
-            '日本酒のラベルや瓶の画像を選択してください',
+          Text(
+            context.l10n.selectBottleImage,
             style: TextStyle(
               fontSize: 14,
               color: Colors.black87,
@@ -512,8 +522,8 @@ class MainSearchPage extends StatelessWidget {
                             color: const Color(0xFF1D3567),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            'タップして画像を選択',
+                          Text(
+                            context.l10n.tapToSelectImage,
                             style: TextStyle(
                               color: Color(0xFF1D3567),
                               fontWeight: FontWeight.bold,
@@ -531,7 +541,7 @@ class MainSearchPage extends StatelessWidget {
                 notifier.pickImage(ImageSource.camera);
               },
               icon: const Icon(Icons.camera_alt),
-              label: const Text('カメラで撮影'),
+              label: Text(context.l10n.takePhoto),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1D3567),
                 foregroundColor: Colors.white,
@@ -556,13 +566,11 @@ class MainSearchPage extends StatelessWidget {
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: const Color(0xFF1D3567),
             contentPadding: EdgeInsets.zero,
-            title: const Text(
-              'タイムラインにも表示する',
+            title: Text(
+              context.l10n.shareToTimeline,
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text(
-              '画像は1枚目だけしか共有されません！',
-            ),
+            subtitle: Text(context.l10n.onlyFirstImageShared),
           ),
           CheckboxListTile(
             value: autoTweetEnabled ?? true,
@@ -578,29 +586,32 @@ class MainSearchPage extends StatelessWidget {
             controlAffinity: ListTileControlAffinity.leading,
             activeColor: const Color(0xFF1D3567),
             contentPadding: EdgeInsets.zero,
-            title: const Text(
-              'Xに自動投稿',
+            title: Text(
+              context.l10n.autoPostToX,
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  '解析完了時に結果をXにも自動投稿します。',
-                ),
-                if (autoTweetEnabled == null)
-                  const Text(
-                    'ログインすると設定を変更できます。',
+                Text(context.l10n.autoPostToXDescription),
+                if (!isLoggedIn)
+                  Text(
+                    context.l10n.loginToChangeSetting,
+                    style: TextStyle(fontSize: 12),
+                  ),
+                if (isLoggedIn && autoTweetEnabled == null)
+                  Text(
+                    context.l10n.loadingAutoPostSetting,
                     style: TextStyle(fontSize: 12),
                   ),
                 if (isAutoTweetUpdating)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
@@ -610,10 +621,10 @@ class MainSearchPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          '設定を更新中...',
-                          style: TextStyle(fontSize: 12),
+                          context.l10n.updatingSetting,
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
@@ -644,8 +655,8 @@ class MainSearchPage extends StatelessWidget {
                     ),
                     disabledBackgroundColor: Colors.grey.shade400,
                   ),
-                  child: const Text(
-                    '解析して保存',
+                  child: Text(
+                    context.l10n.analyzeAndSave,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -676,8 +687,8 @@ class MainSearchPage extends StatelessWidget {
                     disabledForegroundColor: Colors.grey.shade500,
                     disabledBackgroundColor: Colors.transparent,
                   ),
-                  child: const Text(
-                    '解析だけ',
+                  child: Text(
+                    context.l10n.analyzeOnly,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -714,15 +725,15 @@ class MainSearchPage extends StatelessWidget {
 
     if (sakeInfo.recommendationScore != null) {
       if (sakeInfo.recommendationScore! >= 8) {
-        recommendationText = '超おすすめ！';
+        recommendationText = context.l10n.highlyRecommended;
         recommendationColor = Colors.red;
         recommendationIcon = Icons.star;
       } else if (sakeInfo.recommendationScore! >= 6) {
-        recommendationText = 'おすすめ！';
+        recommendationText = context.l10n.recommended;
         recommendationColor = Colors.orange;
         recommendationIcon = Icons.star;
       } else if (sakeInfo.recommendationScore! >= 4) {
-        recommendationText = '良い日本酒';
+        recommendationText = context.l10n.goodSake;
         recommendationColor = Colors.amber;
         recommendationIcon = Icons.star_half;
       }
@@ -763,7 +774,7 @@ class MainSearchPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    sakeInfo.name ?? '不明',
+                    sakeInfo.name ?? context.l10n.unknown,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -772,7 +783,9 @@ class MainSearchPage extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: isSaved ? '保存を解除' : '保存',
+                  tooltip: isSaved
+                      ? context.l10n.removeSavedSake
+                      : context.l10n.saveSake,
                   icon: Icon(
                     isSaved ? Icons.bookmark : Icons.bookmark_outline,
                     color: isSaved ? Colors.amberAccent : Colors.white,
@@ -788,8 +801,9 @@ class MainSearchPage extends StatelessWidget {
                     if (!isSaved && savedNotifier.hasReachedMemberLimit) {
                       SnackBarUtils.showWarningSnackBar(
                         context,
-                        message:
-                            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                        message: context.l10n.savedSakeLimit(
+                          SavedSakeNotifier.memberSavedLimit,
+                        ),
                       );
                       return;
                     }
@@ -805,15 +819,16 @@ class MainSearchPage extends StatelessWidget {
                     } on SavedSakeMemberLimitReachedException {
                       SnackBarUtils.showWarningSnackBar(
                         context,
-                        message:
-                            '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                        message: context.l10n.savedSakeLimit(
+                          SavedSakeNotifier.memberSavedLimit,
+                        ),
                       );
                       return;
                     }
                     if (shouldShowSavedToast) {
                       SnackBarUtils.showInfoSnackBar(
                         context,
-                        message: 'マイページに保存しました！',
+                        message: context.l10n.savedToMyPage,
                       );
                     }
                   },
@@ -825,7 +840,7 @@ class MainSearchPage extends StatelessWidget {
                   ),
                   onPressed: () async {
                     final favoriteSake = FavoriteSake(
-                      name: sakeInfo.name ?? '不明',
+                      name: sakeInfo.name ?? context.l10n.unknown,
                       type: sakeInfo.type,
                     );
 
@@ -895,7 +910,7 @@ class MainSearchPage extends StatelessWidget {
                 if (sakeInfo.taste != null)
                   _buildInfoRow(
                     context,
-                    '特徴',
+                    context.l10n.characteristics,
                     sakeInfo.taste!,
                     Icons.description,
                   ),
@@ -904,7 +919,7 @@ class MainSearchPage extends StatelessWidget {
                 if (sakeInfo.brewery != null)
                   _buildInfoRow(
                     context,
-                    '蔵元',
+                    context.l10n.brewery,
                     sakeInfo.brewery!,
                     Icons.business,
                   ),
@@ -913,7 +928,7 @@ class MainSearchPage extends StatelessWidget {
                 if (sakeInfo.sakeMeterValue != null)
                   _buildInfoRow(
                     context,
-                    '日本酒度',
+                    context.l10n.sakeMeterValue,
                     '${sakeInfo.sakeMeterValue! > 0 ? '+' : ''}${sakeInfo.sakeMeterValue}',
                     Icons.scale,
                   ),
@@ -997,8 +1012,8 @@ class MainSearchPage extends StatelessWidget {
             children: [
               Icon(Icons.search, color: Colors.amberAccent.shade200, size: 20),
               const SizedBox(width: 12),
-              const Text(
-                'タイプ別検索',
+              Text(
+                context.l10n.searchByType,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -1057,15 +1072,15 @@ class MainSearchPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '甘口',
+              Text(
+                context.l10n.sweet,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.pink,
                 ),
               ),
-              const Text(
-                '辛口',
+              Text(
+                context.l10n.dry,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue,

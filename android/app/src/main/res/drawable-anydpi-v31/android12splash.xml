@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/android12splash_raw"
+    android:insetLeft="24%"
+    android:insetTop="24%"
+    android:insetRight="24%"
+    android:insetBottom="24%" />

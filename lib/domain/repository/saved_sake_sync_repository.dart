@@ -6,6 +6,7 @@ import 'package:chopper/chopper.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../common/logger.dart';
+import '../../common/localization/app_locale_resolver.dart';
 import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/api_client.dart';
@@ -169,6 +170,7 @@ class SavedSakeSyncRepository {
         userId: userId,
         cursor: cursor,
         limit: limit,
+        locale: await resolveAppLocaleLanguageCode(),
       );
       if (!response.isSuccessful || response.body == null) {
         if (response.statusCode == 401) {
@@ -201,7 +203,10 @@ class SavedSakeSyncRepository {
 
   Future<List<Sake>> fetchTimelineEnvyRanking({int limit = 20}) async {
     try {
-      final response = await _apiClient.fetchTimelineEnvyRanking(limit: limit);
+      final response = await _apiClient.fetchTimelineEnvyRanking(
+        limit: limit,
+        locale: await resolveAppLocaleLanguageCode(),
+      );
       if (!response.isSuccessful || response.body == null) {
         logger.warning(
           '羨ましいランキングの取得に失敗しました: status=${response.statusCode}, error=${response.error}',
@@ -496,6 +501,7 @@ class SavedSakeSyncRepository {
       'savedId': sake.savedId,
       'stage': stage.apiValue,
       'timestamp': DateTime.now().toIso8601String(),
+      'locale': await resolveAppLocaleLanguageCode(),
       'sake': sakeJson,
     };
 

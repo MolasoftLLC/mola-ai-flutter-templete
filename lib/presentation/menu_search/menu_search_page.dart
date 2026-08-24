@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../common/logger.dart';
+import '../../common/localization/localization_extensions.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
@@ -66,11 +67,11 @@ class MenuSearchPage extends StatelessWidget {
     final nameMapping =
         context.select((MenuSearchPageState state) => state.nameMapping);
 
-    String loadingText = 'AIに問い合わせています';
+    String loadingText = context.l10n.loadingSakeInfo;
     if (isExtractingInfo) {
-      loadingText = '解析中...時々ある広告表示にご協力ください...';
+      loadingText = context.l10n.analyzingWithAd;
     } else if (isGettingDetails) {
-      loadingText = '日本酒の詳細情報を取得しています...';
+      loadingText = context.l10n.loadingSakeInfo;
     }
 
     final hasScrolledToResults = context
@@ -88,11 +89,11 @@ class MenuSearchPage extends StatelessWidget {
 
     return Scaffold(
       appBar: PrimaryAppBar(
-        title: 'メニュー検索',
+        title: context.l10n.menuSearchPageTitle,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            tooltip: '使い方ガイド',
+            tooltip: context.l10n.helpGuide,
             icon: const Icon(
               Icons.help_outline,
               color: Color(0xFFFFD54F),
@@ -137,8 +138,8 @@ class MenuSearchPage extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            const Text(
-                              'メニューの写真をアップロードして日本酒を検索',
+                            Text(
+                              context.l10n.menuPhotoDescription,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -210,19 +211,19 @@ class MenuSearchPage extends StatelessWidget {
                                           width: 2,
                                         ),
                                       ),
-                                      child: const Column(
+                                      child: Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Icon(
+                                          const Icon(
                                             Icons.menu_book,
                                             size: 48,
                                             color: Color(0xFF1D3567),
                                           ),
-                                          SizedBox(height: 12),
+                                          const SizedBox(height: 12),
                                           Text(
-                                            'タップして画像を選択',
-                                            style: TextStyle(
+                                            context.l10n.tapToSelectImage,
+                                            style: const TextStyle(
                                               color: Color(0xFF1D3567),
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -237,7 +238,7 @@ class MenuSearchPage extends StatelessWidget {
                                       notifier.pickImageFromCamera();
                                     },
                                     icon: const Icon(Icons.camera_alt),
-                                    label: const Text('カメラで撮影'),
+                                    label: Text(context.l10n.takePhoto),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF1D3567),
                                       foregroundColor: Colors.white,
@@ -257,7 +258,7 @@ class MenuSearchPage extends StatelessWidget {
                                   notifier.extractAndFetchSakeInfo(sakeImage);
                                 },
                                 icon: const Icon(Icons.search),
-                                label: const Text('日本酒を検索'),
+                                label: Text(context.l10n.searchSakeFromMenu),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1D3567),
                                   foregroundColor: Colors.white,
@@ -289,7 +290,10 @@ class MenuSearchPage extends StatelessWidget {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          errorMessage,
+                                          localizeLegacyMessage(
+                                            context.l10n,
+                                            errorMessage,
+                                          ),
                                           style: TextStyle(
                                             color: Colors.red.shade700,
                                           ),
@@ -310,8 +314,8 @@ class MenuSearchPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Center(
-                                child: const Text(
-                                  '検出された日本酒',
+                                child: Text(
+                                  context.l10n.detectedSake,
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -434,7 +438,10 @@ class MenuSearchPage extends StatelessWidget {
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                                              context.l10n.savedSakeLimit(
+                                                SavedSakeNotifier
+                                                    .memberSavedLimit,
+                                              ),
                                             ),
                                             behavior: SnackBarBehavior.floating,
                                           ),
@@ -457,7 +464,10 @@ class MenuSearchPage extends StatelessWidget {
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで保存できます。不要な保存酒を削除してください。',
+                                              context.l10n.savedSakeLimit(
+                                                SavedSakeNotifier
+                                                    .memberSavedLimit,
+                                              ),
                                             ),
                                             behavior: SnackBarBehavior.floating,
                                           ),
@@ -469,7 +479,7 @@ class MenuSearchPage extends StatelessWidget {
                                     buildInfoRow: (key, value, icon) =>
                                         _buildInfoRow(key, value, icon),
                                     buildTypesRow: (types) =>
-                                        _buildTypesRow(types),
+                                        _buildTypesRow(context, types),
                                   );
                                 },
                               ),
@@ -538,7 +548,7 @@ class MenuSearchPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTypesRow(List<String> types) {
+  Widget _buildTypesRow(BuildContext context, List<String> types) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -554,8 +564,8 @@ class MenuSearchPage extends StatelessWidget {
             children: [
               Icon(Icons.local_bar, color: const Color(0xFF1D3567), size: 20),
               const SizedBox(width: 12),
-              const Text(
-                'タイプ',
+              Text(
+                context.l10n.type,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

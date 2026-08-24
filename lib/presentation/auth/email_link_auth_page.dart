@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../common/widgets/primary_app_bar.dart';
@@ -28,8 +29,6 @@ class EmailLinkAuthPage extends StatefulWidget {
 }
 
 class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
-  static const _pageTitle = 'メールアドレスでログイン・登録';
-
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
   late final TextEditingController _confirmPasswordController;
@@ -41,14 +40,15 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
 
   bool get _isSignUp => _mode == EmailAuthMode.signUp;
 
-  String get _descriptionText {
+  String _descriptionText(BuildContext context) {
     if (_isSignUp) {
-      return 'メールアドレスとパスワードを設定してアカウントを作成できます。登録後は同じ情報でログインできます。';
+      return context.l10n.signUpDescription;
     }
-    return '登録済みのメールアドレスとパスワードでログインします。パスワードを忘れた場合は再設定メールを送信できます。';
+    return context.l10n.signInDescription;
   }
 
-  String get _primaryButtonLabel => _isSignUp ? '登録する' : 'ログインする';
+  String _primaryButtonLabel(BuildContext context) =>
+      _isSignUp ? context.l10n.signUpAction : context.l10n.signInAction;
 
   @override
   void initState() {
@@ -89,7 +89,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
       final confirm = _confirmPasswordController.text;
       if (password != confirm) {
         setState(() {
-          _localError = '確認用パスワードが一致しません。';
+          _localError = context.l10n.passwordMismatch;
         });
         return;
       }
@@ -125,7 +125,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
     if (authState.errorMessage == null && authState.infoMessage != null) {
       SnackBarUtils.showInfoSnackBar(
         context,
-        message: 'パスワード再設定メールを送信しました。迷惑メールフォルダもご確認ください。',
+        message: context.l10n.passwordResetSent,
       );
     }
   }
@@ -169,8 +169,8 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const PrimaryAppBar(
-          title: _pageTitle,
+        appBar: PrimaryAppBar(
+          title: context.l10n.authPageTitle,
           titleFontSize: 18,
         ),
         body: SafeArea(
@@ -188,7 +188,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      _descriptionText,
+                      _descriptionText(context),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -198,12 +198,14 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                     const SizedBox(height: 24),
                     if (errorMessage != null)
                       _MessageBanner(
-                        message: errorMessage,
+                        message:
+                            localizeLegacyMessage(context.l10n, errorMessage),
                         isError: true,
                       ),
                     if (infoMessage != null)
                       _MessageBanner(
-                        message: infoMessage,
+                        message:
+                            localizeLegacyMessage(context.l10n, infoMessage),
                         isError: false,
                       ),
                     if (_localError != null)
@@ -220,7 +222,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.1),
-                        labelText: 'メールアドレス',
+                        labelText: context.l10n.emailAddress,
                         labelStyle: const TextStyle(color: Colors.white70),
                         hintText: 'example@mail.com',
                         hintStyle: const TextStyle(color: Colors.white38),
@@ -244,7 +246,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.1),
-                        labelText: 'パスワード',
+                        labelText: context.l10n.password,
                         labelStyle: const TextStyle(color: Colors.white70),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -280,7 +282,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.1),
-                          labelText: 'パスワード（確認用）',
+                          labelText: context.l10n.confirmPassword,
                           labelStyle: const TextStyle(color: Colors.white70),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -334,7 +336,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                                 ),
                               )
                             : Text(
-                                _primaryButtonLabel,
+                                _primaryButtonLabel(context),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -352,13 +354,13 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text('パスワードをお忘れの方はこちら'),
+                          child: Text(context.l10n.forgotPassword),
                         ),
                       ),
                     const SizedBox(height: 32),
-                    const Center(
+                    Center(
                       child: Text(
-                        '登録しなくてもアプリをご利用いただけます。',
+                        context.l10n.guestUseAvailable,
                         style: TextStyle(
                           color: Colors.white38,
                           fontSize: 12,
@@ -419,14 +421,14 @@ class _ModeSwitcher extends StatelessWidget {
               index == 0 ? EmailAuthMode.signIn : EmailAuthMode.signUp,
             );
           },
-          children: const [
+          children: [
             Text(
-              'ログイン',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              context.l10n.signIn,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             Text(
-              '新規登録',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              context.l10n.signUp,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
         ),

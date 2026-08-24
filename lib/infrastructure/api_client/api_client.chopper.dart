@@ -217,12 +217,14 @@ class _$ApiClient extends ApiClient {
     String? userId,
     String? cursor,
     int? limit,
+    String? locale,
   }) {
     final Uri $url = Uri.parse('/saved-sakes/timeline');
     final Map<String, dynamic> $params = <String, dynamic>{
       'userId': userId,
       'cursor': cursor,
       'limit': limit,
+      'locale': locale,
     };
     final Request $request = Request(
       'GET',
@@ -234,9 +236,15 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
-  Future<Response<dynamic>> fetchTimelineEnvyRanking({int? limit}) {
+  Future<Response<dynamic>> fetchTimelineEnvyRanking({
+    int? limit,
+    String? locale,
+  }) {
     final Uri $url = Uri.parse('/saved-sakes/timeline/envy-ranking');
-    final Map<String, dynamic> $params = <String, dynamic>{'limit': limit};
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'limit': limit,
+      'locale': locale,
+    };
     final Request $request = Request(
       'GET',
       $url,

@@ -43,7 +43,7 @@ Sakepedia機能仕様（2026-01-22時点）
 
 8. 保存酒・同期基盤
 - エンティティ`Sake`（Freezed）: name/brewery/type/taste/price/description/impression/place/userTags/savedId/imagePaths/envyCount/isPublic/syncStatus等を保持。
-- ローカル保存: `SavedSakeNotifier`が`SharedPreference.staticGetStringList(SAVED_SAKE_LIST)`を読み書き。ゲストは8件、会員は50件上限。`syncStatus`は`localOnly`/`serverSynced`で管理。
+- ローカル保存: `SavedSakeNotifier`が`SharedPreference.staticGetStringList(SAVED_SAKE_LIST)`を読み書き。ゲストは8件、会員は200件上限。`syncStatus`は`localOnly`/`serverSynced`で管理。
 - サーバー同期: `SavedSakeSyncRepository`が`SavedSakeSyncStage`に応じて`/saved-sakes/analysis-start` or `analysis-complete`をPOST。画像は`imageBase64`として送信。公開設定の変更・画像追加/削除・エントリ削除・うらやま・通報APIも同リポジトリに集約。
 - タイムライン共有: 保存酒ごとの`isPublic`フラグを`_savedIdPublicFlags`にキャッシュ。解析後に`SyncStage.analysisComplete`を成功させた際、`SavedSakeNotifier`上の`syncStatus`と`isPublic`を最新化。
 - 保存酒画像管理: `SakeBottleImageRepository`がDocuments配下へ画像を永続化し、Base64も`SharedPreferences(SAKE_BOTTLE_IMAGES)`へ保存。`SakeBottleListPage`で閲覧・削除できるが、画面上で「保存酒と機能重複のためクローズ予定」と明記。
@@ -58,7 +58,7 @@ Sakepedia機能仕様（2026-01-22時点）
 
 10. データ保存・制限・UI補助
 - `SharedPreferences`キー例: `timeline_share_checkbox_preference`, `ad_search_counter`, `sake_preferences`, `favorites`, `sake_preferences`（好みテキスト）, `timeline_reported_saved_ids`, `timeline_envy_button_tutorial_shown`, `MENU_ANALYSIS_HISTORY`, `SAKE_BOTTLE_IMAGES`, `auth.lastEmail`など。
-- ゲスト制限: 保存酒8件・お気に入り8件、タイムライン共有や保存酒追加時に`GuestLimitDialog`で課金/ログインを促す。会員上限は保存酒50件。
+- ゲスト制限: 保存酒8件・お気に入り8件、タイムライン共有や保存酒追加時に`GuestLimitDialog`で課金/ログインを促す。会員上限は保存酒200件。
 - UIヘルプ: 主要画面のAppBarに「使い方ガイド」ボタンを設置し、`HelpGuideDialog`で操作方法を提示。マイページには`HowToUsePage`や`EmailLinkAuthPage`への導線。
 - アプリ更新必須: `AppPage`は`needUpDate`フラグでGoogle Play / App Storeリンクを出し、未更新バージョンを遮断。
 

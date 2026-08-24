@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/assets.dart';
+import '../../../common/localization/localization_extensions.dart';
 
 const Color _accentColor = Color(0xFFFFD54F);
 
@@ -32,8 +33,8 @@ class HelpGuideDialog extends StatefulWidget {
     BuildContext context, {
     required HelpGuideType type,
   }) {
-    final pages = _HelpGuideRegistry.pages(type);
-    final title = _HelpGuideRegistry.dialogTitle(type);
+    final pages = _HelpGuideRegistry.pages(context, type);
+    final title = _HelpGuideRegistry.dialogTitle(context, type);
     if (pages.isEmpty) {
       return Future.value();
     }
@@ -200,13 +201,13 @@ class _HelpGuideDialogState extends State<HelpGuideDialog> {
                                 curve: Curves.easeInOut,
                               );
                             },
-                      child: const Text('戻る'),
+                      child: Text(context.l10n.back),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).maybePop();
                       },
-                      child: const Text('閉じる'),
+                      child: Text(context.l10n.close),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -230,7 +231,9 @@ class _HelpGuideDialogState extends State<HelpGuideDialog> {
                           );
                         }
                       },
-                      child: Text(isLastPage ? '完了' : '次へ'),
+                      child: Text(
+                        isLastPage ? context.l10n.done : context.l10n.next,
+                      ),
                     ),
                   ],
                 ),
@@ -244,62 +247,59 @@ class _HelpGuideDialogState extends State<HelpGuideDialog> {
 }
 
 class _HelpGuideRegistry {
-  static String dialogTitle(HelpGuideType type) {
+  static String dialogTitle(BuildContext context, HelpGuideType type) {
     switch (type) {
       case HelpGuideType.mainSearch:
-        return '日本酒検索の使い方';
+        return context.l10n.mainSearchHelpTitle;
       case HelpGuideType.menuSearch:
-        return 'メニュー検索の使い方';
+        return context.l10n.menuSearchHelpTitle;
       case HelpGuideType.myPage:
-        return 'マイページの使い方';
+        return context.l10n.myPageHelpTitle;
     }
   }
 
-  static List<HelpGuideContent> pages(HelpGuideType type) {
+  static List<HelpGuideContent> pages(
+    BuildContext context,
+    HelpGuideType type,
+  ) {
     switch (type) {
       case HelpGuideType.mainSearch:
-        return const [
+        return [
           HelpGuideContent(
-            summary: '酒瓶検索の流れ',
+            summary: context.l10n.helpBottleFlowTitle,
             image: Assets.mainHelpBottle,
-            description:
-                '酒瓶検索タブではカメラボタンから写真を撮影・選択できます。AIがラベルを解析し、日本酒情報を自動で取得します。解析した日本酒は保存ボタンでマイページに追加できます。',
+            description: context.l10n.helpBottleFlowDescription,
           ),
           HelpGuideContent(
-            summary: '解析が終わったら',
+            summary: context.l10n.helpAfterAnalysisTitle,
             image: Assets.mainHelpName,
-            description:
-                '銘柄名を入力して「解析だけ」を押すと蔵元や味わいなどの詳細が表示されます。お気に入りや保存を活用して、自分だけのリストを作りましょう。',
+            description: context.l10n.helpAfterAnalysisDescription,
           ),
         ];
       case HelpGuideType.menuSearch:
-        return const [
+        return [
           HelpGuideContent(
-            summary: 'メニューを撮影・アップロード',
+            summary: context.l10n.helpMenuCaptureTitle,
             image: Assets.menuHelpCapture,
-            description:
-                'メニュー検索タブでは飲食店のメニュー写真をアップロードすると、写っている日本酒を自動でリスト化します。解析が終わるまで画面はそのままお待ちください。',
+            description: context.l10n.helpMenuCaptureDescription,
           ),
           HelpGuideContent(
-            summary: '解析結果をチェック',
+            summary: context.l10n.helpMenuResultTitle,
             image: Assets.menuHelpDetails,
-            description:
-                '解析で取得した日本酒をタップすると蔵元や味わい、オススメ度が表示されます。ハートでお気に入り登録、しおりでマイページに保存して飲み比べメモに活用しましょう。',
+            description: context.l10n.helpMenuResultDescription,
           ),
         ];
       case HelpGuideType.myPage:
-        return const [
+        return [
           HelpGuideContent(
-            summary: '保存した日本酒を一覧で確認',
+            summary: context.l10n.helpSavedListTitle,
             image: Assets.myPageHelp,
-            description:
-                'マイページには保存した日本酒やお気に入りがまとまります。タイルをタップすると詳細やメモ、写真を編集できます。',
+            description: context.l10n.helpSavedListDescription,
           ),
           HelpGuideContent(
-            summary: 'お気に入りから好みを解析',
+            summary: context.l10n.helpPreferenceAnalysisTitle,
             image: Assets.myPageHelpSaved,
-            description:
-                '保存リストではなく「お気に入り」の日本酒を元にAIが解析！あなたの好みを判定してくれます。自分で変更も可能。',
+            description: context.l10n.helpPreferenceAnalysisDescription,
           ),
         ];
     }

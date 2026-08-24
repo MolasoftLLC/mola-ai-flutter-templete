@@ -9,6 +9,7 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_searc
 import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page.dart';
 import 'package:provider/provider.dart';
 
+import '../common/localization/localization_extensions.dart';
 import 'app_page_notifier.dart';
 import 'my_page/my_page.dart';
 
@@ -36,7 +37,7 @@ class AppPage extends StatelessWidget {
     final needUpDate = context.select((AppPageState state) => state.needUpDate);
 
     if (needUpDate) {
-      return RequireUpdate(notifier);
+      return requireUpdate(context, notifier);
     }
 
     const navigationPageIndexes = [0, 2, 1, 4];
@@ -62,22 +63,22 @@ class AppPage extends StatelessWidget {
         backgroundColor: const Color(0xFF1D3567),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white.withOpacity(0.5),
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: '検索',
+            icon: const Icon(Icons.search),
+            label: context.l10n.navigationSearch,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'メニュー解析',
+            icon: const Icon(Icons.menu_book),
+            label: context.l10n.navigationMenuAnalysis,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.timeline),
-            label: 'タイムライン',
+            icon: const Icon(Icons.timeline),
+            label: context.l10n.navigationTimeline,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'マイページ',
+            icon: const Icon(Icons.person),
+            label: context.l10n.navigationMyPage,
           ),
         ],
       ),
@@ -85,7 +86,7 @@ class AppPage extends StatelessWidget {
   }
 }
 
-Widget RequireUpdate(AppPageNotifier notifier) {
+Widget requireUpdate(BuildContext context, AppPageNotifier notifier) {
   return Scaffold(
     body: Center(
       child: Padding(
@@ -93,20 +94,18 @@ Widget RequireUpdate(AppPageNotifier notifier) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'ご利用頂きありがとうございます！アップデートが必要のVersionをお使いですので、ご不便をおかけしますが以下よりアプリのアップデートをお願いいたします。',
-            ),
+            Text(context.l10n.updateRequiredMessage),
             Platform.isIOS
                 ? TextButton(
                     onPressed: () async {
                       await notifier.launchURL(APP_STORE_URL);
                     },
-                    child: Text('AppleStoreへ'))
+                    child: Text(context.l10n.openAppStore))
                 : TextButton(
                     onPressed: () async {
                       await notifier.launchURL(PLAY_STORE_URL);
                     },
-                    child: Text('GoogleStoreへ'))
+                    child: Text(context.l10n.openPlayStore))
           ],
         ),
       ),

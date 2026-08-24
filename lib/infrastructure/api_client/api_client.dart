@@ -77,11 +77,13 @@ abstract class ApiClient extends ChopperService {
     @Query('userId') String? userId,
     @Query('cursor') String? cursor,
     @Query('limit') int? limit,
+    @Query('locale') String? locale,
   });
 
   @Get(path: 'saved-sakes/timeline/envy-ranking')
   Future<Response> fetchTimelineEnvyRanking({
     @Query('limit') int? limit,
+    @Query('locale') String? locale,
   });
 
   @Post(path: 'saved-sakes/{savedId}/envy')

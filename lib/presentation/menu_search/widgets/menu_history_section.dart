@@ -7,6 +7,8 @@ import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_hist
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page_notifier.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/store_name_dialog.dart';
 
+import '../../../common/localization/localization_extensions.dart';
+
 class MenuHistorySection extends StatelessWidget {
   const MenuHistorySection({Key? key}) : super(key: key);
 
@@ -20,14 +22,14 @@ class MenuHistorySection extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('削除の確認'),
-          content: const Text('この解析履歴を削除してもよろしいですか？'),
+          title: Text(context.l10n.deleteConfirmation),
+          content: Text(context.l10n.deleteMenuHistoryConfirmation),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // ダイアログを閉じる
               },
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -37,7 +39,7 @@ class MenuHistorySection extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
-              child: const Text('削除'),
+              child: Text(context.l10n.delete),
             ),
           ],
         );
@@ -88,9 +90,9 @@ class MenuHistorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
+          Center(
             child: Text(
-              '過去のメニュー解析',
+              context.l10n.pastMenuAnalysis,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -107,9 +109,9 @@ class MenuHistorySection extends StatelessWidget {
                 color: Colors.white.withOpacity(0.95),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'メニュー解析履歴はありません',
+                  context.l10n.noMenuHistory,
                   style: TextStyle(
                     color: Colors.grey,
                     fontStyle: FontStyle.italic,
@@ -126,7 +128,9 @@ class MenuHistorySection extends StatelessWidget {
                 final historyItem = menuAnalysisHistory[index];
 
                 // 日付をフォーマット
-                final dateFormat = DateFormat('yyyy/MM/dd HH:mm');
+                final dateFormat = DateFormat.yMd(
+                  Localizations.localeOf(context).toLanguageTag(),
+                ).add_Hm();
                 final formattedDate = dateFormat.format(historyItem.date);
 
                 return Padding(
@@ -226,7 +230,7 @@ class MenuHistorySection extends StatelessWidget {
                         ],
                       ),
                       subtitle: Text(
-                        '${historyItem.sakes.length}件の日本酒',
+                        context.l10n.sakeCount(historyItem.sakes.length),
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
@@ -256,7 +260,10 @@ class MenuHistorySection extends StatelessWidget {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            sake.name,
+                                            localizeLegacyMessage(
+                                              context.l10n,
+                                              sake.name,
+                                            ),
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -296,7 +303,7 @@ class MenuHistorySection extends StatelessWidget {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              'おすすめ',
+                                              context.l10n.recommended,
                                               style: TextStyle(
                                                 color: Colors.red.shade700,
                                                 fontWeight: FontWeight.bold,

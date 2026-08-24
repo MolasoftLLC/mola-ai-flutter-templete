@@ -1,12 +1,14 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.4.0+56
+version: 4.7.0+63
 
 environment:
   sdk: '>=3.3.1 <4.0.0'
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.6
   google_generative_ai: ^0.3.2
@@ -17,10 +19,10 @@ dependencies:
   freezed_annotation: ^2.4.1
 
   #AppIcon
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
   #Splash
-  flutter_native_splash: ^2.4.0
+  flutter_native_splash: ^2.4.8
 
   #ローカルDB
   shared_preferences: ^2.2.2
@@ -35,13 +37,13 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   #lottie
-  lottie: ^2.7.0
+  lottie: ^3.5.1
 
   #画像選択
-  image_picker: ^1.0.7
+  image_picker: ^1.2.3
 
   #Slider
-  syncfusion_flutter_sliders: ^25.2.3
+  syncfusion_flutter_sliders: ^34.2.4
 
   url_launcher: ^6.2.6
 
@@ -59,17 +61,17 @@ dependencies:
   flutter_image_compress: ^2.2.0
   
   #広告
-  google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^7.0.0
   
   #画像をギャラリーに保存
-  image_gallery_saver_plus: ^3.0.5
+  image_gallery_saver_plus: ^5.1.1
 
   
   #画像のクロップと回転
   image_cropper: ^8.0.1
 
   #日付フォーマット
-  intl: ^0.18.1
+  intl: any
 
   # ビュー可視判定
   visibility_detector: ^0.4.0+2
@@ -94,6 +96,10 @@ dev_dependencies:
   json_annotation: ^4.9.0
 
 flutter:
+  generate: true
+  config:
+    # 一部のiOSプラグインがCocoaPodsのみ対応のため、依存管理をCocoaPodsへ統一する。
+    enable-swift-package-manager: false
   uses-material-design: true
   assets:
     - .env
@@ -108,6 +114,13 @@ flutter_icons:
   image_path: "assets/icons/sake_icon.jpg"
 
 flutter_native_splash:
+  android: true
+  ios: false
+  web: false
   image: "assets/images/sake_logo.png"
   color: "#1D3567"
-  android_gravity: fill
+  android_gravity: center
+  android_12:
+    # Android 12の円形マスク用余白はdrawable-anydpi-v31で適用する。
+    image: "assets/images/sake_logo.png"
+    color: "#1D3567"
