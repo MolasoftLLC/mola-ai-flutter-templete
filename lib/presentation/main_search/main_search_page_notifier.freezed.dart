@@ -12,7 +12,8 @@ part of 'main_search_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$MainSearchPageState {
@@ -45,30 +46,32 @@ mixin _$MainSearchPageState {
 /// @nodoc
 abstract class $MainSearchPageStateCopyWith<$Res> {
   factory $MainSearchPageStateCopyWith(
-          MainSearchPageState value, $Res Function(MainSearchPageState) then) =
-      _$MainSearchPageStateCopyWithImpl<$Res, MainSearchPageState>;
+    MainSearchPageState value,
+    $Res Function(MainSearchPageState) then,
+  ) = _$MainSearchPageStateCopyWithImpl<$Res, MainSearchPageState>;
   @useResult
-  $Res call(
-      {bool isLoading,
-      bool isAdLoading,
-      bool isAnalyzingInBackground,
-      int searchButtonClickCount,
-      int analyzeButtonClickCount,
-      String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? sakeType,
-      Sake? sakeInfo,
-      String? errorMessage,
-      String? geminiResponse,
-      SearchMode searchMode,
-      List<String> pendingSavedSakeIds,
-      String? analyzingImagePath,
-      bool shareToTimeline,
-      bool isLoggedIn,
-      bool? autoTweetEnabled,
-      DateTime? autoTweetConsentAt,
-      bool isAutoTweetUpdating});
+  $Res call({
+    bool isLoading,
+    bool isAdLoading,
+    bool isAnalyzingInBackground,
+    int searchButtonClickCount,
+    int analyzeButtonClickCount,
+    String? sakeName,
+    String? hint,
+    File? sakeImage,
+    String? sakeType,
+    Sake? sakeInfo,
+    String? errorMessage,
+    String? geminiResponse,
+    SearchMode searchMode,
+    List<String> pendingSavedSakeIds,
+    String? analyzingImagePath,
+    bool shareToTimeline,
+    bool isLoggedIn,
+    bool? autoTweetEnabled,
+    DateTime? autoTweetConsentAt,
+    bool isAutoTweetUpdating,
+  });
 
   $SakeCopyWith<$Res>? get sakeInfo;
 }
@@ -107,88 +110,91 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
     Object? autoTweetConsentAt = freezed,
     Object? isAutoTweetUpdating = null,
   }) {
-    return _then(_value.copyWith(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAdLoading: null == isAdLoading
-          ? _value.isAdLoading
-          : isAdLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAnalyzingInBackground: null == isAnalyzingInBackground
-          ? _value.isAnalyzingInBackground
-          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
-              as bool,
-      searchButtonClickCount: null == searchButtonClickCount
-          ? _value.searchButtonClickCount
-          : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      analyzeButtonClickCount: null == analyzeButtonClickCount
-          ? _value.analyzeButtonClickCount
-          : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      sakeName: freezed == sakeName
-          ? _value.sakeName
-          : sakeName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      sakeType: freezed == sakeType
-          ? _value.sakeType
-          : sakeType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeInfo: freezed == sakeInfo
-          ? _value.sakeInfo
-          : sakeInfo // ignore: cast_nullable_to_non_nullable
-              as Sake?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
-              as String?,
-      searchMode: null == searchMode
-          ? _value.searchMode
-          : searchMode // ignore: cast_nullable_to_non_nullable
-              as SearchMode,
-      pendingSavedSakeIds: null == pendingSavedSakeIds
-          ? _value.pendingSavedSakeIds
-          : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      analyzingImagePath: freezed == analyzingImagePath
-          ? _value.analyzingImagePath
-          : analyzingImagePath // ignore: cast_nullable_to_non_nullable
-              as String?,
-      shareToTimeline: null == shareToTimeline
-          ? _value.shareToTimeline
-          : shareToTimeline // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isLoggedIn: null == isLoggedIn
-          ? _value.isLoggedIn
-          : isLoggedIn // ignore: cast_nullable_to_non_nullable
-              as bool,
-      autoTweetEnabled: freezed == autoTweetEnabled
-          ? _value.autoTweetEnabled
-          : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      autoTweetConsentAt: freezed == autoTweetConsentAt
-          ? _value.autoTweetConsentAt
-          : autoTweetConsentAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      isAutoTweetUpdating: null == isAutoTweetUpdating
-          ? _value.isAutoTweetUpdating
-          : isAutoTweetUpdating // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            isLoading: null == isLoading
+                ? _value.isLoading
+                : isLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isAdLoading: null == isAdLoading
+                ? _value.isAdLoading
+                : isAdLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isAnalyzingInBackground: null == isAnalyzingInBackground
+                ? _value.isAnalyzingInBackground
+                : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            searchButtonClickCount: null == searchButtonClickCount
+                ? _value.searchButtonClickCount
+                : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            analyzeButtonClickCount: null == analyzeButtonClickCount
+                ? _value.analyzeButtonClickCount
+                : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            sakeName: freezed == sakeName
+                ? _value.sakeName
+                : sakeName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            hint: freezed == hint
+                ? _value.hint
+                : hint // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sakeImage: freezed == sakeImage
+                ? _value.sakeImage
+                : sakeImage // ignore: cast_nullable_to_non_nullable
+                      as File?,
+            sakeType: freezed == sakeType
+                ? _value.sakeType
+                : sakeType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sakeInfo: freezed == sakeInfo
+                ? _value.sakeInfo
+                : sakeInfo // ignore: cast_nullable_to_non_nullable
+                      as Sake?,
+            errorMessage: freezed == errorMessage
+                ? _value.errorMessage
+                : errorMessage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            geminiResponse: freezed == geminiResponse
+                ? _value.geminiResponse
+                : geminiResponse // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            searchMode: null == searchMode
+                ? _value.searchMode
+                : searchMode // ignore: cast_nullable_to_non_nullable
+                      as SearchMode,
+            pendingSavedSakeIds: null == pendingSavedSakeIds
+                ? _value.pendingSavedSakeIds
+                : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            analyzingImagePath: freezed == analyzingImagePath
+                ? _value.analyzingImagePath
+                : analyzingImagePath // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            shareToTimeline: null == shareToTimeline
+                ? _value.shareToTimeline
+                : shareToTimeline // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isLoggedIn: null == isLoggedIn
+                ? _value.isLoggedIn
+                : isLoggedIn // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            autoTweetEnabled: freezed == autoTweetEnabled
+                ? _value.autoTweetEnabled
+                : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
+                      as bool?,
+            autoTweetConsentAt: freezed == autoTweetConsentAt
+                ? _value.autoTweetConsentAt
+                : autoTweetConsentAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            isAutoTweetUpdating: null == isAutoTweetUpdating
+                ? _value.isAutoTweetUpdating
+                : isAutoTweetUpdating // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 
   @override
@@ -207,32 +213,34 @@ class _$MainSearchPageStateCopyWithImpl<$Res, $Val extends MainSearchPageState>
 /// @nodoc
 abstract class _$$MainSearchPageStateImplCopyWith<$Res>
     implements $MainSearchPageStateCopyWith<$Res> {
-  factory _$$MainSearchPageStateImplCopyWith(_$MainSearchPageStateImpl value,
-          $Res Function(_$MainSearchPageStateImpl) then) =
-      __$$MainSearchPageStateImplCopyWithImpl<$Res>;
+  factory _$$MainSearchPageStateImplCopyWith(
+    _$MainSearchPageStateImpl value,
+    $Res Function(_$MainSearchPageStateImpl) then,
+  ) = __$$MainSearchPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {bool isLoading,
-      bool isAdLoading,
-      bool isAnalyzingInBackground,
-      int searchButtonClickCount,
-      int analyzeButtonClickCount,
-      String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? sakeType,
-      Sake? sakeInfo,
-      String? errorMessage,
-      String? geminiResponse,
-      SearchMode searchMode,
-      List<String> pendingSavedSakeIds,
-      String? analyzingImagePath,
-      bool shareToTimeline,
-      bool isLoggedIn,
-      bool? autoTweetEnabled,
-      DateTime? autoTweetConsentAt,
-      bool isAutoTweetUpdating});
+  $Res call({
+    bool isLoading,
+    bool isAdLoading,
+    bool isAnalyzingInBackground,
+    int searchButtonClickCount,
+    int analyzeButtonClickCount,
+    String? sakeName,
+    String? hint,
+    File? sakeImage,
+    String? sakeType,
+    Sake? sakeInfo,
+    String? errorMessage,
+    String? geminiResponse,
+    SearchMode searchMode,
+    List<String> pendingSavedSakeIds,
+    String? analyzingImagePath,
+    bool shareToTimeline,
+    bool isLoggedIn,
+    bool? autoTweetEnabled,
+    DateTime? autoTweetConsentAt,
+    bool isAutoTweetUpdating,
+  });
 
   @override
   $SakeCopyWith<$Res>? get sakeInfo;
@@ -242,9 +250,10 @@ abstract class _$$MainSearchPageStateImplCopyWith<$Res>
 class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     extends _$MainSearchPageStateCopyWithImpl<$Res, _$MainSearchPageStateImpl>
     implements _$$MainSearchPageStateImplCopyWith<$Res> {
-  __$$MainSearchPageStateImplCopyWithImpl(_$MainSearchPageStateImpl _value,
-      $Res Function(_$MainSearchPageStateImpl) _then)
-      : super(_value, _then);
+  __$$MainSearchPageStateImplCopyWithImpl(
+    _$MainSearchPageStateImpl _value,
+    $Res Function(_$MainSearchPageStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -270,116 +279,118 @@ class __$$MainSearchPageStateImplCopyWithImpl<$Res>
     Object? autoTweetConsentAt = freezed,
     Object? isAutoTweetUpdating = null,
   }) {
-    return _then(_$MainSearchPageStateImpl(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAdLoading: null == isAdLoading
-          ? _value.isAdLoading
-          : isAdLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAnalyzingInBackground: null == isAnalyzingInBackground
-          ? _value.isAnalyzingInBackground
-          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
-              as bool,
-      searchButtonClickCount: null == searchButtonClickCount
-          ? _value.searchButtonClickCount
-          : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      analyzeButtonClickCount: null == analyzeButtonClickCount
-          ? _value.analyzeButtonClickCount
-          : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
-              as int,
-      sakeName: freezed == sakeName
-          ? _value.sakeName
-          : sakeName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      sakeType: freezed == sakeType
-          ? _value.sakeType
-          : sakeType // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeInfo: freezed == sakeInfo
-          ? _value.sakeInfo
-          : sakeInfo // ignore: cast_nullable_to_non_nullable
-              as Sake?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
-              as String?,
-      searchMode: null == searchMode
-          ? _value.searchMode
-          : searchMode // ignore: cast_nullable_to_non_nullable
-              as SearchMode,
-      pendingSavedSakeIds: null == pendingSavedSakeIds
-          ? _value._pendingSavedSakeIds
-          : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      analyzingImagePath: freezed == analyzingImagePath
-          ? _value.analyzingImagePath
-          : analyzingImagePath // ignore: cast_nullable_to_non_nullable
-              as String?,
-      shareToTimeline: null == shareToTimeline
-          ? _value.shareToTimeline
-          : shareToTimeline // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isLoggedIn: null == isLoggedIn
-          ? _value.isLoggedIn
-          : isLoggedIn // ignore: cast_nullable_to_non_nullable
-              as bool,
-      autoTweetEnabled: freezed == autoTweetEnabled
-          ? _value.autoTweetEnabled
-          : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      autoTweetConsentAt: freezed == autoTweetConsentAt
-          ? _value.autoTweetConsentAt
-          : autoTweetConsentAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      isAutoTweetUpdating: null == isAutoTweetUpdating
-          ? _value.isAutoTweetUpdating
-          : isAutoTweetUpdating // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$MainSearchPageStateImpl(
+        isLoading: null == isLoading
+            ? _value.isLoading
+            : isLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isAdLoading: null == isAdLoading
+            ? _value.isAdLoading
+            : isAdLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isAnalyzingInBackground: null == isAnalyzingInBackground
+            ? _value.isAnalyzingInBackground
+            : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        searchButtonClickCount: null == searchButtonClickCount
+            ? _value.searchButtonClickCount
+            : searchButtonClickCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        analyzeButtonClickCount: null == analyzeButtonClickCount
+            ? _value.analyzeButtonClickCount
+            : analyzeButtonClickCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        sakeName: freezed == sakeName
+            ? _value.sakeName
+            : sakeName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        hint: freezed == hint
+            ? _value.hint
+            : hint // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sakeImage: freezed == sakeImage
+            ? _value.sakeImage
+            : sakeImage // ignore: cast_nullable_to_non_nullable
+                  as File?,
+        sakeType: freezed == sakeType
+            ? _value.sakeType
+            : sakeType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sakeInfo: freezed == sakeInfo
+            ? _value.sakeInfo
+            : sakeInfo // ignore: cast_nullable_to_non_nullable
+                  as Sake?,
+        errorMessage: freezed == errorMessage
+            ? _value.errorMessage
+            : errorMessage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        geminiResponse: freezed == geminiResponse
+            ? _value.geminiResponse
+            : geminiResponse // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        searchMode: null == searchMode
+            ? _value.searchMode
+            : searchMode // ignore: cast_nullable_to_non_nullable
+                  as SearchMode,
+        pendingSavedSakeIds: null == pendingSavedSakeIds
+            ? _value._pendingSavedSakeIds
+            : pendingSavedSakeIds // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        analyzingImagePath: freezed == analyzingImagePath
+            ? _value.analyzingImagePath
+            : analyzingImagePath // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        shareToTimeline: null == shareToTimeline
+            ? _value.shareToTimeline
+            : shareToTimeline // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isLoggedIn: null == isLoggedIn
+            ? _value.isLoggedIn
+            : isLoggedIn // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        autoTweetEnabled: freezed == autoTweetEnabled
+            ? _value.autoTweetEnabled
+            : autoTweetEnabled // ignore: cast_nullable_to_non_nullable
+                  as bool?,
+        autoTweetConsentAt: freezed == autoTweetConsentAt
+            ? _value.autoTweetConsentAt
+            : autoTweetConsentAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        isAutoTweetUpdating: null == isAutoTweetUpdating
+            ? _value.isAutoTweetUpdating
+            : isAutoTweetUpdating // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$MainSearchPageStateImpl implements _MainSearchPageState {
-  const _$MainSearchPageStateImpl(
-      {this.isLoading = false,
-      this.isAdLoading = false,
-      this.isAnalyzingInBackground = false,
-      this.searchButtonClickCount = 0,
-      this.analyzeButtonClickCount = 0,
-      this.sakeName,
-      this.hint,
-      this.sakeImage,
-      this.sakeType,
-      this.sakeInfo,
-      this.errorMessage,
-      this.geminiResponse,
-      this.searchMode = SearchMode.bottle,
-      final List<String> pendingSavedSakeIds = const [],
-      this.analyzingImagePath,
-      this.shareToTimeline = true,
-      this.isLoggedIn = false,
-      this.autoTweetEnabled,
-      this.autoTweetConsentAt,
-      this.isAutoTweetUpdating = false})
-      : _pendingSavedSakeIds = pendingSavedSakeIds;
+  const _$MainSearchPageStateImpl({
+    this.isLoading = false,
+    this.isAdLoading = false,
+    this.isAnalyzingInBackground = false,
+    this.searchButtonClickCount = 0,
+    this.analyzeButtonClickCount = 0,
+    this.sakeName,
+    this.hint,
+    this.sakeImage,
+    this.sakeType,
+    this.sakeInfo,
+    this.errorMessage,
+    this.geminiResponse,
+    this.searchMode = SearchMode.bottle,
+    final List<String> pendingSavedSakeIds = const [],
+    this.analyzingImagePath,
+    this.shareToTimeline = true,
+    this.isLoggedIn = false,
+    this.autoTweetEnabled,
+    this.autoTweetConsentAt,
+    this.isAutoTweetUpdating = false,
+  }) : _pendingSavedSakeIds = pendingSavedSakeIds;
 
   @override
   @JsonKey()
@@ -454,12 +465,16 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
             (identical(other.isAdLoading, isAdLoading) ||
                 other.isAdLoading == isAdLoading) &&
             (identical(
-                    other.isAnalyzingInBackground, isAnalyzingInBackground) ||
+                  other.isAnalyzingInBackground,
+                  isAnalyzingInBackground,
+                ) ||
                 other.isAnalyzingInBackground == isAnalyzingInBackground) &&
             (identical(other.searchButtonClickCount, searchButtonClickCount) ||
                 other.searchButtonClickCount == searchButtonClickCount) &&
             (identical(
-                    other.analyzeButtonClickCount, analyzeButtonClickCount) ||
+                  other.analyzeButtonClickCount,
+                  analyzeButtonClickCount,
+                ) ||
                 other.analyzeButtonClickCount == analyzeButtonClickCount) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
@@ -476,8 +491,10 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
                 other.geminiResponse == geminiResponse) &&
             (identical(other.searchMode, searchMode) ||
                 other.searchMode == searchMode) &&
-            const DeepCollectionEquality()
-                .equals(other._pendingSavedSakeIds, _pendingSavedSakeIds) &&
+            const DeepCollectionEquality().equals(
+              other._pendingSavedSakeIds,
+              _pendingSavedSakeIds,
+            ) &&
             (identical(other.analyzingImagePath, analyzingImagePath) ||
                 other.analyzingImagePath == analyzingImagePath) &&
             (identical(other.shareToTimeline, shareToTimeline) ||
@@ -494,59 +511,62 @@ class _$MainSearchPageStateImpl implements _MainSearchPageState {
 
   @override
   int get hashCode => Object.hashAll([
-        runtimeType,
-        isLoading,
-        isAdLoading,
-        isAnalyzingInBackground,
-        searchButtonClickCount,
-        analyzeButtonClickCount,
-        sakeName,
-        hint,
-        sakeImage,
-        sakeType,
-        sakeInfo,
-        errorMessage,
-        geminiResponse,
-        searchMode,
-        const DeepCollectionEquality().hash(_pendingSavedSakeIds),
-        analyzingImagePath,
-        shareToTimeline,
-        isLoggedIn,
-        autoTweetEnabled,
-        autoTweetConsentAt,
-        isAutoTweetUpdating
-      ]);
+    runtimeType,
+    isLoading,
+    isAdLoading,
+    isAnalyzingInBackground,
+    searchButtonClickCount,
+    analyzeButtonClickCount,
+    sakeName,
+    hint,
+    sakeImage,
+    sakeType,
+    sakeInfo,
+    errorMessage,
+    geminiResponse,
+    searchMode,
+    const DeepCollectionEquality().hash(_pendingSavedSakeIds),
+    analyzingImagePath,
+    shareToTimeline,
+    isLoggedIn,
+    autoTweetEnabled,
+    autoTweetConsentAt,
+    isAutoTweetUpdating,
+  ]);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$MainSearchPageStateImplCopyWith<_$MainSearchPageStateImpl> get copyWith =>
       __$$MainSearchPageStateImplCopyWithImpl<_$MainSearchPageStateImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 }
 
 abstract class _MainSearchPageState implements MainSearchPageState {
-  const factory _MainSearchPageState(
-      {final bool isLoading,
-      final bool isAdLoading,
-      final bool isAnalyzingInBackground,
-      final int searchButtonClickCount,
-      final int analyzeButtonClickCount,
-      final String? sakeName,
-      final String? hint,
-      final File? sakeImage,
-      final String? sakeType,
-      final Sake? sakeInfo,
-      final String? errorMessage,
-      final String? geminiResponse,
-      final SearchMode searchMode,
-      final List<String> pendingSavedSakeIds,
-      final String? analyzingImagePath,
-      final bool shareToTimeline,
-      final bool isLoggedIn,
-      final bool? autoTweetEnabled,
-      final DateTime? autoTweetConsentAt,
-      final bool isAutoTweetUpdating}) = _$MainSearchPageStateImpl;
+  const factory _MainSearchPageState({
+    final bool isLoading,
+    final bool isAdLoading,
+    final bool isAnalyzingInBackground,
+    final int searchButtonClickCount,
+    final int analyzeButtonClickCount,
+    final String? sakeName,
+    final String? hint,
+    final File? sakeImage,
+    final String? sakeType,
+    final Sake? sakeInfo,
+    final String? errorMessage,
+    final String? geminiResponse,
+    final SearchMode searchMode,
+    final List<String> pendingSavedSakeIds,
+    final String? analyzingImagePath,
+    final bool shareToTimeline,
+    final bool isLoggedIn,
+    final bool? autoTweetEnabled,
+    final DateTime? autoTweetConsentAt,
+    final bool isAutoTweetUpdating,
+  }) = _$MainSearchPageStateImpl;
 
   @override
   bool get isLoading;

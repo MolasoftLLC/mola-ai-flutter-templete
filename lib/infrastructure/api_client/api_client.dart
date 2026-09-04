@@ -12,21 +12,14 @@ abstract class ApiClient extends ChopperService {
   Future<Response> checkApiUseCount();
 
   @Get(path: 'prompt_with_text')
-  Future<Response> promptWithText(
-    @Body() Map<String, String> text,
-  );
+  Future<Response> promptWithText(@Body() Map<String, String> text);
 
   @Get(path: 'open_ai/prompt_with_text')
-  Future<Response> promptWithTextByOpenAI(
-    @Body() Map<String, String> text,
-  );
+  Future<Response> promptWithTextByOpenAI(@Body() Map<String, String> text);
 
   @Post(path: 'prompt_with_image')
   @Multipart()
-  Future<Response> promptWithImage(
-    @Part() String image,
-    @Part() String hint,
-  );
+  Future<Response> promptWithImage(@Part() String image, @Part() String hint);
 
   @Post(path: 'open_ai/prompt_with_image')
   @Multipart()
@@ -44,9 +37,7 @@ abstract class ApiClient extends ChopperService {
 
   @Get(path: 'prompt_with_favorite')
   @Multipart()
-  Future<Response> promptWithFavorite(
-    @Body() FavoriteBody body,
-  );
+  Future<Response> promptWithFavorite(@Body() FavoriteBody body);
 
   @Get(path: 'get_latest_version')
   Future<Response> getLatestVersion();
@@ -68,9 +59,7 @@ abstract class ApiClient extends ChopperService {
   );
 
   @Get(path: 'saved-sakes')
-  Future<Response> fetchSavedSakes(
-    @Query('userId') String userId,
-  );
+  Future<Response> fetchSavedSakes(@Query('userId') String userId);
 
   @Get(path: 'saved-sakes/timeline')
   Future<Response> fetchSavedSakeTimeline({
@@ -122,78 +111,96 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'places/search/nearby')
+  Future<Response> searchNearbyPlaces(@Body() Map<String, dynamic> body);
+
+  @Post(path: 'places/search/text')
+  Future<Response> searchTextPlaces(@Body() Map<String, dynamic> body);
+
+  @Put(path: 'saved-sakes/{savedId}/place')
+  Future<Response> saveSavedSakePlace(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Delete(path: 'saved-sakes/{savedId}/place')
+  Future<Response> deleteSavedSakePlace(@Path('savedId') String savedId);
+
+  @Patch(path: 'saved-sakes/{savedId}/place-visibility')
+  Future<Response> updateSavedSakePlaceVisibility(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Get(path: 'map/venues')
+  Future<Response> fetchMapVenues({
+    @Query('swLat') required double swLat,
+    @Query('swLng') required double swLng,
+    @Query('neLat') required double neLat,
+    @Query('neLng') required double neLng,
+    @Query('zoom') required double zoom,
+    @Query('sakeId') int? sakeId,
+    @Query('sakeToken') String? sakeToken,
+    @Query('sinceDays') int? sinceDays,
+  });
+
+  @Get(path: 'map/venues/{venueId}/sakes')
+  Future<Response> fetchVenueSakes(
+    @Path('venueId') String venueId, {
+    @Query('cursor') String? cursor,
+    @Query('sinceDays') int? sinceDays,
+  });
+
+  @Get(path: 'sakes/search')
+  Future<Response> searchSakesForMap(
+    @Query('q') String query, {
+    @Query('limit') int limit = 20,
+  });
+
   @Post(path: 'sake-bottle/comprehensive-analysis')
   Future<Response> comprehensiveSakeBottleAnalysis(
     @Body() Map<String, dynamic> body,
   );
 
   @Get(path: 'favorites')
-  Future<Response> fetchFavorites(
-    @Query('userId') String userId,
-  );
+  Future<Response> fetchFavorites(@Query('userId') String userId);
 
   @Post(path: 'favorites')
-  Future<Response> addFavorite(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> addFavorite(@Body() Map<String, dynamic> body);
 
   @Post(path: 'favorites/delete')
-  Future<Response> removeFavorite(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> removeFavorite(@Body() Map<String, dynamic> body);
 
   @Get(path: 'preferences')
-  Future<Response> fetchPreferences(
-    @Query('userId') String userId,
-  );
+  Future<Response> fetchPreferences(@Query('userId') String userId);
 
   @Post(path: 'preferences')
-  Future<Response> updatePreferences(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> updatePreferences(@Body() Map<String, dynamic> body);
 
   @Get(path: 'preferences/taste-profile')
-  Future<Response> fetchTasteProfile(
-    @Query('userId') String userId,
-  );
+  Future<Response> fetchTasteProfile(@Query('userId') String userId);
 
   @Post(path: 'preferences/taste-profile/analyze')
-  Future<Response> analyzeTasteProfile(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> analyzeTasteProfile(@Body() Map<String, dynamic> body);
 
   @Post(path: 'sake-users/register')
-  Future<Response> registerSakeUser(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> registerSakeUser(@Body() Map<String, dynamic> body);
 
   @Get(path: 'sake-users/me')
-  Future<Response> fetchSakeUser(
-    @Query('userId') String userId,
-  );
+  Future<Response> fetchSakeUser(@Query('userId') String userId);
 
   @Post(path: 'sake-users/username')
-  Future<Response> updateUsername(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> updateUsername(@Body() Map<String, dynamic> body);
 
   @Post(path: 'sake-users/icon')
-  Future<Response> uploadUserPhoto(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> uploadUserPhoto(@Body() Map<String, dynamic> body);
 
   @Post(path: 'sake-users/auto-tweet')
-  Future<Response> updateAutoTweetSetting(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> updateAutoTweetSetting(@Body() Map<String, dynamic> body);
 
   @Post(path: 'sake-users/delete')
-  Future<Response> deleteSakeUser(
-    @Body() Map<String, dynamic> body,
-  );
+  Future<Response> deleteSakeUser(@Body() Map<String, dynamic> body);
 
   @Get(path: 'users/{userId}/achievement-stats')
-  Future<Response> fetchAchievementStats(
-    @Path('userId') String userId,
-  );
+  Future<Response> fetchAchievementStats(@Path('userId') String userId);
 }

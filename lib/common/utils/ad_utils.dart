@@ -55,7 +55,8 @@ class AdUtils {
       }
     }
     print(
-        'Loading rewarded ad with ID: $adUnitId on ${Platform.isIOS ? "iOS" : "Android"}');
+      'Loading rewarded ad with ID: $adUnitId on ${Platform.isIOS ? "iOS" : "Android"}',
+    );
 
     final completer = Completer<RewardedAd?>();
 
@@ -65,7 +66,8 @@ class AdUtils {
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (RewardedAd ad) {
           print(
-              'Rewarded ad loaded successfully on ${Platform.isIOS ? "iOS" : "Android"}');
+            'Rewarded ad loaded successfully on ${Platform.isIOS ? "iOS" : "Android"}',
+          );
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               print('Ad dismissed');
@@ -85,7 +87,8 @@ class AdUtils {
         onAdFailedToLoad: (LoadAdError error) {
           print('Ad failed to load: ${error.code} - ${error.message}');
           print(
-              'Error details: domain=${error.domain}, responseInfo=${error.responseInfo}');
+            'Error details: domain=${error.domain}, responseInfo=${error.responseInfo}',
+          );
           onAdFailedToLoad(error);
           completer.complete(null);
         },

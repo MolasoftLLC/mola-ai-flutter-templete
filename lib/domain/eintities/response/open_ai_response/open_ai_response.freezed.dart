@@ -12,7 +12,8 @@ part of 'open_ai_response.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 OpenAIResponse _$OpenAIResponseFromJson(Map<String, dynamic> json) {
   return _OpenAIResponse.fromJson(json);
@@ -33,8 +34,9 @@ mixin _$OpenAIResponse {
 /// @nodoc
 abstract class $OpenAIResponseCopyWith<$Res> {
   factory $OpenAIResponseCopyWith(
-          OpenAIResponse value, $Res Function(OpenAIResponse) then) =
-      _$OpenAIResponseCopyWithImpl<$Res, OpenAIResponse>;
+    OpenAIResponse value,
+    $Res Function(OpenAIResponse) then,
+  ) = _$OpenAIResponseCopyWithImpl<$Res, OpenAIResponse>;
   @useResult
   $Res call({String? title, Map<String, String>? description, String? etc});
 }
@@ -56,29 +58,33 @@ class _$OpenAIResponseCopyWithImpl<$Res, $Val extends OpenAIResponse>
     Object? description = freezed,
     Object? etc = freezed,
   }) {
-    return _then(_value.copyWith(
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>?,
-      etc: freezed == etc
-          ? _value.etc
-          : etc // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            title: freezed == title
+                ? _value.title
+                : title // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            description: freezed == description
+                ? _value.description
+                : description // ignore: cast_nullable_to_non_nullable
+                      as Map<String, String>?,
+            etc: freezed == etc
+                ? _value.etc
+                : etc // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$OpenAIResponseImplCopyWith<$Res>
     implements $OpenAIResponseCopyWith<$Res> {
-  factory _$$OpenAIResponseImplCopyWith(_$OpenAIResponseImpl value,
-          $Res Function(_$OpenAIResponseImpl) then) =
-      __$$OpenAIResponseImplCopyWithImpl<$Res>;
+  factory _$$OpenAIResponseImplCopyWith(
+    _$OpenAIResponseImpl value,
+    $Res Function(_$OpenAIResponseImpl) then,
+  ) = __$$OpenAIResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({String? title, Map<String, String>? description, String? etc});
@@ -89,8 +95,9 @@ class __$$OpenAIResponseImplCopyWithImpl<$Res>
     extends _$OpenAIResponseCopyWithImpl<$Res, _$OpenAIResponseImpl>
     implements _$$OpenAIResponseImplCopyWith<$Res> {
   __$$OpenAIResponseImplCopyWithImpl(
-      _$OpenAIResponseImpl _value, $Res Function(_$OpenAIResponseImpl) _then)
-      : super(_value, _then);
+    _$OpenAIResponseImpl _value,
+    $Res Function(_$OpenAIResponseImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -99,30 +106,34 @@ class __$$OpenAIResponseImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? etc = freezed,
   }) {
-    return _then(_$OpenAIResponseImpl(
-      title: freezed == title
-          ? _value.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String?,
-      description: freezed == description
-          ? _value._description
-          : description // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>?,
-      etc: freezed == etc
-          ? _value.etc
-          : etc // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    return _then(
+      _$OpenAIResponseImpl(
+        title: freezed == title
+            ? _value.title
+            : title // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        description: freezed == description
+            ? _value._description
+            : description // ignore: cast_nullable_to_non_nullable
+                  as Map<String, String>?,
+        etc: freezed == etc
+            ? _value.etc
+            : etc // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$OpenAIResponseImpl extends _OpenAIResponse {
-  _$OpenAIResponseImpl(
-      {this.title, final Map<String, String>? description, this.etc})
-      : _description = description,
-        super._();
+  _$OpenAIResponseImpl({
+    this.title,
+    final Map<String, String>? description,
+    this.etc,
+  }) : _description = description,
+       super._();
 
   factory _$OpenAIResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$OpenAIResponseImplFromJson(json);
@@ -153,36 +164,43 @@ class _$OpenAIResponseImpl extends _OpenAIResponse {
         (other.runtimeType == runtimeType &&
             other is _$OpenAIResponseImpl &&
             (identical(other.title, title) || other.title == title) &&
-            const DeepCollectionEquality()
-                .equals(other._description, _description) &&
+            const DeepCollectionEquality().equals(
+              other._description,
+              _description,
+            ) &&
             (identical(other.etc, etc) || other.etc == etc));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, title,
-      const DeepCollectionEquality().hash(_description), etc);
+  int get hashCode => Object.hash(
+    runtimeType,
+    title,
+    const DeepCollectionEquality().hash(_description),
+    etc,
+  );
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$OpenAIResponseImplCopyWith<_$OpenAIResponseImpl> get copyWith =>
       __$$OpenAIResponseImplCopyWithImpl<_$OpenAIResponseImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$OpenAIResponseImplToJson(
-      this,
-    );
+    return _$$OpenAIResponseImplToJson(this);
   }
 }
 
 abstract class _OpenAIResponse extends OpenAIResponse {
-  factory _OpenAIResponse(
-      {final String? title,
-      final Map<String, String>? description,
-      final String? etc}) = _$OpenAIResponseImpl;
+  factory _OpenAIResponse({
+    final String? title,
+    final Map<String, String>? description,
+    final String? etc,
+  }) = _$OpenAIResponseImpl;
   _OpenAIResponse._() : super._();
 
   factory _OpenAIResponse.fromJson(Map<String, dynamic> json) =

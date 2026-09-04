@@ -4,8 +4,10 @@ import '../../../common/localization/localization_extensions.dart';
 import '../../auth/email_link_auth_page.dart';
 
 class GuestLimitDialog {
-  static Future<void> showSavedSakeLimit(BuildContext context,
-      {required int maxCount}) async {
+  static Future<void> showSavedSakeLimit(
+    BuildContext context, {
+    required int maxCount,
+  }) async {
     await show(
       context,
       title: context.l10n.savedLimitTitle,
@@ -13,8 +15,10 @@ class GuestLimitDialog {
     );
   }
 
-  static Future<void> showFavoriteLimit(BuildContext context,
-      {required int maxCount}) async {
+  static Future<void> showFavoriteLimit(
+    BuildContext context, {
+    required int maxCount,
+  }) async {
     await show(
       context,
       title: context.l10n.favoriteLimitTitle,
@@ -33,8 +37,9 @@ class GuestLimitDialog {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: const Color(0xFF1D3567),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             title,
             style: const TextStyle(
@@ -44,13 +49,12 @@ class GuestLimitDialog {
           ),
           content: Text(
             message,
-            style: const TextStyle(
-              color: Colors.white70,
-              height: 1.5,
-            ),
+            style: const TextStyle(color: Colors.white70, height: 1.5),
           ),
-          actionsPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -84,9 +88,7 @@ class GuestLimitDialog {
         return;
       }
       await navigator.push(
-        MaterialPageRoute(
-          builder: (_) => EmailLinkAuthPage.signUp(),
-        ),
+        MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signUp()),
       );
     }
   }

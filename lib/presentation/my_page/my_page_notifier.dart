@@ -25,9 +25,7 @@ abstract class MyPageState with _$MyPageState {
 
 class MyPageNotifier extends StateNotifier<MyPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MyPageNotifier({
-    required this.context,
-  }) : super(const MyPageState()) {
+  MyPageNotifier({required this.context}) : super(const MyPageState()) {
     _loadPreferences();
     // TextEditingControllerの初期化
     _preferencesController = TextEditingController(text: state.preferences);
@@ -89,10 +87,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       final response = await geminiMolaApiRepository.promptWithText(
         state.sakeName!,
       );
-      state = state.copyWith(
-        isLoading: false,
-        sakeName: null,
-      );
+      state = state.copyWith(isLoading: false, sakeName: null);
       state = state.copyWith(geminiResponse: response);
     }
   }

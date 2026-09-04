@@ -66,9 +66,8 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
 
 class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MenuSearchPageNotifier({
-    required this.context,
-  }) : super(const MenuSearchPageState());
+  MenuSearchPageNotifier({required this.context})
+    : super(const MenuSearchPageState());
 
   final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -125,19 +124,23 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   Future<void> pickImageFromGallery() async {
     // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
-    final imageFile =
-        await CustomImagePicker.pickImage(source: ImageSource.gallery);
+    final imageFile = await CustomImagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (imageFile != null) {
       // Show cropping UI
-      final croppedFile =
-          await ImageCropperService.cropAndRotateImage(imageFile.path);
+      final croppedFile = await ImageCropperService.cropAndRotateImage(
+        imageFile.path,
+      );
 
       if (croppedFile != null) {
         // ギャラリーから選択した画像も永続的に保存
         try {
           // ドキュメントディレクトリに画像を保存
           final permanentPath = await ImageCropperService.saveImagePermanently(
-              croppedFile, 'gallery_selected');
+            croppedFile,
+            'gallery_selected',
+          );
 
           if (permanentPath != null) {
             logger.info('ギャラリー選択画像を永続的に保存しました: $permanentPath');
@@ -160,12 +163,14 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   Future<void> pickImageFromCamera() async {
     // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
-    final imageFile =
-        await CustomImagePicker.pickImage(source: ImageSource.camera);
+    final imageFile = await CustomImagePicker.pickImage(
+      source: ImageSource.camera,
+    );
     if (imageFile != null) {
       // Show cropping UI
-      final croppedFile =
-          await ImageCropperService.cropAndRotateImage(imageFile.path);
+      final croppedFile = await ImageCropperService.cropAndRotateImage(
+        imageFile.path,
+      );
 
       if (croppedFile != null) {
         // Save image to gallery
@@ -175,7 +180,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
           // アプリの永続ストレージにも保存
           final permanentPath = await ImageCropperService.saveImagePermanently(
-              croppedFile, 'camera_captured');
+            croppedFile,
+            'camera_captured',
+          );
 
           if (permanentPath != null) {
             logger.info('カメラ撮影画像を永続的に保存しました: $permanentPath');
@@ -266,17 +273,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 } else if (state.extractedSakes.isNotEmpty) {
                   // 解析が完了している場合は、詳細情報を取得
                   logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
-                  state = state.copyWith(
-                    isAdLoading: false,
-                    isLoading: false,
-                  );
+                  state = state.copyWith(isAdLoading: false, isLoading: false);
                   _fetchSakeDetails(state.extractedSakes);
                 } else {
                   // 解析結果がない場合（エラーなど）
-                  state = state.copyWith(
-                    isAdLoading: false,
-                    isLoading: false,
-                  );
+                  state = state.copyWith(isAdLoading: false, isLoading: false);
                 }
               },
               onAdFailedToLoad: (error) {
@@ -411,8 +412,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
           if (sakeName != null && sakeName.isNotEmpty) {
             // この日本酒の読み込み状態を「読み込み中」に設定
-            final updatedLoadingStatus =
-                Map<String, bool>.from(state.sakeLoadingStatus);
+            final updatedLoadingStatus = Map<String, bool>.from(
+              state.sakeLoadingStatus,
+            );
             updatedLoadingStatus[sakeName] = true; // true = 読み込み中
             state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
 
@@ -424,26 +426,30 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             );
 
             // 読み込み状態を更新（成功または失敗）
-            final newLoadingStatus =
-                Map<String, bool>.from(state.sakeLoadingStatus);
+            final newLoadingStatus = Map<String, bool>.from(
+              state.sakeLoadingStatus,
+            );
             newLoadingStatus[sakeName] = false; // 読み込み完了
 
             if (sakeInfo != null) {
               // 名前のマッピングを更新（元の名前 -> 取得した詳細情報の名前）
-              final newNameMapping =
-                  Map<String, String>.from(state.nameMapping);
+              final newNameMapping = Map<String, String>.from(
+                state.nameMapping,
+              );
               newNameMapping[sakeName] = sakeInfo.name ?? sakeName;
 
               // 現在のsakesリストに新しい情報を追加（重複チェック）
               final List<Sake> currentSakes = state.sakes ?? [];
 
               // 既に同じ名前の日本酒が存在するかチェック
-              bool isDuplicate = currentSakes
-                  .any((existingSake) => existingSake.name == sakeInfo.name);
+              bool isDuplicate = currentSakes.any(
+                (existingSake) => existingSake.name == sakeInfo.name,
+              );
 
               // 重複していない場合のみ追加
-              final List<Sake> updatedSakes =
-                  isDuplicate ? currentSakes : [...currentSakes, sakeInfo];
+              final List<Sake> updatedSakes = isDuplicate
+                  ? currentSakes
+                  : [...currentSakes, sakeInfo];
 
               state = state.copyWith(
                 sakes: updatedSakes,
@@ -459,8 +465,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           // 個別の日本酒情報取得に失敗しても続行
           final sakeName = extractedSake.name;
           if (sakeName != null) {
-            final updatedLoadingStatus =
-                Map<String, bool>.from(state.sakeLoadingStatus);
+            final updatedLoadingStatus = Map<String, bool>.from(
+              state.sakeLoadingStatus,
+            );
             updatedLoadingStatus[sakeName] = false; // 読み込み完了（エラー）
             state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
           }
@@ -488,8 +495,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   Future<void> _extractSakeInfoInForeground(File imageFile) async {
     try {
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes =
-          await sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
+      final extractedSakes = await sakeMenuRecognitionRepository
+          .extractSakeInfo(imageFile);
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         state = state.copyWith(
@@ -542,8 +549,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       logger.info('バックグラウンドでメニュー解析を開始します');
 
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes =
-          await sakeMenuRecognitionRepository.extractSakeInfo(imageFile);
+      final extractedSakes = await sakeMenuRecognitionRepository
+          .extractSakeInfo(imageFile);
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         state = state.copyWith(
@@ -612,8 +619,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   // メニュー解析履歴を読み込む
   Future<void> loadMenuAnalysisHistory() async {
     try {
-      final historyJson =
-          await SharedPreference.staticGetString(key: MENU_ANALYSIS_HISTORY);
+      final historyJson = await SharedPreference.staticGetString(
+        key: MENU_ANALYSIS_HISTORY,
+      );
       if (historyJson != null && historyJson.isNotEmpty) {
         final List<dynamic> historyList = jsonDecode(historyJson);
         final List<MenuAnalysisHistoryItem> history = historyList
@@ -659,7 +667,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         state.menuAnalysisHistory.map((item) => item.toJson()).toList(),
       );
       await SharedPreference.staticSetString(
-          key: MENU_ANALYSIS_HISTORY, value: historyJson);
+        key: MENU_ANALYSIS_HISTORY,
+        value: historyJson,
+      );
     } catch (e) {
       logger.shout('メニュー解析履歴の保存に失敗しました: $e');
     }
@@ -672,19 +682,21 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     // Check if we already have a history item with the same sakes to prevent duplication
     if (state.menuAnalysisHistory.isNotEmpty) {
       // Generate the list of sake names for comparison
-      final List<String> currentSakeNames =
-          state.sakes!.map((sake) => sake.name ?? '不明な日本酒').toList();
+      final List<String> currentSakeNames = state.sakes!
+          .map((sake) => sake.name ?? '不明な日本酒')
+          .toList();
 
       // Check the most recent history item (which would be the one we might be duplicating)
       final latestHistoryItem = state.menuAnalysisHistory.first;
-      final List<String> latestHistorySakeNames =
-          latestHistoryItem.sakes.map((sake) => sake.name).toList();
+      final List<String> latestHistorySakeNames = latestHistoryItem.sakes
+          .map((sake) => sake.name)
+          .toList();
 
       // If the sake lists have the same length and contain the same items, it's likely a duplicate
       if (currentSakeNames.length == latestHistorySakeNames.length &&
-          currentSakeNames
-              .toSet()
-              .containsAll(latestHistorySakeNames.toSet())) {
+          currentSakeNames.toSet().containsAll(
+            latestHistorySakeNames.toSet(),
+          )) {
         logger.info('メニュー解析履歴の重複を防止しました');
         return;
       }
@@ -697,7 +709,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       if (state.sakeImage != null) {
         // Save to permanent storage
         imagePath = await ImageCropperService.saveImagePermanently(
-            state.sakeImage!, 'menu');
+          state.sakeImage!,
+          'menu',
+        );
 
         // Compress and encode to base64
         base64Image = await ImageUtils.compressAndEncodeImage(
@@ -711,11 +725,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
       // 現在の日本酒情報から保存用のデータを作成
       final List<SavedSake> savedSakes = state.sakes!
-          .map((sake) => SavedSake(
-                name: sake.name ?? '不明な日本酒',
-                type: sake.type,
-                isRecommended: (sake.recommendationScore ?? 0) >= 7,
-              ))
+          .map(
+            (sake) => SavedSake(
+              name: sake.name ?? '不明な日本酒',
+              type: sake.type,
+              isRecommended: (sake.recommendationScore ?? 0) >= 7,
+            ),
+          )
           .toList();
 
       // 新しい履歴項目を作成
@@ -728,10 +744,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
 
       // 現在の履歴に追加
-      final updatedHistory = [
-        newHistoryItem,
-        ...state.menuAnalysisHistory,
-      ];
+      final updatedHistory = [newHistoryItem, ...state.menuAnalysisHistory];
 
       // 日付の新しい順に並べ替え
       updatedHistory.sort((a, b) => b.date.compareTo(a.date));
@@ -757,8 +770,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   Future<void> migrateMenuAnalysisImages() async {
     try {
       logger.info('メニュー解析履歴の画像移行を開始します');
-      final historyJson =
-          await SharedPreference.staticGetString(key: MENU_ANALYSIS_HISTORY);
+      final historyJson = await SharedPreference.staticGetString(
+        key: MENU_ANALYSIS_HISTORY,
+      );
       if (historyJson != null && historyJson.isNotEmpty) {
         logger.info('履歴データが見つかりました。デコード中...');
         final List<dynamic> historyList = jsonDecode(historyJson);
@@ -794,7 +808,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 logger.info('画像を永続的ストレージに移行します');
                 // 画像を永続的ストレージに移行
                 permanentPath = await ImageCropperService.saveImagePermanently(
-                    file, 'menu');
+                  file,
+                  'menu',
+                );
                 if (permanentPath != null) {
                   logger.info('画像を移行しました: $permanentPath');
                 } else {
@@ -854,8 +870,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 );
                 updatedHistory.add(updatedItem);
                 hasChanges = permanentPath != item.imagePath;
-                logger
-                    .warning('メニュー解析履歴の画像のbase64エンコードに失敗しました: ${item.id} - $e');
+                logger.warning(
+                  'メニュー解析履歴の画像のbase64エンコードに失敗しました: ${item.id} - $e',
+                );
               }
             } else {
               logger.warning('ファイルが存在しません: ${item.imagePath}');

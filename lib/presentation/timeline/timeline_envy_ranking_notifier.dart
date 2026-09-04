@@ -46,7 +46,7 @@ class TimelineEnvyRankingState {
 class TimelineEnvyRankingNotifier
     extends StateNotifier<TimelineEnvyRankingState> {
   TimelineEnvyRankingNotifier(this._repository, this._authRepository)
-      : super(const TimelineEnvyRankingState(isLoading: true)) {
+    : super(const TimelineEnvyRankingState(isLoading: true)) {
     _init();
   }
 
@@ -75,10 +75,7 @@ class TimelineEnvyRankingNotifier
       _syncStateWithSakes(records);
       state = state.copyWith(errorMessage: null);
     }
-    state = state.copyWith(
-      isLoading: false,
-      isRefreshing: false,
-    );
+    state = state.copyWith(isLoading: false, isRefreshing: false);
   }
 
   Future<void> refresh() => fetchRanking(isRefresh: true);
@@ -131,13 +128,14 @@ class TimelineEnvyRankingNotifier
   }
 
   void _syncStateWithSakes(List<Sake> sakes) {
-    final validKeys = <String>{
-      for (final sake in sakes) envyKey(sake),
-    }..removeWhere((key) => key.isEmpty);
-    final filteredEnvied =
-        state.enviedKeys.where((key) => validKeys.contains(key)).toSet();
-    final filteredPending =
-        state.pendingEnvyKeys.where((key) => validKeys.contains(key)).toSet();
+    final validKeys = <String>{for (final sake in sakes) envyKey(sake)}
+      ..removeWhere((key) => key.isEmpty);
+    final filteredEnvied = state.enviedKeys
+        .where((key) => validKeys.contains(key))
+        .toSet();
+    final filteredPending = state.pendingEnvyKeys
+        .where((key) => validKeys.contains(key))
+        .toSet();
 
     state = state.copyWith(
       sakes: sakes,

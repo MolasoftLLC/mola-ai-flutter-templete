@@ -18,10 +18,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationMenuAnalysis => 'Menu Scan';
 
   @override
+  String get navigationRecommendation => 'For You';
+
+  @override
+  String get navigationScan => 'Scan';
+
+  @override
   String get navigationTimeline => 'Timeline';
 
   @override
   String get navigationMyPage => 'My Page';
+
+  @override
+  String get newHomeSearchHint => 'Search by name, type, and more';
+
+  @override
+  String get newHomeRecentSakes => 'Recently viewed sake';
+
+  @override
+  String get newHomeTimeline => 'Timeline';
 
   @override
   String get searchPageTitle => 'Sake Search';
@@ -814,7 +829,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterOptionalSakeType => 'Enter a type (optional)';
 
   @override
-  String get selectBottleImage => 'Select a photo of a sake label or bottle';
+  String get selectBottleImage =>
+      'Take a label photo to find the sake instantly';
 
   @override
   String get tapToSelectImage => 'Tap to select an image';
@@ -1053,6 +1069,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeConsumedHint => 'Record the restaurant or event name';
+
+  @override
+  String get addConsumedPlace => 'Add where you had it';
+
+  @override
+  String get changeConsumedPlace => 'Change where you had it';
+
+  @override
+  String get findPlaceNearby => 'Nearby';
+
+  @override
+  String get findPlaceByName => 'Search by name';
+
+  @override
+  String get placeNameSearchHint => 'Enter a restaurant or place name';
+
+  @override
+  String get searchingNearbyPlaces => 'Searching near your location…';
+
+  @override
+  String get searchingPlaces => 'Searching for places…';
+
+  @override
+  String get noNearbyPlaces => 'No nearby places found';
+
+  @override
+  String get noPlaceResults => 'No matching places found';
+
+  @override
+  String useEnteredPlace(String place) {
+    return 'Use “$place”';
+  }
+
+  @override
+  String get placeSearchFailed =>
+      'Could not search for places. You can enter one manually.';
+
+  @override
+  String get locationServicesDisabled =>
+      'Turn on Location Services on your device';
+
+  @override
+  String get locationPermissionDenied =>
+      'Location permission is required to find nearby places';
+
+  @override
+  String get locationPermissionPermanentlyDenied =>
+      'Allow location access from Settings';
+
+  @override
+  String get openSettings => 'Open Settings';
+
+  @override
+  String get poweredByGoogle => 'Powered by Google';
 
   @override
   String get saveMemories => 'Save your memories';
@@ -1433,4 +1503,137 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noPreferenceConfigured =>
       'Set your preferences before trying this feature.';
+
+  @override
+  String get fastLabelScan => 'Scan a label';
+
+  @override
+  String get frontLabelScanTitle => 'Capture the front label';
+
+  @override
+  String get frontLabelScanDescription =>
+      'Fit the entire front label inside the guide.';
+
+  @override
+  String get backLabelScanTitle => 'Capture the back label';
+
+  @override
+  String get backLabelScanDescription =>
+      'Make sure the product name, producer, and volume are readable.';
+
+  @override
+  String get scanBackPromptTitle => 'Capture the back label';
+
+  @override
+  String get scanBackPromptOcrUnreadable =>
+      'We couldn\'t read the text on the front label. Capture the back label so the product name and producer are visible.';
+
+  @override
+  String get scanBackPromptNoCatalogMatch =>
+      'We couldn\'t identify the product from the front label alone. Capture the back label showing the product name and producer.';
+
+  @override
+  String get scanBackPromptLowConfidence =>
+      'The front label didn\'t provide enough information to narrow down the product. Capture the back label to confirm it.';
+
+  @override
+  String get scanBackPromptAction => 'Capture back label';
+
+  @override
+  String get captureLabel => 'Capture label';
+
+  @override
+  String get closeUpMode => 'Close-up';
+
+  @override
+  String get selectFromGallery => 'Choose from gallery';
+
+  @override
+  String get searchingLabel => 'Matching this sake…';
+
+  @override
+  String get isThisSake => 'Is this the sake?';
+
+  @override
+  String get yesThisSake => 'Yes, this is it';
+
+  @override
+  String get showOtherCandidate => 'Other candidates';
+
+  @override
+  String get wrongTakeBackLabel => 'Not this one — scan back label';
+
+  @override
+  String get loadingSakeOverview => 'Loading sake information…';
+
+  @override
+  String get scanAiAnalyzing =>
+      'Basic information is ready. Detailed analysis is continuing…';
+
+  @override
+  String get scanCompleted => 'Sake identified';
+
+  @override
+  String get finishScan => 'View details';
+
+  @override
+  String get scanNextBottle => 'Scan next';
+
+  @override
+  String get scanCameraPermissionDenied =>
+      'Camera access is not allowed. Enable it in device settings or choose an image from your gallery.';
+
+  @override
+  String get scanCameraUnavailable =>
+      'The camera is unavailable. Choose an image from your gallery instead.';
+
+  @override
+  String get retryScan => 'Start over';
+
+  @override
+  String get scanErrorCompression =>
+      'The image could not be prepared. Try another image.';
+
+  @override
+  String get scanErrorTimeout =>
+      'The request timed out. Check your connection.';
+
+  @override
+  String get scanErrorNoCandidates => 'No matching sake candidates were found.';
+
+  @override
+  String get scanErrorSessionExpired =>
+      'This scan session expired. Please start over.';
+
+  @override
+  String get scanErrorRateLimited =>
+      'Too many requests. Please wait and try again.';
+
+  @override
+  String get scanErrorServer =>
+      'The server encountered a problem. Please try again later.';
+
+  @override
+  String get scanErrorAi => 'AI analysis failed. Please try again later.';
+
+  @override
+  String get scanErrorGeneric => 'The label scan failed. Please try again.';
+
+  @override
+  String get shareScannedSakeToTimeline =>
+      'Publish to the timeline after saving';
+
+  @override
+  String get communityImpressions => 'What people say about this sake';
+
+  @override
+  String communityImpressionCount(int count) {
+    return '$count impressions';
+  }
+
+  @override
+  String get recentPublicPosts => 'Recent public posts';
+
+  @override
+  String get sameBrandSakes => 'More from this brand';
 }

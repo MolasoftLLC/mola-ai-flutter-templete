@@ -20,10 +20,7 @@ class MolaApiRepository {
   @override
   Stream<MolaApiException> get errorAuth => _errorAuth;
 
-  void _handleError({
-    required Response response,
-    bool throwsAnyError = false,
-  }) {
+  void _handleError({required Response response, bool throwsAnyError = false}) {
     final apiException = MolaApiException.fromObject(response.error!);
     if (response.statusCode != 403 && response.statusCode != 400) {
       throw throwsAnyError ? MolaApiException.anyError() : apiException;
@@ -49,7 +46,8 @@ class MolaApiRepository {
       final responseBodyJson = response.body as List<dynamic>;
       return responseBodyJson
           .map(
-              (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>))
+            (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
     } else {
       logger.shout(response.error);
@@ -58,16 +56,21 @@ class MolaApiRepository {
   }
 
   Future<List<OpenAIResponse>> promptWithImageByOpenAI(
-      File file, String? hint) async {
+    File file,
+    String? hint,
+  ) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
-    final response =
-        await _apiClient.promptWithImageByOpenAI(baseFile, hint ?? '');
+    final response = await _apiClient.promptWithImageByOpenAI(
+      baseFile,
+      hint ?? '',
+    );
     if (response.isSuccessful) {
       logger.shout(response.body);
       final responseBodyJson = response.body as List<dynamic>;
       return responseBodyJson
           .map(
-              (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>))
+            (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
     } else {
       logger.shout(response.error);
@@ -75,11 +78,12 @@ class MolaApiRepository {
     }
   }
 
-  Future<String> promptWithFavoriteByOpenAI(
-      {List<String>? flavors,
-      List<String>? designs,
-      List<String>? tastes,
-      String? prefecture}) async {
+  Future<String> promptWithFavoriteByOpenAI({
+    List<String>? flavors,
+    List<String>? designs,
+    List<String>? tastes,
+    String? prefecture,
+  }) async {
     if (prefecture == '指定なし') {
       prefecture = null;
     }
@@ -122,14 +126,17 @@ class MolaApiRepository {
     List<String> favorite,
   ) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
-    final response =
-        await _apiClient.promptWithMenuByOpenAI(baseFile, favorite ?? []);
+    final response = await _apiClient.promptWithMenuByOpenAI(
+      baseFile,
+      favorite ?? [],
+    );
     if (response.isSuccessful) {
       logger.shout(response.body);
       final responseBodyJson = response.body as List<dynamic>;
       return responseBodyJson
           .map(
-              (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>))
+            (dynamic e) => OpenAIResponse.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
     } else {
       logger.shout(response.error);

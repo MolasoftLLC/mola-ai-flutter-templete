@@ -15,7 +15,11 @@ ChopperClient sakeMenuRecognitionChopperClient({http.Client? client}) {
     interceptors: <dynamic>[
       (Request request) async {
         final headers = Map<String, String>.from(request.headers);
-        headers['Content-Type'] = 'application/json';
+        if (!request.multipart) {
+          headers['Content-Type'] = 'application/json';
+        } else {
+          headers.remove('Content-Type');
+        }
 
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {

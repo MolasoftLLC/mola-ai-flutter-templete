@@ -8,12 +8,15 @@ part of 'favorite_body.dart';
 
 _$FavoriteBodyImpl _$$FavoriteBodyImplFromJson(Map<String, dynamic> json) =>
     _$FavoriteBodyImpl(
-      flavors:
-          (json['flavors'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      designs:
-          (json['designs'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      tastes:
-          (json['tastes'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      flavors: (json['flavors'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      designs: (json['designs'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      tastes: (json['tastes'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       prefecture: json['prefecture'] as String?,
     );
 

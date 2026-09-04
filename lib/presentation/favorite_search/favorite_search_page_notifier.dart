@@ -30,9 +30,8 @@ abstract class FavoriteSearchPageState with _$FavoriteSearchPageState {
 
 class FavoriteSearchPageNotifier extends StateNotifier<FavoriteSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  FavoriteSearchPageNotifier({
-    required this.context,
-  }) : super(const FavoriteSearchPageState());
+  FavoriteSearchPageNotifier({required this.context})
+    : super(const FavoriteSearchPageState());
 
   final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -65,9 +64,7 @@ class FavoriteSearchPageNotifier extends StateNotifier<FavoriteSearchPageState>
     state = state.copyWith(isLoading: true);
     final isEmpty = checkEmpty();
     if (isEmpty) {
-      state = state.copyWith(
-        isLoading: false,
-      );
+      state = state.copyWith(isLoading: false);
       return;
     }
     final response = await geminiMolaApiRepository.promptWithFavorite(
@@ -76,9 +73,7 @@ class FavoriteSearchPageNotifier extends StateNotifier<FavoriteSearchPageState>
       tastes: state.selectedTastes,
       prefecture: state.selectedPrefecture,
     );
-    state = state.copyWith(
-      isLoading: false,
-    );
+    state = state.copyWith(isLoading: false);
     state = state.copyWith(geminiResponse: response);
   }
 

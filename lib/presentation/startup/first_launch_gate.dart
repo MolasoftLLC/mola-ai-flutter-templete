@@ -58,11 +58,9 @@ class _FirstLaunchGateState extends State<FirstLaunchGate> {
     });
 
     context.read<AuthNotifier>().clearMessages();
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => EmailLinkAuthPage.signUp(),
-      ),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signUp()));
 
     if (!mounted) {
       return;
@@ -84,11 +82,7 @@ class _FirstLaunchGateState extends State<FirstLaunchGate> {
   @override
   Widget build(BuildContext context) {
     if (_isChecking) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (!_showOnboarding) {
@@ -133,10 +127,7 @@ class _OnboardingPrompt extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
-                  child: Image.asset(
-                    'assets/images/sake_logo.png',
-                    height: 96,
-                  ),
+                  child: Image.asset('assets/images/sake_logo.png', height: 96),
                 ),
                 const SizedBox(height: 24),
                 Center(
@@ -224,10 +215,7 @@ class _OnboardingPrompt extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     context.l10n.loginLaterHint,
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
                   ),
                 ),
               ],
@@ -240,10 +228,7 @@ class _OnboardingPrompt extends StatelessWidget {
 }
 
 class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.icon,
-    required this.text,
-  });
+  const _FeatureRow({required this.icon, required this.text});
 
   final IconData icon;
   final String text;

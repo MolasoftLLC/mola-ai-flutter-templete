@@ -15,7 +15,8 @@ class AdCounterService {
     bool shouldShow = currentCounter % 5 == 0;
 
     print(
-        'AdCounterService: counter=$currentCounter, shouldShowAd=$shouldShow');
+      'AdCounterService: counter=$currentCounter, shouldShowAd=$shouldShow',
+    );
 
     return shouldShow;
   }

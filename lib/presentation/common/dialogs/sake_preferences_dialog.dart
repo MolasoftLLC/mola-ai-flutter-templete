@@ -24,12 +24,11 @@ Future<bool> showSakePreferencesSelectionDialog({
     _SakePreferenceOption('微発泡', context.l10n.preferenceSparkling),
     _SakePreferenceOption('酸味', context.l10n.preferenceAcidic),
   ];
-  final Iterable<String> existing = myPageNotifier.state.preferences
+  final Iterable<String> existing =
+      myPageNotifier.state.preferences
           ?.split('、')
           .map((String e) => e.trim())
-          .where(
-            (String element) => element.isNotEmpty,
-          ) ??
+          .where((String element) => element.isNotEmpty) ??
       <String>[];
   final List<String> selectedPreferences = List<String>.from(existing);
 
@@ -38,104 +37,115 @@ Future<bool> showSakePreferencesSelectionDialog({
     barrierDismissible: false,
     builder: (BuildContext dialogContext) {
       return StatefulBuilder(
-        builder: (BuildContext dialogContext,
-            void Function(void Function()) setState) {
-          return AlertDialog(
-            title: Text(
-              context.l10n.favoriteSakeQuestion,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1D3567),
-              ),
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    context.l10n.selectPreferenceFeatures,
-                    style: const TextStyle(fontSize: 14),
+        builder:
+            (
+              BuildContext dialogContext,
+              void Function(void Function()) setState,
+            ) {
+              return AlertDialog(
+                title: Text(
+                  context.l10n.favoriteSakeQuestion,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D3567),
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: options.map((_SakePreferenceOption option) {
-                      final bool isSelected =
-                          selectedPreferences.contains(option.value);
-                      return FilterChip(
-                        label: Text(option.label),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFF1D3567).withOpacity(0.2),
-                        checkmarkColor: const Color(0xFF1D3567),
-                        backgroundColor: Colors.grey.shade200,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? const Color(0xFF1D3567)
-                              : Colors.black87,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        onSelected: (bool selected) {
-                          setState(() {
-                            if (selected) {
-                              if (!selectedPreferences.contains(option.value)) {
-                                selectedPreferences.add(option.value);
-                              }
-                            } else {
-                              selectedPreferences.remove(option.value);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        context.l10n.selectPreferenceFeatures,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: options.map((_SakePreferenceOption option) {
+                          final bool isSelected = selectedPreferences.contains(
+                            option.value,
+                          );
+                          return FilterChip(
+                            label: Text(option.label),
+                            selected: isSelected,
+                            selectedColor: const Color(
+                              0xFF1D3567,
+                            ).withOpacity(0.2),
+                            checkmarkColor: const Color(0xFF1D3567),
+                            backgroundColor: Colors.grey.shade200,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? const Color(0xFF1D3567)
+                                  : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            onSelected: (bool selected) {
+                              setState(() {
+                                if (selected) {
+                                  if (!selectedPreferences.contains(
+                                    option.value,
+                                  )) {
+                                    selectedPreferences.add(option.value);
+                                  }
+                                } else {
+                                  selectedPreferences.remove(option.value);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () async {
+                      if (selectedPreferences.isEmpty) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(context.l10n.selectAtLeastOne),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+
+                      final String preferences = selectedPreferences.join('、');
+                      final SharedPreferences prefs =
+                          await SharedPreferences.getInstance();
+                      await prefs.setString('sake_preferences', preferences);
+
+                      myPageNotifier.setPreferences(preferences);
+                      await myPageNotifier.savePreferences();
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.preferencesChangeAnytime,
+                            ),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+
+                      Navigator.of(dialogContext).pop(true);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF1D3567),
+                    ),
+                    child: Text(context.l10n.done),
                   ),
                 ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () async {
-                  if (selectedPreferences.isEmpty) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.l10n.selectAtLeastOne),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                    return;
-                  }
-
-                  final String preferences = selectedPreferences.join('、');
-                  final SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                  await prefs.setString('sake_preferences', preferences);
-
-                  myPageNotifier.setPreferences(preferences);
-                  await myPageNotifier.savePreferences();
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(context.l10n.preferencesChangeAnytime),
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-
-                  Navigator.of(dialogContext).pop(true);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF1D3567),
-                ),
-                child: Text(context.l10n.done),
-              ),
-            ],
-          );
-        },
+              );
+            },
       );
     },
   );
@@ -164,7 +174,8 @@ Future<bool> ensureSakePreferences({
   }
 
   await myPageNotifier.reloadPreferencesFromLocal();
-  final String? updated =
-      (await SharedPreferences.getInstance()).getString('sake_preferences');
+  final String? updated = (await SharedPreferences.getInstance()).getString(
+    'sake_preferences',
+  );
   return updated != null && updated.trim().isNotEmpty;
 }

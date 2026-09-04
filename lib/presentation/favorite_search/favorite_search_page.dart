@@ -16,12 +16,10 @@ class FavoriteSearchPage extends StatelessWidget {
   static Widget wrapped() {
     return MultiProvider(
       providers: [
-        StateNotifierProvider<FavoriteSearchPageNotifier,
-            FavoriteSearchPageState>(
-          create: (context) => FavoriteSearchPageNotifier(
-            context: context,
-          ),
-        ),
+        StateNotifierProvider<
+          FavoriteSearchPageNotifier,
+          FavoriteSearchPageState
+        >(create: (context) => FavoriteSearchPageNotifier(context: context)),
       ],
       child: const FavoriteSearchPage._(),
     );
@@ -30,21 +28,30 @@ class FavoriteSearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<FavoriteSearchPageNotifier>();
-    final isLoading =
-        context.select((FavoriteSearchPageState state) => state.isLoading);
-    final geminiResponse =
-        context.select((FavoriteSearchPageState state) => state.geminiResponse);
-    final selectedFlavors = context
-            .select((FavoriteSearchPageState state) => state.selectedFlavors) ??
+    final isLoading = context.select(
+      (FavoriteSearchPageState state) => state.isLoading,
+    );
+    final geminiResponse = context.select(
+      (FavoriteSearchPageState state) => state.geminiResponse,
+    );
+    final selectedFlavors =
+        context.select(
+          (FavoriteSearchPageState state) => state.selectedFlavors,
+        ) ??
         [];
-    final selectedTastes = context
-            .select((FavoriteSearchPageState state) => state.selectedTastes) ??
+    final selectedTastes =
+        context.select(
+          (FavoriteSearchPageState state) => state.selectedTastes,
+        ) ??
         [];
-    final selectedDesigns = context
-            .select((FavoriteSearchPageState state) => state.selectedDesigns) ??
+    final selectedDesigns =
+        context.select(
+          (FavoriteSearchPageState state) => state.selectedDesigns,
+        ) ??
         [];
-    final selectedPrefecture = context
-        .select((FavoriteSearchPageState state) => state.selectedPrefecture);
+    final selectedPrefecture = context.select(
+      (FavoriteSearchPageState state) => state.selectedPrefecture,
+    );
     return Scaffold(
       appBar: PrimaryAppBar(
         title: context.l10n.preferenceSearchPageTitle,
@@ -63,23 +70,17 @@ class FavoriteSearchPage extends StatelessWidget {
                       context.l10n.searchByRegion,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-                    SizedBox(
-                      height: 4,
-                    ),
-                    Text(
-                      context.l10n.preferenceSearchDescription,
-                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        fontSize: 12,
                       ),
                     ),
-                    SizedBox(
-                      height: 40,
+                    SizedBox(height: 4),
+                    Text(
+                      context.l10n.preferenceSearchDescription,
+                      style: TextStyle(color: Colors.white, fontSize: 12),
                     ),
+                    SizedBox(height: 40),
                     if (geminiResponse != null)
                       Padding(
                         padding: const EdgeInsets.all(24),
@@ -95,9 +96,10 @@ class FavoriteSearchPage extends StatelessWidget {
                           context.l10n.continueInquiry,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     Row(
@@ -128,19 +130,21 @@ class FavoriteSearchPage extends StatelessWidget {
                           underline: SizedBox(),
                           value: selectedPrefecture,
                           items: prefectures
-                              .map((prefecture) => DropdownMenuItem(
-                                    value: prefecture,
-                                    child: SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.8,
-                                        child: Text(
-                                          localizeSakeFilterLabel(
-                                            context,
-                                            prefecture,
-                                          ),
-                                        )),
-                                  ))
+                              .map(
+                                (prefecture) => DropdownMenuItem(
+                                  value: prefecture,
+                                  child: SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.8,
+                                    child: Text(
+                                      localizeSakeFilterLabel(
+                                        context,
+                                        prefecture,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (value) {
                             notifier.setPrefecture(value);
@@ -148,9 +152,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: 40,
-                    ),
+                    SizedBox(height: 40),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: <Widget>[
@@ -170,47 +172,47 @@ class FavoriteSearchPage extends StatelessWidget {
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.9,
                       child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: Sake.flavors.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            childAspectRatio: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                          ),
-                          itemBuilder: (context, index) {
-                            final flavor = Sake.flavors[index];
-                            return InkWell(
-                              onTap: () {
-                                notifier.toggleSelectedFlavor(flavor);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: selectedFlavors.contains(flavor)
-                                      ? Colors.blue
-                                      : Colors.white60,
-                                  borderRadius:
-                                      BorderRadius.circular(10.0), // 角丸の半径を指定
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    localizeSakeFilterLabel(context, flavor),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: Sake.flavors.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              childAspectRatio: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                            ),
+                        itemBuilder: (context, index) {
+                          final flavor = Sake.flavors[index];
+                          return InkWell(
+                            onTap: () {
+                              notifier.toggleSelectedFlavor(flavor);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: selectedFlavors.contains(flavor)
+                                    ? Colors.blue
+                                    : Colors.white60,
+                                borderRadius: BorderRadius.circular(
+                                  10.0,
+                                ), // 角丸の半径を指定
+                              ),
+                              child: Center(
+                                child: Text(
+                                  localizeSakeFilterLabel(context, flavor),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            );
-                          }),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    SizedBox(
-                      height: 40,
-                    ),
+                    SizedBox(height: 40),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: <Widget>[
@@ -230,47 +232,47 @@ class FavoriteSearchPage extends StatelessWidget {
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.9,
                       child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: Sake.tastes.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            childAspectRatio: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                          ),
-                          itemBuilder: (context, index) {
-                            final taste = Sake.tastes[index];
-                            return InkWell(
-                              onTap: () {
-                                notifier.toggleSelectedTaste(taste);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: selectedTastes.contains(taste)
-                                      ? Colors.blue
-                                      : Colors.white60,
-                                  borderRadius:
-                                      BorderRadius.circular(10.0), // 角丸の半径を指定
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    localizeSakeFilterLabel(context, taste),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: Sake.tastes.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              childAspectRatio: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                            ),
+                        itemBuilder: (context, index) {
+                          final taste = Sake.tastes[index];
+                          return InkWell(
+                            onTap: () {
+                              notifier.toggleSelectedTaste(taste);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: selectedTastes.contains(taste)
+                                    ? Colors.blue
+                                    : Colors.white60,
+                                borderRadius: BorderRadius.circular(
+                                  10.0,
+                                ), // 角丸の半径を指定
+                              ),
+                              child: Center(
+                                child: Text(
+                                  localizeSakeFilterLabel(context, taste),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            );
-                          }),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    SizedBox(
-                      height: 40,
-                    ),
+                    SizedBox(height: 40),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: <Widget>[
@@ -290,47 +292,47 @@ class FavoriteSearchPage extends StatelessWidget {
                     SizedBox(
                       width: MediaQuery.of(context).size.width * 0.9,
                       child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: Sake.designs.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            childAspectRatio: 2,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                          ),
-                          itemBuilder: (context, index) {
-                            final design = Sake.designs[index];
-                            return InkWell(
-                              onTap: () {
-                                notifier.toggleSelectedDesigns(design);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: selectedDesigns.contains(design)
-                                      ? Colors.blue
-                                      : Colors.white60,
-                                  borderRadius:
-                                      BorderRadius.circular(10.0), // 角丸の半径を指定
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    localizeSakeFilterLabel(context, design),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: Sake.designs.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              childAspectRatio: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                            ),
+                        itemBuilder: (context, index) {
+                          final design = Sake.designs[index];
+                          return InkWell(
+                            onTap: () {
+                              notifier.toggleSelectedDesigns(design);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: selectedDesigns.contains(design)
+                                    ? Colors.blue
+                                    : Colors.white60,
+                                borderRadius: BorderRadius.circular(
+                                  10.0,
+                                ), // 角丸の半径を指定
+                              ),
+                              child: Center(
+                                child: Text(
+                                  localizeSakeFilterLabel(context, design),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            );
-                          }),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    const SizedBox(
-                      height: 40,
-                    ),
+                    const SizedBox(height: 40),
                     SizedBox(
                       width: 220,
                       child: FilledButton(
@@ -345,9 +347,7 @@ class FavoriteSearchPage extends StatelessWidget {
                         child: Text(context.l10n.askAi),
                       ),
                     ),
-                    const SizedBox(
-                      height: 40,
-                    ),
+                    const SizedBox(height: 40),
                   ],
                 ),
         ),

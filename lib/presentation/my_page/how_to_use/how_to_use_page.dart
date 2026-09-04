@@ -9,10 +9,7 @@ class HowToUse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PrimaryAppBar(
-        title: context.l10n.termsOfUse,
-        titleFontSize: 18,
-      ),
+      appBar: PrimaryAppBar(title: context.l10n.termsOfUse, titleFontSize: 18),
       body: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
@@ -53,11 +50,7 @@ class _TermsParagraph extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 20),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          height: 1.65,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.65),
       ),
     );
   }

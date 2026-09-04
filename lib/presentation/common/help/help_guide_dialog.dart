@@ -20,11 +20,7 @@ class HelpGuideContent {
 }
 
 class HelpGuideDialog extends StatefulWidget {
-  const HelpGuideDialog({
-    super.key,
-    required this.title,
-    required this.pages,
-  });
+  const HelpGuideDialog({super.key, required this.title, required this.pages});
 
   final String title;
   final List<HelpGuideContent> pages;
@@ -42,10 +38,7 @@ class HelpGuideDialog extends StatefulWidget {
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => HelpGuideDialog(
-        title: title,
-        pages: pages,
-      ),
+      builder: (dialogContext) => HelpGuideDialog(title: title, pages: pages),
     );
   }
 

@@ -18,10 +18,25 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navigationMenuAnalysis => 'メニュー解析';
 
   @override
+  String get navigationRecommendation => 'おすすめ';
+
+  @override
+  String get navigationScan => 'スキャン';
+
+  @override
   String get navigationTimeline => 'タイムライン';
 
   @override
   String get navigationMyPage => 'マイページ';
+
+  @override
+  String get newHomeSearchHint => 'いろいろな条件で検索';
+
+  @override
+  String get newHomeRecentSakes => '最近調べたお酒';
+
+  @override
+  String get newHomeTimeline => 'タイムライン';
 
   @override
   String get searchPageTitle => '日本酒検索';
@@ -785,7 +800,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get enterOptionalSakeType => '種類を入力（任意）';
 
   @override
-  String get selectBottleImage => '日本酒のラベルや瓶の画像を選択してください';
+  String get selectBottleImage => 'ラベルを撮るだけですぐに日本酒を探せます';
 
   @override
   String get tapToSelectImage => 'タップして画像を選択';
@@ -1016,6 +1031,56 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get placeConsumedHint => 'お店やイベント名などを記録できます';
+
+  @override
+  String get addConsumedPlace => '飲んだ場所を追加';
+
+  @override
+  String get changeConsumedPlace => '飲んだ場所を変更';
+
+  @override
+  String get findPlaceNearby => '近くで探す';
+
+  @override
+  String get findPlaceByName => '名前で探す';
+
+  @override
+  String get placeNameSearchHint => '店名・施設名を入力';
+
+  @override
+  String get searchingNearbyPlaces => '現在地付近を検索しています…';
+
+  @override
+  String get searchingPlaces => '場所を検索しています…';
+
+  @override
+  String get noNearbyPlaces => '近くに候補が見つかりませんでした';
+
+  @override
+  String get noPlaceResults => '一致する場所が見つかりませんでした';
+
+  @override
+  String useEnteredPlace(String place) {
+    return '「$place」を入力する';
+  }
+
+  @override
+  String get placeSearchFailed => '場所を検索できませんでした。手入力も利用できます。';
+
+  @override
+  String get locationServicesDisabled => '端末の位置情報をオンにしてください';
+
+  @override
+  String get locationPermissionDenied => '近くのお店を探すには位置情報の許可が必要です';
+
+  @override
+  String get locationPermissionPermanentlyDenied => '設定画面から位置情報を許可してください';
+
+  @override
+  String get openSettings => '設定を開く';
+
+  @override
+  String get poweredByGoogle => 'Powered by Google';
 
   @override
   String get saveMemories => '思い出も残そう';
@@ -1365,4 +1430,127 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noPreferenceConfigured => '好みの設定が完了していません。好みを登録してからお試しください。';
+
+  @override
+  String get fastLabelScan => 'ラベルを撮る';
+
+  @override
+  String get frontLabelScanTitle => '正面ラベルを撮影';
+
+  @override
+  String get frontLabelScanDescription => 'ラベル全体がガイド枠に収まるように撮影してください。';
+
+  @override
+  String get backLabelScanTitle => '裏ラベルを撮影';
+
+  @override
+  String get backLabelScanDescription => '商品名・製造者・容量などが読めるように裏ラベルを撮影してください。';
+
+  @override
+  String get scanBackPromptTitle => '裏ラベルを撮影しましょう';
+
+  @override
+  String get scanBackPromptOcrUnreadable =>
+      '正面ラベルの文字を認識できませんでした。商品名や製造者が読めるように、裏ラベルを撮影してください。';
+
+  @override
+  String get scanBackPromptNoCatalogMatch =>
+      '正面ラベルだけでは商品を特定できませんでした。商品名や製造者が書かれた裏ラベルを撮影してください。';
+
+  @override
+  String get scanBackPromptLowConfidence =>
+      '正面ラベルの情報だけでは候補を絞り切れませんでした。確認のため裏ラベルを撮影してください。';
+
+  @override
+  String get scanBackPromptAction => '裏ラベルを撮影する';
+
+  @override
+  String get captureLabel => 'ラベルを撮影';
+
+  @override
+  String get closeUpMode => '近接';
+
+  @override
+  String get selectFromGallery => 'ギャラリーから選ぶ';
+
+  @override
+  String get searchingLabel => '日本酒を照合しています…';
+
+  @override
+  String get isThisSake => 'この日本酒ですか？';
+
+  @override
+  String get yesThisSake => 'はい、この日本酒です';
+
+  @override
+  String get showOtherCandidate => 'ほかの候補';
+
+  @override
+  String get wrongTakeBackLabel => '違います・裏ラベルを撮る';
+
+  @override
+  String get loadingSakeOverview => '日本酒の情報を読み込んでいます…';
+
+  @override
+  String get scanAiAnalyzing => '基本情報が見つかりました。詳しい解析は続いています…';
+
+  @override
+  String get scanCompleted => '日本酒を特定しました';
+
+  @override
+  String get finishScan => '詳しく見る';
+
+  @override
+  String get scanNextBottle => '次の一本';
+
+  @override
+  String get scanCameraPermissionDenied =>
+      'カメラの使用が許可されていません。端末の設定でカメラを許可するか、ギャラリーから画像を選択してください。';
+
+  @override
+  String get scanCameraUnavailable => 'カメラを利用できません。ギャラリーから画像を選択してください。';
+
+  @override
+  String get retryScan => '最初からやり直す';
+
+  @override
+  String get scanErrorCompression => '画像を準備できませんでした。別の画像でもう一度お試しください。';
+
+  @override
+  String get scanErrorTimeout => '通信がタイムアウトしました。通信環境を確認してください。';
+
+  @override
+  String get scanErrorNoCandidates => '候補の日本酒が見つかりませんでした。';
+
+  @override
+  String get scanErrorSessionExpired => 'スキャンの有効期限が切れました。最初からお試しください。';
+
+  @override
+  String get scanErrorRateLimited => 'リクエストが集中しています。少し待ってからお試しください。';
+
+  @override
+  String get scanErrorServer => 'サーバーで問題が発生しました。時間をおいてお試しください。';
+
+  @override
+  String get scanErrorAi => 'AI解析に失敗しました。時間をおいてお試しください。';
+
+  @override
+  String get scanErrorGeneric => 'ラベルのスキャンに失敗しました。もう一度お試しください。';
+
+  @override
+  String get shareScannedSakeToTimeline => '保存後にタイムラインへ公開する';
+
+  @override
+  String get communityImpressions => 'この日本酒を飲んだ人の感想';
+
+  @override
+  String communityImpressionCount(int count) {
+    return '感想 $count件';
+  }
+
+  @override
+  String get recentPublicPosts => '最近の公開投稿';
+
+  @override
+  String get sameBrandSakes => '同じ銘柄の日本酒';
 }

@@ -4,9 +4,5 @@ SimpleLogger? _logger;
 SimpleLogger get logger => _logger!;
 
 void loggerConfigure() {
-  _logger = SimpleLogger()
-    ..setLevel(
-      Level.FINEST,
-      includeCallerInfo: true,
-    );
+  _logger = SimpleLogger()..setLevel(Level.FINEST, includeCallerInfo: true);
 }

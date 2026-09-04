@@ -6,11 +6,8 @@ class StoreNameDialog extends StatefulWidget {
   final String? initialStoreName;
   final Function(String) onSave;
 
-  const StoreNameDialog({
-    Key? key,
-    this.initialStoreName,
-    required this.onSave,
-  }) : super(key: key);
+  const StoreNameDialog({Key? key, this.initialStoreName, required this.onSave})
+    : super(key: key);
 
   @override
   _StoreNameDialogState createState() => _StoreNameDialogState();

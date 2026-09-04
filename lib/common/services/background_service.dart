@@ -8,10 +8,7 @@ class BackgroundService {
   ///
   /// [computation] バックグラウンドで実行する処理
   /// [input] 処理に渡す入力データ
-  static Future<T> compute<Q, T>(
-    FutureOr<T> Function(Q) computation,
-    Q input,
-  ) {
+  static Future<T> compute<Q, T>(FutureOr<T> Function(Q) computation, Q input) {
     return flutter.compute(computation, input);
   }
 }
@@ -34,10 +31,7 @@ class MenuAnalysisResult {
   final Map<String, dynamic>? data;
   final String? error;
 
-  MenuAnalysisResult({
-    this.data,
-    this.error,
-  });
+  MenuAnalysisResult({this.data, this.error});
 
   bool get isSuccess => error == null && data != null;
 }

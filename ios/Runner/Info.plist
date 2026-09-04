@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>GOOGLE_MAPS_API_KEY</key>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -39,6 +41,8 @@
 	<string>AIに問い合わせるための画像を選択できます</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ビデオ撮影時にマイクへのアクセスが必要です</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>現在地周辺から飲んだお店を探すために位置情報を使用します</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>編集した画像をフォトライブラリに保存します</string>
 	<key>NSUserTrackingUsageDescription</key>

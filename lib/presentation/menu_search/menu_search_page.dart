@@ -25,9 +25,7 @@ class MenuSearchPage extends StatelessWidget {
     return MultiProvider(
       providers: [
         StateNotifierProvider<MenuSearchPageNotifier, MenuSearchPageState>(
-          create: (context) => MenuSearchPageNotifier(
-            context: context,
-          ),
+          create: (context) => MenuSearchPageNotifier(context: context),
         ),
       ],
       child: const MenuSearchPage._(),
@@ -39,33 +37,43 @@ class MenuSearchPage extends StatelessWidget {
     final notifier = context.watch<MenuSearchPageNotifier>();
     final favNotifier = context.watch<FavoriteNotifier>();
     final savedNotifier = context.watch<SavedSakeNotifier>();
-    final isLoading =
-        context.select((MenuSearchPageState state) => state.isLoading);
-    final isExtractingInfo =
-        context.select((MenuSearchPageState state) => state.isExtractingInfo);
-    final isGettingDetails =
-        context.select((MenuSearchPageState state) => state.isGettingDetails);
-    final sakeImage =
-        context.select((MenuSearchPageState state) => state.sakeImage);
-    final extractedSakes =
-        context.select((MenuSearchPageState state) => state.extractedSakes);
+    final isLoading = context.select(
+      (MenuSearchPageState state) => state.isLoading,
+    );
+    final isExtractingInfo = context.select(
+      (MenuSearchPageState state) => state.isExtractingInfo,
+    );
+    final isGettingDetails = context.select(
+      (MenuSearchPageState state) => state.isGettingDetails,
+    );
+    final sakeImage = context.select(
+      (MenuSearchPageState state) => state.sakeImage,
+    );
+    final extractedSakes = context.select(
+      (MenuSearchPageState state) => state.extractedSakes,
+    );
     final sakes = context.select((MenuSearchPageState state) => state.sakes);
-    final myFavoriteList =
-        context.select((FavoriteState state) => state.myFavoriteList);
-    final mySavedList =
-        context.select((SavedSakeState state) => state.savedSakeList);
-    final errorMessage =
-        context.select((MenuSearchPageState state) => state.errorMessage);
+    final myFavoriteList = context.select(
+      (FavoriteState state) => state.myFavoriteList,
+    );
+    final mySavedList = context.select(
+      (SavedSakeState state) => state.savedSakeList,
+    );
+    final errorMessage = context.select(
+      (MenuSearchPageState state) => state.errorMessage,
+    );
     // 詳細情報が取得された日本酒の名前リスト
     final detailedSakeNames = sakes?.map((sake) => sake.name).toList() ?? [];
 
     // 各日本酒の読み込み状態
-    final sakeLoadingStatus =
-        context.select((MenuSearchPageState state) => state.sakeLoadingStatus);
+    final sakeLoadingStatus = context.select(
+      (MenuSearchPageState state) => state.sakeLoadingStatus,
+    );
 
     // 名前のマッピング（元の名前 -> 取得した詳細情報の名前）
-    final nameMapping =
-        context.select((MenuSearchPageState state) => state.nameMapping);
+    final nameMapping = context.select(
+      (MenuSearchPageState state) => state.nameMapping,
+    );
 
     String loadingText = context.l10n.loadingSakeInfo;
     if (isExtractingInfo) {
@@ -74,8 +82,9 @@ class MenuSearchPage extends StatelessWidget {
       loadingText = context.l10n.loadingSakeInfo;
     }
 
-    final hasScrolledToResults = context
-        .select((MenuSearchPageState state) => state.hasScrolledToResults);
+    final hasScrolledToResults = context.select(
+      (MenuSearchPageState state) => state.hasScrolledToResults,
+    );
 
     if (extractedSakes.isNotEmpty &&
         !isLoading &&
@@ -94,10 +103,7 @@ class MenuSearchPage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: context.l10n.helpGuide,
-            icon: const Icon(
-              Icons.help_outline,
-              color: Color(0xFFFFD54F),
-            ),
+            icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
             onPressed: () {
               HelpGuideDialog.showForType(
                 context,
@@ -109,9 +115,7 @@ class MenuSearchPage extends StatelessWidget {
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
-        decoration: const BoxDecoration(
-          color: Color(0xFF1D3567),
-        ),
+        decoration: const BoxDecoration(color: Color(0xFF1D3567)),
         child: SingleChildScrollView(
           controller: _scrollController,
           child: isLoading
@@ -243,7 +247,9 @@ class MenuSearchPage extends StatelessWidget {
                                       backgroundColor: const Color(0xFF1D3567),
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 12),
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -263,7 +269,9 @@ class MenuSearchPage extends StatelessWidget {
                                   backgroundColor: const Color(0xFF1D3567),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 12),
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -309,7 +317,10 @@ class MenuSearchPage extends StatelessWidget {
                       if (extractedSakes.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.only(
-                              top: 42, left: 12, right: 12),
+                            top: 42,
+                            left: 12,
+                            right: 12,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -346,11 +357,13 @@ class MenuSearchPage extends StatelessWidget {
                                       sakeLoadingStatus[sake.name] ?? false;
 
                                   // 詳細情報があるかどうか
-                                  final hasDetails = sakes != null &&
+                                  final hasDetails =
+                                      sakes != null &&
                                       sakes.any((s) => s.name == mappedName);
 
                                   // 詳細情報の取得に失敗したかどうか
-                                  final hasFailed = !isItemLoading &&
+                                  final hasFailed =
+                                      !isItemLoading &&
                                       !hasDetails &&
                                       sakeLoadingStatus.containsKey(sake.name);
 
@@ -359,25 +372,28 @@ class MenuSearchPage extends StatelessWidget {
                                       detailedSake?.recommendationScore;
 
                                   final isFavorited = myFavoriteList.any(
-                                      (favorite) =>
-                                          favorite.name ==
-                                              (hasDetails
-                                                  ? detailedSake!.name
-                                                  : sake.name) &&
-                                          favorite.type ==
-                                              (hasDetails
-                                                  ? detailedSake!.type
-                                                  : sake.type));
+                                    (favorite) =>
+                                        favorite.name ==
+                                            (hasDetails
+                                                ? detailedSake!.name
+                                                : sake.name) &&
+                                        favorite.type ==
+                                            (hasDetails
+                                                ? detailedSake!.type
+                                                : sake.type),
+                                  );
 
-                                  final isSaved = mySavedList.any((saved) =>
-                                      saved.name ==
-                                          (hasDetails
-                                              ? detailedSake!.name
-                                              : sake.name) &&
-                                      saved.type ==
-                                          (hasDetails
-                                              ? detailedSake!.type
-                                              : sake.type));
+                                  final isSaved = mySavedList.any(
+                                    (saved) =>
+                                        saved.name ==
+                                            (hasDetails
+                                                ? detailedSake!.name
+                                                : sake.name) &&
+                                        saved.type ==
+                                            (hasDetails
+                                                ? detailedSake!.type
+                                                : sake.type),
+                                  );
 
                                   return SakeResultTile(
                                     sake: sake,
@@ -395,8 +411,7 @@ class MenuSearchPage extends StatelessWidget {
                                       );
                                       if (!isFavorited &&
                                           favNotifier.hasReachedGuestLimit) {
-                                        await GuestLimitDialog
-                                            .showFavoriteLimit(
+                                        await GuestLimitDialog.showFavoriteLimit(
                                           context,
                                           maxCount: FavoriteNotifier
                                               .guestFavoriteLimit,
@@ -404,11 +419,11 @@ class MenuSearchPage extends StatelessWidget {
                                         return;
                                       }
                                       try {
-                                        await favNotifier
-                                            .addOrRemoveFavorite(favoriteSake);
+                                        await favNotifier.addOrRemoveFavorite(
+                                          favoriteSake,
+                                        );
                                       } on FavoriteGuestLimitReachedException {
-                                        await GuestLimitDialog
-                                            .showFavoriteLimit(
+                                        await GuestLimitDialog.showFavoriteLimit(
                                           context,
                                           maxCount: FavoriteNotifier
                                               .guestFavoriteLimit,
@@ -419,13 +434,13 @@ class MenuSearchPage extends StatelessWidget {
                                     onSave: () async {
                                       if (detailedSake == null) {
                                         logger.warning(
-                                            '詳細情報がない日本酒の保存操作が呼び出されました');
+                                          '詳細情報がない日本酒の保存操作が呼び出されました',
+                                        );
                                         return false;
                                       }
                                       if (!isSaved &&
                                           savedNotifier.hasReachedGuestLimit) {
-                                        await GuestLimitDialog
-                                            .showSavedSakeLimit(
+                                        await GuestLimitDialog.showSavedSakeLimit(
                                           context,
                                           maxCount:
                                               SavedSakeNotifier.guestSavedLimit,
@@ -434,8 +449,9 @@ class MenuSearchPage extends StatelessWidget {
                                       }
                                       if (!isSaved &&
                                           savedNotifier.hasReachedMemberLimit) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               context.l10n.savedSakeLimit(
@@ -449,19 +465,20 @@ class MenuSearchPage extends StatelessWidget {
                                         return false;
                                       }
                                       try {
-                                        await savedNotifier
-                                            .toggleSavedSake(detailedSake!);
+                                        await savedNotifier.toggleSavedSake(
+                                          detailedSake!,
+                                        );
                                       } on SavedSakeGuestLimitReachedException {
-                                        await GuestLimitDialog
-                                            .showSavedSakeLimit(
+                                        await GuestLimitDialog.showSavedSakeLimit(
                                           context,
                                           maxCount:
                                               SavedSakeNotifier.guestSavedLimit,
                                         );
                                         return false;
                                       } on SavedSakeMemberLimitReachedException {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               context.l10n.savedSakeLimit(
@@ -536,10 +553,7 @@ class MenuSearchPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),
           ),

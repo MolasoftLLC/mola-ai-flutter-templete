@@ -1,9 +1,5 @@
 class AppException implements Exception {
-  AppException({
-    required this.code,
-    required this.message,
-    this.details,
-  });
+  AppException({required this.code, required this.message, this.details});
 
   final String code;
   final String message;
@@ -14,11 +10,7 @@ class AppException implements Exception {
 }
 
 class MolaApiException implements Exception {
-  MolaApiException({
-    this.code,
-    required this.message,
-    required this.details,
-  });
+  MolaApiException({this.code, required this.message, required this.details});
 
   final dynamic code;
   final String message;

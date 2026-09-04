@@ -33,10 +33,7 @@ class FavoriteSake {
 
   // オブジェクトをJSONに変換
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'type': type,
-    };
+    return {'name': name, 'type': type};
   }
 
   @override
@@ -119,8 +116,10 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
   // お気に入りに追加または削除
   Future<void> addOrRemoveFavorite(FavoriteSake favoriteSake) async {
     // 既に同じ名前とタイプの組み合わせが存在するか確認
-    final exists = state.myFavoriteList.any((item) =>
-        item.name == favoriteSake.name && item.type == favoriteSake.type);
+    final exists = state.myFavoriteList.any(
+      (item) =>
+          item.name == favoriteSake.name && item.type == favoriteSake.type,
+    );
 
     Future<void> applyLocalChange() async {
       if (!exists && hasReachedGuestLimit) {
@@ -128,8 +127,11 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
       }
       if (exists) {
         final updatedList = state.myFavoriteList
-            .where((item) => !(item.name == favoriteSake.name &&
-                item.type == favoriteSake.type))
+            .where(
+              (item) =>
+                  !(item.name == favoriteSake.name &&
+                      item.type == favoriteSake.type),
+            )
             .toList();
         state = state.copyWith(myFavoriteList: updatedList);
       } else {
@@ -161,8 +163,11 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
         return;
       }
       final updatedList = state.myFavoriteList
-          .where((item) => !(item.name == favoriteSake.name &&
-              item.type == favoriteSake.type))
+          .where(
+            (item) =>
+                !(item.name == favoriteSake.name &&
+                    item.type == favoriteSake.type),
+          )
           .toList();
       state = state.copyWith(myFavoriteList: updatedList);
     } else {
@@ -183,18 +188,16 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
 
   // お気に入りかどうかを確認
   bool isFavorite(String name, String? type) {
-    return state.myFavoriteList
-        .any((item) => item.name == name && item.type == type);
+    return state.myFavoriteList.any(
+      (item) => item.name == name && item.type == type,
+    );
   }
 
   // 後方互換性のために残しておく（既存のコードが壊れないように）
   // 新しいコードでは使用しないでください
   @Deprecated('Use addOrRemoveFavorite instead')
   Future<void> addOrRemoveString(String name) async {
-    final favoriteSake = FavoriteSake(
-      name: name,
-      type: '',
-    );
+    final favoriteSake = FavoriteSake(name: name, type: '');
 
     await addOrRemoveFavorite(favoriteSake);
   }
@@ -204,8 +207,9 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
         await sharedPreference.getStringList(key: FAVORITE_SAKE_LIST) ?? [];
 
     // 文字列リストをFavoriteSakeオブジェクトのリストに変換
-    final List<FavoriteSake> favoriteSakes =
-        favoriteStrings.map((favoriteString) {
+    final List<FavoriteSake> favoriteSakes = favoriteStrings.map((
+      favoriteString,
+    ) {
       try {
         // JSONとして解析を試みる
         final Map<String, dynamic> json = jsonDecode(favoriteString);
@@ -229,8 +233,9 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
   }
 
   Future<void> _loadFavoritesFromServer(String userId) async {
-    final remoteFavorites =
-        await _favoriteSyncRepository.fetchFavorites(userId);
+    final remoteFavorites = await _favoriteSyncRepository.fetchFavorites(
+      userId,
+    );
     if (remoteFavorites.isEmpty) {
       logger.info('サーバー上にお気に入りが存在しませんでした');
     }

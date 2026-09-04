@@ -70,8 +70,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
             ),
             child: ExpansionTile(
               controller: _expansionController,
-              tilePadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,7 +84,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         child: Text(
                           widget.hasDetails
                               ? (widget.detailedSake!.name ??
-                                  context.l10n.unknown)
+                                    context.l10n.unknown)
                               : (widget.sake.name ?? context.l10n.unknown),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
@@ -96,13 +98,13 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     Container(
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.shade100,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.red.shade300,
-                        ),
+                        border: Border.all(color: Colors.red.shade300),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -130,10 +132,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
               ),
               subtitle: Text(
                 widget.sake.type ?? context.l10n.unknownType,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               trailing: widget.hasDetails
                   ? Row(
@@ -172,8 +171,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             widget.isFavorited
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            color:
-                                widget.isFavorited ? Colors.red : Colors.grey,
+                            color: widget.isFavorited
+                                ? Colors.red
+                                : Colors.grey,
                             size: 22,
                           ),
                           onPressed: () {
@@ -183,25 +183,24 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       ],
                     )
                   : !widget.hasFailed
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF1D3567),
-                          ),
-                        )
-                      : widget.isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFF1D3567),
-                              ),
-                            )
-                          : Icon(Icons.error_outline,
-                              color: Colors.red.shade700),
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF1D3567),
+                      ),
+                    )
+                  : widget.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF1D3567),
+                      ),
+                    )
+                  : Icon(Icons.error_outline, color: Colors.red.shade700),
               children: [
                 if (widget.hasDetails)
                   Padding(
@@ -283,8 +282,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   child: IconButton(
                     tooltip: context.l10n.expand,
                     padding: const EdgeInsets.all(8),
-                    constraints:
-                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                     icon: const Icon(
                       Icons.expand_more,
                       color: Color(0xFF1D3567),

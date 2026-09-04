@@ -24,7 +24,7 @@ class ImageCropperService {
               CropAspectRatioPreset.ratio3x2,
               CropAspectRatioPreset.original,
               CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
+              CropAspectRatioPreset.ratio16x9,
             ],
           ),
           IOSUiSettings(
@@ -36,7 +36,7 @@ class ImageCropperService {
               CropAspectRatioPreset.ratio3x2,
               CropAspectRatioPreset.original,
               CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
+              CropAspectRatioPreset.ratio16x9,
             ],
           ),
         ],
@@ -73,13 +73,17 @@ class ImageCropperService {
 
   /// Create a copy of the image in the app's documents directory
   static Future<File?> copyImageToAppDirectory(
-      File imageFile, String prefix) async {
+    File imageFile,
+    String prefix,
+  ) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final fileName = path.basename(imageFile.path);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final newPath =
-          path.join(appDir.path, '${prefix}_${timestamp}_$fileName');
+      final newPath = path.join(
+        appDir.path,
+        '${prefix}_${timestamp}_$fileName',
+      );
 
       final newFile = await imageFile.copy(newPath);
       logger.info('画像をアプリディレクトリにコピーしました: ${newFile.path}');
@@ -92,8 +96,10 @@ class ImageCropperService {
   }
 
   /// Save an image permanently to the app's documents directory
-  static Future<String?> saveImagePermanently(File imageFile,
-      [String? customPrefix]) async {
+  static Future<String?> saveImagePermanently(
+    File imageFile, [
+    String? customPrefix,
+  ]) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final fileName = path.basename(imageFile.path);

@@ -23,10 +23,7 @@ class SakeMenuRecognitionRepository {
 
   Stream<MolaApiException> get errorAuth => _errorAuth;
 
-  void _handleError({
-    required Response response,
-    bool throwsAnyError = false,
-  }) {
+  void _handleError({required Response response, bool throwsAnyError = false}) {
     final apiException = MolaApiException.fromObject(response.error!);
     if (response.statusCode != 403 && response.statusCode != 400) {
       throw throwsAnyError ? MolaApiException.anyError() : apiException;
@@ -65,7 +62,8 @@ class SakeMenuRecognitionRepository {
           final responseBodyJson = response.body as Map<String, dynamic>;
 
           // 'sakes'キーから日本酒リストを取得
-          final sakesList = (responseBodyJson['sakes'] as List<dynamic>?)
+          final sakesList =
+              (responseBodyJson['sakes'] as List<dynamic>?)
                   ?.cast<Map<String, dynamic>>() ??
               [];
 
@@ -90,7 +88,8 @@ class SakeMenuRecognitionRepository {
 
   /// 日本酒名と種類のリストから詳細情報を取得する
   Future<SakeMenuRecognitionResponse?> getSakeInfoBatch(
-      List<Map<String, dynamic>> sakes) async {
+    List<Map<String, dynamic>> sakes,
+  ) async {
     final body = {
       'sakes': sakes,
       'locale': await resolveAppLocaleLanguageCode(),
@@ -109,8 +108,11 @@ class SakeMenuRecognitionRepository {
   }
 
   /// 日本酒名から詳細情報を取得する
-  Future<Sake?> getSakeInfo(String sakeName,
-      {String? type, String? preferences}) async {
+  Future<Sake?> getSakeInfo(
+    String sakeName, {
+    String? type,
+    String? preferences,
+  }) async {
     if (sakeName.isEmpty) {
       return null;
     }
@@ -177,9 +179,7 @@ class SakeMenuRecognitionRepository {
       // トリミング処理はmain_search_page_notifierで行うため、ここでは行わない
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
       logger.shout(baseFile.length);
-      final response = await _apiClient.recognizeSakeBottle(
-        baseFile,
-      );
+      final response = await _apiClient.recognizeSakeBottle(baseFile);
 
       if (response.isSuccessful) {
         final body = response.body;
@@ -199,7 +199,8 @@ class SakeMenuRecognitionRepository {
         final errorPayload = response.error ?? response.body;
         final message = _extractBottleErrorMessage(errorPayload);
         logger.shout(
-            '酒瓶認識API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}');
+          '酒瓶認識API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}',
+        );
         throw SakeBottleRecognitionException(
           statusCode: statusCode,
           message: message,
@@ -219,6 +220,8 @@ class SakeMenuRecognitionRepository {
   Future<SakeBottleComprehensiveResponse?> comprehensiveSakeBottleAnalysis(
     File file, {
     String? preferences,
+    int? sakeId,
+    String? scanSessionId,
   }) async {
     try {
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
@@ -228,6 +231,12 @@ class SakeMenuRecognitionRepository {
       };
       if (preferences != null && preferences.isNotEmpty) {
         payload['preferences'] = preferences;
+      }
+      if (sakeId != null) {
+        payload['sakeId'] = sakeId;
+      }
+      if (scanSessionId != null && scanSessionId.isNotEmpty) {
+        payload['scanSessionId'] = scanSessionId;
       }
       final response = await _apiClient.comprehensiveSakeBottleAnalysis(
         payload,
@@ -246,7 +255,13 @@ class SakeMenuRecognitionRepository {
           sakeInfo = Sake.fromJson(infoJson);
         }
 
+        final responseSakeId = _parseOptionalInt(body['sakeId']) ?? sakeId;
+        if (sakeInfo != null && responseSakeId != null) {
+          sakeInfo = sakeInfo.copyWith(sakeId: responseSakeId);
+        }
+
         return SakeBottleComprehensiveResponse(
+          sakeId: responseSakeId,
           sakeName: body['sakeName'] as String?,
           type: body['type'] as String?,
           sakeInfo: sakeInfo,
@@ -256,7 +271,8 @@ class SakeMenuRecognitionRepository {
         final errorPayload = response.error ?? response.body;
         final message = _extractBottleErrorMessage(errorPayload);
         logger.shout(
-            '酒瓶包括解析API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}');
+          '酒瓶包括解析API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}',
+        );
         throw SakeBottleRecognitionException(
           statusCode: statusCode,
           message: message,
@@ -277,15 +293,10 @@ class SakeMenuRecognitionRepository {
     }
 
     final List<Map<String, dynamic>> sakesData = sakes
-        .map((sake) => {
-              'sakeName': sake.name,
-              'type': sake.type ?? '',
-            })
+        .map((sake) => {'sakeName': sake.name, 'type': sake.type ?? ''})
         .toList();
 
-    final body = {
-      'sakes': sakesData,
-    };
+    final body = {'sakes': sakesData};
 
     final response = await _apiClient.analyzeSakePreference(body);
     if (response.isSuccessful) {
@@ -307,6 +318,12 @@ class SakeMenuRecognitionRepository {
       return payload;
     }
     return '酒瓶の認識に失敗しました';
+  }
+
+  int? _parseOptionalInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +10,50 @@ import '../../common/logger.dart';
 
 /// Utility class for image operations
 class ImageUtils {
+  /// ラベルスキャン用に、認識精度を保ちながら送信サイズを抑えたJPEGを生成します。
+  ///
+  /// 呼び出し側は、送信完了後に返却された一時ファイルを削除してください。
+  static Future<File> compressForSakeScan(
+    File file, {
+    int longEdge = 1920,
+    int quality = 88,
+  }) async {
+    if (!await file.exists()) {
+      throw const FileSystemException('スキャン画像が見つかりません');
+    }
+
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final width = frame.image.width;
+    final height = frame.image.height;
+    frame.image.dispose();
+    codec.dispose();
+
+    final scale = max(width, height) > longEdge
+        ? longEdge / max(width, height)
+        : 1.0;
+    final targetWidth = max(1, (width * scale).round());
+    final targetHeight = max(1, (height * scale).round());
+    final tempDir = await getTemporaryDirectory();
+    final targetPath =
+        '${tempDir.path}/sake_scan_${DateTime.now().microsecondsSinceEpoch}.jpg';
+
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      targetPath,
+      minWidth: targetWidth,
+      minHeight: targetHeight,
+      quality: quality,
+      format: CompressFormat.jpeg,
+      keepExif: false,
+    );
+    if (compressed == null) {
+      throw StateError('スキャン画像の圧縮に失敗しました');
+    }
+    return File(compressed.path);
+  }
+
   /// Compresses an image file and converts it to base64 string
   ///
   /// [file] The image file to compress and encode
@@ -46,8 +91,6 @@ class ImageUtils {
         case CompressFormat.webp:
           ext = '.webp';
           break;
-        default:
-          ext = '.jpg';
       }
 
       // 一時ファイルのパスを生成（ランダム要素を含めて一意にする）
@@ -77,7 +120,8 @@ class ImageUtils {
       // 圧縮後のサイズをログ出力
       logger.info('圧縮後の画像サイズ: ${_formatFileSize(compressedSize)}');
       logger.info(
-          '圧縮率: ${(compressedSize / originalSize * 100).toStringAsFixed(2)}%');
+        '圧縮率: ${(compressedSize / originalSize * 100).toStringAsFixed(2)}%',
+      );
 
       // Delete the temporary compressed file
       final compressedPath = compressedXFile.path;

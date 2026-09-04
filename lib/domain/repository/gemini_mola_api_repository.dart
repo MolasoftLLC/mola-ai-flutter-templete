@@ -21,10 +21,7 @@ class GeminiMolaApiRepository {
   @override
   Stream<MolaApiException> get errorAuth => _errorAuth;
 
-  void _handleError({
-    required Response response,
-    bool throwsAnyError = false,
-  }) {
+  void _handleError({required Response response, bool throwsAnyError = false}) {
     final apiException = MolaApiException.fromObject(response.error!);
     if (response.statusCode != 403 && response.statusCode != 400) {
       throw throwsAnyError ? MolaApiException.anyError() : apiException;
@@ -69,8 +66,10 @@ class GeminiMolaApiRepository {
 
   Future<String> promptWithImageByOpenAI(File file, String? hint) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
-    final response =
-        await _apiClient.promptWithImageByOpenAI(baseFile, hint ?? '');
+    final response = await _apiClient.promptWithImageByOpenAI(
+      baseFile,
+      hint ?? '',
+    );
     if (response.isSuccessful) {
       final responseBodyJson = response.body as String;
       return responseBodyJson;
@@ -80,11 +79,12 @@ class GeminiMolaApiRepository {
     }
   }
 
-  Future<String> promptWithFavorite(
-      {List<String>? flavors,
-      List<String>? designs,
-      List<String>? tastes,
-      String? prefecture}) async {
+  Future<String> promptWithFavorite({
+    List<String>? flavors,
+    List<String>? designs,
+    List<String>? tastes,
+    String? prefecture,
+  }) async {
     if (prefecture == '指定なし') {
       prefecture = null;
     }

@@ -25,10 +25,7 @@ void main() {
     await controller.setLanguage(AppLanguage.japanese);
     expect(controller.locale, const Locale('ja'));
     final preferences = await SharedPreferences.getInstance();
-    expect(
-      preferences.getString(appLanguageKey),
-      AppLanguage.japanese.name,
-    );
+    expect(preferences.getString(appLanguageKey), AppLanguage.japanese.name);
   });
 
   test('端末設定に従う場合はlocaleを指定しない', () async {
@@ -59,9 +56,7 @@ void main() {
         locale: const Locale('en'),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Builder(
-          builder: (context) => Text(context.l10n.searchPageTitle),
-        ),
+        home: Builder(builder: (context) => Text(context.l10n.searchPageTitle)),
       ),
     );
 
@@ -81,9 +76,7 @@ void main() {
             locale: localeController.locale,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: Builder(
-              builder: (context) => Text(context.l10n.language),
-            ),
+            home: Builder(builder: (context) => Text(context.l10n.language)),
           ),
         ),
       ),

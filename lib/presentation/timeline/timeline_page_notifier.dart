@@ -76,8 +76,8 @@ class TimelinePageState {
 class TimelinePageNotifier extends StateNotifier<TimelinePageState>
     with LocatorMixin {
   TimelinePageNotifier({this.feedType = TimelineFeedType.public})
-      : _reportedSavedIds = <String>{},
-        super(const TimelinePageState());
+    : _reportedSavedIds = <String>{},
+      super(const TimelinePageState());
 
   final TimelineFeedType feedType;
 
@@ -105,9 +105,11 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       _reportedSavedIds
         ..clear()
         ..addAll(
-            list.where((id) => id.trim().isNotEmpty).map((id) => id.trim()));
-      state =
-          state.copyWith(reportedSavedIds: Set<String>.from(_reportedSavedIds));
+          list.where((id) => id.trim().isNotEmpty).map((id) => id.trim()),
+        );
+      state = state.copyWith(
+        reportedSavedIds: Set<String>.from(_reportedSavedIds),
+      );
     } catch (error, stackTrace) {
       logger.warning('報告済み保存酒IDの読み込みに失敗しました: $error');
       logger.info(stackTrace.toString());
@@ -118,7 +120,9 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
-          _reportedSavedIdsKey, _reportedSavedIds.toList());
+        _reportedSavedIdsKey,
+        _reportedSavedIds.toList(),
+      );
     } catch (error, stackTrace) {
       logger.warning('報告済み保存酒IDの保存に失敗しました: $error');
       logger.info(stackTrace.toString());
@@ -169,8 +173,8 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       final message = isLoggedIn
           ? '認証の有効期限が切れました。再度ログインしてください。'
           : (feedType == TimelineFeedType.mine
-              ? '自分の投稿を表示するにはログインしてください。'
-              : 'タイムラインを表示するにはログインしてください。');
+                ? '自分の投稿を表示するにはログインしてください。'
+                : 'タイムラインを表示するにはログインしてください。');
       state = state.copyWith(
         sakes: const <Sake>[],
         errorMessage: message,
@@ -243,10 +247,7 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
         canLoadMore: page.canLoadMore,
       );
     } on SavedSakeTimelineUnauthorizedException {
-      state = state.copyWith(
-        hasMore: false,
-        nextCursor: null,
-      );
+      state = state.copyWith(hasMore: false, nextCursor: null);
     } catch (error, stackTrace) {
       logger.warning('タイムライン追加取得中に例外が発生しました: $error');
       logger.info(stackTrace.toString());
@@ -349,8 +350,9 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
     _reportedSavedIds.add(savedId);
     await _persistReportedSavedIds();
 
-    final updatedSakes =
-        state.sakes.where((item) => item.savedId?.trim() != savedId).toList();
+    final updatedSakes = state.sakes
+        .where((item) => item.savedId?.trim() != savedId)
+        .toList();
 
     state = state.copyWith(
       pendingReportIds: nextPending,
@@ -377,19 +379,22 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
   }) {
     final normalizedCursor =
         canLoadMore && nextCursor != null && nextCursor.trim().isNotEmpty
-            ? nextCursor.trim()
-            : null;
+        ? nextCursor.trim()
+        : null;
 
-    final validKeys = <String>{
-      for (final sake in updatedSakes) envyKey(sake),
-    }..removeWhere((key) => key.isEmpty);
-    final filteredEnvied =
-        state.enviedIds.where((key) => validKeys.contains(key)).toSet();
-    final filteredPending =
-        state.pendingEnvyIds.where((key) => validKeys.contains(key)).toSet();
+    final validKeys = <String>{for (final sake in updatedSakes) envyKey(sake)}
+      ..removeWhere((key) => key.isEmpty);
+    final filteredEnvied = state.enviedIds
+        .where((key) => validKeys.contains(key))
+        .toSet();
+    final filteredPending = state.pendingEnvyIds
+        .where((key) => validKeys.contains(key))
+        .toSet();
     final filteredPendingReports = state.pendingReportIds
-        .where((savedId) =>
-            updatedSakes.any((sake) => sake.savedId?.trim() == savedId))
+        .where(
+          (savedId) =>
+              updatedSakes.any((sake) => sake.savedId?.trim() == savedId),
+        )
         .toSet();
 
     state = state.copyWith(

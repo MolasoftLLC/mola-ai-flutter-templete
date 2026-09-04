@@ -12,7 +12,8 @@ part of 'auth_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$AuthState {
@@ -33,13 +34,14 @@ abstract class $AuthStateCopyWith<$Res> {
   factory $AuthStateCopyWith(AuthState value, $Res Function(AuthState) then) =
       _$AuthStateCopyWithImpl<$Res, AuthState>;
   @useResult
-  $Res call(
-      {User? user,
-      String email,
-      bool isLoading,
-      bool verificationEmailSent,
-      String? infoMessage,
-      String? errorMessage});
+  $Res call({
+    User? user,
+    String email,
+    bool isLoading,
+    bool verificationEmailSent,
+    String? infoMessage,
+    String? errorMessage,
+  });
 }
 
 /// @nodoc
@@ -62,32 +64,35 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
     Object? infoMessage = freezed,
     Object? errorMessage = freezed,
   }) {
-    return _then(_value.copyWith(
-      user: freezed == user
-          ? _value.user
-          : user // ignore: cast_nullable_to_non_nullable
-              as User?,
-      email: null == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      verificationEmailSent: null == verificationEmailSent
-          ? _value.verificationEmailSent
-          : verificationEmailSent // ignore: cast_nullable_to_non_nullable
-              as bool,
-      infoMessage: freezed == infoMessage
-          ? _value.infoMessage
-          : infoMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            user: freezed == user
+                ? _value.user
+                : user // ignore: cast_nullable_to_non_nullable
+                      as User?,
+            email: null == email
+                ? _value.email
+                : email // ignore: cast_nullable_to_non_nullable
+                      as String,
+            isLoading: null == isLoading
+                ? _value.isLoading
+                : isLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            verificationEmailSent: null == verificationEmailSent
+                ? _value.verificationEmailSent
+                : verificationEmailSent // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            infoMessage: freezed == infoMessage
+                ? _value.infoMessage
+                : infoMessage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            errorMessage: freezed == errorMessage
+                ? _value.errorMessage
+                : errorMessage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -95,17 +100,19 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
 abstract class _$$AuthStateImplCopyWith<$Res>
     implements $AuthStateCopyWith<$Res> {
   factory _$$AuthStateImplCopyWith(
-          _$AuthStateImpl value, $Res Function(_$AuthStateImpl) then) =
-      __$$AuthStateImplCopyWithImpl<$Res>;
+    _$AuthStateImpl value,
+    $Res Function(_$AuthStateImpl) then,
+  ) = __$$AuthStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {User? user,
-      String email,
-      bool isLoading,
-      bool verificationEmailSent,
-      String? infoMessage,
-      String? errorMessage});
+  $Res call({
+    User? user,
+    String email,
+    bool isLoading,
+    bool verificationEmailSent,
+    String? infoMessage,
+    String? errorMessage,
+  });
 }
 
 /// @nodoc
@@ -113,8 +120,9 @@ class __$$AuthStateImplCopyWithImpl<$Res>
     extends _$AuthStateCopyWithImpl<$Res, _$AuthStateImpl>
     implements _$$AuthStateImplCopyWith<$Res> {
   __$$AuthStateImplCopyWithImpl(
-      _$AuthStateImpl _value, $Res Function(_$AuthStateImpl) _then)
-      : super(_value, _then);
+    _$AuthStateImpl _value,
+    $Res Function(_$AuthStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -126,45 +134,48 @@ class __$$AuthStateImplCopyWithImpl<$Res>
     Object? infoMessage = freezed,
     Object? errorMessage = freezed,
   }) {
-    return _then(_$AuthStateImpl(
-      user: freezed == user
-          ? _value.user
-          : user // ignore: cast_nullable_to_non_nullable
-              as User?,
-      email: null == email
-          ? _value.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      verificationEmailSent: null == verificationEmailSent
-          ? _value.verificationEmailSent
-          : verificationEmailSent // ignore: cast_nullable_to_non_nullable
-              as bool,
-      infoMessage: freezed == infoMessage
-          ? _value.infoMessage
-          : infoMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    return _then(
+      _$AuthStateImpl(
+        user: freezed == user
+            ? _value.user
+            : user // ignore: cast_nullable_to_non_nullable
+                  as User?,
+        email: null == email
+            ? _value.email
+            : email // ignore: cast_nullable_to_non_nullable
+                  as String,
+        isLoading: null == isLoading
+            ? _value.isLoading
+            : isLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        verificationEmailSent: null == verificationEmailSent
+            ? _value.verificationEmailSent
+            : verificationEmailSent // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        infoMessage: freezed == infoMessage
+            ? _value.infoMessage
+            : infoMessage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        errorMessage: freezed == errorMessage
+            ? _value.errorMessage
+            : errorMessage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$AuthStateImpl implements _AuthState {
-  const _$AuthStateImpl(
-      {this.user,
-      this.email = '',
-      this.isLoading = false,
-      this.verificationEmailSent = false,
-      this.infoMessage,
-      this.errorMessage});
+  const _$AuthStateImpl({
+    this.user,
+    this.email = '',
+    this.isLoading = false,
+    this.verificationEmailSent = false,
+    this.infoMessage,
+    this.errorMessage,
+  });
 
   @override
   final User? user;
@@ -205,8 +216,15 @@ class _$AuthStateImpl implements _AuthState {
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, user, email, isLoading,
-      verificationEmailSent, infoMessage, errorMessage);
+  int get hashCode => Object.hash(
+    runtimeType,
+    user,
+    email,
+    isLoading,
+    verificationEmailSent,
+    infoMessage,
+    errorMessage,
+  );
 
   @JsonKey(ignore: true)
   @override
@@ -216,13 +234,14 @@ class _$AuthStateImpl implements _AuthState {
 }
 
 abstract class _AuthState implements AuthState {
-  const factory _AuthState(
-      {final User? user,
-      final String email,
-      final bool isLoading,
-      final bool verificationEmailSent,
-      final String? infoMessage,
-      final String? errorMessage}) = _$AuthStateImpl;
+  const factory _AuthState({
+    final User? user,
+    final String email,
+    final bool isLoading,
+    final bool verificationEmailSent,
+    final String? infoMessage,
+    final String? errorMessage,
+  }) = _$AuthStateImpl;
 
   @override
   User? get user;

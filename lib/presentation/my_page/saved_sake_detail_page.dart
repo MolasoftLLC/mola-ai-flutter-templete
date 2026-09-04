@@ -16,9 +16,11 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../../common/logger.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import 'widgets/place_picker_sheet.dart';
 
 const double _blockSpacing = 16;
 const double _blockVerticalPadding = 20;
@@ -44,6 +46,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   bool _isImageProcessing = false;
   bool _isSyncing = false;
   bool _isVisibilityUpdating = false;
+  bool _placeDirty = false;
   String? _progressMessage;
   bool _hasNameChanged = false;
   final GlobalKey _memoryHeadingKey = GlobalKey();
@@ -71,9 +74,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     _scrollController = ScrollController();
     _nameController = TextEditingController(text: widget.sake.name ?? '');
     _nameController.addListener(_handleNameFieldChanged);
-    _impressionController =
-        TextEditingController(text: widget.sake.impression ?? '');
-    _placeController = TextEditingController(text: widget.sake.place ?? '');
+    _impressionController = TextEditingController(
+      text: widget.sake.impression ?? '',
+    );
+    _placeController = TextEditingController(
+      text: widget.sake.drinkingPlace?.displayName ?? widget.sake.place ?? '',
+    );
     _selectedTags = {...(widget.sake.userTags ?? <String>[])};
     _imagePaths = [...(widget.sake.imagePaths ?? <String>[])];
   }
@@ -101,10 +107,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     final isLoggedIn = context.select((AuthState state) => state.user != null);
     final isLocalOnly =
         _currentSake.syncStatus == SavedSakeSyncStatus.localOnly;
-    final isFavorited = context.select((FavoriteState state) =>
-        state.myFavoriteList.any((fav) =>
+    final isFavorited = context.select(
+      (FavoriteState state) => state.myFavoriteList.any(
+        (fav) =>
             fav.name == (_currentSake.name ?? '名称不明') &&
-            fav.type == _currentSake.type));
+            fav.type == _currentSake.type,
+      ),
+    );
 
     final infoRows = <Widget>[];
     if (_isValid(_currentSake.brewery)) {
@@ -119,7 +128,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     if (_isValid(_currentSake.price)) {
       infoRows.add(
         _buildInfoRow(
-            context.l10n.price, _currentSake.price!, Icons.price_check),
+          context.l10n.price,
+          _currentSake.price!,
+          Icons.price_check,
+        ),
       );
     }
     if (_currentSake.sakeMeterValue != null) {
@@ -197,7 +209,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       title: context.l10n.tasteAndFeatures,
                       children: featureWidgets,
                     ),
-                  if (infoRows.isEmpty && featureWidgets.isEmpty)
+                  if (_currentSake.community?.isNotEmpty ?? false)
+                    _buildCommunitySection(_currentSake.community!),
+                  if (_currentSake.sameBrandSakes?.isNotEmpty ?? false)
+                    _buildSameBrandSection(_currentSake.sameBrandSakes!),
+                  if (infoRows.isEmpty &&
+                      featureWidgets.isEmpty &&
+                      !(_currentSake.community?.isNotEmpty ?? false) &&
+                      !(_currentSake.sameBrandSakes?.isNotEmpty ?? false))
                     Container(
                       margin: const EdgeInsets.only(top: _blockSpacing),
                       padding: const EdgeInsets.symmetric(
@@ -249,8 +268,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     required bool showSyncButton,
     required bool isLoggedIn,
   }) {
-    final double recommendationScore =
-        (_currentSake.recommendationScore ?? 0).toDouble();
+    final double recommendationScore = (_currentSake.recommendationScore ?? 0)
+        .toDouble();
     final isRecommended = recommendationScore >= 6;
     final canReanalyze =
         isLoggedIn && (_currentSake.savedId?.isNotEmpty ?? false);
@@ -302,57 +321,82 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               if (_isValid(_currentSake.brewery))
                 Text(
                   _currentSake.brewery!,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 15),
                 ),
               if (_isValid(_currentSake.type))
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     _currentSake.type!,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 15,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 15),
                   ),
                 ),
-              if (_isValid(_currentSake.place))
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.place, color: Colors.amber, size: 16),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          _currentSake.place!,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
+              if (_isValid(
+                _currentSake.drinkingPlace?.displayName ?? _currentSake.place,
+              ))
+                InkWell(
+                  onTap: _openPlacePicker,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.place, color: Colors.amber, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _currentSake.drinkingPlace?.displayName ??
+                                _currentSake.place!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white54,
+                          size: 17,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _openPlacePicker,
+                    icon: const Icon(Icons.add_location_alt_outlined),
+                    label: Text(context.l10n.addConsumedPlace),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.amber,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    ),
                   ),
                 ),
               if (isRecommended)
                 Container(
                   margin: const EdgeInsets.only(top: 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                    border: Border.all(
+                      color: Colors.redAccent.withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.recommend,
-                          color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.recommend,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         recommendationScore >= 8
@@ -395,7 +439,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                     _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced
                         ? Icons.cloud_done
                         : Icons.cloud_upload,
-                    color: _currentSake.syncStatus ==
+                    color:
+                        _currentSake.syncStatus ==
                             SavedSakeSyncStatus.serverSynced
                         ? Colors.lightBlueAccent
                         : Colors.orangeAccent,
@@ -436,7 +481,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                   child: _buildVisibilityToggle(
                     isLoggedIn: isLoggedIn,
                     hasSavedId: _currentSake.savedId?.isNotEmpty ?? false,
-                    isServerSynced: _currentSake.syncStatus ==
+                    isServerSynced:
+                        _currentSake.syncStatus ==
                         SavedSakeSyncStatus.serverSynced,
                   ),
                 ),
@@ -457,11 +503,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: Color(0xFF1D3567),
-            size: 18,
-          ),
+          const Icon(Icons.info_outline, color: Color(0xFF1D3567), size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -489,11 +531,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       ),
       child: Row(
         children: const [
-          Icon(
-            Icons.error_outline,
-            color: Colors.white,
-            size: 18,
-          ),
+          Icon(Icons.error_outline, color: Colors.white, size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -515,7 +553,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     required bool hasSavedId,
     required bool isServerSynced,
   }) {
-    final bool canToggle = isLoggedIn &&
+    final bool canToggle =
+        isLoggedIn &&
         hasSavedId &&
         isServerSynced &&
         !_isVisibilityUpdating &&
@@ -634,9 +673,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                 ),
               ),
@@ -825,8 +862,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           const SizedBox(height: 16),
           TextField(
             controller: _placeController,
+            onChanged: (_) => _placeDirty = true,
             maxLines: 1,
-            maxLength: 30,
+            maxLength: 60,
             style: const TextStyle(color: Colors.white, fontSize: 15),
             decoration: InputDecoration(
               labelText: context.l10n.placeConsumed,
@@ -841,6 +879,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               ),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
+              suffixIcon: IconButton(
+                tooltip: context.l10n.addConsumedPlace,
+                onPressed: _openPlacePicker,
+                icon: const Icon(
+                  Icons.location_searching,
+                  color: Colors.white70,
+                ),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -848,6 +894,37 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               counterStyle: const TextStyle(color: Colors.white70),
             ),
           ),
+          if (_currentSake.drinkingPlace != null) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              activeThumbColor: Colors.amber,
+              title: const Text(
+                '店舗情報を公開',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                _currentSake.isPublic
+                    ? 'みんなのマップに「この店で飲まれた」記録として表示します'
+                    : '保存酒を公開すると変更できます',
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+              value:
+                  _currentSake.drinkingPlace!.visibility ==
+                  PlaceVisibility.public,
+              onChanged: _currentSake.isPublic && !_isSyncing
+                  ? _updatePlaceVisibility
+                  : null,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _isSyncing ? null : _deleteDrinkingPlace,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('場所を削除'),
+                style: TextButton.styleFrom(foregroundColor: Colors.white70),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -898,11 +975,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           unawaited(
-            _removeImagePath(
-              path,
-              showToast: false,
-              showLoading: false,
-            ),
+            _removeImagePath(path, showToast: false, showLoading: false),
           );
         });
         return _buildAddTile(isPrimary: index == 0);
@@ -918,10 +991,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(
-                  file,
-                  fit: BoxFit.cover,
-                ),
+                Image.file(file, fit: BoxFit.cover),
                 Positioned(
                   top: 6,
                   right: 6,
@@ -1027,8 +1097,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
   }
 
-  Widget _buildRemoteImageTile(String url,
-      {required BorderRadius borderRadius}) {
+  Widget _buildRemoteImageTile(
+    String url, {
+    required BorderRadius borderRadius,
+  }) {
     return GestureDetector(
       onTap: () => _showImagePreview(url),
       onLongPress: () => _confirmRemoveImage(url),
@@ -1051,10 +1123,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 errorBuilder: (context, _, __) => Container(
                   color: Colors.black26,
                   alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.broken_image,
-                    color: Colors.white54,
-                  ),
+                  child: const Icon(Icons.broken_image, color: Colors.white54),
                 ),
               ),
               Positioned(
@@ -1108,28 +1177,18 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: borderRadius,
-            border: Border.all(
-              color: borderColor,
-              width: 1.5,
-            ),
+            border: Border.all(color: borderColor, width: 1.5),
             color: backgroundColor,
           ),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.add_a_photo,
-                  color: accentColor,
-                  size: 28,
-                ),
+                Icon(Icons.add_a_photo, color: accentColor, size: 28),
                 const SizedBox(height: 6),
                 Text(
                   context.l10n.add,
-                  style: TextStyle(
-                    color: accentColor,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: accentColor, fontSize: 13),
                 ),
               ],
             ),
@@ -1154,8 +1213,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     _showImageSourceSheet();
   }
 
-  Widget _buildSection(
-      {required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
     return Container(
       margin: const EdgeInsets.only(top: _blockSpacing),
       padding: const EdgeInsets.symmetric(
@@ -1198,10 +1259,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1228,10 +1286,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1247,16 +1302,84 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     );
   }
 
+  Widget _buildCommunitySection(Map<String, dynamic> community) {
+    final count = (community['impressionCount'] as num?)?.toInt() ?? 0;
+    final recent = community['recentImpressions'];
+    final children = <Widget>[
+      Text(
+        context.l10n.communityImpressionCount(count),
+        style: const TextStyle(color: Colors.white70),
+      ),
+    ];
+    if (recent is List && recent.isNotEmpty) {
+      children.addAll([
+        const SizedBox(height: 12),
+        Text(
+          context.l10n.recentPublicPosts,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        ...recent.whereType<Map>().take(3).map((post) {
+          final map = Map<String, dynamic>.from(post);
+          final author = map['displayName'] ?? map['username'];
+          final text = map['impression'] ?? map['comment'] ?? '';
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.chat_bubble_outline, color: Colors.amber),
+            title: Text(
+              text.toString(),
+              style: const TextStyle(color: Colors.white),
+            ),
+            subtitle: author == null
+                ? null
+                : Text(
+                    author.toString(),
+                    style: const TextStyle(color: Colors.white60),
+                  ),
+          );
+        }),
+      ]);
+    }
+    return _buildSection(
+      title: context.l10n.communityImpressions,
+      children: children,
+    );
+  }
+
+  Widget _buildSameBrandSection(List<Map<String, dynamic>> sameBrandSakes) {
+    return _buildSection(
+      title: context.l10n.sameBrandSakes,
+      children: sameBrandSakes
+          .take(5)
+          .map((item) {
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.wine_bar_outlined, color: Colors.amber),
+              title: Text(
+                item['name']?.toString() ?? '-',
+                style: const TextStyle(color: Colors.white),
+              ),
+              subtitle: item['type'] == null
+                  ? null
+                  : Text(
+                      item['type'].toString(),
+                      style: const TextStyle(color: Colors.white60),
+                    ),
+            );
+          })
+          .toList(growable: false),
+    );
+  }
+
   Widget _buildTypesSection(List<String> types) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           context.l10n.type,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -1310,10 +1433,123 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     });
   }
 
+  Future<void> _openPlacePicker() async {
+    FocusScope.of(context).unfocus();
+    var place = await PlacePickerSheet.show(
+      context,
+      initialPlace: _placeController.text.trim(),
+    );
+    if (!mounted || place == null || place.displayName.trim().isEmpty) return;
+
+    var selectedVisibility =
+        _currentSake.drinkingPlace?.visibility ?? PlaceVisibility.private;
+    if (_currentSake.isPublic) {
+      final makePublic = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('店舗情報の公開範囲'),
+          content: const Text('店舗情報を公開すると、みんなの日本酒マップに「この店で飲まれた」記録として表示されます。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('自分だけ'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('店舗も公開'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || makePublic == null) return;
+      selectedVisibility = makePublic
+          ? PlaceVisibility.public
+          : PlaceVisibility.private;
+    }
+    place = place.copyWith(visibility: selectedVisibility);
+    _placeController.text = place.displayName.trim();
+    _placeDirty = true;
+    _applySakeUpdate(
+      _currentSake.copyWith(
+        place: place.displayName.trim(),
+        drinkingPlace: place,
+      ),
+    );
+    await _saveMemo();
+  }
+
+  Future<void> _updatePlaceVisibility(bool makePublic) async {
+    final savedId = _currentSake.savedId;
+    final currentPlace = _currentSake.drinkingPlace;
+    if (savedId == null || savedId.isEmpty || currentPlace == null) return;
+    setState(() => _isSyncing = true);
+    DrinkingPlace? updated;
+    try {
+      updated = await context.read<PlaceMapRepository>().updatePlaceVisibility(
+        savedId: savedId,
+        visibility: makePublic
+            ? PlaceVisibility.public
+            : PlaceVisibility.private,
+      );
+    } catch (error) {
+      logger.warning('店舗公開範囲の変更に失敗しました: $error');
+    }
+    if (!mounted) return;
+    setState(() => _isSyncing = false);
+    if (updated == null) {
+      _showSnack(context.l10n.errorVisibilityUpdate);
+      return;
+    }
+    _applySakeUpdate(_currentSake.copyWith(drinkingPlace: updated));
+  }
+
+  Future<void> _deleteDrinkingPlace() async {
+    final savedId = _currentSake.savedId;
+    if (savedId == null || savedId.isEmpty) return;
+    final isLocalOnly =
+        context.read<AuthState>().user == null ||
+        _currentSake.syncStatus == SavedSakeSyncStatus.localOnly;
+    if (isLocalOnly) {
+      _clearLocalDrinkingPlace();
+      return;
+    }
+    setState(() => _isSyncing = true);
+    var deleted = false;
+    try {
+      deleted = await context.read<PlaceMapRepository>().deletePlace(savedId);
+    } catch (error) {
+      logger.warning('店舗情報の削除に失敗しました: $error');
+    }
+    if (!mounted) return;
+    setState(() => _isSyncing = false);
+    if (!deleted) {
+      _showSnack(context.l10n.errorSaveToServer);
+      return;
+    }
+    _clearLocalDrinkingPlace();
+  }
+
+  void _clearLocalDrinkingPlace() {
+    _placeDirty = false;
+    _placeController.clear();
+    _applySakeUpdate(
+      _currentSake.copyWith(place: null, drinkingPlace: null),
+      toastMessage: context.l10n.memoSaved,
+    );
+  }
+
   Future<void> _saveMemo() async {
     FocusScope.of(context).unfocus();
-    final authNotifier = context.read<AuthNotifier>();
-    final isLoggedIn = authNotifier.state.user != null;
+    final isLoggedIn = context.read<AuthState>().user != null;
+    final enteredPlace = _placeController.text.trim();
+    final currentPlace = _currentSake.drinkingPlace;
+    final editedPlace = !_placeDirty
+        ? currentPlace
+        : enteredPlace.isEmpty
+        ? null
+        : currentPlace?.displayName == enteredPlace
+        ? currentPlace
+        : DrinkingPlace(displayName: enteredPlace);
 
     final updatedSake = _currentSake.copyWith(
       impression: _impressionController.text.trim().isEmpty
@@ -1322,10 +1558,12 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       place: _placeController.text.trim().isEmpty
           ? null
           : _placeController.text.trim(),
+      drinkingPlace: editedPlace,
       userTags: _selectedTags.isEmpty ? null : _selectedTags.toList(),
       imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
-      syncStatus:
-          isLoggedIn ? SavedSakeSyncStatus.localOnly : _currentSake.syncStatus,
+      syncStatus: isLoggedIn
+          ? SavedSakeSyncStatus.localOnly
+          : _currentSake.syncStatus,
     );
 
     _applySakeUpdate(
@@ -1373,8 +1611,58 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     _applySakeUpdate(
       synced,
-      toastMessage: context.l10n.savedToServer,
+      toastMessage: _placeDirty ? null : context.l10n.savedToServer,
     );
+    if (_placeDirty) {
+      await _syncDirtyPlace(savedId);
+    }
+  }
+
+  Future<void> _syncDirtyPlace(String savedId) async {
+    final place = _currentSake.drinkingPlace;
+    setState(() {
+      _isSyncing = true;
+      _progressMessage = context.l10n.savingToServer;
+    });
+    DrinkingPlace? verifiedPlace;
+    var deleted = false;
+    try {
+      final repository = context.read<PlaceMapRepository>();
+      if (place == null || place.displayName.trim().isEmpty) {
+        deleted = await repository.deletePlace(savedId);
+      } else {
+        verifiedPlace = await repository.savePlace(
+          savedId: savedId,
+          place: place,
+        );
+      }
+    } catch (error, stackTrace) {
+      logger.warning('店舗情報の同期に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+    if (!mounted) return;
+    setState(() {
+      _isSyncing = false;
+      _progressMessage = null;
+    });
+    if (verifiedPlace == null && !deleted) {
+      _showSnack(context.l10n.errorSaveToServer);
+      return;
+    }
+    _placeDirty = false;
+    if (verifiedPlace != null) {
+      _placeController.text = verifiedPlace.displayName;
+      _applySakeUpdate(
+        _currentSake.copyWith(
+          place: verifiedPlace.displayName,
+          drinkingPlace: verifiedPlace,
+          syncStatus: SavedSakeSyncStatus.serverSynced,
+        ),
+        toastMessage: context.l10n.savedToServer,
+      );
+    } else {
+      _clearLocalDrinkingPlace();
+    }
   }
 
   String? _formatSavedDate(String? savedId) {
@@ -1490,13 +1778,17 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     Sake? fetched;
     try {
       final repository = context.read<SakeMenuRecognitionRepository>();
-      final preferences =
-          context.read<MyPageNotifier>().state.preferences?.trim();
+      final preferences = context
+          .read<MyPageNotifier>()
+          .state
+          .preferences
+          ?.trim();
       fetched = await repository.getSakeInfo(
         trimmed,
         type: synced.type,
-        preferences:
-            preferences == null || preferences.isEmpty ? null : preferences,
+        preferences: preferences == null || preferences.isEmpty
+            ? null
+            : preferences,
       );
     } catch (error, stackTrace) {
       logger.warning('getSakeInfo の取得に失敗しました: $error');
@@ -1647,8 +1939,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading:
-                    const Icon(Icons.photo_camera, color: Color(0xFF1D3567)),
+                leading: const Icon(
+                  Icons.photo_camera,
+                  color: Color(0xFF1D3567),
+                ),
                 title: Text(context.l10n.takePhoto),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -1656,8 +1950,10 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 },
               ),
               ListTile(
-                leading:
-                    const Icon(Icons.photo_library, color: Color(0xFF1D3567)),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: Color(0xFF1D3567),
+                ),
                 title: Text(context.l10n.selectFromPhotoLibrary),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -1859,8 +2155,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                             loadingBuilder: (context, child, progress) {
                               if (progress == null) return child;
                               return const Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               );
                             },
                             errorBuilder: (context, _, __) => const Center(
@@ -1871,10 +2168,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                               ),
                             ),
                           )
-                        : Image.file(
-                            File(path),
-                            fit: BoxFit.contain,
-                          ),
+                        : Image.file(File(path), fit: BoxFit.contain),
                   ),
                 ),
               ),
@@ -1914,7 +2208,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   }
 
   Future<void> _toggleFavorite(
-      FavoriteNotifier notifier, bool isFavorited) async {
+    FavoriteNotifier notifier,
+    bool isFavorited,
+  ) async {
     final favorite = FavoriteSake(
       name: _currentSake.name ?? '名称不明',
       type: _currentSake.type,

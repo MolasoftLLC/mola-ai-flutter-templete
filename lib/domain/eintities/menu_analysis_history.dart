@@ -45,11 +45,7 @@ class SavedSake {
   final String? type;
   final bool isRecommended;
 
-  SavedSake({
-    required this.name,
-    this.type,
-    this.isRecommended = false,
-  });
+  SavedSake({required this.name, this.type, this.isRecommended = false});
 
   factory SavedSake.fromJson(Map<String, dynamic> json) {
     return SavedSake(
@@ -60,10 +56,6 @@ class SavedSake {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'type': type,
-      'isRecommended': isRecommended,
-    };
+    return {'name': name, 'type': type, 'isRecommended': isRecommended};
   }
 }

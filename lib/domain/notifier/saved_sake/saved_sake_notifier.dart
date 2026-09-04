@@ -38,6 +38,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     Future.microtask(_fetchRemoteOnInit);
   }
 
+  List<Sake> get savedSakes => state.savedSakeList;
+
   static const int guestSavedLimit = 8;
   static const int memberSavedLimit = 200;
   static const String analysisFailedLabel = '解析失敗(名前変更して解析可能)';
@@ -62,8 +64,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   Future<void> _loadSavedSakes() async {
     try {
-      final savedStrings =
-          await SharedPreference.staticGetStringList(key: SAVED_SAKE_LIST);
+      final savedStrings = await SharedPreference.staticGetStringList(
+        key: SAVED_SAKE_LIST,
+      );
 
       final savedSakes = savedStrings
           .map((jsonStr) {
@@ -76,9 +79,11 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
             }
           })
           .whereType<Sake>()
-          .map((sake) => sake.savedId == null
-              ? sake.copyWith(savedId: _generateId())
-              : sake)
+          .map(
+            (sake) => sake.savedId == null
+                ? sake.copyWith(savedId: _generateId())
+                : sake,
+          )
           .toList();
 
       savedSakes.sort((a, b) => _compareSavedId(b.savedId, a.savedId));
@@ -113,9 +118,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
       final normalized = remoteSakes
           .map(
-            (sake) => sake.copyWith(
-              syncStatus: SavedSakeSyncStatus.serverSynced,
-            ),
+            (sake) =>
+                sake.copyWith(syncStatus: SavedSakeSyncStatus.serverSynced),
           )
           .toList();
 
@@ -145,8 +149,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<String> addSavedSake(Sake sake) async {
-    final alreadySaved =
-        state.savedSakeList.any((item) => _isSameSake(item, sake));
+    final alreadySaved = state.savedSakeList.any(
+      (item) => _isSameSake(item, sake),
+    );
     if (_isGuest &&
         !alreadySaved &&
         state.savedSakeList.length >= guestSavedLimit) {
@@ -159,9 +164,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     }
     final savedId = sake.savedId ?? _generateId();
     final newSake = sake.copyWith(savedId: savedId);
-    state = state.copyWith(
-      savedSakeList: [newSake, ...state.savedSakeList],
-    );
+    state = state.copyWith(savedSakeList: [newSake, ...state.savedSakeList]);
     await _persistSavedSakes();
     logger.info('保存済み日本酒を追加: ${newSake.name ?? '不明な日本酒'} (id=$savedId)');
     return savedId;
@@ -182,7 +185,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
             }
           }
           final savedId = target?.savedId;
-          final shouldRequestServerDelete = target != null &&
+          final shouldRequestServerDelete =
+              target != null &&
               target.syncStatus == SavedSakeSyncStatus.serverSynced;
           if (savedId != null &&
               savedId.isNotEmpty &&
@@ -236,8 +240,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     required String savedId,
     required String localPath,
   }) async {
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('画像追加対象の保存酒が見つかりません: id=$savedId');
       return null;
@@ -288,9 +293,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     }
 
     final updatedPaths = [...currentPaths, newPath];
-    final updated = current.copyWith(
-      imagePaths: updatedPaths,
-    );
+    final updated = current.copyWith(imagePaths: updatedPaths);
 
     await updateSavedSake(updated);
     logger.info('保存酒に画像を追加: id=$savedId path=$newPath');
@@ -301,8 +304,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     required String savedId,
     required String imagePath,
   }) async {
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('画像削除対象の保存酒が見つかりません: id=$savedId');
       return null;
@@ -338,8 +342,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<Sake?> markAnalysisFailed(String savedId) async {
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('解析失敗状態に更新する保存酒が見つかりません: id=$savedId');
       return null;
@@ -367,8 +372,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       return null;
     }
 
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('手動同期対象の保存酒が見つかりません: id=$savedId');
       return null;
@@ -388,8 +394,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       }
 
       final imagePaths = [...(target.imagePaths ?? const <String>[])];
-      final localPaths =
-          imagePaths.where((path) => !_isRemoteImagePath(path)).toList();
+      final localPaths = imagePaths
+          .where((path) => !_isRemoteImagePath(path))
+          .toList();
 
       File? primaryImage;
       if (localPaths.isNotEmpty) {
@@ -472,8 +479,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       await refreshFromServer();
 
       try {
-        return state.savedSakeList
-            .firstWhere((item) => item.savedId == savedId);
+        return state.savedSakeList.firstWhere(
+          (item) => item.savedId == savedId,
+        );
       } catch (_) {
         return synced;
       }
@@ -490,8 +498,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     required String savedId,
     required bool isPublic,
   }) async {
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('公開設定更新対象の保存酒が見つかりません: id=$savedId');
       return false;
@@ -521,8 +530,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<void> updateSavedSakeWithInfo(String savedId, Sake info) async {
-    final index = state.savedSakeList
-        .indexWhere((item) => item.savedId != null && item.savedId == savedId);
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
     if (index == -1) {
       logger.warning('情報更新対象が見つかりません (id=$savedId)');
       return;
@@ -530,6 +540,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
     final existing = state.savedSakeList[index];
     final merged = existing.copyWith(
+      sakeId: info.sakeId ?? existing.sakeId,
+      brandId: info.brandId ?? existing.brandId,
       name: info.name ?? existing.name,
       brewery: info.brewery ?? existing.brewery,
       types: (info.types == null || info.types!.isEmpty)
@@ -542,6 +554,10 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       description: info.description ?? existing.description,
       recommendationScore:
           info.recommendationScore ?? existing.recommendationScore,
+      prefectureCode: info.prefectureCode ?? existing.prefectureCode,
+      primaryImageUrl: info.primaryImageUrl ?? existing.primaryImageUrl,
+      community: info.community ?? existing.community,
+      sameBrandSakes: info.sameBrandSakes ?? existing.sameBrandSakes,
     );
 
     final updatedList = [...state.savedSakeList];
@@ -553,8 +569,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   bool isSaved(String? name, String? type) {
-    return state.savedSakeList
-        .any((item) => item.name == name && item.type == type);
+    return state.savedSakeList.any(
+      (item) => item.name == name && item.type == type,
+    );
   }
 
   void setGridView(bool isGrid) {
@@ -578,8 +595,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   Future<void> _persistSavedSakes() async {
     try {
-      final encodedList =
-          state.savedSakeList.map((sake) => jsonEncode(sake.toJson())).toList();
+      final encodedList = state.savedSakeList
+          .map((sake) => jsonEncode(sake.toJson()))
+          .toList();
       await SharedPreference.staticSetStringList(
         key: SAVED_SAKE_LIST,
         list: encodedList,
@@ -612,10 +630,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     await _persistSavedSakes();
   }
 
-  List<Sake> _mergeSavedSakeLists(
-    List<Sake> current,
-    List<Sake> remote,
-  ) {
+  List<Sake> _mergeSavedSakeLists(List<Sake> current, List<Sake> remote) {
     final Map<String, Sake> byId = {};
     final List<Sake> withoutId = [];
 
@@ -648,10 +663,14 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Sake _mergeSakeRecords(Sake local, Sake remote) {
-    final mergedImagePaths =
-        _mergeImagePaths(local.imagePaths, remote.imagePaths);
+    final mergedImagePaths = _mergeImagePaths(
+      local.imagePaths,
+      remote.imagePaths,
+    );
 
     return remote.copyWith(
+      sakeId: remote.sakeId ?? local.sakeId,
+      brandId: remote.brandId ?? local.brandId,
       name: remote.name ?? local.name,
       brewery: remote.brewery ?? local.brewery,
       types: (remote.types != null && remote.types!.isNotEmpty)
@@ -666,9 +685,14 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
           remote.recommendationScore ?? local.recommendationScore,
       impression: local.impression ?? remote.impression,
       place: local.place ?? remote.place,
+      drinkingPlace: remote.drinkingPlace ?? local.drinkingPlace,
       userTags: (local.userTags != null && local.userTags!.isNotEmpty)
           ? local.userTags
           : remote.userTags,
+      prefectureCode: remote.prefectureCode ?? local.prefectureCode,
+      primaryImageUrl: remote.primaryImageUrl ?? local.primaryImageUrl,
+      community: remote.community ?? local.community,
+      sameBrandSakes: remote.sameBrandSakes ?? local.sameBrandSakes,
       imagePaths: mergedImagePaths,
       syncStatus: SavedSakeSyncStatus.serverSynced,
     );
@@ -719,13 +743,17 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     if (a.savedId != null && b.savedId != null) {
       return a.savedId == b.savedId;
     }
+    if (a.sakeId != null && b.sakeId != null) {
+      return a.sakeId == b.sakeId;
+    }
     return a.name == b.name && a.type == b.type;
   }
 
   int _findIndex(Sake sake) {
     if (sake.savedId != null) {
-      return state.savedSakeList
-          .indexWhere((item) => item.savedId == sake.savedId);
+      return state.savedSakeList.indexWhere(
+        (item) => item.savedId == sake.savedId,
+      );
     }
     return state.savedSakeList.indexWhere((item) => _isSameSake(item, sake));
   }
@@ -771,8 +799,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       return;
     }
     final available = _extractTags(state.savedSakeList);
-    final filtered =
-        state.activeFilterTags.where((tag) => available.contains(tag)).toList();
+    final filtered = state.activeFilterTags
+        .where((tag) => available.contains(tag))
+        .toList();
     if (filtered.length == state.activeFilterTags.length) {
       return;
     }
@@ -780,8 +809,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<void> removeById(String savedId) async {
-    final updatedList =
-        state.savedSakeList.where((item) => item.savedId != savedId).toList();
+    final updatedList = state.savedSakeList
+        .where((item) => item.savedId != savedId)
+        .toList();
     if (updatedList.length == state.savedSakeList.length) {
       return;
     }

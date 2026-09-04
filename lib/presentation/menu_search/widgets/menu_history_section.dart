@@ -36,9 +36,7 @@ class MenuHistorySection extends StatelessWidget {
                 onConfirm(); // 削除を実行
                 Navigator.of(context).pop(); // ダイアログを閉じる
               },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: Text(context.l10n.delete),
             ),
           ],
@@ -49,7 +47,9 @@ class MenuHistorySection extends StatelessWidget {
 
   // 画像を拡大表示するダイアログを表示する
   void _showEnlargedImage(
-      BuildContext context, MenuAnalysisHistoryItem historyItem) {
+    BuildContext context,
+    MenuAnalysisHistoryItem historyItem,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -82,8 +82,9 @@ class MenuHistorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
-    final menuAnalysisHistory = context
-        .select((MenuSearchPageState state) => state.menuAnalysisHistory);
+    final menuAnalysisHistory = context.select(
+      (MenuSearchPageState state) => state.menuAnalysisHistory,
+    );
 
     return Container(
       padding: const EdgeInsets.only(top: 42, left: 12, right: 12, bottom: 24),
@@ -141,7 +142,8 @@ class MenuHistorySection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ExpansionTile(
-                      leading: (historyItem.imagePath != null ||
+                      leading:
+                          (historyItem.imagePath != null ||
                               (historyItem.base64Image != null &&
                                   historyItem.base64Image!.isNotEmpty))
                           ? GestureDetector(
@@ -181,8 +183,9 @@ class MenuHistorySection extends StatelessWidget {
                                 Text(
                                   formattedDate,
                                   style: TextStyle(
-                                    fontSize:
-                                        historyItem.storeName != null ? 12 : 14,
+                                    fontSize: historyItem.storeName != null
+                                        ? 12
+                                        : 14,
                                     color: Colors.grey,
                                     fontWeight: historyItem.storeName != null
                                         ? FontWeight.normal
@@ -205,7 +208,9 @@ class MenuHistorySection extends StatelessWidget {
                                 initialStoreName: historyItem.storeName,
                                 onSave: (storeName) {
                                   notifier.setStoreName(
-                                      historyItem.id, storeName);
+                                    historyItem.id,
+                                    storeName,
+                                  );
                                 },
                               );
                             },
@@ -287,8 +292,9 @@ class MenuHistorySection extends StatelessWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.red.shade100,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                           border: Border.all(
                                             color: Colors.red.shade300,
                                           ),

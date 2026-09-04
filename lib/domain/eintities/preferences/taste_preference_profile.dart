@@ -35,20 +35,20 @@ class TastePreferenceProfile {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'fruity': fruity,
-        'sweetness': sweetness,
-        'acidity': acidity,
-        'umami': umami,
-        'kire': kire,
-        'spiciness': spiciness,
-      };
+    'fruity': fruity,
+    'sweetness': sweetness,
+    'acidity': acidity,
+    'umami': umami,
+    'kire': kire,
+    'spiciness': spiciness,
+  };
 
   static TastePreferenceProfile sample() => const TastePreferenceProfile(
-        fruity: 0.28,
-        sweetness: 0.92,
-        acidity: 0.10,
-        umami: 0.72,
-        kire: 0.30,
-        spiciness: 0.15,
-      );
+    fruity: 0.28,
+    sweetness: 0.92,
+    acidity: 0.10,
+    umami: 0.72,
+    kire: 0.30,
+    spiciness: 0.15,
+  );
 }

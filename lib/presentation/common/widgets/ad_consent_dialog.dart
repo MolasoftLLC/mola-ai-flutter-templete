@@ -48,10 +48,7 @@ class AdConsentDialog extends StatelessWidget {
       backgroundColor: Colors.black87,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -113,10 +110,7 @@ class AdConsentDialog extends StatelessWidget {
                   ),
                   child: Text(
                     declineButtonText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -135,10 +129,7 @@ class AdConsentDialog extends StatelessWidget {
                   ),
                   child: Text(
                     acceptButtonText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ],

@@ -4,7 +4,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 4.7.0+63
 
 environment:
-  sdk: '>=3.3.1 <4.0.0'
+  sdk: '>=3.8.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
@@ -29,6 +29,11 @@ dependencies:
 
   #Http通信
   chopper: ^6.1.4
+  http: ^1.2.2
+  http_parser: ^4.0.2
+  path: ^1.9.0
+  state_notifier: ^1.0.0
+  json_annotation: ^4.9.0
 
   # logger
   simple_logger: ^1.8.0+1
@@ -41,6 +46,9 @@ dependencies:
 
   #画像選択
   image_picker: ^1.2.3
+  # 酒ラベル高速スキャン（Android SDK 24+ / iOS 13+）
+  camera: ^0.12.0+2
+  image: ^4.9.2
 
   #Slider
   syncfusion_flutter_sliders: ^34.2.4
@@ -73,6 +81,11 @@ dependencies:
   #日付フォーマット
   intl: any
 
+  # 飲んだ場所の現在地・店舗検索
+  geolocator: ^12.0.0
+  # 2.15+のweb 1.xは現在のFirebase 2.x系列と競合するため互換版を固定。
+  google_maps_flutter: 2.14.2
+
   # ビュー可視判定
   visibility_detector: ^0.4.0+2
 
@@ -93,7 +106,6 @@ dev_dependencies:
 
   # Serializer
   json_serializable: ^6.8.0
-  json_annotation: ^4.9.0
 
 flutter:
   generate: true

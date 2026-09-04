@@ -49,6 +49,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   }
 
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+  String? get currentPreferences => state.preferences;
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
 
@@ -146,10 +147,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       final response = await geminiMolaApiRepository.promptWithText(
         state.sakeName!,
       );
-      state = state.copyWith(
-        isLoading: false,
-        sakeName: null,
-      );
+      state = state.copyWith(isLoading: false, sakeName: null);
       state = state.copyWith(geminiResponse: response);
     }
   }
@@ -229,10 +227,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
       if (user != null) {
         final favoritesPayload = sakes
-            .map((e) => {
-                  'name': e.name,
-                  if (e.type != null) 'type': e.type,
-                })
+            .map((e) => {'name': e.name, if (e.type != null) 'type': e.type})
             .toList();
 
         logger.info(
@@ -250,8 +245,8 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       }
 
       if (profile != null) {
-        final preferenceText =
-            await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+        final preferenceText = await sakeMenuRecognitionRepository
+            .analyzeSakePreference(sakes);
         if (preferenceText == null || preferenceText.trim().isEmpty) {
           logger.warning('文章診断APIが空のレスポンスを返しました');
         } else {
@@ -272,13 +267,14 @@ class MyPageNotifier extends StateNotifier<MyPageState>
         'userId=${user?.uid ?? 'guest'}, favorites=$favoritesCount',
       );
 
-      final preference =
-          await sakeMenuRecognitionRepository.analyzeSakePreference(sakes);
+      final preference = await sakeMenuRecognitionRepository
+          .analyzeSakePreference(sakes);
 
       state = state.copyWith(
         isLoading: false,
-        sakePreferenceAnalysis:
-            preference?.trim().isNotEmpty == true ? preference!.trim() : null,
+        sakePreferenceAnalysis: preference?.trim().isNotEmpty == true
+            ? preference!.trim()
+            : null,
       );
     } catch (error, stackTrace) {
       logger.warning('味覚プロファイル解析で例外が発生しました: $error');
@@ -393,10 +389,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
     resolvedIcon ??= user.photoURL;
 
-    state = state.copyWith(
-      userName: resolvedName,
-      userIconUrl: resolvedIcon,
-    );
+    state = state.copyWith(userName: resolvedName, userIconUrl: resolvedIcon);
   }
 
   Future<void> refreshTasteProfile() async {
@@ -423,8 +416,9 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     }
 
     try {
-      final response =
-          await _sakeUserRepository.fetchAchievementStats(user.uid);
+      final response = await _sakeUserRepository.fetchAchievementStats(
+        user.uid,
+      );
       if (response == null) {
         logger.info('実績カウントが取得できませんでした');
         return;

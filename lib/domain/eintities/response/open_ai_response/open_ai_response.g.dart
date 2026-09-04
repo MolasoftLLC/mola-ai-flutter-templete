@@ -16,9 +16,9 @@ _$OpenAIResponseImpl _$$OpenAIResponseImplFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$$OpenAIResponseImplToJson(
-        _$OpenAIResponseImpl instance) =>
-    <String, dynamic>{
-      'title': instance.title,
-      'description': instance.description,
-      'etc': instance.etc,
-    };
+  _$OpenAIResponseImpl instance,
+) => <String, dynamic>{
+  'title': instance.title,
+  'description': instance.description,
+  'etc': instance.etc,
+};

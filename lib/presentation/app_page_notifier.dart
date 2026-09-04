@@ -30,9 +30,7 @@ abstract class AppPageState with _$AppPageState {
 
 class AppPageNotifier extends StateNotifier<AppPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  AppPageNotifier({
-    required this.context,
-  }) : super(const AppPageState());
+  AppPageNotifier({required this.context}) : super(const AppPageState());
 
   final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -137,8 +135,6 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
   HelpGuideType? _mapIndexToHelpType(int index) {
     switch (index) {
-      case 0:
-        return HelpGuideType.mainSearch;
       case 2:
         return HelpGuideType.menuSearch;
       case 4:
@@ -254,10 +250,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.timelineIntroTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ],
             ),
@@ -278,9 +271,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
             ),
             actions: [
               TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                ),
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(context.l10n.close),
               ),

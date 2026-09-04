@@ -17,20 +17,14 @@ class SnackBarUtils {
 
     // 新しいSnackBarを表示
     final content = leadingIcon == null
-        ? Text(
-            message,
-            style: TextStyle(color: textColor),
-          )
+        ? Text(message, style: TextStyle(color: textColor))
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(leadingIcon, color: textColor, size: 20),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  message,
-                  style: TextStyle(color: textColor),
-                ),
+                child: Text(message, style: TextStyle(color: textColor)),
               ),
             ],
           );
@@ -43,9 +37,7 @@ class SnackBarUtils {
         action: action,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

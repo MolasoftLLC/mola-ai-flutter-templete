@@ -15,8 +15,11 @@ import '../eintities/sake_bottle_image.dart';
 
 class SakeBottleImageRepository {
   // Save a sake bottle image
-  Future<SakeBottleImage?> saveSakeBottleImage(File imageFile,
-      {String? sakeName, String? type}) async {
+  Future<SakeBottleImage?> saveSakeBottleImage(
+    File imageFile, {
+    String? sakeName,
+    String? type,
+  }) async {
     try {
       // Compress and encode to base64 first (最も重要な処理を先に実行)
       final base64Image = await ImageUtils.compressAndEncodeImage(
@@ -39,7 +42,9 @@ class SakeBottleImageRepository {
       String permanentPath;
       try {
         final savedPath = await ImageCropperService.saveImagePermanently(
-            imageFile, 'sake_bottle');
+          imageFile,
+          'sake_bottle',
+        );
         permanentPath = savedPath ?? imageFile.path;
       } catch (e) {
         logger.warning('永続的な画像の保存に失敗しましたが、base64データがあるため処理を続行します: $e');
@@ -75,8 +80,9 @@ class SakeBottleImageRepository {
       );
 
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      final List<SakeBottleImage> images =
-          jsonList.map((json) => SakeBottleImage.fromJson(json)).toList();
+      final List<SakeBottleImage> images = jsonList
+          .map((json) => SakeBottleImage.fromJson(json))
+          .toList();
 
       // Filter out images with non-existent files unless they have base64 data
       final List<SakeBottleImage> validImages = [];
@@ -176,8 +182,9 @@ class SakeBottleImageRepository {
       );
 
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      final List<SakeBottleImage> images =
-          jsonList.map((json) => SakeBottleImage.fromJson(json)).toList();
+      final List<SakeBottleImage> images = jsonList
+          .map((json) => SakeBottleImage.fromJson(json))
+          .toList();
 
       bool hasChanges = false;
       final updatedImages = <SakeBottleImage>[];
@@ -197,7 +204,9 @@ class SakeBottleImageRepository {
             // Need to migrate this image
             final permanentPath =
                 await ImageCropperService.saveImagePermanently(
-                    file, 'sake_bottle');
+                  file,
+                  'sake_bottle',
+                );
 
             if (permanentPath != null) {
               try {
@@ -258,7 +267,8 @@ class SakeBottleImageRepository {
       if (hasChanges) {
         await _saveSakeBottleImagesList(updatedImages);
         logger.info(
-            '酒瓶画像の移行が完了しました。${images.length - updatedImages.length} 個の無効な画像が削除されました。');
+          '酒瓶画像の移行が完了しました。${images.length - updatedImages.length} 個の無効な画像が削除されました。',
+        );
       }
     } catch (e) {
       logger.shout('既存の酒瓶画像の移行に失敗しました: $e');

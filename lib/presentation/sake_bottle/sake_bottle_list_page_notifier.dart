@@ -28,9 +28,8 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
   final BuildContext context;
   late final SakeBottleImageRepository _sakeBottleImageRepository;
 
-  SakeBottleListPageNotifier({
-    required this.context,
-  }) : super(const SakeBottleListPageState()) {
+  SakeBottleListPageNotifier({required this.context})
+    : super(const SakeBottleListPageState()) {
     _sakeBottleImageRepository = context.read<SakeBottleImageRepository>();
     _initializeWithMigration();
   }
@@ -47,12 +46,14 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
       final imageFile = await CustomImagePicker.pickImage(source: source);
 
       if (imageFile != null) {
-        final croppedFile =
-            await ImageCropperService.cropAndRotateImage(imageFile.path);
+        final croppedFile = await ImageCropperService.cropAndRotateImage(
+          imageFile.path,
+        );
 
         if (croppedFile != null) {
-          final galleryPath =
-              await ImageCropperService.saveImageToGallery(croppedFile);
+          final galleryPath = await ImageCropperService.saveImageToGallery(
+            croppedFile,
+          );
           if (galleryPath != null) {
             logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
           }
@@ -64,9 +65,7 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
       }
     } catch (e) {
       logger.shout('画像選択中にエラーが発生しました: $e');
-      state = state.copyWith(
-        errorMessage: '画像の選択に失敗しました: $e',
-      );
+      state = state.copyWith(errorMessage: '画像の選択に失敗しました: $e');
     }
   }
 
@@ -78,11 +77,8 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
     try {
       state = state.copyWith(isLoading: true);
 
-      final sakeBottleImage =
-          await _sakeBottleImageRepository.saveSakeBottleImage(
-        imageFile,
-        sakeName: '未分析の酒瓶',
-      );
+      final sakeBottleImage = await _sakeBottleImageRepository
+          .saveSakeBottleImage(imageFile, sakeName: '未分析の酒瓶');
 
       if (sakeBottleImage != null) {
         await _loadSakeBottleImages();
@@ -105,10 +101,7 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
     try {
       state = state.copyWith(isLoading: true);
       final images = await _sakeBottleImageRepository.getAllSakeBottleImages();
-      state = state.copyWith(
-        sakeBottleImages: images,
-        isLoading: false,
-      );
+      state = state.copyWith(sakeBottleImages: images, isLoading: false);
     } catch (e) {
       logger.shout('酒瓶画像の読み込みに失敗しました: $e');
       state = state.copyWith(
@@ -121,12 +114,14 @@ class SakeBottleListPageNotifier extends StateNotifier<SakeBottleListPageState>
   Future<void> deleteSakeBottleImage(String id) async {
     try {
       state = state.copyWith(isLoading: true);
-      final success =
-          await _sakeBottleImageRepository.deleteSakeBottleImage(id);
+      final success = await _sakeBottleImageRepository.deleteSakeBottleImage(
+        id,
+      );
 
       if (success) {
-        final updatedImages =
-            state.sakeBottleImages.where((img) => img.id != id).toList();
+        final updatedImages = state.sakeBottleImages
+            .where((img) => img.id != id)
+            .toList();
         state = state.copyWith(
           sakeBottleImages: updatedImages,
           isLoading: false,

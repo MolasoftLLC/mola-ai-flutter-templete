@@ -23,9 +23,9 @@ class TimelineSakePage {
   });
 
   const TimelineSakePage.empty()
-      : sakes = const <Sake>[],
-        nextCursor = null,
-        hasMore = false;
+    : sakes = const <Sake>[],
+      nextCursor = null,
+      hasMore = false;
 
   final List<Sake> sakes;
   final String? nextCursor;
@@ -148,7 +148,8 @@ class SavedSakeSyncRepository {
       }
 
       logger.info(
-          '[SavedSakeSyncRepository.fetchSavedSakes] レスポンス: ${response.body}');
+        '[SavedSakeSyncRepository.fetchSavedSakes] レスポンス: ${response.body}',
+      );
       return await _parseSakeRecords(
         response.body,
         logPrefix: 'SavedSakeSyncRepository.fetchSavedSakes',
@@ -184,7 +185,8 @@ class SavedSakeSyncRepository {
       }
 
       logger.info(
-          '[SavedSakeSyncRepository.fetchTimelineSakes] レスポンス: ${response.body}');
+        '[SavedSakeSyncRepository.fetchTimelineSakes] レスポンス: ${response.body}',
+      );
       return await _parseTimelineResponse(
         response.body,
         logPrefix: 'SavedSakeSyncRepository.fetchTimelineSakes',
@@ -214,7 +216,8 @@ class SavedSakeSyncRepository {
         return const <Sake>[];
       }
       logger.info(
-          '[SavedSakeSyncRepository.fetchTimelineEnvyRanking] レスポンス: ${response.body}');
+        '[SavedSakeSyncRepository.fetchTimelineEnvyRanking] レスポンス: ${response.body}',
+      );
       return await _parseSakeRecords(
         response.body,
         logPrefix: 'SavedSakeSyncRepository.fetchTimelineEnvyRanking',
@@ -238,8 +241,10 @@ class SavedSakeSyncRepository {
       if (userId != null && userId.isNotEmpty) {
         payload['userId'] = userId;
       }
-      final response =
-          await _apiClient.incrementSavedSakeEnvy(savedId, payload);
+      final response = await _apiClient.incrementSavedSakeEnvy(
+        savedId,
+        payload,
+      );
       if (!response.isSuccessful) {
         logger.warning(
           'うらやまカウントの更新に失敗しました: status=${response.statusCode}, error=${response.error}',
@@ -286,12 +291,11 @@ class SavedSakeSyncRepository {
     required bool isPublic,
   }) async {
     try {
-      final payload = <String, dynamic>{
-        'userId': userId,
-        'isPublic': isPublic,
-      };
-      final response =
-          await _apiClient.updateSavedSakeVisibility(savedId, payload);
+      final payload = <String, dynamic>{'userId': userId, 'isPublic': isPublic};
+      final response = await _apiClient.updateSavedSakeVisibility(
+        savedId,
+        payload,
+      );
       if (!response.isSuccessful) {
         logger.warning(
           '公開設定の更新に失敗しました: status=${response.statusCode}, error=${response.error}',
@@ -488,12 +492,15 @@ class SavedSakeSyncRepository {
     File? imageFile,
     bool? isPublic,
   }) async {
-    final Map<String, dynamic> sakeJson =
-        Map<String, dynamic>.from(sake.toJson());
+    final Map<String, dynamic> sakeJson = Map<String, dynamic>.from(
+      sake.toJson(),
+    );
     final shareFlag = isPublic ?? sake.isPublic;
     sakeJson.remove('imagePaths');
     sakeJson.remove('syncStatus');
     sakeJson.remove('is_public');
+    // Place details are persisted only through the server-verified Place ID API.
+    sakeJson.remove('drinkingPlace');
     _removeNullAndEmptyValues(sakeJson);
 
     final payload = <String, dynamic>{
@@ -582,10 +589,7 @@ class SavedSakeSyncRepository {
     required String imageUrl,
   }) async {
     try {
-      final payload = <String, dynamic>{
-        'userId': userId,
-        'imageUrl': imageUrl,
-      };
+      final payload = <String, dynamic>{'userId': userId, 'imageUrl': imageUrl};
 
       final response = await _apiClient.deleteSavedSakeImage(savedId, payload);
       if (!response.isSuccessful) {
@@ -616,9 +620,7 @@ class SavedSakeSyncRepository {
       final response = await _apiClient.removeSavedSake(savedId, payload);
       if (!response.isSuccessful) {
         if (response.statusCode == 404) {
-          logger.info(
-            '保存酒削除APIが404を返却しましたが、既に削除済みとみなし処理を継続します: id=$savedId',
-          );
+          logger.info('保存酒削除APIが404を返却しましたが、既に削除済みとみなし処理を継続します: id=$savedId');
           return true;
         }
         logger.warning(
@@ -676,7 +678,8 @@ class SavedSakeSyncRepository {
       } else if (value is Iterable) {
         final cleaned = value
             .where(
-                (element) => element != null && element.toString().isNotEmpty)
+              (element) => element != null && element.toString().isNotEmpty,
+            )
             .toList();
         if (cleaned.isEmpty) {
           keysToRemove.add(key);

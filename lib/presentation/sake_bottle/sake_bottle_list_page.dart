@@ -15,11 +15,11 @@ class SakeBottleListPage extends StatelessWidget {
   const SakeBottleListPage._({Key? key}) : super(key: key);
 
   static Widget wrapped() {
-    return StateNotifierProvider<SakeBottleListPageNotifier,
-        SakeBottleListPageState>(
-      create: (context) => SakeBottleListPageNotifier(
-        context: context,
-      ),
+    return StateNotifierProvider<
+      SakeBottleListPageNotifier,
+      SakeBottleListPageState
+    >(
+      create: (context) => SakeBottleListPageNotifier(context: context),
       child: const SakeBottleListPage._(),
     );
   }
@@ -27,12 +27,15 @@ class SakeBottleListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.read<SakeBottleListPageNotifier>();
-    final isLoading =
-        context.select((SakeBottleListPageState state) => state.isLoading);
-    final sakeBottleImages = context
-        .select((SakeBottleListPageState state) => state.sakeBottleImages);
-    final errorMessage =
-        context.select((SakeBottleListPageState state) => state.errorMessage);
+    final isLoading = context.select(
+      (SakeBottleListPageState state) => state.isLoading,
+    );
+    final sakeBottleImages = context.select(
+      (SakeBottleListPageState state) => state.sakeBottleImages,
+    );
+    final errorMessage = context.select(
+      (SakeBottleListPageState state) => state.errorMessage,
+    );
 
     return Scaffold(
       appBar: PrimaryAppBar(
@@ -61,8 +64,10 @@ class SakeBottleListPage extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -82,15 +87,16 @@ class SakeBottleListPage extends StatelessWidget {
                 child: isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : errorMessage != null
-                        ? _buildErrorState(context, errorMessage)
-                        : sakeBottleImages.isEmpty
-                            ? _buildEmptyState(context)
-                            : _buildGridView(context, sakeBottleImages),
+                    ? _buildErrorState(context, errorMessage)
+                    : sakeBottleImages.isEmpty
+                    ? _buildEmptyState(context)
+                    : _buildGridView(context, sakeBottleImages),
               ),
             ],
           ),
@@ -104,26 +110,16 @@ class SakeBottleListPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.wine_bar,
-            color: Colors.white54,
-            size: 64,
-          ),
+          const Icon(Icons.wine_bar, color: Colors.white54, size: 64),
           const SizedBox(height: 16),
           Text(
             context.l10n.noBottleImages,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.captureBottleHint,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
@@ -135,26 +131,16 @@ class SakeBottleListPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 64,
-          ),
+          const Icon(Icons.error_outline, color: Colors.red, size: 64),
           const SizedBox(height: 16),
           Text(
             context.l10n.errorOccurred,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             localizeLegacyMessage(context.l10n, message),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -162,10 +148,7 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGridView(
-    BuildContext context,
-    List<SakeBottleImage> images,
-  ) {
+  Widget _buildGridView(BuildContext context, List<SakeBottleImage> images) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: GridView.builder(
@@ -184,26 +167,22 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildImageCard(
-    BuildContext context,
-    SakeBottleImage image,
-  ) {
+  Widget _buildImageCard(BuildContext context, SakeBottleImage image) {
     return GestureDetector(
       onTap: () {
         _showSakeBottleDialog(context, image);
       },
       child: Card(
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
                 child: Image(
                   image: FileUtils.safeLoadImage(
                     image.path,
@@ -217,8 +196,9 @@ class SakeBottleListPage extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(12)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(12),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,10 +206,7 @@ class SakeBottleListPage extends StatelessWidget {
                   Text(
                     image.sakeName == null
                         ? context.l10n.unknownSake
-                        : localizeLegacyMessage(
-                            context.l10n,
-                            image.sakeName!,
-                          ),
+                        : localizeLegacyMessage(context.l10n, image.sakeName!),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -240,10 +217,7 @@ class SakeBottleListPage extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _formatDate(image.capturedAt),
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 10,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
                   ),
                 ],
               ),
@@ -289,10 +263,7 @@ class SakeBottleListPage extends StatelessWidget {
                 Text(
                   image.sakeName == null
                       ? context.l10n.unknownSake
-                      : localizeLegacyMessage(
-                          context.l10n,
-                          image.sakeName!,
-                        ),
+                      : localizeLegacyMessage(context.l10n, image.sakeName!),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -302,19 +273,13 @@ class SakeBottleListPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     image.type!,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.capturedDate(_formatDate(image.capturedAt)),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -330,9 +295,7 @@ class SakeBottleListPage extends StatelessWidget {
                       onPressed: () {
                         _confirmDeleteImage(dialogContext, image, notifier);
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
-                      ),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
                       child: Text(context.l10n.delete),
                     ),
                   ],
@@ -345,8 +308,11 @@ class SakeBottleListPage extends StatelessWidget {
     );
   }
 
-  void _confirmDeleteImage(BuildContext context, SakeBottleImage image,
-      SakeBottleListPageNotifier notifier) {
+  void _confirmDeleteImage(
+    BuildContext context,
+    SakeBottleImage image,
+    SakeBottleListPageNotifier notifier,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -367,9 +333,7 @@ class SakeBottleListPage extends StatelessWidget {
                 Navigator.of(dialogContext).pop(); // 削除確認ダイアログを閉じる
                 Navigator.of(context).pop(); // 詳細ダイアログを閉じる
               },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: Text(context.l10n.delete),
             ),
           ],

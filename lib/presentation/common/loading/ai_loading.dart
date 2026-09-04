@@ -11,10 +11,7 @@ import '../../../common/localization/localization_extensions.dart';
 
 // 半透明のローディング
 class AILoading extends StatefulWidget {
-  const AILoading({
-    required this.loadingText,
-    super.key,
-  });
+  const AILoading({required this.loadingText, super.key});
 
   final String loadingText;
 
@@ -138,7 +135,8 @@ class _AILoadingState extends State<AILoading> {
               ),
               Text(
                 widget.loadingText,
-                style: textTheme.bodyLarge?.copyWith(color: Colors.white) ??
+                style:
+                    textTheme.bodyLarge?.copyWith(color: Colors.white) ??
                     const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
@@ -217,10 +215,7 @@ class _AILoadingState extends State<AILoading> {
               ).animate(animation);
               return FadeTransition(
                 opacity: animation,
-                child: SlideTransition(
-                  position: offsetAnimation,
-                  child: child,
-                ),
+                child: SlideTransition(position: offsetAnimation, child: child),
               );
             },
             child: Column(

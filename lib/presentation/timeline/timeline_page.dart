@@ -20,10 +20,7 @@ import 'timeline_envy_ranking_page.dart';
 import 'timeline_page_notifier.dart';
 
 class TimelinePage extends StatelessWidget {
-  const TimelinePage._({
-    super.key,
-    required this.feedType,
-  });
+  const TimelinePage._({super.key, required this.feedType});
 
   final TimelineFeedType feedType;
 
@@ -35,9 +32,7 @@ class TimelinePage extends StatelessWidget {
     return _build(feedType: TimelineFeedType.mine);
   }
 
-  static Widget _build({
-    required TimelineFeedType feedType,
-  }) {
+  static Widget _build({required TimelineFeedType feedType}) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<TimelinePageNotifier, TimelinePageState>(
@@ -55,9 +50,7 @@ class TimelinePage extends StatelessWidget {
 }
 
 class _TimelinePageContent extends StatefulWidget {
-  const _TimelinePageContent({
-    required this.feedType,
-  });
+  const _TimelinePageContent({required this.feedType});
 
   final TimelineFeedType feedType;
 
@@ -243,29 +236,38 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     final bool isTimelineTabActive = _isTimelineTabActive(context);
     final bool hasReadTimelineIntro = _hasReadTimelineIntro(context);
     final notifier = context.watch<TimelinePageNotifier>();
-    final isLoading =
-        context.select((TimelinePageState state) => state.isLoading);
-    final isRefreshing =
-        context.select((TimelinePageState state) => state.isRefreshing);
+    final isLoading = context.select(
+      (TimelinePageState state) => state.isLoading,
+    );
+    final isRefreshing = context.select(
+      (TimelinePageState state) => state.isRefreshing,
+    );
     final sakes = context.select((TimelinePageState state) => state.sakes);
-    final errorMessage =
-        context.select((TimelinePageState state) => state.errorMessage);
+    final errorMessage = context.select(
+      (TimelinePageState state) => state.errorMessage,
+    );
 
     final savedNotifier = context.read<SavedSakeNotifier>();
     final favoriteNotifier = context.read<FavoriteNotifier>();
-    final savedList =
-        context.select((SavedSakeState state) => state.savedSakeList);
-    final favoriteList =
-        context.select((FavoriteState state) => state.myFavoriteList);
-    final enviedIds =
-        context.select((TimelinePageState state) => state.enviedIds);
-    final pendingEnvies =
-        context.select((TimelinePageState state) => state.pendingEnvyIds);
-    final pendingReports =
-        context.select((TimelinePageState state) => state.pendingReportIds);
+    final savedList = context.select(
+      (SavedSakeState state) => state.savedSakeList,
+    );
+    final favoriteList = context.select(
+      (FavoriteState state) => state.myFavoriteList,
+    );
+    final enviedIds = context.select(
+      (TimelinePageState state) => state.enviedIds,
+    );
+    final pendingEnvies = context.select(
+      (TimelinePageState state) => state.pendingEnvyIds,
+    );
+    final pendingReports = context.select(
+      (TimelinePageState state) => state.pendingReportIds,
+    );
     final hasMore = context.select((TimelinePageState state) => state.hasMore);
-    final isLoadingMore =
-        context.select((TimelinePageState state) => state.isLoadingMore);
+    final isLoadingMore = context.select(
+      (TimelinePageState state) => state.isLoadingMore,
+    );
 
     Future<bool> ensureLoggedIn() async {
       if (notifier.isLoggedIn) {
@@ -285,10 +287,12 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     final bool showLoadingIndicator = !showFallback && isLoadingMore;
     final bool showRankingShortcut = feedType == TimelineFeedType.public;
     final int rankingOffset = showRankingShortcut ? 1 : 0;
-    final int baseItemCount =
-        showFallback ? 1 : sakes.length + (showLoadingIndicator ? 1 : 0);
+    final int baseItemCount = showFallback
+        ? 1
+        : sakes.length + (showLoadingIndicator ? 1 : 0);
     final int itemCount = rankingOffset + baseItemCount;
-    final bool shouldShowEnvyTutorial = isTimelineTabActive &&
+    final bool shouldShowEnvyTutorial =
+        isTimelineTabActive &&
         hasReadTimelineIntro &&
         feedType == TimelineFeedType.public &&
         sakes.isNotEmpty &&
@@ -299,9 +303,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
       if (showInitialLoading) {
         return const Padding(
           padding: EdgeInsets.only(top: 80),
-          child: Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          child: Center(child: CircularProgressIndicator(color: Colors.white)),
         );
       }
       if (showErrorState) {
@@ -324,7 +326,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
       final envyKey = TimelinePageNotifier.envyKey(sake);
       final savedId = sake.savedId?.trim();
       final isSaved = savedList.any((item) {
-        final hasSameId = item.savedId != null &&
+        final hasSameId =
+            item.savedId != null &&
             sake.savedId != null &&
             item.savedId == sake.savedId;
         if (hasSameId) {
@@ -348,7 +351,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           savedId != null && pendingReports.contains(savedId);
       final bool canSendEnvy =
           feedType != TimelineFeedType.mine && envyKey.isNotEmpty;
-      final bool canReport = feedType != TimelineFeedType.mine &&
+      final bool canReport =
+          feedType != TimelineFeedType.mine &&
           savedId != null &&
           savedId.isNotEmpty;
 
@@ -375,8 +379,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           if (!isSaved && savedNotifier.hasReachedMemberLimit) {
             SnackBarUtils.showWarningSnackBar(
               context,
-              message: context.l10n
-                  .savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+              message: context.l10n.savedSakeLimit(
+                SavedSakeNotifier.memberSavedLimit,
+              ),
             );
             return;
           }
@@ -404,8 +409,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           } on SavedSakeMemberLimitReachedException {
             SnackBarUtils.showWarningSnackBar(
               context,
-              message: context.l10n
-                  .savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+              message: context.l10n.savedSakeLimit(
+                SavedSakeNotifier.memberSavedLimit,
+              ),
             );
           }
         },
@@ -471,8 +477,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                 if (!context.mounted) {
                   return;
                 }
-                final confirmed =
-                    await _TimelineReportConfirmDialog.show(context);
+                final confirmed = await _TimelineReportConfirmDialog.show(
+                  context,
+                );
                 if (!confirmed || !context.mounted) {
                   return;
                 }
@@ -562,7 +569,8 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         if (notification.metrics.axis == Axis.vertical &&
             (notification is ScrollUpdateNotification ||
                 notification is OverscrollNotification)) {
-          final bool shouldLoadMore = !showFallback &&
+          final bool shouldLoadMore =
+              !showFallback &&
               hasMore &&
               !isLoading &&
               !isRefreshing &&
@@ -592,11 +600,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           if (!await ensureLoggedIn()) {
             return;
           }
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => TimelinePage.myPosts(),
-            ),
-          );
+          await Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => TimelinePage.myPosts()));
         },
       );
       leadingWidth = 90;
@@ -712,10 +718,7 @@ class _TimelineRankingShortcut extends StatelessWidget {
                 color: const Color(0xFFFFD54F).withOpacity(0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.emoji_events,
-                color: Color(0xFFFFD54F),
-              ),
+              child: const Icon(Icons.emoji_events, color: Color(0xFFFFD54F)),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -733,18 +736,12 @@ class _TimelineRankingShortcut extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     context.l10n.envyRankingSubtitle,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.white70,
-            ),
+            const Icon(Icons.chevron_right, color: Colors.white70),
           ],
         ),
       ),
@@ -791,24 +788,22 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
   @override
   Widget build(BuildContext context) {
     final sake = widget.sake;
-    final imagePath =
-        (sake.imagePaths?.isNotEmpty ?? false) ? sake.imagePaths!.first : null;
+    final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
+        ? sake.imagePaths!.first
+        : null;
     final typeText = sake.type ?? (sake.types?.join(' / '));
     final tasteText = sake.taste?.trim();
     final hasTaste = tasteText != null && tasteText.isNotEmpty;
     final place = sake.place?.trim();
     final hasPlace = place != null && place.isNotEmpty;
-    final tags = sake.userTags
+    final tags =
+        sake.userTags
             ?.map((tag) => tag.trim())
             .where((tag) => tag.isNotEmpty)
             .toList() ??
         const <String>[];
     final hasTags = tags.isNotEmpty;
-    const bodyStyle = TextStyle(
-      color: Colors.white,
-      fontSize: 13,
-      height: 1.4,
-    );
+    const bodyStyle = TextStyle(color: Colors.white, fontSize: 13, height: 1.4);
     final displayedEnvyCount = widget.envyCount < 0 ? 0 : widget.envyCount;
     final isEnvied = widget.isEnvied;
     final isEnvyPending = widget.isEnvyPending;
@@ -943,7 +938,8 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                                 padding: EdgeInsets.all(11),
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white70),
+                                    Colors.white70,
+                                  ),
                                   strokeWidth: 2.4,
                                 ),
                               )
@@ -958,9 +954,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                     Container(
                       width: 44,
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.55),
                         borderRadius: BorderRadius.circular(16),
@@ -995,10 +989,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 typeText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
             ),
           if (sake.brewery != null && sake.brewery!.trim().isNotEmpty)
@@ -1006,10 +997,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 sake.brewery!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
           if (hasPlace)
@@ -1017,19 +1005,12 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.place,
-                    size: 14,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.place, size: 14, color: Colors.white),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       place!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -1086,8 +1067,9 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                             ),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               minimumSize: const Size(0, 32),
                             ),
                           ),
@@ -1150,11 +1132,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     const backgroundColor = Colors.black;
 
     Widget buildFallbackIcon(IconData icon) {
-      return Icon(
-        icon,
-        color: Colors.white38,
-        size: 40,
-      );
+      return Icon(icon, color: Colors.white38, size: 40);
     }
 
     if (path == null || path.isEmpty) {
@@ -1255,17 +1233,10 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     final file = File(path);
     if (!file.existsSync()) {
       return const Center(
-        child: Icon(
-          Icons.broken_image,
-          color: Colors.white54,
-          size: 48,
-        ),
+        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
       );
     }
-    return Image.file(
-      file,
-      fit: BoxFit.contain,
-    );
+    return Image.file(file, fit: BoxFit.contain);
   }
 }
 
@@ -1312,11 +1283,7 @@ class _TimelineCircleIconButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 22,
-          ),
+          child: Icon(icon, color: iconColor, size: 22),
         ),
       ),
     );
@@ -1324,10 +1291,7 @@ class _TimelineCircleIconButton extends StatelessWidget {
 }
 
 class _TimelineUserInfoBadge extends StatelessWidget {
-  const _TimelineUserInfoBadge({
-    required this.username,
-    this.iconUrl,
-  });
+  const _TimelineUserInfoBadge({required this.username, this.iconUrl});
 
   final String username;
   final String? iconUrl;
@@ -1405,11 +1369,7 @@ class _TimelineUserAvatar extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.person,
-        color: Colors.white,
-        size: 18,
-      ),
+      child: const Icon(Icons.person, color: Colors.white, size: 18),
     );
   }
 }
@@ -1434,13 +1394,12 @@ class _TimelineReportConfirmDialog {
           ),
           content: Text(
             context.l10n.reportPostDescription,
-            style: const TextStyle(
-              color: Colors.white70,
-              height: 1.5,
-            ),
+            style: const TextStyle(color: Colors.white70, height: 1.5),
           ),
-          actionsPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1473,10 +1432,7 @@ class _TimelineReportConfirmDialog {
 }
 
 class _TimelineReportButton extends StatelessWidget {
-  const _TimelineReportButton({
-    required this.isPending,
-    this.onPressed,
-  });
+  const _TimelineReportButton({required this.isPending, this.onPressed});
 
   final bool isPending;
   final VoidCallback? onPressed;
@@ -1495,11 +1451,7 @@ class _TimelineReportButton extends StatelessWidget {
         ),
       );
     } else {
-      child = const Icon(
-        Icons.flag_outlined,
-        color: Colors.white,
-        size: 18,
-      );
+      child = const Icon(Icons.flag_outlined, color: Colors.white, size: 18);
     }
 
     return GestureDetector(
@@ -1547,11 +1499,7 @@ class _TimelineMessageView extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Icon(
-          Icons.receipt_long,
-          color: Colors.white54,
-          size: 48,
-        ),
+        const Icon(Icons.receipt_long, color: Colors.white54, size: 48),
         const SizedBox(height: 16),
         Text(
           message,

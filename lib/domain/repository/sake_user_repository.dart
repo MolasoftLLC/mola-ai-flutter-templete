@@ -38,7 +38,8 @@ class SakeUserRepository {
         }
         return local;
       }();
-      final resolvedUsername = resolvedDisplayName ??
+      final resolvedUsername =
+          resolvedDisplayName ??
           emailLocalPart ??
           'sake_user_${user.uid.substring(0, 6)}';
 
@@ -116,8 +117,9 @@ class SakeUserRepository {
         return false;
       }
 
-      logger
-          .info('[SakeUserRepository.updateUsername] レスポンス: ${response.body}');
+      logger.info(
+        '[SakeUserRepository.updateUsername] レスポンス: ${response.body}',
+      );
       return true;
     } catch (error, stackTrace) {
       logger.warning('ユーザー名更新処理で例外が発生しました: $error');

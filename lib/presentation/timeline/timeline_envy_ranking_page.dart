@@ -25,12 +25,12 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         final authRepository = context.read<AuthRepository>();
         return MultiProvider(
           providers: [
-            StateNotifierProvider<TimelineEnvyRankingNotifier,
-                TimelineEnvyRankingState>(
-              create: (_) => TimelineEnvyRankingNotifier(
-                repository,
-                authRepository,
-              ),
+            StateNotifierProvider<
+              TimelineEnvyRankingNotifier,
+              TimelineEnvyRankingState
+            >(
+              create: (_) =>
+                  TimelineEnvyRankingNotifier(repository, authRepository),
             ),
           ],
           child: const TimelineEnvyRankingPage._(),
@@ -62,8 +62,9 @@ class TimelineEnvyRankingPage extends StatelessWidget {
     final notifier = context.read<TimelineEnvyRankingNotifier>();
     final authRepository = context.read<AuthRepository>();
     final savedNotifier = context.read<SavedSakeNotifier>();
-    final savedList =
-        context.select((SavedSakeState state) => state.savedSakeList);
+    final savedList = context.select(
+      (SavedSakeState state) => state.savedSakeList,
+    );
 
     Future<bool> ensureLoggedIn() async {
       if (authRepository.currentUser != null) {
@@ -112,8 +113,9 @@ class TimelineEnvyRankingPage extends StatelessWidget {
       if (!isSaved && savedNotifier.hasReachedMemberLimit) {
         SnackBarUtils.showWarningSnackBar(
           context,
-          message:
-              context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+          message: context.l10n.savedSakeLimit(
+            SavedSakeNotifier.memberSavedLimit,
+          ),
         );
         return;
       }
@@ -150,8 +152,9 @@ class TimelineEnvyRankingPage extends StatelessWidget {
         }
         SnackBarUtils.showWarningSnackBar(
           context,
-          message:
-              context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+          message: context.l10n.savedSakeLimit(
+            SavedSakeNotifier.memberSavedLimit,
+          ),
         );
       }
     }
@@ -223,18 +226,15 @@ class TimelineEnvyRankingPage extends StatelessWidget {
                 ? sake.name!.trim()
                 : context.l10n.unknownName;
             final envyKey = TimelineEnvyRankingNotifier.envyKey(sake);
-            final canSendEnvy = envyKey.isNotEmpty &&
+            final canSendEnvy =
+                envyKey.isNotEmpty &&
                 (sake.savedId?.trim().isNotEmpty ?? false);
             final isEnvied = envyKey.isNotEmpty && enviedKeys.contains(envyKey);
             final isPending =
                 envyKey.isNotEmpty && pendingEnvies.contains(envyKey);
             final onEnvyTap = !canSendEnvy ? null : () => handleEnvy(sake);
             final isSaved = isSakeSaved(sake, normalizedName);
-            final onSavedTap = () => handleSaved(
-                  sake,
-                  isSaved,
-                  normalizedName,
-                );
+            final onSavedTap = () => handleSaved(sake, isSaved, normalizedName);
             return _RankingTile(
               rank: index + 1,
               sake: sake,
@@ -293,12 +293,13 @@ class _RankingTile extends StatelessWidget {
     final Color accentColor = rank == 1
         ? const Color(0xFFFFD54F)
         : rank == 2
-            ? const Color(0xFFE0E0E0)
-            : rank == 3
-                ? const Color(0xFFCD7F32)
-                : Colors.white54;
-    final imagePath =
-        (sake.imagePaths?.isNotEmpty ?? false) ? sake.imagePaths!.first : null;
+        ? const Color(0xFFE0E0E0)
+        : rank == 3
+        ? const Color(0xFFCD7F32)
+        : Colors.white54;
+    final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
+        ? sake.imagePaths!.first
+        : null;
 
     Widget? buildPreview() {
       if (!showImage) {
@@ -356,21 +357,12 @@ class _RankingTile extends StatelessWidget {
             backgroundColor: accentColor.withOpacity(0.2),
             child: Text(
               '$rank',
-              style: TextStyle(
-                color: accentColor,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: accentColor, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 16),
-          if (preview != null) ...[
-            preview,
-            const SizedBox(width: 16),
-          ],
-          _RankingSaveButton(
-            isSaved: isSaved,
-            onTap: onToggleSaved,
-          ),
+          if (preview != null) ...[preview, const SizedBox(width: 16)],
+          _RankingSaveButton(isSaved: isSaved, onTap: onToggleSaved),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -410,9 +402,7 @@ class _RankingTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: envyButtonColor,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.25),
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.25)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.3),
@@ -425,8 +415,9 @@ class _RankingTile extends StatelessWidget {
                       ? const Padding(
                           padding: EdgeInsets.all(11),
                           child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white70),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white70,
+                            ),
                             strokeWidth: 2.4,
                           ),
                         )
@@ -464,10 +455,7 @@ class _RankingTile extends StatelessWidget {
 }
 
 class _RankingSaveButton extends StatelessWidget {
-  const _RankingSaveButton({
-    required this.isSaved,
-    required this.onTap,
-  });
+  const _RankingSaveButton({required this.isSaved, required this.onTap});
 
   final bool isSaved;
   final VoidCallback onTap;
@@ -538,10 +526,7 @@ class _RankingImage extends StatelessWidget {
     if (!file.existsSync()) {
       return const _RankingImageFallback();
     }
-    return Image.file(
-      file,
-      fit: BoxFit.cover,
-    );
+    return Image.file(file, fit: BoxFit.cover);
   }
 }
 
@@ -561,10 +546,7 @@ class _RankingImagePlaceholder extends StatelessWidget {
         border: Border.all(color: accentColor.withOpacity(0.4)),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        Icons.emoji_events_outlined,
-        color: accentColor,
-      ),
+      child: Icon(Icons.emoji_events_outlined, color: accentColor),
     );
   }
 }
@@ -577,10 +559,7 @@ class _RankingImageFallback extends StatelessWidget {
     return Container(
       color: Colors.black26,
       alignment: Alignment.center,
-      child: const Icon(
-        Icons.broken_image,
-        color: Colors.white54,
-      ),
+      child: const Icon(Icons.broken_image, color: Colors.white54),
     );
   }
 }
@@ -640,10 +619,7 @@ class _RankingMessageView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white70,
-                height: 1.5,
-              ),
+              style: const TextStyle(color: Colors.white70, height: 1.5),
             ),
             if (actionLabel != null && onRetry != null) ...[
               const SizedBox(height: 16),

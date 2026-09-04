@@ -7,6 +7,11 @@ plugins {
 }
 
 def keystorePropertiesFile = rootProject.file("key.properties")
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader -> localProperties.load(reader) }
+}
 
 android {
     namespace "okinawa.molasoft_ai.sake"
@@ -28,6 +33,7 @@ android {
         versionCode flutter.versionCode
         versionName flutter.versionName
         multiDexEnabled true
+        manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
     }
 
     signingConfigs {

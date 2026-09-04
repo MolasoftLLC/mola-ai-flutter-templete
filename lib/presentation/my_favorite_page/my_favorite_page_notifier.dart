@@ -22,9 +22,8 @@ abstract class MyFavoritePageState with _$MyFavoritePageState {
 
 class MyFavoritePageNotifier extends StateNotifier<MyFavoritePageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MyFavoritePageNotifier({
-    required this.context,
-  }) : super(const MyFavoritePageState());
+  MyFavoritePageNotifier({required this.context})
+    : super(const MyFavoritePageState());
 
   final BuildContext context;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -60,10 +59,7 @@ class MyFavoritePageNotifier extends StateNotifier<MyFavoritePageState>
       final response = await geminiMolaApiRepository.promptWithText(
         state.sakeName!,
       );
-      state = state.copyWith(
-        isLoading: false,
-        sakeName: null,
-      );
+      state = state.copyWith(isLoading: false, sakeName: null);
       state = state.copyWith(geminiResponse: response);
     }
   }

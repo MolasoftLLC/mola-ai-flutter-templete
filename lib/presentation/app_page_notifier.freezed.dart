@@ -12,7 +12,8 @@ part of 'app_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$AppPageState {
@@ -29,14 +30,16 @@ mixin _$AppPageState {
 /// @nodoc
 abstract class $AppPageStateCopyWith<$Res> {
   factory $AppPageStateCopyWith(
-          AppPageState value, $Res Function(AppPageState) then) =
-      _$AppPageStateCopyWithImpl<$Res, AppPageState>;
+    AppPageState value,
+    $Res Function(AppPageState) then,
+  ) = _$AppPageStateCopyWithImpl<$Res, AppPageState>;
   @useResult
-  $Res call(
-      {int currentIndex,
-      bool needUpDate,
-      bool hasShownPreferencesDialog,
-      bool hasReadTimelineIntro});
+  $Res call({
+    int currentIndex,
+    bool needUpDate,
+    bool hasShownPreferencesDialog,
+    bool hasReadTimelineIntro,
+  });
 }
 
 /// @nodoc
@@ -57,24 +60,27 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
     Object? hasShownPreferencesDialog = null,
     Object? hasReadTimelineIntro = null,
   }) {
-    return _then(_value.copyWith(
-      currentIndex: null == currentIndex
-          ? _value.currentIndex
-          : currentIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      needUpDate: null == needUpDate
-          ? _value.needUpDate
-          : needUpDate // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasShownPreferencesDialog: null == hasShownPreferencesDialog
-          ? _value.hasShownPreferencesDialog
-          : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasReadTimelineIntro: null == hasReadTimelineIntro
-          ? _value.hasReadTimelineIntro
-          : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            currentIndex: null == currentIndex
+                ? _value.currentIndex
+                : currentIndex // ignore: cast_nullable_to_non_nullable
+                      as int,
+            needUpDate: null == needUpDate
+                ? _value.needUpDate
+                : needUpDate // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            hasShownPreferencesDialog: null == hasShownPreferencesDialog
+                ? _value.hasShownPreferencesDialog
+                : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            hasReadTimelineIntro: null == hasReadTimelineIntro
+                ? _value.hasReadTimelineIntro
+                : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -82,15 +88,17 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
 abstract class _$$AppPageStateImplCopyWith<$Res>
     implements $AppPageStateCopyWith<$Res> {
   factory _$$AppPageStateImplCopyWith(
-          _$AppPageStateImpl value, $Res Function(_$AppPageStateImpl) then) =
-      __$$AppPageStateImplCopyWithImpl<$Res>;
+    _$AppPageStateImpl value,
+    $Res Function(_$AppPageStateImpl) then,
+  ) = __$$AppPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {int currentIndex,
-      bool needUpDate,
-      bool hasShownPreferencesDialog,
-      bool hasReadTimelineIntro});
+  $Res call({
+    int currentIndex,
+    bool needUpDate,
+    bool hasShownPreferencesDialog,
+    bool hasReadTimelineIntro,
+  });
 }
 
 /// @nodoc
@@ -98,8 +106,9 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
     extends _$AppPageStateCopyWithImpl<$Res, _$AppPageStateImpl>
     implements _$$AppPageStateImplCopyWith<$Res> {
   __$$AppPageStateImplCopyWithImpl(
-      _$AppPageStateImpl _value, $Res Function(_$AppPageStateImpl) _then)
-      : super(_value, _then);
+    _$AppPageStateImpl _value,
+    $Res Function(_$AppPageStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -109,35 +118,38 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
     Object? hasShownPreferencesDialog = null,
     Object? hasReadTimelineIntro = null,
   }) {
-    return _then(_$AppPageStateImpl(
-      currentIndex: null == currentIndex
-          ? _value.currentIndex
-          : currentIndex // ignore: cast_nullable_to_non_nullable
-              as int,
-      needUpDate: null == needUpDate
-          ? _value.needUpDate
-          : needUpDate // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasShownPreferencesDialog: null == hasShownPreferencesDialog
-          ? _value.hasShownPreferencesDialog
-          : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasReadTimelineIntro: null == hasReadTimelineIntro
-          ? _value.hasReadTimelineIntro
-          : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$AppPageStateImpl(
+        currentIndex: null == currentIndex
+            ? _value.currentIndex
+            : currentIndex // ignore: cast_nullable_to_non_nullable
+                  as int,
+        needUpDate: null == needUpDate
+            ? _value.needUpDate
+            : needUpDate // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        hasShownPreferencesDialog: null == hasShownPreferencesDialog
+            ? _value.hasShownPreferencesDialog
+            : hasShownPreferencesDialog // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        hasReadTimelineIntro: null == hasReadTimelineIntro
+            ? _value.hasReadTimelineIntro
+            : hasReadTimelineIntro // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$AppPageStateImpl implements _AppPageState {
-  const _$AppPageStateImpl(
-      {this.currentIndex = 0,
-      this.needUpDate = false,
-      this.hasShownPreferencesDialog = false,
-      this.hasReadTimelineIntro = false});
+  const _$AppPageStateImpl({
+    this.currentIndex = 0,
+    this.needUpDate = false,
+    this.hasShownPreferencesDialog = false,
+    this.hasReadTimelineIntro = false,
+  });
 
   @override
   @JsonKey()
@@ -166,16 +178,23 @@ class _$AppPageStateImpl implements _AppPageState {
                 other.currentIndex == currentIndex) &&
             (identical(other.needUpDate, needUpDate) ||
                 other.needUpDate == needUpDate) &&
-            (identical(other.hasShownPreferencesDialog,
-                    hasShownPreferencesDialog) ||
+            (identical(
+                  other.hasShownPreferencesDialog,
+                  hasShownPreferencesDialog,
+                ) ||
                 other.hasShownPreferencesDialog == hasShownPreferencesDialog) &&
             (identical(other.hasReadTimelineIntro, hasReadTimelineIntro) ||
                 other.hasReadTimelineIntro == hasReadTimelineIntro));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, currentIndex, needUpDate,
-      hasShownPreferencesDialog, hasReadTimelineIntro);
+  int get hashCode => Object.hash(
+    runtimeType,
+    currentIndex,
+    needUpDate,
+    hasShownPreferencesDialog,
+    hasReadTimelineIntro,
+  );
 
   @JsonKey(ignore: true)
   @override
@@ -185,11 +204,12 @@ class _$AppPageStateImpl implements _AppPageState {
 }
 
 abstract class _AppPageState implements AppPageState {
-  const factory _AppPageState(
-      {final int currentIndex,
-      final bool needUpDate,
-      final bool hasShownPreferencesDialog,
-      final bool hasReadTimelineIntro}) = _$AppPageStateImpl;
+  const factory _AppPageState({
+    final int currentIndex,
+    final bool needUpDate,
+    final bool hasShownPreferencesDialog,
+    final bool hasReadTimelineIntro,
+  }) = _$AppPageStateImpl;
 
   @override
   int get currentIndex;

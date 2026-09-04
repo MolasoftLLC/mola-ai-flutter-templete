@@ -5,12 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('日英の豆知識が同数で英語版に日本語が混在していない', () async {
-    final japanese = jsonDecode(
-      await File('assets/data/sake_facts.json').readAsString(),
-    ) as List<dynamic>;
-    final english = jsonDecode(
-      await File('assets/data/sake_facts_en.json').readAsString(),
-    ) as List<dynamic>;
+    final japanese =
+        jsonDecode(await File('assets/data/sake_facts.json').readAsString())
+            as List<dynamic>;
+    final english =
+        jsonDecode(await File('assets/data/sake_facts_en.json').readAsString())
+            as List<dynamic>;
 
     expect(japanese, hasLength(110));
     expect(english, hasLength(japanese.length));

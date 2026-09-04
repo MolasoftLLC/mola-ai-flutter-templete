@@ -103,45 +103,54 @@ class MyPage extends StatelessWidget {
     final notifier = context.watch<MyPageNotifier>();
     final authNotifier = context.read<AuthNotifier>();
     final isLoading = context.select((MyPageState state) => state.isLoading);
-    final geminiResponse =
-        context.select((MyPageState state) => state.geminiResponse);
-    final myFavoriteSakeList =
-        context.select((FavoriteState state) => state.myFavoriteList);
+    final geminiResponse = context.select(
+      (MyPageState state) => state.geminiResponse,
+    );
+    final myFavoriteSakeList = context.select(
+      (FavoriteState state) => state.myFavoriteList,
+    );
     final favNotifier = context.watch<FavoriteNotifier>();
     final savedNotifier = context.watch<SavedSakeNotifier>();
-    final savedSakeList =
-        context.select((SavedSakeState state) => state.savedSakeList);
-    final isGridView =
-        context.select((SavedSakeState state) => state.isGridView);
-    final activeFilterTags =
-        context.select((SavedSakeState state) => state.activeFilterTags);
-    final allFilterTags = savedSakeList
-        .expand((sake) => sake.userTags ?? const <String>[])
-        .map((tag) => tag.trim())
-        .where((tag) => tag.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final savedSakeList = context.select(
+      (SavedSakeState state) => state.savedSakeList,
+    );
+    final isGridView = context.select(
+      (SavedSakeState state) => state.isGridView,
+    );
+    final activeFilterTags = context.select(
+      (SavedSakeState state) => state.activeFilterTags,
+    );
+    final allFilterTags =
+        savedSakeList
+            .expand((sake) => sake.userTags ?? const <String>[])
+            .map((tag) => tag.trim())
+            .where((tag) => tag.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     final activeFilterTagSet = activeFilterTags.toSet();
     final filteredSakeList = activeFilterTagSet.isEmpty
         ? savedSakeList
         : savedSakeList
-            .where(
-              (sake) => (sake.userTags ?? const <String>[])
-                  .map((tag) => tag.trim())
-                  .any(activeFilterTagSet.contains),
-            )
-            .toList();
+              .where(
+                (sake) => (sake.userTags ?? const <String>[])
+                    .map((tag) => tag.trim())
+                    .any(activeFilterTagSet.contains),
+              )
+              .toList();
     final isFiltering = activeFilterTags.isNotEmpty;
-    final preferences =
-        context.select((MyPageState state) => state.preferences);
+    final preferences = context.select(
+      (MyPageState state) => state.preferences,
+    );
     final userName = context.select((MyPageState state) => state.userName);
-    final userIconUrl =
-        context.select((MyPageState state) => state.userIconUrl);
+    final userIconUrl = context.select(
+      (MyPageState state) => state.userIconUrl,
+    );
     final authUser = context.select((AuthState state) => state.user);
     final isLoggedIn = authUser != null;
-    final achievementCounts =
-        context.select((MyPageState state) => state.achievementCounts);
+    final achievementCounts = context.select(
+      (MyPageState state) => state.achievementCounts,
+    );
     final loginCount = achievementCounts['login'] ?? 0;
     final analyzedBottleCount = achievementCounts['analyzedBottle'] ?? 0;
     final menuAnalysisCount = achievementCounts['menuAnalysis'] ?? 0;
@@ -156,24 +165,22 @@ class MyPage extends StatelessWidget {
       final navigator = Navigator.of(context);
       navigator
           .push<bool>(
-        MaterialPageRoute(
-          builder: (_) => const EmailLinkAuthPage(),
-        ),
-      )
+            MaterialPageRoute(builder: (_) => const EmailLinkAuthPage()),
+          )
           .then((result) {
-        FocusScope.of(navigator.context).unfocus();
-        if (!navigator.mounted) {
-          return;
-        }
-        if (result == true) {
-          _showToast(
-            navigator.context,
-            message: context.l10n.loginCompleted,
-            icon: Icons.login,
-          );
-          notifier.fetchUserProfile();
-        }
-      });
+            FocusScope.of(navigator.context).unfocus();
+            if (!navigator.mounted) {
+              return;
+            }
+            if (result == true) {
+              _showToast(
+                navigator.context,
+                message: context.l10n.loginCompleted,
+                icon: Icons.login,
+              );
+              notifier.fetchUserProfile();
+            }
+          });
     }
 
     Future<void> handleRefresh() async {
@@ -199,10 +206,7 @@ class MyPage extends StatelessWidget {
           actions: [
             IconButton(
               tooltip: context.l10n.helpGuide,
-              icon: const Icon(
-                Icons.help_outline,
-                color: Color(0xFFFFD54F),
-              ),
+              icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
               onPressed: () {
                 HelpGuideDialog.showForType(
                   context,
@@ -241,7 +245,9 @@ class MyPage extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: _AuthCard(
                         user: authUser,
                         userName: userName,
@@ -254,38 +260,38 @@ class MyPage extends StatelessWidget {
                           FocusScope.of(context).unfocus();
                           navigator
                               .push<AccountSettingsResult?>(
-                            MaterialPageRoute(
-                              builder: (_) => const AccountSettingsPage(),
-                            ),
-                          )
+                                MaterialPageRoute(
+                                  builder: (_) => const AccountSettingsPage(),
+                                ),
+                              )
                               .then((result) {
-                            FocusScope.of(navigator.context).unfocus();
-                            if (!navigator.mounted || result == null) {
-                              return;
-                            }
-                            if (result == AccountSettingsResult.loggedOut) {
-                              _showToast(
-                                navigator.context,
-                                message: context.l10n.logoutCompleted,
-                                icon: Icons.logout,
-                              );
-                            } else if (result ==
-                                AccountSettingsResult.accountDeleted) {
-                              _showToast(
-                                navigator.context,
-                                message: context.l10n.accountDeleted,
-                                icon: Icons.delete_forever,
-                              );
-                            } else if (result ==
-                                AccountSettingsResult.usernameUpdated) {
-                              _showToast(
-                                navigator.context,
-                                message: context.l10n.nicknameUpdated,
-                                icon: Icons.person,
-                              );
-                              notifier.fetchUserProfile();
-                            }
-                          });
+                                FocusScope.of(navigator.context).unfocus();
+                                if (!navigator.mounted || result == null) {
+                                  return;
+                                }
+                                if (result == AccountSettingsResult.loggedOut) {
+                                  _showToast(
+                                    navigator.context,
+                                    message: context.l10n.logoutCompleted,
+                                    icon: Icons.logout,
+                                  );
+                                } else if (result ==
+                                    AccountSettingsResult.accountDeleted) {
+                                  _showToast(
+                                    navigator.context,
+                                    message: context.l10n.accountDeleted,
+                                    icon: Icons.delete_forever,
+                                  );
+                                } else if (result ==
+                                    AccountSettingsResult.usernameUpdated) {
+                                  _showToast(
+                                    navigator.context,
+                                    message: context.l10n.nicknameUpdated,
+                                    icon: Icons.person,
+                                  );
+                                  notifier.fetchUserProfile();
+                                }
+                              });
                         },
                       ),
                     ),
@@ -300,7 +306,9 @@ class MyPage extends StatelessWidget {
                     Container(
                       width: MediaQuery.of(context).size.width,
                       margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
@@ -342,8 +350,8 @@ class MyPage extends StatelessWidget {
                                     color: isFiltering
                                         ? Colors.amber
                                         : (allFilterTags.isEmpty
-                                            ? Colors.white30
-                                            : Colors.white),
+                                              ? Colors.white30
+                                              : Colors.white),
                                   ),
                                   label: Text(
                                     context.l10n.sort,
@@ -352,8 +360,8 @@ class MyPage extends StatelessWidget {
                                       color: isFiltering
                                           ? Colors.amber
                                           : (allFilterTags.isEmpty
-                                              ? Colors.white30
-                                              : Colors.white),
+                                                ? Colors.white30
+                                                : Colors.white),
                                       fontWeight: isFiltering
                                           ? FontWeight.bold
                                           : FontWeight.w600,
@@ -361,7 +369,8 @@ class MyPage extends StatelessWidget {
                                   ),
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                      horizontal: 12,
+                                    ),
                                     foregroundColor: isFiltering
                                         ? Colors.amber
                                         : Colors.white,
@@ -431,56 +440,54 @@ class MyPage extends StatelessWidget {
                                       onClear: savedNotifier.clearFilterTags,
                                     )
                                   : isGridView
-                                      ? _SavedSakeGrid(
-                                          savedSakeList: filteredSakeList,
-                                          onTap: (sake) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    SavedSakeDetailPage(
-                                                        sake: sake),
-                                              ),
-                                            );
-                                          },
-                                          onRemove: (sake) {
-                                            savedNotifier.toggleSavedSake(sake);
-                                            _showToast(
-                                              context,
-                                              message:
-                                                  context.l10n.removedFromSaved(
+                                  ? _SavedSakeGrid(
+                                      savedSakeList: filteredSakeList,
+                                      onTap: (sake) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SavedSakeDetailPage(sake: sake),
+                                          ),
+                                        );
+                                      },
+                                      onRemove: (sake) {
+                                        savedNotifier.toggleSavedSake(sake);
+                                        _showToast(
+                                          context,
+                                          message: context.l10n
+                                              .removedFromSaved(
                                                 sake.name ??
                                                     context.l10n.unknownName,
                                               ),
-                                              icon: Icons.bookmark_remove,
-                                            );
-                                          },
-                                        )
-                                      : _SavedSakeList(
-                                          savedSakeList: filteredSakeList,
-                                          onTap: (sake) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    SavedSakeDetailPage(
-                                                        sake: sake),
-                                              ),
-                                            );
-                                          },
-                                          onRemove: (sake) {
-                                            savedNotifier.toggleSavedSake(sake);
-                                            _showToast(
-                                              context,
-                                              message:
-                                                  context.l10n.removedFromSaved(
+                                          icon: Icons.bookmark_remove,
+                                        );
+                                      },
+                                    )
+                                  : _SavedSakeList(
+                                      savedSakeList: filteredSakeList,
+                                      onTap: (sake) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SavedSakeDetailPage(sake: sake),
+                                          ),
+                                        );
+                                      },
+                                      onRemove: (sake) {
+                                        savedNotifier.toggleSavedSake(sake);
+                                        _showToast(
+                                          context,
+                                          message: context.l10n
+                                              .removedFromSaved(
                                                 sake.name ??
                                                     context.l10n.unknownName,
                                               ),
-                                              icon: Icons.bookmark_remove,
-                                            );
-                                          },
-                                        ),
+                                          icon: Icons.bookmark_remove,
+                                        );
+                                      },
+                                    ),
                             ),
                           const SizedBox(height: 24),
                         ],
@@ -599,7 +606,9 @@ class MyPage extends StatelessWidget {
                                 itemBuilder: (context, index) {
                                   return Container(
                                     margin: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 4),
+                                      horizontal: 16,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
@@ -620,14 +629,15 @@ class MyPage extends StatelessWidget {
                                         onPressed: () async {
                                           final target =
                                               myFavoriteSakeList[index];
-                                          await favNotifier
-                                              .addOrRemoveFavorite(target);
+                                          await favNotifier.addOrRemoveFavorite(
+                                            target,
+                                          );
                                           _showToast(
                                             context,
                                             message: context.l10n
                                                 .removedFromFavorites(
-                                              target.name,
-                                            ),
+                                                  target.name,
+                                                ),
                                             icon: Icons.favorite_border,
                                           );
                                         },
@@ -637,9 +647,7 @@ class MyPage extends StatelessWidget {
                                 },
                               ),
                             ),
-                          SizedBox(
-                            height: 24,
-                          ),
+                          SizedBox(height: 24),
                         ],
                       ),
                     ),
@@ -655,8 +663,9 @@ class MyPage extends StatelessWidget {
                             if (!notifier.hasAnalysisQuota) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text(context.l10n.diagnosisDailyLimit),
+                                  content: Text(
+                                    context.l10n.diagnosisDailyLimit,
+                                  ),
                                   duration: const Duration(seconds: 2),
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -665,7 +674,9 @@ class MyPage extends StatelessWidget {
                             }
                             // 2つ以上ある場合は診断を実行
                             _showSakePreferenceAnalysisDialog(
-                                context, notifier);
+                              context,
+                              notifier,
+                            );
                             notifier.analyzeSakePreference(myFavoriteSakeList);
                           } else {
                             // 2つ未満の場合はトーストメッセージのみ表示
@@ -681,9 +692,7 @@ class MyPage extends StatelessWidget {
                         icon: const Icon(Icons.psychology),
                         label: Text(
                           context.l10n.favoriteDiagnosis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.amber.shade700,
@@ -759,15 +768,17 @@ class MyPage extends StatelessWidget {
                             decoration: InputDecoration(
                               hintText: context.l10n.tastePreferencesHint,
                               hintStyle: TextStyle(
-                                  color: Colors.white.withOpacity(0.5)),
+                                color: Colors.white.withOpacity(0.5),
+                              ),
                               filled: true,
                               fillColor: Colors.white.withOpacity(0.1),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
-                              counterStyle:
-                                  const TextStyle(color: Colors.white70),
+                              counterStyle: const TextStyle(
+                                color: Colors.white70,
+                              ),
                             ),
                             // onChangedは不要になりました（コントローラーのリスナーで処理）
                           ),
@@ -781,8 +792,9 @@ class MyPage extends StatelessWidget {
                                 notifier.savePreferences();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content:
-                                        Text(context.l10n.preferencesSaved),
+                                    content: Text(
+                                      context.l10n.preferencesSaved,
+                                    ),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -791,7 +803,9 @@ class MyPage extends StatelessWidget {
                                 backgroundColor: const Color(0xFF1D3567),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 24, vertical: 12),
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -871,7 +885,6 @@ class MyPage extends StatelessWidget {
                     //     ],
                     //   ),
                     // ),
-
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -959,9 +972,7 @@ class MyPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Center(
-            child: _PreferenceRadarChart(axes: axes),
-          ),
+          Center(child: _PreferenceRadarChart(axes: axes)),
         ],
       ),
     );
@@ -1075,10 +1086,7 @@ class MyPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           context.l10n.noAvailableTags,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       )
                     else
@@ -1110,8 +1118,9 @@ class MyPage extends StatelessWidget {
                             checkmarkColor: const Color(0xFF0A1428),
                             shape: StadiumBorder(
                               side: BorderSide(
-                                color:
-                                    isSelected ? Colors.amber : Colors.white24,
+                                color: isSelected
+                                    ? Colors.amber
+                                    : Colors.white24,
                               ),
                             ),
                             padding: const EdgeInsets.symmetric(
@@ -1127,11 +1136,11 @@ class MyPage extends StatelessWidget {
                         TextButton(
                           onPressed:
                               selectedTags.isEmpty && tempSelected.isEmpty
-                                  ? null
-                                  : () {
-                                      notifier.clearFilterTags();
-                                      Navigator.of(context).pop();
-                                    },
+                              ? null
+                              : () {
+                                  notifier.clearFilterTags();
+                                  Navigator.of(context).pop();
+                                },
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.white70,
                           ),
@@ -1149,7 +1158,9 @@ class MyPage extends StatelessWidget {
                             backgroundColor: Colors.amber,
                             foregroundColor: const Color(0xFF0A1428),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -1201,8 +1212,10 @@ class MyPage extends StatelessWidget {
                 onTap: () => _showLanguageDialog(context),
               ),
               ListTile(
-                leading:
-                    const Icon(Icons.description, color: Color(0xFF1D3567)),
+                leading: const Icon(
+                  Icons.description,
+                  color: Color(0xFF1D3567),
+                ),
                 title: Text(context.l10n.termsOfUse),
                 onTap: () async {
                   Navigator.pop(context); // 設定メニューを閉じる
@@ -1226,10 +1239,7 @@ class MyPage extends StatelessWidget {
                 },
                 child: Text(
                   context.l10n.cancel,
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
               ),
             ],
@@ -1272,19 +1282,24 @@ class MyPage extends StatelessWidget {
 
   // お酒診断結果ダイアログを表示するメソッド
   void _showSakePreferenceAnalysisDialog(
-      BuildContext context, MyPageNotifier notifier) {
+    BuildContext context,
+    MyPageNotifier notifier,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            final isLoading =
-                context.select((MyPageState state) => state.isLoading);
-            final sakePreferenceAnalysis = context
-                .select((MyPageState state) => state.sakePreferenceAnalysis);
-            final tasteProfile =
-                context.select((MyPageState state) => state.tasteProfile);
+            final isLoading = context.select(
+              (MyPageState state) => state.isLoading,
+            );
+            final sakePreferenceAnalysis = context.select(
+              (MyPageState state) => state.sakePreferenceAnalysis,
+            );
+            final tasteProfile = context.select(
+              (MyPageState state) => state.tasteProfile,
+            );
 
             return AlertDialog(
               title: Text(
@@ -1299,32 +1314,30 @@ class MyPage extends StatelessWidget {
                 constraints: const BoxConstraints(maxHeight: 300),
                 child: SingleChildScrollView(
                   child: isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
+                      ? const Center(child: CircularProgressIndicator())
                       : sakePreferenceAnalysis != null
-                          ? Text(
-                              sakePreferenceAnalysis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                            )
-                          : tasteProfile != null
-                              ? Text(
-                                  context.l10n.tasteChartUpdated,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black87,
-                                  ),
-                                )
-                              : Text(
-                                  context.l10n.sakeDiagnosisFailed,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black87,
-                                  ),
-                                ),
+                      ? Text(
+                          sakePreferenceAnalysis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        )
+                      : tasteProfile != null
+                      ? Text(
+                          context.l10n.tasteChartUpdated,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        )
+                      : Text(
+                          context.l10n.sakeDiagnosisFailed,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        ),
                 ),
               ),
               actions: [
@@ -1334,10 +1347,7 @@ class MyPage extends StatelessWidget {
                   },
                   child: Text(
                     context.l10n.close,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ),
                 if (sakePreferenceAnalysis != null && !isLoading)
@@ -1957,8 +1967,8 @@ class _AchievementsCardState extends State<_AchievementsCard>
                       achievement.isComplete
                           ? context.l10n.badgeComplete
                           : hasProgress
-                              ? context.l10n.badgeRemaining(remaining)
-                              : context.l10n.badgeStart,
+                          ? context.l10n.badgeRemaining(remaining)
+                          : context.l10n.badgeStart,
                       style: TextStyle(
                         color: tier == _MedalTier.none
                             ? Colors.white60
@@ -2065,8 +2075,9 @@ class _MedalBadge extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
-        final glow =
-            tier == _MedalTier.none ? 0.03 : 0.08 + (animation.value * 0.12);
+        final glow = tier == _MedalTier.none
+            ? 0.03
+            : 0.08 + (animation.value * 0.12);
         return Container(
           width: 68,
           height: 68,
@@ -2108,17 +2119,16 @@ class _MedalBadge extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withOpacity(0.12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.35),
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.35)),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Image(
                     image: asset,
                     fit: BoxFit.contain,
                     color: tier == _MedalTier.none ? Colors.white54 : null,
-                    colorBlendMode:
-                        tier == _MedalTier.none ? BlendMode.srcIn : null,
+                    colorBlendMode: tier == _MedalTier.none
+                        ? BlendMode.srcIn
+                        : null,
                   ),
                 ),
               ),
@@ -2206,8 +2216,9 @@ class _AuthCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.12)),
       ),
-      child:
-          user == null ? _buildGuestView(context) : _buildSignedInView(context),
+      child: user == null
+          ? _buildGuestView(context)
+          : _buildSignedInView(context),
     );
   }
 
@@ -2289,11 +2300,7 @@ class _AuthCard extends StatelessWidget {
           border: Border.all(color: Colors.white24),
         ),
         alignment: Alignment.center,
-        child: const Icon(
-          Icons.person,
-          color: Colors.white70,
-          size: 24,
-        ),
+        child: const Icon(Icons.person, color: Colors.white70, size: 24),
       );
     }
 
@@ -2380,8 +2387,9 @@ class _EnvyPointHighlight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasPoints = count > 0;
-    final headline =
-        hasPoints ? context.l10n.totalEnvyPoints : context.l10n.collectEnvy;
+    final headline = hasPoints
+        ? context.l10n.totalEnvyPoints
+        : context.l10n.collectEnvy;
     final detail = hasPoints
         ? context.l10n.envyEarnedCount(count)
         : context.l10n.envyShareHint;
@@ -2400,14 +2408,12 @@ class _EnvyPointHighlight extends StatelessWidget {
                   const Color(0xFFFF7EB3).withOpacity(0.35),
                   const Color(0xFFFFC371).withOpacity(0.35),
                 ]
-              : [
-                  Colors.white10,
-                  Colors.white10,
-                ],
+              : [Colors.white10, Colors.white10],
         ),
         border: Border.all(
-          color:
-              hasPoints ? Colors.pinkAccent.withOpacity(0.4) : Colors.white12,
+          color: hasPoints
+              ? Colors.pinkAccent.withOpacity(0.4)
+              : Colors.white12,
         ),
       ),
       child: Row(
@@ -2440,10 +2446,7 @@ class _EnvyPointHighlight extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   detail,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -2464,10 +2467,7 @@ class _EnvyPointHighlight extends StatelessWidget {
                 hasPoints
                     ? context.l10n.everyonePraises
                     : context.l10n.tryCollecting,
-                style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Colors.white60, fontSize: 10),
               ),
             ],
           ),
@@ -2497,8 +2497,8 @@ class _SavedSakeList extends StatelessWidget {
       itemBuilder: (context, index) {
         final sake = savedSakeList[index];
         final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
-        final double recommendationScore =
-            (sake.recommendationScore ?? 0).toDouble();
+        final double recommendationScore = (sake.recommendationScore ?? 0)
+            .toDouble();
         final bool isRecommended = recommendationScore >= 6;
         final bool isSuperRecommended = recommendationScore >= 8;
         final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
@@ -2543,24 +2543,20 @@ class _SavedSakeList extends StatelessWidget {
                 if (sake.type != null)
                   Text(
                     sake.type!,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 if (sake.brewery != null)
                   Text(
                     sake.brewery!,
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 if (isRecommended)
                   Container(
                     margin: const EdgeInsets.only(top: 6),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.redAccent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(16),
@@ -2628,10 +2624,7 @@ class _SavedSakeList extends StatelessWidget {
               ],
             ),
             trailing: IconButton(
-              icon: const Icon(
-                Icons.bookmark_remove,
-                color: Colors.amber,
-              ),
+              icon: const Icon(Icons.bookmark_remove, color: Colors.amber),
               onPressed: () => onRemove(sake),
             ),
           ),
@@ -2652,19 +2645,12 @@ class _SavedSakeFilterEmptyView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.search_off,
-            color: Colors.white54,
-            size: 36,
-          ),
+          const Icon(Icons.search_off, color: Colors.white54, size: 36),
           const SizedBox(height: 12),
           Text(
             context.l10n.noMatchingTags,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 16),
           OutlinedButton(
@@ -2755,8 +2741,8 @@ class _SavedSakeGrid extends StatelessWidget {
         }
 
         final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
-        final double recommendationScore =
-            (sake.recommendationScore ?? 0).toDouble();
+        final double recommendationScore = (sake.recommendationScore ?? 0)
+            .toDouble();
         final bool isRecommended = recommendationScore >= 6;
         final bool isSuperRecommended = recommendationScore >= 8;
 
@@ -2939,9 +2925,7 @@ class _MyTimelineEntryTile extends StatelessWidget {
             }
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => TimelinePage.myPosts(),
-              ),
+              MaterialPageRoute(builder: (_) => TimelinePage.myPosts()),
             );
           },
           child: Container(

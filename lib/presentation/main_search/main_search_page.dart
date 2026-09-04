@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/assets.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -16,6 +15,7 @@ import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../sake_scan/sake_scan_page.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
@@ -43,34 +43,48 @@ class MainSearchPage extends StatelessWidget {
     final notifier = context.watch<MainSearchPageNotifier>();
     final favNotifier = context.watch<FavoriteNotifier>();
     final savedNotifier = context.watch<SavedSakeNotifier>();
-    final myFavoriteList =
-        context.select((FavoriteState state) => state.myFavoriteList);
-    final savedSakeList =
-        context.select((SavedSakeState state) => state.savedSakeList);
-    final isLoading =
-        context.select((MainSearchPageState state) => state.isLoading);
-    final isAdLoading =
-        context.select((MainSearchPageState state) => state.isAdLoading);
-    final isAnalyzingInBackground = context
-        .select((MainSearchPageState state) => state.isAnalyzingInBackground);
-    final sakeInfo =
-        context.select((MainSearchPageState state) => state.sakeInfo);
-    final errorMessage =
-        context.select((MainSearchPageState state) => state.errorMessage);
-    final geminiResponse =
-        context.select((MainSearchPageState state) => state.geminiResponse);
-    final searchMode =
-        context.select((MainSearchPageState state) => state.searchMode);
-    final sakeImage =
-        context.select((MainSearchPageState state) => state.sakeImage);
-    final shareToTimeline =
-        context.select((MainSearchPageState state) => state.shareToTimeline);
-    final isLoggedIn =
-        context.select((MainSearchPageState state) => state.isLoggedIn);
-    final autoTweetEnabled =
-        context.select((MainSearchPageState state) => state.autoTweetEnabled);
-    final isAutoTweetUpdating = context
-        .select((MainSearchPageState state) => state.isAutoTweetUpdating);
+    final myFavoriteList = context.select(
+      (FavoriteState state) => state.myFavoriteList,
+    );
+    final savedSakeList = context.select(
+      (SavedSakeState state) => state.savedSakeList,
+    );
+    final isLoading = context.select(
+      (MainSearchPageState state) => state.isLoading,
+    );
+    final isAdLoading = context.select(
+      (MainSearchPageState state) => state.isAdLoading,
+    );
+    final isAnalyzingInBackground = context.select(
+      (MainSearchPageState state) => state.isAnalyzingInBackground,
+    );
+    final sakeInfo = context.select(
+      (MainSearchPageState state) => state.sakeInfo,
+    );
+    final errorMessage = context.select(
+      (MainSearchPageState state) => state.errorMessage,
+    );
+    final geminiResponse = context.select(
+      (MainSearchPageState state) => state.geminiResponse,
+    );
+    final searchMode = context.select(
+      (MainSearchPageState state) => state.searchMode,
+    );
+    final sakeImage = context.select(
+      (MainSearchPageState state) => state.sakeImage,
+    );
+    final shareToTimeline = context.select(
+      (MainSearchPageState state) => state.shareToTimeline,
+    );
+    final isLoggedIn = context.select(
+      (MainSearchPageState state) => state.isLoggedIn,
+    );
+    final autoTweetEnabled = context.select(
+      (MainSearchPageState state) => state.autoTweetEnabled,
+    );
+    final isAutoTweetUpdating = context.select(
+      (MainSearchPageState state) => state.isAutoTweetUpdating,
+    );
 
     if (sakeInfo != null && !isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -86,12 +100,10 @@ class MainSearchPage extends StatelessWidget {
       child: Align(
         alignment: const Alignment(0, -0.35),
         child: isAdLoading
-            ? AILoading(
-                loadingText: context.l10n.analyzingWithAd,
-              )
+            ? AILoading(loadingText: context.l10n.analyzingWithAd)
             : isAnalyzingInBackground
-                ? AILoading(loadingText: context.l10n.loadingSakeInfo)
-                : AILoading(loadingText: context.l10n.loadingSakeInfo),
+            ? AILoading(loadingText: context.l10n.loadingSakeInfo)
+            : AILoading(loadingText: context.l10n.loadingSakeInfo),
       ),
     );
 
@@ -102,10 +114,7 @@ class MainSearchPage extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: context.l10n.helpGuide,
-            icon: const Icon(
-              Icons.help_outline,
-              color: Color(0xFFFFD54F),
-            ),
+            icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
             onPressed: () {
               HelpGuideDialog.showForType(
                 context,
@@ -117,9 +126,7 @@ class MainSearchPage extends StatelessWidget {
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
-        decoration: const BoxDecoration(
-          color: Color(0xFF1D3567),
-        ),
+        decoration: const BoxDecoration(color: Color(0xFF1D3567)),
         child: SingleChildScrollView(
           controller: _scrollController,
           physics: showLoadingIndicator
@@ -194,7 +201,11 @@ class MainSearchPage extends StatelessWidget {
                               padding: const EdgeInsets.all(0),
                               child: searchMode == SearchMode.name
                                   ? _buildNameSearchUI(
-                                      context, notifier, sakeInfo, errorMessage)
+                                      context,
+                                      notifier,
+                                      sakeInfo,
+                                      errorMessage,
+                                    )
                                   : _buildBottleSearchUI(
                                       context,
                                       notifier,
@@ -368,8 +379,10 @@ class MainSearchPage extends StatelessWidget {
               filled: true,
               fillColor: Colors.grey.shade50,
               prefixIcon: const Icon(Icons.wine_bar),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -386,8 +399,10 @@ class MainSearchPage extends StatelessWidget {
               filled: true,
               fillColor: Colors.grey.shade50,
               prefixIcon: const Icon(Icons.category),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -455,249 +470,240 @@ class MainSearchPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.selectBottleImage,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.black87),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           SizedBox(
-            height: 220,
             width: double.infinity,
-            child: sakeImage != null
-                ? Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          sakeImage,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: InkWell(
-                          onTap: notifier.clearImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.85),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: Color(0xFF1D3567),
-                              size: 20,
-                            ),
+            child: FilledButton.icon(
+              onPressed: isAnalyzingInBackground
+                  ? null
+                  : () async {
+                      final result = await Navigator.of(context).push<Sake>(
+                        PageRouteBuilder<Sake>(
+                          pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
+                          transitionsBuilder: (_, animation, __, child) {
+                            return SlideTransition(
+                              position:
+                                  Tween<Offset>(
+                                    begin: const Offset(0, 1),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                      reverseCurve: Curves.easeInCubic,
+                                    ),
+                                  ),
+                              child: child,
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 300),
+                          reverseTransitionDuration: const Duration(
+                            milliseconds: 240,
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : InkWell(
-                    onTap: () {
-                      notifier.pickImage(ImageSource.gallery);
+                      );
+                      if (result != null) {
+                        notifier.applySakeScanResult(result);
+                      }
                     },
+              icon: const Icon(Icons.document_scanner_outlined),
+              label: Text(context.l10n.fastLabelScan),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD54F),
+                foregroundColor: const Color(0xFF1D3567),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+          ),
+          if (sakeImage == null) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: isAnalyzingInBackground
+                  ? null
+                  : () => notifier.pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(context.l10n.selectFromGallery),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1D3567),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 220,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 2,
+                    child: Image.file(
+                      sakeImage,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: InkWell(
+                      onTap: notifier.clearImage,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Color(0xFF1D3567),
+                          size: 20,
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              value: shareToTimeline,
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                notifier.onTimelineShareToggle(value);
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: const Color(0xFF1D3567),
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                context.l10n.shareToTimeline,
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(context.l10n.onlyFirstImageShared),
+            ),
+            CheckboxListTile(
+              value: autoTweetEnabled ?? true,
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                if (autoTweetEnabled == null || isAutoTweetUpdating) {
+                  return;
+                }
+                notifier.onAutoTweetToggle(value);
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: const Color(0xFF1D3567),
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                context.l10n.autoPostToX,
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(context.l10n.autoPostToXDescription),
+                  if (!isLoggedIn)
+                    Text(
+                      context.l10n.loginToChangeSetting,
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  if (isLoggedIn && autoTweetEnabled == null)
+                    Text(
+                      context.l10n.loadingAutoPostSetting,
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  if (isAutoTweetUpdating)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Image(
-                            image: Assets.medalBin,
-                            width: 48,
-                            height: 48,
-                            color: const Color(0xFF1D3567),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            context.l10n.tapToSelectImage,
-                            style: TextStyle(
-                              color: Color(0xFF1D3567),
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                Color(0xFF1D3567),
+                              ),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            context.l10n.updatingSetting,
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ],
                       ),
                     ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: !isAnalyzingInBackground
+                    ? () async {
+                        await notifier.saveAndAnalyzeBottle();
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD54F),
+                  foregroundColor: const Color(0xFF1D3567),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
                   ),
-          ),
-          const SizedBox(height: 16),
-          if (sakeImage == null)
-            ElevatedButton.icon(
-              onPressed: () {
-                notifier.pickImage(ImageSource.camera);
-              },
-              icon: const Icon(Icons.camera_alt),
-              label: Text(context.l10n.takePhoto),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1D3567),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  disabledBackgroundColor: Colors.grey.shade400,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                child: Text(
+                  context.l10n.analyzeAndSave,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-          const SizedBox(height: 8),
-          CheckboxListTile(
-            value: shareToTimeline,
-            onChanged: (value) {
-              if (value == null) {
-                return;
-              }
-              notifier.onTimelineShareToggle(value);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: const Color(0xFF1D3567),
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              context.l10n.shareToTimeline,
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(context.l10n.onlyFirstImageShared),
-          ),
-          CheckboxListTile(
-            value: autoTweetEnabled ?? true,
-            onChanged: (value) {
-              if (value == null) {
-                return;
-              }
-              if (autoTweetEnabled == null || isAutoTweetUpdating) {
-                return;
-              }
-              notifier.onAutoTweetToggle(value);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: const Color(0xFF1D3567),
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              context.l10n.autoPostToX,
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(context.l10n.autoPostToXDescription),
-                if (!isLoggedIn)
-                  Text(
-                    context.l10n.loginToChangeSetting,
-                    style: TextStyle(fontSize: 12),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: !isAnalyzingInBackground
+                    ? () async {
+                        await notifier.analyzeSakeBottle();
+                      }
+                    : null,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1D3567),
+                  side: BorderSide(
+                    color: const Color(0xFF1D3567).withOpacity(0.4),
                   ),
-                if (isLoggedIn && autoTweetEnabled == null)
-                  Text(
-                    context.l10n.loadingAutoPostSetting,
-                    style: TextStyle(fontSize: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
                   ),
-                if (isAutoTweetUpdating)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              Color(0xFF1D3567),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          context.l10n.updatingSetting,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: sakeImage != null && !isAnalyzingInBackground
-                      ? () async {
-                          await notifier.saveAndAnalyzeBottle();
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD54F),
-                    foregroundColor: const Color(0xFF1D3567),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    disabledBackgroundColor: Colors.grey.shade400,
-                  ),
-                  child: Text(
-                    context.l10n.analyzeAndSave,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  disabledForegroundColor: Colors.grey.shade500,
+                  disabledBackgroundColor: Colors.transparent,
+                ),
+                child: Text(
+                  context.l10n.analyzeOnly,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: sakeImage != null && !isAnalyzingInBackground
-                      ? () async {
-                          await notifier.analyzeSakeBottle();
-                        }
-                      : null,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1D3567),
-                    side: BorderSide(
-                        color: const Color(0xFF1D3567).withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    disabledForegroundColor: Colors.grey.shade500,
-                    disabledBackgroundColor: Colors.transparent,
-                  ),
-                  child: Text(
-                    context.l10n.analyzeOnly,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
           const SizedBox(height: 16),
         ],
       ),
@@ -716,7 +722,8 @@ class MainSearchPage extends StatelessWidget {
   ) {
     // 日本酒名とタイプが一致するかどうかでお気に入り判定
     final bool isFavorite = myFavoriteList.any(
-        (item) => item.name == sakeInfo.name && item.type == sakeInfo.type);
+      (item) => item.name == sakeInfo.name && item.type == sakeInfo.type,
+    );
 
     // おすすめ度の表示を決定
     String recommendationText = '';
@@ -936,7 +943,9 @@ class MainSearchPage extends StatelessWidget {
                 // 甘口/辛口の表示
                 if (sakeInfo.sakeMeterValue != null)
                   _buildSakeMeterScale(
-                      context, sakeInfo.sakeMeterValue!.toDouble()),
+                    context,
+                    sakeInfo.sakeMeterValue!.toDouble(),
+                  ),
 
                 // タイプ別検索（甘口・辛口ゲージの下に移動）
                 if (sakeInfo.types != null && sakeInfo.types!.isNotEmpty)
@@ -996,7 +1005,10 @@ class MainSearchPage extends StatelessWidget {
 
   // タイプ別検索の表示を修正
   Widget _buildTypesRowEnhanced(
-      BuildContext context, MainSearchPageNotifier notifier, Sake sakeInfo) {
+    BuildContext context,
+    MainSearchPageNotifier notifier,
+    Sake sakeInfo,
+  ) {
     return Container(
       margin: const EdgeInsets.only(top: 16, bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -1041,8 +1053,10 @@ class MainSearchPage extends StatelessWidget {
                     color: Color(0xFF1D3567),
                     fontWeight: FontWeight.bold,
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   avatar: const Icon(
                     Icons.search,
                     size: 16,
@@ -1102,7 +1116,8 @@ class MainSearchPage extends StatelessWidget {
               children: [
                 // インジケーター
                 Positioned(
-                  left: percentage *
+                  left:
+                      percentage *
                       MediaQuery.of(context).size.width *
                       0.7, // 親の幅の70%を使用
                   child: Container(

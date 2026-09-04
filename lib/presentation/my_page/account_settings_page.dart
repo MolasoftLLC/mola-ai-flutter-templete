@@ -54,8 +54,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     final initialName = myPageNotifier.state.userName?.trim().isNotEmpty == true
         ? myPageNotifier.state.userName!.trim()
         : (authState.user?.displayName?.trim().isNotEmpty == true
-            ? authState.user!.displayName!.trim()
-            : (authState.user?.email ?? ''));
+              ? authState.user!.displayName!.trim()
+              : (authState.user?.email ?? ''));
     _usernameController.text = initialName;
     _hasInitialized = true;
   }
@@ -339,9 +339,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     });
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.iconUpdated)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.iconUpdated)));
     }
   }
 
@@ -391,11 +391,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
           border: Border.all(color: Colors.white24),
         ),
         alignment: Alignment.center,
-        child: const Icon(
-          Icons.person,
-          color: Colors.white70,
-          size: 40,
-        ),
+        child: const Icon(Icons.person, color: Colors.white70, size: 40),
       );
     }
 
@@ -404,10 +400,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         width: _avatarPreviewSize,
         height: _avatarPreviewSize,
         child: ClipOval(
-          child: Image.file(
-            _pendingAvatarFile!,
-            fit: BoxFit.cover,
-          ),
+          child: Image.file(_pendingAvatarFile!, fit: BoxFit.cover),
         ),
       );
     }
@@ -459,8 +452,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
               children: [
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(16),
@@ -485,7 +480,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                               child: const CircularProgressIndicator(
                                 strokeWidth: 2.4,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white70),
+                                  Colors.white70,
+                                ),
                               ),
                             ),
                         ],
@@ -503,8 +499,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         ),
                       const SizedBox(height: 16),
                       OutlinedButton.icon(
-                        onPressed:
-                            _isAvatarUpdating ? null : _handleChangeAvatar,
+                        onPressed: _isAvatarUpdating
+                            ? null
+                            : _handleChangeAvatar,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: BorderSide(
@@ -574,8 +571,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFFFD54F)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFD54F),
+                            ),
                           ),
                         ),
                         style: const TextStyle(color: Colors.white),
@@ -584,10 +582,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            localizeLegacyMessage(
-                              context.l10n,
-                              _errorMessage!,
-                            ),
+                            localizeLegacyMessage(context.l10n, _errorMessage!),
                             style: const TextStyle(
                               color: Colors.redAccent,
                               fontSize: 12,
@@ -609,23 +604,23 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                           ),
                           child: _isProcessing
                               ? _activeAction == _AccountSettingsAction.save
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation(
-                                          Color(0xFF1D3567),
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation(
+                                            Color(0xFF1D3567),
+                                          ),
                                         ),
-                                      ),
-                                    )
-                                  : Text(
-                                      context.l10n.saveNickname,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    )
+                                      )
+                                    : Text(
+                                        context.l10n.saveNickname,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      )
                               : Text(
                                   context.l10n.saveNickname,
                                   style: TextStyle(
@@ -653,8 +648,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.mail_outline,
-                              color: Color(0xFFFFD54F)),
+                          const Icon(
+                            Icons.mail_outline,
+                            color: Color(0xFFFFD54F),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -715,8 +712,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                                     ),
                                   ),
                                 )
-                              : const Icon(Icons.logout,
-                                  color: Color(0xFFFF8A65)),
+                              : const Icon(
+                                  Icons.logout,
+                                  color: Color(0xFFFF8A65),
+                                ),
                           label: Text(
                             _activeAction == _AccountSettingsAction.logout
                                 ? context.l10n.signingOut
@@ -746,8 +745,10 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.delete_forever,
-                              color: Color(0xFFFF8A65)),
+                          const Icon(
+                            Icons.delete_forever,
+                            color: Color(0xFFFF8A65),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -788,8 +789,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed:
-                              _isProcessing ? null : _handleDeleteAccount,
+                          onPressed: _isProcessing
+                              ? null
+                              : _handleDeleteAccount,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFFF8A65),
                             side: BorderSide(

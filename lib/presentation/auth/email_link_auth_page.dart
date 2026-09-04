@@ -9,10 +9,7 @@ import '../common/widgets/primary_app_bar.dart';
 enum EmailAuthMode { signIn, signUp }
 
 class EmailLinkAuthPage extends StatefulWidget {
-  const EmailLinkAuthPage({
-    super.key,
-    this.mode = EmailAuthMode.signIn,
-  });
+  const EmailLinkAuthPage({super.key, this.mode = EmailAuthMode.signIn});
 
   final EmailAuthMode mode;
 
@@ -136,14 +133,16 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
     final email = context.select((AuthState state) => state.email);
     final isLoading = context.select((AuthState state) => state.isLoading);
     final infoMessage = context.select((AuthState state) => state.infoMessage);
-    final errorMessage =
-        context.select((AuthState state) => state.errorMessage);
+    final errorMessage = context.select(
+      (AuthState state) => state.errorMessage,
+    );
     final user = context.select((AuthState state) => state.user);
 
     if (email.isNotEmpty && _emailController.text.isEmpty) {
       _emailController.text = email;
-      _emailController.selection =
-          TextSelection.collapsed(offset: _emailController.text.length);
+      _emailController.selection = TextSelection.collapsed(
+        offset: _emailController.text.length,
+      );
     }
 
     if (!_hasNavigatedAfterSuccess &&
@@ -177,15 +176,14 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
           child: Stack(
             children: [
               SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ModeSwitcher(
-                      currentMode: _mode,
-                      onChanged: _toggleMode,
-                    ),
+                    _ModeSwitcher(currentMode: _mode, onChanged: _toggleMode),
                     const SizedBox(height: 16),
                     Text(
                       _descriptionText(context),
@@ -198,21 +196,22 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                     const SizedBox(height: 24),
                     if (errorMessage != null)
                       _MessageBanner(
-                        message:
-                            localizeLegacyMessage(context.l10n, errorMessage),
+                        message: localizeLegacyMessage(
+                          context.l10n,
+                          errorMessage,
+                        ),
                         isError: true,
                       ),
                     if (infoMessage != null)
                       _MessageBanner(
-                        message:
-                            localizeLegacyMessage(context.l10n, infoMessage),
+                        message: localizeLegacyMessage(
+                          context.l10n,
+                          infoMessage,
+                        ),
                         isError: false,
                       ),
                     if (_localError != null)
-                      _MessageBanner(
-                        message: _localError!,
-                        isError: true,
-                      ),
+                      _MessageBanner(message: _localError!, isError: true),
                     TextField(
                       controller: _emailController,
                       autocorrect: false,
@@ -232,8 +231,9 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide:
-                              const BorderSide(color: Color(0xFFFFD54F)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFFD54F),
+                          ),
                         ),
                       ),
                       style: const TextStyle(color: Colors.white),
@@ -267,8 +267,9 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide:
-                              const BorderSide(color: Color(0xFFFFD54F)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFFD54F),
+                          ),
                         ),
                       ),
                       style: const TextStyle(color: Colors.white),
@@ -304,8 +305,9 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFFFD54F)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFFFD54F),
+                            ),
                           ),
                         ),
                         style: const TextStyle(color: Colors.white),
@@ -361,19 +363,13 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
                     Center(
                       child: Text(
                         context.l10n.guestUseAvailable,
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.white38, fontSize: 12),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (isLoading)
-                Container(
-                  color: Colors.black.withOpacity(0.2),
-                ),
+              if (isLoading) Container(color: Colors.black.withOpacity(0.2)),
             ],
           ),
         ),
@@ -383,10 +379,7 @@ class _EmailLinkAuthPageState extends State<EmailLinkAuthPage> {
 }
 
 class _ModeSwitcher extends StatelessWidget {
-  const _ModeSwitcher({
-    required this.currentMode,
-    required this.onChanged,
-  });
+  const _ModeSwitcher({required this.currentMode, required this.onChanged});
 
   final EmailAuthMode currentMode;
   final ValueChanged<EmailAuthMode> onChanged;
@@ -417,9 +410,7 @@ class _ModeSwitcher extends StatelessWidget {
             if (index == selectedIndex) {
               return;
             }
-            onChanged(
-              index == 0 ? EmailAuthMode.signIn : EmailAuthMode.signUp,
-            );
+            onChanged(index == 0 ? EmailAuthMode.signIn : EmailAuthMode.signUp);
           },
           children: [
             Text(
@@ -438,10 +429,7 @@ class _ModeSwitcher extends StatelessWidget {
 }
 
 class _MessageBanner extends StatelessWidget {
-  const _MessageBanner({
-    required this.message,
-    required this.isError,
-  });
+  const _MessageBanner({required this.message, required this.isError});
 
   final String message;
   final bool isError;

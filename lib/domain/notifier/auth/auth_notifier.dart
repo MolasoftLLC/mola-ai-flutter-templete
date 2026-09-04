@@ -252,9 +252,7 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
     try {
       await _repository.signOut();
     } catch (_) {
-      state = state.copyWith(
-        errorMessage: 'ログアウトに失敗しました。時間をおいて再度お試しください。',
-      );
+      state = state.copyWith(errorMessage: 'ログアウトに失敗しました。時間をおいて再度お試しください。');
     }
     state = state.copyWith(verificationEmailSent: false);
   }
@@ -284,13 +282,17 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
     try {
       await _repository.reauthenticateWithPassword(trimmedPassword);
     } on FirebaseAuthException catch (error, stackTrace) {
-      dev.log('Failed to reauthenticate before deletion: ${error.code}',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to reauthenticate before deletion: ${error.code}',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
       return DeleteAccountResult.failure(_translateFirebaseError(error));
     } catch (error, stackTrace) {
-      dev.log('Failed to reauthenticate before deletion: $error',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to reauthenticate before deletion: $error',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
       return DeleteAccountResult.failure('認証に失敗しました。通信環境をご確認のうえ再度お試しください。');
     }
@@ -298,7 +300,8 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
     final remoteDeleted = await _userRepository.deleteAccount(user.uid);
     if (!remoteDeleted) {
       return DeleteAccountResult.failure(
-          'サーバー上のアカウント削除に失敗しました。時間をおいて再度お試しください。');
+        'サーバー上のアカウント削除に失敗しました。時間をおいて再度お試しください。',
+      );
     }
 
     try {
@@ -312,8 +315,10 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
       );
       return DeleteAccountResult.success('アカウントを削除しました。');
     } on FirebaseAuthException catch (error, stackTrace) {
-      dev.log('Failed to delete firebase user: ${error.code}',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to delete firebase user: ${error.code}',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
       return DeleteAccountResult.failure(_translateFirebaseError(error));
     } catch (error, stackTrace) {
@@ -338,8 +343,10 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
         infoMessage: _verificationSentMessage,
       );
     } on FirebaseAuthException catch (e, stackTrace) {
-      dev.log('Failed to send verification email: ${e.code}',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to send verification email: ${e.code}',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
 
       await _repository.signOut();
@@ -361,8 +368,10 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
         verificationEmailSent: false,
       );
     } catch (error, stackTrace) {
-      dev.log('Failed to send verification email: $error',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to send verification email: $error',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
       await _repository.signOut();
       state = state.copyWith(
@@ -381,8 +390,10 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
       await read<FavoriteNotifier>().onUserSignedIn(user.uid);
       await read<MyPageNotifier>().onUserSignedIn(user.uid);
     } catch (error, stackTrace) {
-      dev.log('Failed to handle user sign-in sync: $error',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to handle user sign-in sync: $error',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
     }
   }
@@ -393,8 +404,10 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
       await read<FavoriteNotifier>().onUserSignedOut();
       await read<MyPageNotifier>().onUserSignedOut();
     } catch (error, stackTrace) {
-      dev.log('Failed to handle user sign-out cleanup: $error',
-          name: 'AuthNotifier');
+      dev.log(
+        'Failed to handle user sign-out cleanup: $error',
+        name: 'AuthNotifier',
+      );
       dev.log(stackTrace.toString(), name: 'AuthNotifier');
     }
     state = state.copyWith(verificationEmailSent: false);

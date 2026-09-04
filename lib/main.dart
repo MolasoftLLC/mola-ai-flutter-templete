@@ -22,9 +22,7 @@ class MyHttpOverrides extends HttpOverrides {
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        final isValidHost = [
-          productionUrl,
-        ].contains(host);
+        final isValidHost = [productionUrl].contains(host);
         return isValidHost;
       };
   }
@@ -33,9 +31,7 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // 画面の向きを縦に固定
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   await _requestTrackingAuthorization();
 
@@ -112,9 +108,7 @@ class MyApp extends StatelessWidget {
         return const Locale('en');
       },
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const FirstLaunchGate(),

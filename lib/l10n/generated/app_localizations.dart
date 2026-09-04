@@ -63,7 +63,7 @@ import 'app_localizations_ja.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -86,16 +86,16 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('ja')
+    Locale('ja'),
   ];
 
   /// No description provided for @appTitle.
@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'メニュー解析'**
   String get navigationMenuAnalysis;
 
+  /// No description provided for @navigationRecommendation.
+  ///
+  /// In ja, this message translates to:
+  /// **'おすすめ'**
+  String get navigationRecommendation;
+
+  /// No description provided for @navigationScan.
+  ///
+  /// In ja, this message translates to:
+  /// **'スキャン'**
+  String get navigationScan;
+
   /// No description provided for @navigationTimeline.
   ///
   /// In ja, this message translates to:
@@ -127,6 +139,24 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'マイページ'**
   String get navigationMyPage;
+
+  /// No description provided for @newHomeSearchHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'いろいろな条件で検索'**
+  String get newHomeSearchHint;
+
+  /// No description provided for @newHomeRecentSakes.
+  ///
+  /// In ja, this message translates to:
+  /// **'最近調べたお酒'**
+  String get newHomeRecentSakes;
+
+  /// No description provided for @newHomeTimeline.
+  ///
+  /// In ja, this message translates to:
+  /// **'タイムライン'**
+  String get newHomeTimeline;
 
   /// No description provided for @searchPageTitle.
   ///
@@ -1571,7 +1601,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectBottleImage.
   ///
   /// In ja, this message translates to:
-  /// **'日本酒のラベルや瓶の画像を選択してください'**
+  /// **'ラベルを撮るだけですぐに日本酒を探せます'**
   String get selectBottleImage;
 
   /// No description provided for @tapToSelectImage.
@@ -2017,6 +2047,102 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'お店やイベント名などを記録できます'**
   String get placeConsumedHint;
+
+  /// No description provided for @addConsumedPlace.
+  ///
+  /// In ja, this message translates to:
+  /// **'飲んだ場所を追加'**
+  String get addConsumedPlace;
+
+  /// No description provided for @changeConsumedPlace.
+  ///
+  /// In ja, this message translates to:
+  /// **'飲んだ場所を変更'**
+  String get changeConsumedPlace;
+
+  /// No description provided for @findPlaceNearby.
+  ///
+  /// In ja, this message translates to:
+  /// **'近くで探す'**
+  String get findPlaceNearby;
+
+  /// No description provided for @findPlaceByName.
+  ///
+  /// In ja, this message translates to:
+  /// **'名前で探す'**
+  String get findPlaceByName;
+
+  /// No description provided for @placeNameSearchHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'店名・施設名を入力'**
+  String get placeNameSearchHint;
+
+  /// No description provided for @searchingNearbyPlaces.
+  ///
+  /// In ja, this message translates to:
+  /// **'現在地付近を検索しています…'**
+  String get searchingNearbyPlaces;
+
+  /// No description provided for @searchingPlaces.
+  ///
+  /// In ja, this message translates to:
+  /// **'場所を検索しています…'**
+  String get searchingPlaces;
+
+  /// No description provided for @noNearbyPlaces.
+  ///
+  /// In ja, this message translates to:
+  /// **'近くに候補が見つかりませんでした'**
+  String get noNearbyPlaces;
+
+  /// No description provided for @noPlaceResults.
+  ///
+  /// In ja, this message translates to:
+  /// **'一致する場所が見つかりませんでした'**
+  String get noPlaceResults;
+
+  /// No description provided for @useEnteredPlace.
+  ///
+  /// In ja, this message translates to:
+  /// **'「{place}」を入力する'**
+  String useEnteredPlace(String place);
+
+  /// No description provided for @placeSearchFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'場所を検索できませんでした。手入力も利用できます。'**
+  String get placeSearchFailed;
+
+  /// No description provided for @locationServicesDisabled.
+  ///
+  /// In ja, this message translates to:
+  /// **'端末の位置情報をオンにしてください'**
+  String get locationServicesDisabled;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In ja, this message translates to:
+  /// **'近くのお店を探すには位置情報の許可が必要です'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @locationPermissionPermanentlyDenied.
+  ///
+  /// In ja, this message translates to:
+  /// **'設定画面から位置情報を許可してください'**
+  String get locationPermissionPermanentlyDenied;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In ja, this message translates to:
+  /// **'設定を開く'**
+  String get openSettings;
+
+  /// No description provided for @poweredByGoogle.
+  ///
+  /// In ja, this message translates to:
+  /// **'Powered by Google'**
+  String get poweredByGoogle;
 
   /// No description provided for @saveMemories.
   ///
@@ -2695,6 +2821,240 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'好みの設定が完了していません。好みを登録してからお試しください。'**
   String get noPreferenceConfigured;
+
+  /// No description provided for @fastLabelScan.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベルを撮る'**
+  String get fastLabelScan;
+
+  /// No description provided for @frontLabelScanTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'正面ラベルを撮影'**
+  String get frontLabelScanTitle;
+
+  /// No description provided for @frontLabelScanDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベル全体がガイド枠に収まるように撮影してください。'**
+  String get frontLabelScanDescription;
+
+  /// No description provided for @backLabelScanTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'裏ラベルを撮影'**
+  String get backLabelScanTitle;
+
+  /// No description provided for @backLabelScanDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'商品名・製造者・容量などが読めるように裏ラベルを撮影してください。'**
+  String get backLabelScanDescription;
+
+  /// No description provided for @scanBackPromptTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'裏ラベルを撮影しましょう'**
+  String get scanBackPromptTitle;
+
+  /// No description provided for @scanBackPromptOcrUnreadable.
+  ///
+  /// In ja, this message translates to:
+  /// **'正面ラベルの文字を認識できませんでした。商品名や製造者が読めるように、裏ラベルを撮影してください。'**
+  String get scanBackPromptOcrUnreadable;
+
+  /// No description provided for @scanBackPromptNoCatalogMatch.
+  ///
+  /// In ja, this message translates to:
+  /// **'正面ラベルだけでは商品を特定できませんでした。商品名や製造者が書かれた裏ラベルを撮影してください。'**
+  String get scanBackPromptNoCatalogMatch;
+
+  /// No description provided for @scanBackPromptLowConfidence.
+  ///
+  /// In ja, this message translates to:
+  /// **'正面ラベルの情報だけでは候補を絞り切れませんでした。確認のため裏ラベルを撮影してください。'**
+  String get scanBackPromptLowConfidence;
+
+  /// No description provided for @scanBackPromptAction.
+  ///
+  /// In ja, this message translates to:
+  /// **'裏ラベルを撮影する'**
+  String get scanBackPromptAction;
+
+  /// No description provided for @captureLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベルを撮影'**
+  String get captureLabel;
+
+  /// No description provided for @closeUpMode.
+  ///
+  /// In ja, this message translates to:
+  /// **'近接'**
+  String get closeUpMode;
+
+  /// No description provided for @selectFromGallery.
+  ///
+  /// In ja, this message translates to:
+  /// **'ギャラリーから選ぶ'**
+  String get selectFromGallery;
+
+  /// No description provided for @searchingLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'日本酒を照合しています…'**
+  String get searchingLabel;
+
+  /// No description provided for @isThisSake.
+  ///
+  /// In ja, this message translates to:
+  /// **'この日本酒ですか？'**
+  String get isThisSake;
+
+  /// No description provided for @yesThisSake.
+  ///
+  /// In ja, this message translates to:
+  /// **'はい、この日本酒です'**
+  String get yesThisSake;
+
+  /// No description provided for @showOtherCandidate.
+  ///
+  /// In ja, this message translates to:
+  /// **'ほかの候補'**
+  String get showOtherCandidate;
+
+  /// No description provided for @wrongTakeBackLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'違います・裏ラベルを撮る'**
+  String get wrongTakeBackLabel;
+
+  /// No description provided for @loadingSakeOverview.
+  ///
+  /// In ja, this message translates to:
+  /// **'日本酒の情報を読み込んでいます…'**
+  String get loadingSakeOverview;
+
+  /// No description provided for @scanAiAnalyzing.
+  ///
+  /// In ja, this message translates to:
+  /// **'基本情報が見つかりました。詳しい解析は続いています…'**
+  String get scanAiAnalyzing;
+
+  /// No description provided for @scanCompleted.
+  ///
+  /// In ja, this message translates to:
+  /// **'日本酒を特定しました'**
+  String get scanCompleted;
+
+  /// No description provided for @finishScan.
+  ///
+  /// In ja, this message translates to:
+  /// **'詳しく見る'**
+  String get finishScan;
+
+  /// No description provided for @scanNextBottle.
+  ///
+  /// In ja, this message translates to:
+  /// **'次の一本'**
+  String get scanNextBottle;
+
+  /// No description provided for @scanCameraPermissionDenied.
+  ///
+  /// In ja, this message translates to:
+  /// **'カメラの使用が許可されていません。端末の設定でカメラを許可するか、ギャラリーから画像を選択してください。'**
+  String get scanCameraPermissionDenied;
+
+  /// No description provided for @scanCameraUnavailable.
+  ///
+  /// In ja, this message translates to:
+  /// **'カメラを利用できません。ギャラリーから画像を選択してください。'**
+  String get scanCameraUnavailable;
+
+  /// No description provided for @retryScan.
+  ///
+  /// In ja, this message translates to:
+  /// **'最初からやり直す'**
+  String get retryScan;
+
+  /// No description provided for @scanErrorCompression.
+  ///
+  /// In ja, this message translates to:
+  /// **'画像を準備できませんでした。別の画像でもう一度お試しください。'**
+  String get scanErrorCompression;
+
+  /// No description provided for @scanErrorTimeout.
+  ///
+  /// In ja, this message translates to:
+  /// **'通信がタイムアウトしました。通信環境を確認してください。'**
+  String get scanErrorTimeout;
+
+  /// No description provided for @scanErrorNoCandidates.
+  ///
+  /// In ja, this message translates to:
+  /// **'候補の日本酒が見つかりませんでした。'**
+  String get scanErrorNoCandidates;
+
+  /// No description provided for @scanErrorSessionExpired.
+  ///
+  /// In ja, this message translates to:
+  /// **'スキャンの有効期限が切れました。最初からお試しください。'**
+  String get scanErrorSessionExpired;
+
+  /// No description provided for @scanErrorRateLimited.
+  ///
+  /// In ja, this message translates to:
+  /// **'リクエストが集中しています。少し待ってからお試しください。'**
+  String get scanErrorRateLimited;
+
+  /// No description provided for @scanErrorServer.
+  ///
+  /// In ja, this message translates to:
+  /// **'サーバーで問題が発生しました。時間をおいてお試しください。'**
+  String get scanErrorServer;
+
+  /// No description provided for @scanErrorAi.
+  ///
+  /// In ja, this message translates to:
+  /// **'AI解析に失敗しました。時間をおいてお試しください。'**
+  String get scanErrorAi;
+
+  /// No description provided for @scanErrorGeneric.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベルのスキャンに失敗しました。もう一度お試しください。'**
+  String get scanErrorGeneric;
+
+  /// No description provided for @shareScannedSakeToTimeline.
+  ///
+  /// In ja, this message translates to:
+  /// **'保存後にタイムラインへ公開する'**
+  String get shareScannedSakeToTimeline;
+
+  /// No description provided for @communityImpressions.
+  ///
+  /// In ja, this message translates to:
+  /// **'この日本酒を飲んだ人の感想'**
+  String get communityImpressions;
+
+  /// No description provided for @communityImpressionCount.
+  ///
+  /// In ja, this message translates to:
+  /// **'感想 {count}件'**
+  String communityImpressionCount(int count);
+
+  /// No description provided for @recentPublicPosts.
+  ///
+  /// In ja, this message translates to:
+  /// **'最近の公開投稿'**
+  String get recentPublicPosts;
+
+  /// No description provided for @sameBrandSakes.
+  ///
+  /// In ja, this message translates to:
+  /// **'同じ銘柄の日本酒'**
+  String get sameBrandSakes;
 }
 
 class _AppLocalizationsDelegate
@@ -2724,8 +3084,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

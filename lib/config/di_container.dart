@@ -14,6 +14,8 @@ import '../domain/repository/gemini_mola_api_repository.dart';
 import '../domain/repository/mola_api_repository.dart';
 import '../domain/repository/sake_bottle_image_repository.dart';
 import '../domain/repository/sake_menu_recognition_repository.dart';
+import '../domain/repository/sake_scan_repository.dart';
+import '../domain/repository/place_map_repository.dart';
 import '../domain/repository/saved_sake_sync_repository.dart';
 import '../domain/repository/user_preference_repository.dart';
 import '../domain/repository/sake_user_repository.dart';
@@ -49,16 +51,11 @@ List<SingleChildWidget> get _repositoryProviders {
       ),
     ),
     Provider<MolaApiRepository>(
-      create: (_) => MolaApiRepository(
-        ApiClient.create(chopperClient(url: apiURL())),
-      ),
+      create: (_) =>
+          MolaApiRepository(ApiClient.create(chopperClient(url: apiURL()))),
     ),
-    Provider<AuthRepository>(
-      create: (_) => AuthRepository(),
-    ),
-    Provider<SharedPreference>(
-      create: (_) => SharedPreference(),
-    ),
+    Provider<AuthRepository>(create: (_) => AuthRepository()),
+    Provider<SharedPreference>(create: (_) => SharedPreference()),
     Provider<SakeMenuRecognitionApiClient>(
       create: (_) => SakeMenuRecognitionApiClient.create(
         sakeMenuRecognitionChopperClient(),
@@ -69,6 +66,10 @@ List<SingleChildWidget> get _repositoryProviders {
         context.read<SakeMenuRecognitionApiClient>(),
       ),
     ),
+    Provider<SakeScanRepository>(
+      create: (context) =>
+          SakeScanApiRepository(context.read<SakeMenuRecognitionApiClient>()),
+    ),
     Provider<SakeBottleImageRepository>(
       create: (_) => SakeBottleImageRepository(),
     ),
@@ -76,6 +77,10 @@ List<SingleChildWidget> get _repositoryProviders {
       create: (_) => SavedSakeSyncRepository(
         ApiClient.create(chopperClient(url: apiURL())),
       ),
+    ),
+    Provider<PlaceMapRepository>(
+      create: (_) =>
+          PlaceMapRepository(ApiClient.create(chopperClient(url: apiURL()))),
     ),
     Provider<FavoriteSyncRepository>(
       create: (_) => FavoriteSyncRepository(
@@ -88,9 +93,8 @@ List<SingleChildWidget> get _repositoryProviders {
       ),
     ),
     Provider<SakeUserRepository>(
-      create: (_) => SakeUserRepository(
-        ApiClient.create(chopperClient(url: apiURL())),
-      ),
+      create: (_) =>
+          SakeUserRepository(ApiClient.create(chopperClient(url: apiURL()))),
     ),
   ];
 }

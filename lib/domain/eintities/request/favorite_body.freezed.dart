@@ -12,7 +12,8 @@ part of 'favorite_body.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 FavoriteBody _$FavoriteBodyFromJson(Map<String, dynamic> json) {
   return _FavoriteBody.fromJson(json);
@@ -34,14 +35,16 @@ mixin _$FavoriteBody {
 /// @nodoc
 abstract class $FavoriteBodyCopyWith<$Res> {
   factory $FavoriteBodyCopyWith(
-          FavoriteBody value, $Res Function(FavoriteBody) then) =
-      _$FavoriteBodyCopyWithImpl<$Res, FavoriteBody>;
+    FavoriteBody value,
+    $Res Function(FavoriteBody) then,
+  ) = _$FavoriteBodyCopyWithImpl<$Res, FavoriteBody>;
   @useResult
-  $Res call(
-      {List<String>? flavors,
-      List<String>? designs,
-      List<String>? tastes,
-      String? prefecture});
+  $Res call({
+    List<String>? flavors,
+    List<String>? designs,
+    List<String>? tastes,
+    String? prefecture,
+  });
 }
 
 /// @nodoc
@@ -62,24 +65,27 @@ class _$FavoriteBodyCopyWithImpl<$Res, $Val extends FavoriteBody>
     Object? tastes = freezed,
     Object? prefecture = freezed,
   }) {
-    return _then(_value.copyWith(
-      flavors: freezed == flavors
-          ? _value.flavors
-          : flavors // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      designs: freezed == designs
-          ? _value.designs
-          : designs // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      tastes: freezed == tastes
-          ? _value.tastes
-          : tastes // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      prefecture: freezed == prefecture
-          ? _value.prefecture
-          : prefecture // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            flavors: freezed == flavors
+                ? _value.flavors
+                : flavors // ignore: cast_nullable_to_non_nullable
+                      as List<String>?,
+            designs: freezed == designs
+                ? _value.designs
+                : designs // ignore: cast_nullable_to_non_nullable
+                      as List<String>?,
+            tastes: freezed == tastes
+                ? _value.tastes
+                : tastes // ignore: cast_nullable_to_non_nullable
+                      as List<String>?,
+            prefecture: freezed == prefecture
+                ? _value.prefecture
+                : prefecture // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -87,15 +93,17 @@ class _$FavoriteBodyCopyWithImpl<$Res, $Val extends FavoriteBody>
 abstract class _$$FavoriteBodyImplCopyWith<$Res>
     implements $FavoriteBodyCopyWith<$Res> {
   factory _$$FavoriteBodyImplCopyWith(
-          _$FavoriteBodyImpl value, $Res Function(_$FavoriteBodyImpl) then) =
-      __$$FavoriteBodyImplCopyWithImpl<$Res>;
+    _$FavoriteBodyImpl value,
+    $Res Function(_$FavoriteBodyImpl) then,
+  ) = __$$FavoriteBodyImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {List<String>? flavors,
-      List<String>? designs,
-      List<String>? tastes,
-      String? prefecture});
+  $Res call({
+    List<String>? flavors,
+    List<String>? designs,
+    List<String>? tastes,
+    String? prefecture,
+  });
 }
 
 /// @nodoc
@@ -103,8 +111,9 @@ class __$$FavoriteBodyImplCopyWithImpl<$Res>
     extends _$FavoriteBodyCopyWithImpl<$Res, _$FavoriteBodyImpl>
     implements _$$FavoriteBodyImplCopyWith<$Res> {
   __$$FavoriteBodyImplCopyWithImpl(
-      _$FavoriteBodyImpl _value, $Res Function(_$FavoriteBodyImpl) _then)
-      : super(_value, _then);
+    _$FavoriteBodyImpl _value,
+    $Res Function(_$FavoriteBodyImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -114,39 +123,41 @@ class __$$FavoriteBodyImplCopyWithImpl<$Res>
     Object? tastes = freezed,
     Object? prefecture = freezed,
   }) {
-    return _then(_$FavoriteBodyImpl(
-      flavors: freezed == flavors
-          ? _value._flavors
-          : flavors // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      designs: freezed == designs
-          ? _value._designs
-          : designs // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      tastes: freezed == tastes
-          ? _value._tastes
-          : tastes // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-      prefecture: freezed == prefecture
-          ? _value.prefecture
-          : prefecture // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+    return _then(
+      _$FavoriteBodyImpl(
+        flavors: freezed == flavors
+            ? _value._flavors
+            : flavors // ignore: cast_nullable_to_non_nullable
+                  as List<String>?,
+        designs: freezed == designs
+            ? _value._designs
+            : designs // ignore: cast_nullable_to_non_nullable
+                  as List<String>?,
+        tastes: freezed == tastes
+            ? _value._tastes
+            : tastes // ignore: cast_nullable_to_non_nullable
+                  as List<String>?,
+        prefecture: freezed == prefecture
+            ? _value.prefecture
+            : prefecture // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$FavoriteBodyImpl extends _FavoriteBody {
-  _$FavoriteBodyImpl(
-      {final List<String>? flavors,
-      final List<String>? designs,
-      final List<String>? tastes,
-      this.prefecture})
-      : _flavors = flavors,
-        _designs = designs,
-        _tastes = tastes,
-        super._();
+  _$FavoriteBodyImpl({
+    final List<String>? flavors,
+    final List<String>? designs,
+    final List<String>? tastes,
+    this.prefecture,
+  }) : _flavors = flavors,
+       _designs = designs,
+       _tastes = tastes,
+       super._();
 
   factory _$FavoriteBodyImpl.fromJson(Map<String, dynamic> json) =>
       _$$FavoriteBodyImplFromJson(json);
@@ -204,11 +215,12 @@ class _$FavoriteBodyImpl extends _FavoriteBody {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      const DeepCollectionEquality().hash(_flavors),
-      const DeepCollectionEquality().hash(_designs),
-      const DeepCollectionEquality().hash(_tastes),
-      prefecture);
+    runtimeType,
+    const DeepCollectionEquality().hash(_flavors),
+    const DeepCollectionEquality().hash(_designs),
+    const DeepCollectionEquality().hash(_tastes),
+    prefecture,
+  );
 
   @JsonKey(ignore: true)
   @override
@@ -218,18 +230,17 @@ class _$FavoriteBodyImpl extends _FavoriteBody {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$FavoriteBodyImplToJson(
-      this,
-    );
+    return _$$FavoriteBodyImplToJson(this);
   }
 }
 
 abstract class _FavoriteBody extends FavoriteBody {
-  factory _FavoriteBody(
-      {final List<String>? flavors,
-      final List<String>? designs,
-      final List<String>? tastes,
-      final String? prefecture}) = _$FavoriteBodyImpl;
+  factory _FavoriteBody({
+    final List<String>? flavors,
+    final List<String>? designs,
+    final List<String>? tastes,
+    final String? prefecture,
+  }) = _$FavoriteBodyImpl;
   _FavoriteBody._() : super._();
 
   factory _FavoriteBody.fromJson(Map<String, dynamic> json) =

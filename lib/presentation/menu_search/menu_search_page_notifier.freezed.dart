@@ -12,7 +12,8 @@ part of 'menu_search_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$MenuSearchPageState {
@@ -52,30 +53,32 @@ mixin _$MenuSearchPageState {
 /// @nodoc
 abstract class $MenuSearchPageStateCopyWith<$Res> {
   factory $MenuSearchPageStateCopyWith(
-          MenuSearchPageState value, $Res Function(MenuSearchPageState) then) =
-      _$MenuSearchPageStateCopyWithImpl<$Res, MenuSearchPageState>;
+    MenuSearchPageState value,
+    $Res Function(MenuSearchPageState) then,
+  ) = _$MenuSearchPageStateCopyWithImpl<$Res, MenuSearchPageState>;
   @useResult
-  $Res call(
-      {bool isLoading,
-      bool isExtractingInfo,
-      bool isGettingDetails,
-      bool isAdLoading,
-      bool isAnalyzingInBackground,
-      String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? geminiResponse,
-      List<Sake> extractedSakes,
-      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
-      String? errorMessage,
-      List<Sake>? sakes,
-      Map<String, bool> sakeLoadingStatus,
-      Map<String, String> nameMapping,
-      String? preferences,
-      bool hasScrolledToResults,
-      List<MenuAnalysisHistoryItem> menuAnalysisHistory,
-      String? selectedHistoryItemId,
-      bool isEditingStoreName});
+  $Res call({
+    bool isLoading,
+    bool isExtractingInfo,
+    bool isGettingDetails,
+    bool isAdLoading,
+    bool isAnalyzingInBackground,
+    String? sakeName,
+    String? hint,
+    File? sakeImage,
+    String? geminiResponse,
+    List<Sake> extractedSakes,
+    SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+    String? errorMessage,
+    List<Sake>? sakes,
+    Map<String, bool> sakeLoadingStatus,
+    Map<String, String> nameMapping,
+    String? preferences,
+    bool hasScrolledToResults,
+    List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+    String? selectedHistoryItemId,
+    bool isEditingStoreName,
+  });
 
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
 }
@@ -114,88 +117,91 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? selectedHistoryItemId = freezed,
     Object? isEditingStoreName = null,
   }) {
-    return _then(_value.copyWith(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isExtractingInfo: null == isExtractingInfo
-          ? _value.isExtractingInfo
-          : isExtractingInfo // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isGettingDetails: null == isGettingDetails
-          ? _value.isGettingDetails
-          : isGettingDetails // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAdLoading: null == isAdLoading
-          ? _value.isAdLoading
-          : isAdLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAnalyzingInBackground: null == isAnalyzingInBackground
-          ? _value.isAnalyzingInBackground
-          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
-              as bool,
-      sakeName: freezed == sakeName
-          ? _value.sakeName
-          : sakeName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
-              as String?,
-      extractedSakes: null == extractedSakes
-          ? _value.extractedSakes
-          : extractedSakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>,
-      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
-          ? _value.sakeMenuRecognitionResponse
-          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
-              as SakeMenuRecognitionResponse?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakes: freezed == sakes
-          ? _value.sakes
-          : sakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>?,
-      sakeLoadingStatus: null == sakeLoadingStatus
-          ? _value.sakeLoadingStatus
-          : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
-              as Map<String, bool>,
-      nameMapping: null == nameMapping
-          ? _value.nameMapping
-          : nameMapping // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>,
-      preferences: freezed == preferences
-          ? _value.preferences
-          : preferences // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hasScrolledToResults: null == hasScrolledToResults
-          ? _value.hasScrolledToResults
-          : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
-              as bool,
-      menuAnalysisHistory: null == menuAnalysisHistory
-          ? _value.menuAnalysisHistory
-          : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
-              as List<MenuAnalysisHistoryItem>,
-      selectedHistoryItemId: freezed == selectedHistoryItemId
-          ? _value.selectedHistoryItemId
-          : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isEditingStoreName: null == isEditingStoreName
-          ? _value.isEditingStoreName
-          : isEditingStoreName // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            isLoading: null == isLoading
+                ? _value.isLoading
+                : isLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isExtractingInfo: null == isExtractingInfo
+                ? _value.isExtractingInfo
+                : isExtractingInfo // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isGettingDetails: null == isGettingDetails
+                ? _value.isGettingDetails
+                : isGettingDetails // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isAdLoading: null == isAdLoading
+                ? _value.isAdLoading
+                : isAdLoading // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            isAnalyzingInBackground: null == isAnalyzingInBackground
+                ? _value.isAnalyzingInBackground
+                : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            sakeName: freezed == sakeName
+                ? _value.sakeName
+                : sakeName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            hint: freezed == hint
+                ? _value.hint
+                : hint // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sakeImage: freezed == sakeImage
+                ? _value.sakeImage
+                : sakeImage // ignore: cast_nullable_to_non_nullable
+                      as File?,
+            geminiResponse: freezed == geminiResponse
+                ? _value.geminiResponse
+                : geminiResponse // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            extractedSakes: null == extractedSakes
+                ? _value.extractedSakes
+                : extractedSakes // ignore: cast_nullable_to_non_nullable
+                      as List<Sake>,
+            sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+                ? _value.sakeMenuRecognitionResponse
+                : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+                      as SakeMenuRecognitionResponse?,
+            errorMessage: freezed == errorMessage
+                ? _value.errorMessage
+                : errorMessage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            sakes: freezed == sakes
+                ? _value.sakes
+                : sakes // ignore: cast_nullable_to_non_nullable
+                      as List<Sake>?,
+            sakeLoadingStatus: null == sakeLoadingStatus
+                ? _value.sakeLoadingStatus
+                : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
+                      as Map<String, bool>,
+            nameMapping: null == nameMapping
+                ? _value.nameMapping
+                : nameMapping // ignore: cast_nullable_to_non_nullable
+                      as Map<String, String>,
+            preferences: freezed == preferences
+                ? _value.preferences
+                : preferences // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            hasScrolledToResults: null == hasScrolledToResults
+                ? _value.hasScrolledToResults
+                : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            menuAnalysisHistory: null == menuAnalysisHistory
+                ? _value.menuAnalysisHistory
+                : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
+                      as List<MenuAnalysisHistoryItem>,
+            selectedHistoryItemId: freezed == selectedHistoryItemId
+                ? _value.selectedHistoryItemId
+                : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            isEditingStoreName: null == isEditingStoreName
+                ? _value.isEditingStoreName
+                : isEditingStoreName // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
   }
 
   @override
@@ -206,41 +212,47 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     }
 
     return $SakeMenuRecognitionResponseCopyWith<$Res>(
-        _value.sakeMenuRecognitionResponse!, (value) {
-      return _then(_value.copyWith(sakeMenuRecognitionResponse: value) as $Val);
-    });
+      _value.sakeMenuRecognitionResponse!,
+      (value) {
+        return _then(
+          _value.copyWith(sakeMenuRecognitionResponse: value) as $Val,
+        );
+      },
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
     implements $MenuSearchPageStateCopyWith<$Res> {
-  factory _$$MenuSearchPageStateImplCopyWith(_$MenuSearchPageStateImpl value,
-          $Res Function(_$MenuSearchPageStateImpl) then) =
-      __$$MenuSearchPageStateImplCopyWithImpl<$Res>;
+  factory _$$MenuSearchPageStateImplCopyWith(
+    _$MenuSearchPageStateImpl value,
+    $Res Function(_$MenuSearchPageStateImpl) then,
+  ) = __$$MenuSearchPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {bool isLoading,
-      bool isExtractingInfo,
-      bool isGettingDetails,
-      bool isAdLoading,
-      bool isAnalyzingInBackground,
-      String? sakeName,
-      String? hint,
-      File? sakeImage,
-      String? geminiResponse,
-      List<Sake> extractedSakes,
-      SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
-      String? errorMessage,
-      List<Sake>? sakes,
-      Map<String, bool> sakeLoadingStatus,
-      Map<String, String> nameMapping,
-      String? preferences,
-      bool hasScrolledToResults,
-      List<MenuAnalysisHistoryItem> menuAnalysisHistory,
-      String? selectedHistoryItemId,
-      bool isEditingStoreName});
+  $Res call({
+    bool isLoading,
+    bool isExtractingInfo,
+    bool isGettingDetails,
+    bool isAdLoading,
+    bool isAnalyzingInBackground,
+    String? sakeName,
+    String? hint,
+    File? sakeImage,
+    String? geminiResponse,
+    List<Sake> extractedSakes,
+    SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+    String? errorMessage,
+    List<Sake>? sakes,
+    Map<String, bool> sakeLoadingStatus,
+    Map<String, String> nameMapping,
+    String? preferences,
+    bool hasScrolledToResults,
+    List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+    String? selectedHistoryItemId,
+    bool isEditingStoreName,
+  });
 
   @override
   $SakeMenuRecognitionResponseCopyWith<$Res>? get sakeMenuRecognitionResponse;
@@ -250,9 +262,10 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
 class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     extends _$MenuSearchPageStateCopyWithImpl<$Res, _$MenuSearchPageStateImpl>
     implements _$$MenuSearchPageStateImplCopyWith<$Res> {
-  __$$MenuSearchPageStateImplCopyWithImpl(_$MenuSearchPageStateImpl _value,
-      $Res Function(_$MenuSearchPageStateImpl) _then)
-      : super(_value, _then);
+  __$$MenuSearchPageStateImplCopyWithImpl(
+    _$MenuSearchPageStateImpl _value,
+    $Res Function(_$MenuSearchPageStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -278,120 +291,122 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? selectedHistoryItemId = freezed,
     Object? isEditingStoreName = null,
   }) {
-    return _then(_$MenuSearchPageStateImpl(
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isExtractingInfo: null == isExtractingInfo
-          ? _value.isExtractingInfo
-          : isExtractingInfo // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isGettingDetails: null == isGettingDetails
-          ? _value.isGettingDetails
-          : isGettingDetails // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAdLoading: null == isAdLoading
-          ? _value.isAdLoading
-          : isAdLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAnalyzingInBackground: null == isAnalyzingInBackground
-          ? _value.isAnalyzingInBackground
-          : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
-              as bool,
-      sakeName: freezed == sakeName
-          ? _value.sakeName
-          : sakeName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hint: freezed == hint
-          ? _value.hint
-          : hint // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakeImage: freezed == sakeImage
-          ? _value.sakeImage
-          : sakeImage // ignore: cast_nullable_to_non_nullable
-              as File?,
-      geminiResponse: freezed == geminiResponse
-          ? _value.geminiResponse
-          : geminiResponse // ignore: cast_nullable_to_non_nullable
-              as String?,
-      extractedSakes: null == extractedSakes
-          ? _value._extractedSakes
-          : extractedSakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>,
-      sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
-          ? _value.sakeMenuRecognitionResponse
-          : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
-              as SakeMenuRecognitionResponse?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      sakes: freezed == sakes
-          ? _value._sakes
-          : sakes // ignore: cast_nullable_to_non_nullable
-              as List<Sake>?,
-      sakeLoadingStatus: null == sakeLoadingStatus
-          ? _value._sakeLoadingStatus
-          : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
-              as Map<String, bool>,
-      nameMapping: null == nameMapping
-          ? _value._nameMapping
-          : nameMapping // ignore: cast_nullable_to_non_nullable
-              as Map<String, String>,
-      preferences: freezed == preferences
-          ? _value.preferences
-          : preferences // ignore: cast_nullable_to_non_nullable
-              as String?,
-      hasScrolledToResults: null == hasScrolledToResults
-          ? _value.hasScrolledToResults
-          : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
-              as bool,
-      menuAnalysisHistory: null == menuAnalysisHistory
-          ? _value._menuAnalysisHistory
-          : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
-              as List<MenuAnalysisHistoryItem>,
-      selectedHistoryItemId: freezed == selectedHistoryItemId
-          ? _value.selectedHistoryItemId
-          : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isEditingStoreName: null == isEditingStoreName
-          ? _value.isEditingStoreName
-          : isEditingStoreName // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
+    return _then(
+      _$MenuSearchPageStateImpl(
+        isLoading: null == isLoading
+            ? _value.isLoading
+            : isLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isExtractingInfo: null == isExtractingInfo
+            ? _value.isExtractingInfo
+            : isExtractingInfo // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isGettingDetails: null == isGettingDetails
+            ? _value.isGettingDetails
+            : isGettingDetails // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isAdLoading: null == isAdLoading
+            ? _value.isAdLoading
+            : isAdLoading // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        isAnalyzingInBackground: null == isAnalyzingInBackground
+            ? _value.isAnalyzingInBackground
+            : isAnalyzingInBackground // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        sakeName: freezed == sakeName
+            ? _value.sakeName
+            : sakeName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        hint: freezed == hint
+            ? _value.hint
+            : hint // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sakeImage: freezed == sakeImage
+            ? _value.sakeImage
+            : sakeImage // ignore: cast_nullable_to_non_nullable
+                  as File?,
+        geminiResponse: freezed == geminiResponse
+            ? _value.geminiResponse
+            : geminiResponse // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        extractedSakes: null == extractedSakes
+            ? _value._extractedSakes
+            : extractedSakes // ignore: cast_nullable_to_non_nullable
+                  as List<Sake>,
+        sakeMenuRecognitionResponse: freezed == sakeMenuRecognitionResponse
+            ? _value.sakeMenuRecognitionResponse
+            : sakeMenuRecognitionResponse // ignore: cast_nullable_to_non_nullable
+                  as SakeMenuRecognitionResponse?,
+        errorMessage: freezed == errorMessage
+            ? _value.errorMessage
+            : errorMessage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        sakes: freezed == sakes
+            ? _value._sakes
+            : sakes // ignore: cast_nullable_to_non_nullable
+                  as List<Sake>?,
+        sakeLoadingStatus: null == sakeLoadingStatus
+            ? _value._sakeLoadingStatus
+            : sakeLoadingStatus // ignore: cast_nullable_to_non_nullable
+                  as Map<String, bool>,
+        nameMapping: null == nameMapping
+            ? _value._nameMapping
+            : nameMapping // ignore: cast_nullable_to_non_nullable
+                  as Map<String, String>,
+        preferences: freezed == preferences
+            ? _value.preferences
+            : preferences // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        hasScrolledToResults: null == hasScrolledToResults
+            ? _value.hasScrolledToResults
+            : hasScrolledToResults // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        menuAnalysisHistory: null == menuAnalysisHistory
+            ? _value._menuAnalysisHistory
+            : menuAnalysisHistory // ignore: cast_nullable_to_non_nullable
+                  as List<MenuAnalysisHistoryItem>,
+        selectedHistoryItemId: freezed == selectedHistoryItemId
+            ? _value.selectedHistoryItemId
+            : selectedHistoryItemId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        isEditingStoreName: null == isEditingStoreName
+            ? _value.isEditingStoreName
+            : isEditingStoreName // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
 class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
-  const _$MenuSearchPageStateImpl(
-      {this.isLoading = false,
-      this.isExtractingInfo = false,
-      this.isGettingDetails = false,
-      this.isAdLoading = false,
-      this.isAnalyzingInBackground = false,
-      this.sakeName,
-      this.hint,
-      this.sakeImage,
-      this.geminiResponse,
-      final List<Sake> extractedSakes = const [],
-      this.sakeMenuRecognitionResponse,
-      this.errorMessage,
-      final List<Sake>? sakes,
-      final Map<String, bool> sakeLoadingStatus = const {},
-      final Map<String, String> nameMapping = const {},
-      this.preferences,
-      this.hasScrolledToResults = false,
-      final List<MenuAnalysisHistoryItem> menuAnalysisHistory = const [],
-      this.selectedHistoryItemId,
-      this.isEditingStoreName = false})
-      : _extractedSakes = extractedSakes,
-        _sakes = sakes,
-        _sakeLoadingStatus = sakeLoadingStatus,
-        _nameMapping = nameMapping,
-        _menuAnalysisHistory = menuAnalysisHistory;
+  const _$MenuSearchPageStateImpl({
+    this.isLoading = false,
+    this.isExtractingInfo = false,
+    this.isGettingDetails = false,
+    this.isAdLoading = false,
+    this.isAnalyzingInBackground = false,
+    this.sakeName,
+    this.hint,
+    this.sakeImage,
+    this.geminiResponse,
+    final List<Sake> extractedSakes = const [],
+    this.sakeMenuRecognitionResponse,
+    this.errorMessage,
+    final List<Sake>? sakes,
+    final Map<String, bool> sakeLoadingStatus = const {},
+    final Map<String, String> nameMapping = const {},
+    this.preferences,
+    this.hasScrolledToResults = false,
+    final List<MenuAnalysisHistoryItem> menuAnalysisHistory = const [],
+    this.selectedHistoryItemId,
+    this.isEditingStoreName = false,
+  }) : _extractedSakes = extractedSakes,
+       _sakes = sakes,
+       _sakeLoadingStatus = sakeLoadingStatus,
+       _nameMapping = nameMapping,
+       _menuAnalysisHistory = menuAnalysisHistory;
 
   @override
   @JsonKey()
@@ -449,9 +464,9 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
     return EqualUnmodifiableMapView(_sakeLoadingStatus);
   }
 
-// 元の名前と取得した詳細情報の名前のマッピング
+  // 元の名前と取得した詳細情報の名前のマッピング
   final Map<String, String> _nameMapping;
-// 元の名前と取得した詳細情報の名前のマッピング
+  // 元の名前と取得した詳細情報の名前のマッピング
   @override
   @JsonKey()
   Map<String, String> get nameMapping {
@@ -460,16 +475,16 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
     return EqualUnmodifiableMapView(_nameMapping);
   }
 
-// ユーザーの好み
+  // ユーザーの好み
   @override
   final String? preferences;
-// 日本酒リストが表示された後にスクロールしたかどうか
+  // 日本酒リストが表示された後にスクロールしたかどうか
   @override
   @JsonKey()
   final bool hasScrolledToResults;
-// メニュー解析履歴
+  // メニュー解析履歴
   final List<MenuAnalysisHistoryItem> _menuAnalysisHistory;
-// メニュー解析履歴
+  // メニュー解析履歴
   @override
   @JsonKey()
   List<MenuAnalysisHistoryItem> get menuAnalysisHistory {
@@ -479,10 +494,10 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
     return EqualUnmodifiableListView(_menuAnalysisHistory);
   }
 
-// 現在選択されている履歴項目のID
+  // 現在選択されている履歴項目のID
   @override
   final String? selectedHistoryItemId;
-// 店舗名の編集中かどうか
+  // 店舗名の編集中かどうか
   @override
   @JsonKey()
   final bool isEditingStoreName;
@@ -506,7 +521,9 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
             (identical(other.isAdLoading, isAdLoading) ||
                 other.isAdLoading == isAdLoading) &&
             (identical(
-                    other.isAnalyzingInBackground, isAnalyzingInBackground) ||
+                  other.isAnalyzingInBackground,
+                  isAnalyzingInBackground,
+                ) ||
                 other.isAnalyzingInBackground == isAnalyzingInBackground) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
@@ -515,25 +532,35 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
                 other.sakeImage == sakeImage) &&
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
-            const DeepCollectionEquality()
-                .equals(other._extractedSakes, _extractedSakes) &&
-            (identical(other.sakeMenuRecognitionResponse,
-                    sakeMenuRecognitionResponse) ||
+            const DeepCollectionEquality().equals(
+              other._extractedSakes,
+              _extractedSakes,
+            ) &&
+            (identical(
+                  other.sakeMenuRecognitionResponse,
+                  sakeMenuRecognitionResponse,
+                ) ||
                 other.sakeMenuRecognitionResponse ==
                     sakeMenuRecognitionResponse) &&
             (identical(other.errorMessage, errorMessage) ||
                 other.errorMessage == errorMessage) &&
             const DeepCollectionEquality().equals(other._sakes, _sakes) &&
-            const DeepCollectionEquality()
-                .equals(other._sakeLoadingStatus, _sakeLoadingStatus) &&
-            const DeepCollectionEquality()
-                .equals(other._nameMapping, _nameMapping) &&
+            const DeepCollectionEquality().equals(
+              other._sakeLoadingStatus,
+              _sakeLoadingStatus,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._nameMapping,
+              _nameMapping,
+            ) &&
             (identical(other.preferences, preferences) ||
                 other.preferences == preferences) &&
             (identical(other.hasScrolledToResults, hasScrolledToResults) ||
                 other.hasScrolledToResults == hasScrolledToResults) &&
-            const DeepCollectionEquality()
-                .equals(other._menuAnalysisHistory, _menuAnalysisHistory) &&
+            const DeepCollectionEquality().equals(
+              other._menuAnalysisHistory,
+              _menuAnalysisHistory,
+            ) &&
             (identical(other.selectedHistoryItemId, selectedHistoryItemId) ||
                 other.selectedHistoryItemId == selectedHistoryItemId) &&
             (identical(other.isEditingStoreName, isEditingStoreName) ||
@@ -542,59 +569,62 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 
   @override
   int get hashCode => Object.hashAll([
-        runtimeType,
-        isLoading,
-        isExtractingInfo,
-        isGettingDetails,
-        isAdLoading,
-        isAnalyzingInBackground,
-        sakeName,
-        hint,
-        sakeImage,
-        geminiResponse,
-        const DeepCollectionEquality().hash(_extractedSakes),
-        sakeMenuRecognitionResponse,
-        errorMessage,
-        const DeepCollectionEquality().hash(_sakes),
-        const DeepCollectionEquality().hash(_sakeLoadingStatus),
-        const DeepCollectionEquality().hash(_nameMapping),
-        preferences,
-        hasScrolledToResults,
-        const DeepCollectionEquality().hash(_menuAnalysisHistory),
-        selectedHistoryItemId,
-        isEditingStoreName
-      ]);
+    runtimeType,
+    isLoading,
+    isExtractingInfo,
+    isGettingDetails,
+    isAdLoading,
+    isAnalyzingInBackground,
+    sakeName,
+    hint,
+    sakeImage,
+    geminiResponse,
+    const DeepCollectionEquality().hash(_extractedSakes),
+    sakeMenuRecognitionResponse,
+    errorMessage,
+    const DeepCollectionEquality().hash(_sakes),
+    const DeepCollectionEquality().hash(_sakeLoadingStatus),
+    const DeepCollectionEquality().hash(_nameMapping),
+    preferences,
+    hasScrolledToResults,
+    const DeepCollectionEquality().hash(_menuAnalysisHistory),
+    selectedHistoryItemId,
+    isEditingStoreName,
+  ]);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$MenuSearchPageStateImplCopyWith<_$MenuSearchPageStateImpl> get copyWith =>
       __$$MenuSearchPageStateImplCopyWithImpl<_$MenuSearchPageStateImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 }
 
 abstract class _MenuSearchPageState implements MenuSearchPageState {
-  const factory _MenuSearchPageState(
-      {final bool isLoading,
-      final bool isExtractingInfo,
-      final bool isGettingDetails,
-      final bool isAdLoading,
-      final bool isAnalyzingInBackground,
-      final String? sakeName,
-      final String? hint,
-      final File? sakeImage,
-      final String? geminiResponse,
-      final List<Sake> extractedSakes,
-      final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
-      final String? errorMessage,
-      final List<Sake>? sakes,
-      final Map<String, bool> sakeLoadingStatus,
-      final Map<String, String> nameMapping,
-      final String? preferences,
-      final bool hasScrolledToResults,
-      final List<MenuAnalysisHistoryItem> menuAnalysisHistory,
-      final String? selectedHistoryItemId,
-      final bool isEditingStoreName}) = _$MenuSearchPageStateImpl;
+  const factory _MenuSearchPageState({
+    final bool isLoading,
+    final bool isExtractingInfo,
+    final bool isGettingDetails,
+    final bool isAdLoading,
+    final bool isAnalyzingInBackground,
+    final String? sakeName,
+    final String? hint,
+    final File? sakeImage,
+    final String? geminiResponse,
+    final List<Sake> extractedSakes,
+    final SakeMenuRecognitionResponse? sakeMenuRecognitionResponse,
+    final String? errorMessage,
+    final List<Sake>? sakes,
+    final Map<String, bool> sakeLoadingStatus,
+    final Map<String, String> nameMapping,
+    final String? preferences,
+    final bool hasScrolledToResults,
+    final List<MenuAnalysisHistoryItem> menuAnalysisHistory,
+    final String? selectedHistoryItemId,
+    final bool isEditingStoreName,
+  }) = _$MenuSearchPageStateImpl;
 
   @override
   bool get isLoading;

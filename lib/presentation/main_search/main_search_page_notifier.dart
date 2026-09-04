@@ -32,10 +32,7 @@ import '../common/dialogs/sake_preferences_dialog.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
-enum SearchMode {
-  name,
-  bottle,
-}
+enum SearchMode { name, bottle }
 
 @freezed
 abstract class MainSearchPageState with _$MainSearchPageState {
@@ -65,10 +62,8 @@ abstract class MainSearchPageState with _$MainSearchPageState {
 
 class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
-  MainSearchPageNotifier({
-    required this.context,
-    required this.authNotifier,
-  }) : super(const MainSearchPageState());
+  MainSearchPageNotifier({required this.context, required this.authNotifier})
+    : super(const MainSearchPageState());
 
   final BuildContext context;
   final AuthNotifier authNotifier;
@@ -124,9 +119,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   Future<void> searchSake() async {
     final sakeName = state.sakeName;
     if (sakeName == null || sakeName.isEmpty) {
-      state = state.copyWith(
-        errorMessage: context.l10n.errorEnterSakeName,
-      );
+      state = state.copyWith(errorMessage: context.l10n.errorEnterSakeName);
       return;
     }
     // 初期化
@@ -234,10 +227,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
-      state = state.copyWith(
-        isLoading: false,
-        sakeInfo: sakeInfo,
-      );
+      state = state.copyWith(isLoading: false, sakeInfo: sakeInfo);
     } catch (e) {
       logger.info('日本酒情報の取得に失敗: $e');
       state = state.copyWith(
@@ -275,10 +265,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
-      state = state.copyWith(
-        isLoading: false,
-        sakeInfo: sakeInfo,
-      );
+      state = state.copyWith(isLoading: false, sakeInfo: sakeInfo);
     } catch (e) {
       logger.info('日本酒情報の取得に失敗: $e');
       state = state.copyWith(
@@ -305,10 +292,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       final response = await geminiMolaApiRepository.promptWithText(
         state.sakeName!,
       );
-      state = state.copyWith(
-        isLoading: false,
-        sakeName: null,
-      );
+      state = state.copyWith(isLoading: false, sakeName: null);
       state = state.copyWith(geminiResponse: response);
     }
   }
@@ -324,13 +308,15 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
     if (imageFile != null) {
       // Show cropping UI
-      final croppedFile =
-          await ImageCropperService.cropAndRotateImage(imageFile.path);
+      final croppedFile = await ImageCropperService.cropAndRotateImage(
+        imageFile.path,
+      );
 
       if (croppedFile != null) {
         // Save to gallery
-        final galleryPath =
-            await ImageCropperService.saveImageToGallery(croppedFile);
+        final galleryPath = await ImageCropperService.saveImageToGallery(
+          croppedFile,
+        );
         if (galleryPath != null) {
           logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
         }
@@ -343,6 +329,15 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   // 画像をクリアする
   void clearImage() {
     state = state.copyWith(sakeImage: null);
+  }
+
+  void applySakeScanResult(Sake sake) {
+    state = state.copyWith(
+      sakeInfo: sake,
+      sakeImage: null,
+      errorMessage: null,
+      geminiResponse: null,
+    );
   }
 
   Future<void> onTimelineShareToggle(bool newValue) async {
@@ -415,10 +410,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     unawaited(_loadAutoTweetSetting(userId, loadGeneration));
   }
 
-  Future<void> _loadAutoTweetSetting(
-    String userId,
-    int loadGeneration,
-  ) async {
+  Future<void> _loadAutoTweetSetting(String userId, int loadGeneration) async {
     try {
       final remote = await sakeUserRepository.fetchUser(userId);
       if (loadGeneration != _autoTweetLoadGeneration ||
@@ -495,7 +487,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           _parseAutoTweetEnabled(response['autoTweetEnabled']) ?? newValue;
       final consentAt =
           _parseAutoTweetConsentAt(response['autoTweetConsentAt']) ??
-              DateTime.now();
+          DateTime.now();
 
       state = state.copyWith(
         autoTweetEnabled: resolvedEnabled,
@@ -555,8 +547,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return false;
     }
 
-    final savedPath =
-        await ImageCropperService.saveImagePermanently(image, 'saved_sake');
+    final savedPath = await ImageCropperService.saveImagePermanently(
+      image,
+      'saved_sake',
+    );
     if (savedPath == null) {
       SnackBarUtils.showWarningSnackBar(
         context,
@@ -639,8 +633,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   }
 
   // 酒瓶画像を解析する
-  Future<void> analyzeSakeBottle(
-      {bool inBackground = false, String? savedIdHint}) async {
+  Future<void> analyzeSakeBottle({
+    bool inBackground = false,
+    String? savedIdHint,
+  }) async {
     File? analysisFile = state.sakeImage;
     if (analysisFile == null && state.analyzingImagePath != null) {
       final fileFromPath = File(state.analyzingImagePath!);
@@ -663,10 +659,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     if (!await _ensureSakePreferencesReady()) {
-      state = state.copyWith(
-        isLoading: false,
-        isAnalyzingInBackground: false,
-      );
+      state = state.copyWith(isLoading: false, isAnalyzingInBackground: false);
       return;
     }
 
@@ -675,8 +668,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     state = state.copyWith(
       analyzeButtonClickCount: newClickCount,
       errorMessage: null,
-      isAnalyzingInBackground:
-          inBackground ? true : state.isAnalyzingInBackground,
+      isAnalyzingInBackground: inBackground
+          ? true
+          : state.isAnalyzingInBackground,
     );
 
     // Check if we should show an ad using shared counter (3-search cycle)
@@ -792,7 +786,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       }
     }
 
-    final currentPendingId = savedIdHint ??
+    final currentPendingId =
+        savedIdHint ??
         (state.pendingSavedSakeIds.isNotEmpty
             ? state.pendingSavedSakeIds.first
             : null);
@@ -818,16 +813,16 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       final preferenceText = read<MyPageNotifier>().state.preferences?.trim();
       final normalizedPreferences =
           (preferenceText != null && preferenceText.isNotEmpty)
-              ? preferenceText
-              : null;
+          ? preferenceText
+          : null;
 
       SakeBottleComprehensiveResponse? response;
       try {
-        response =
-            await sakeMenuRecognitionRepository.comprehensiveSakeBottleAnalysis(
-          analysisFile,
-          preferences: normalizedPreferences,
-        );
+        response = await sakeMenuRecognitionRepository
+            .comprehensiveSakeBottleAnalysis(
+              analysisFile,
+              preferences: normalizedPreferences,
+            );
       } on SakeBottleRecognitionException catch (e) {
         await _handleAnalysisFailure(
           currentPendingId,
@@ -839,10 +834,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
       if (response == null || response.sakeInfo == null) {
         logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
-        await _handleAnalysisFailure(
-          currentPendingId,
-          '日本酒情報が見つかりませんでした',
-        );
+        await _handleAnalysisFailure(currentPendingId, '日本酒情報が見つかりませんでした');
         return;
       }
 
@@ -853,9 +845,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           response.type ?? sakeInfo.type ?? context.l10n.unknownType;
       logger.info('酒瓶解析: 認識成功 - 日本酒名=$recognizedName, タイプ=$recognizedType');
 
-      state = state.copyWith(
-        sakeInfo: sakeInfo,
-      );
+      state = state.copyWith(sakeInfo: sakeInfo);
       logger.info('酒瓶解析: 日本酒情報取得成功');
 
       // 結果を更新
@@ -868,8 +858,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         );
 
         final updatedList = savedNotifier.state.savedSakeList;
-        final index =
-            updatedList.indexWhere((item) => item.savedId == currentPendingId);
+        final index = updatedList.indexWhere(
+          (item) => item.savedId == currentPendingId,
+        );
         final sakeForSync = index != -1
             ? updatedList[index]
             : sakeInfo.copyWith(savedId: currentPendingId);
@@ -893,8 +884,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
       state = state.copyWith(
         isLoading: false,
-        isAnalyzingInBackground:
-            inBackground ? false : state.isAnalyzingInBackground,
+        isAnalyzingInBackground: inBackground
+            ? false
+            : state.isAnalyzingInBackground,
         pendingSavedSakeIds: pendingIds,
         analyzingImagePath: inBackground ? null : state.analyzingImagePath,
       );
@@ -933,7 +925,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     }
 
     try {
-      final bool shareFlag = isPublic ??
+      final bool shareFlag =
+          isPublic ??
           (sake.savedId != null
               ? (_savedIdPublicFlags[sake.savedId!] ?? sake.isPublic)
               : sake.isPublic);
@@ -952,7 +945,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           final notifier = read<SavedSakeNotifier>();
           final list = notifier.state.savedSakeList;
           final index = list.indexWhere(
-              (item) => item.savedId != null && item.savedId == savedId);
+            (item) => item.savedId != null && item.savedId == savedId,
+          );
           if (index != -1) {
             final target = list[index];
             if (target.syncStatus != SavedSakeSyncStatus.serverSynced ||
@@ -997,8 +991,9 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       if (removeEntry) {
         await _deleteSavedSakeFully(savedId);
       } else {
-        failedSake =
-            await read<SavedSakeNotifier>().markAnalysisFailed(savedId);
+        failedSake = await read<SavedSakeNotifier>().markAnalysisFailed(
+          savedId,
+        );
         keepEntry = failedSake != null;
         if (failedSake != null) {
           await _syncFailedSakeToServer(failedSake, message);
