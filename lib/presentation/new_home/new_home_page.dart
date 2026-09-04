@@ -23,6 +23,7 @@ import 'new_home_page_notifier.dart';
 const _brandColor = Color(0xFF143861);
 const _scanColor = Color(0xFFFF7A1A);
 const _bodyTextColor = Color(0xFF404040);
+const _sakeCardRailHeight = 275.0;
 
 class NewHomePage extends StatelessWidget {
   const NewHomePage._();
@@ -436,7 +437,7 @@ class _SakeCardRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 267,
+      height: _sakeCardRailHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
