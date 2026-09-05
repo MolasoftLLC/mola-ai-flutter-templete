@@ -1,7 +1,7 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 4.7.0+63
+version: 4.7.1+64
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
@@ -76,7 +76,8 @@ dependencies:
 
   
   #画像のクロップと回転
-  image_cropper: ^8.0.1
+  # UISceneDelegate を使用する現行FlutterのiOSライフサイクルに対応
+  image_cropper: ^12.2.1
 
   #日付フォーマット
   intl: any
