@@ -92,6 +92,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   late final RemoveListener _removeAuthListener;
   String? _observedAuthUserId;
   int _autoTweetLoadGeneration = 0;
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -319,24 +320,44 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
   // 画像を選択する
   Future<void> pickImage(ImageSource source) async {
-    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
-    final imageFile = await CustomImagePicker.pickImage(source: source);
+    if (_isPickingImage) {
+      logger.warning('画像選択中の重複リクエストを無視しました: $source');
+      return;
+    }
 
-    if (imageFile != null) {
+    _isPickingImage = true;
+    logger.info('画像選択を開始しました: $source');
+
+    try {
+      // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
+      final imageFile = await CustomImagePicker.pickImage(source: source);
+      if (imageFile == null) {
+        logger.info('画像選択がキャンセルされました: $source');
+        return;
+      }
+      logger.info('画像を取得しました: ${imageFile.path}');
+
       // Show cropping UI
       final croppedFile =
           await ImageCropperService.cropAndRotateImage(imageFile.path);
-
-      if (croppedFile != null) {
-        // Save to gallery
-        final galleryPath =
-            await ImageCropperService.saveImageToGallery(croppedFile);
-        if (galleryPath != null) {
-          logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
-        }
-
-        state = state.copyWith(sakeImage: croppedFile);
+      if (croppedFile == null) {
+        logger.info('画像編集がキャンセルされました: $source');
+        return;
       }
+      logger.info('画像編集が完了しました: ${croppedFile.path}');
+
+      // Save to gallery
+      final galleryPath =
+          await ImageCropperService.saveImageToGallery(croppedFile);
+      if (galleryPath != null) {
+        logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
+      }
+
+      state = state.copyWith(sakeImage: croppedFile, errorMessage: null);
+    } catch (error, stackTrace) {
+      logger.shout('画像選択に失敗しました: $error\n$stackTrace');
+    } finally {
+      _isPickingImage = false;
     }
   }
 
