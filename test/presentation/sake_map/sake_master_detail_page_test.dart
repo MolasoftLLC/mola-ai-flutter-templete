@@ -48,7 +48,7 @@ void main() {
     expect(find.byType(Image), findsWidgets);
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);
     expect(find.byKey(const Key('sake-taste-radar-chart')), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('ご飯に合うかも！'), 300);
+    await tester.scrollUntilVisible(find.text('この食事に合うかも！'), 300);
     expect(find.text('ぶり大根・煮付け'), findsOneWidget);
     expect(find.text('50%'), findsOneWidget);
     expect(find.text('+2.5'), findsOneWidget);

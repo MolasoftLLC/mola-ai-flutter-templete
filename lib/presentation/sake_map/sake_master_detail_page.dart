@@ -32,13 +32,48 @@ class SakeMasterDetailPage extends StatefulWidget {
 class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Future<SakeOverview>? _future;
   bool _initialized = false;
+  SavedSakeNotifier? _savedSakeNotifier;
+  FavoriteNotifier? _favoriteNotifier;
+  void Function()? _removeSavedSakeListener;
+  void Function()? _removeFavoriteListener;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _bindNotifiers();
     if (_initialized) return;
     _initialized = true;
     _future = _fetch();
+  }
+
+  void _bindNotifiers() {
+    final saved = Provider.of<SavedSakeNotifier?>(context, listen: false);
+    final favorite = Provider.of<FavoriteNotifier?>(context, listen: false);
+    if (!identical(_savedSakeNotifier, saved)) {
+      _removeSavedSakeListener?.call();
+      _savedSakeNotifier = saved;
+      _removeSavedSakeListener = _savedSakeNotifier?.addListener(
+        (_) => _refreshFromNotifier(),
+      );
+    }
+    if (!identical(_favoriteNotifier, favorite)) {
+      _removeFavoriteListener?.call();
+      _favoriteNotifier = favorite;
+      _removeFavoriteListener = _favoriteNotifier?.addListener(
+        (_) => _refreshFromNotifier(),
+      );
+    }
+  }
+
+  void _refreshFromNotifier() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _removeSavedSakeListener?.call();
+    _removeFavoriteListener?.call();
+    super.dispose();
   }
 
   Future<SakeOverview>? _fetch() {
@@ -66,9 +101,19 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     appBar: PrimaryAppBar(
       title: '日本酒詳細',
       actions: [
-        _MasterSaveButton(venueSake: widget.venueSake),
-        _MasterFavoriteButton(venueSake: widget.venueSake),
+        _MasterSaveButton(
+          venueSake: widget.venueSake,
+          notifier: _savedSakeNotifier,
+        ),
+        _MasterFavoriteButton(
+          venueSake: widget.venueSake,
+          notifier: _favoriteNotifier,
+        ),
       ],
+    ),
+    bottomNavigationBar: _MasterRecordCta(
+      sake: _asSake(widget.venueSake),
+      notifier: _savedSakeNotifier,
     ),
     body: FutureBuilder<SakeOverview>(
       future: _future,
@@ -90,7 +135,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   ],
                 ),
               ),
-            _Details(overview: snapshot.data, fallback: widget.venueSake),
+            _Details(
+              overview: snapshot.data,
+              fallback: widget.venueSake,
+              savedSakeNotifier: _savedSakeNotifier,
+            ),
           ],
         ),
       ),
@@ -99,9 +148,14 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 }
 
 class _Details extends StatelessWidget {
-  const _Details({required this.overview, required this.fallback});
+  const _Details({
+    required this.overview,
+    required this.fallback,
+    required this.savedSakeNotifier,
+  });
   final SakeOverview? overview;
   final VenueSake fallback;
+  final SavedSakeNotifier? savedSakeNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +258,12 @@ class _Details extends StatelessWidget {
                 ],
               ),
             ),
+            _Section(
+              child: _PersonalRecordSection(
+                sake: sake ?? _asSake(fallback),
+                notifier: savedSakeNotifier,
+              ),
+            ),
             if (tasteAxes.isNotEmpty ||
                 master.tasteTags.isNotEmpty ||
                 master.aromaTags.isNotEmpty ||
@@ -254,7 +314,7 @@ class _Details extends StatelessWidget {
               ),
             if (pairings.isNotEmpty)
               _Section(
-                title: 'ご飯に合うかも！',
+                title: 'この食事に合うかも！',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -286,9 +346,6 @@ class _Details extends StatelessWidget {
                   accent: true,
                 ),
               ),
-            _Section(
-              child: _PersonalRecordSection(sake: sake ?? _asSake(fallback)),
-            ),
             if (master.variants.isNotEmpty)
               _Section(
                 title: '容量と参考価格',
@@ -427,14 +484,15 @@ class _Details extends StatelessWidget {
 }
 
 class _MasterSaveButton extends StatelessWidget {
-  const _MasterSaveButton({required this.venueSake});
+  const _MasterSaveButton({required this.venueSake, required this.notifier});
   final VenueSake venueSake;
+  final SavedSakeNotifier? notifier;
 
   @override
   Widget build(BuildContext context) {
-    final notifier = Provider.of<SavedSakeNotifier?>(context);
-    if (notifier == null) return const SizedBox.shrink();
-    final isSaved = notifier.state.savedSakeList.any(
+    final savedNotifier = notifier;
+    if (savedNotifier == null) return const SizedBox.shrink();
+    final isSaved = savedNotifier.state.savedSakeList.any(
       (item) => item.name == venueSake.name && item.type == venueSake.type,
     );
     return IconButton(
@@ -444,14 +502,14 @@ class _MasterSaveButton extends StatelessWidget {
         color: isSaved ? Colors.amberAccent : Colors.white,
       ),
       onPressed: () async {
-        if (!isSaved && notifier.hasReachedGuestLimit) {
+        if (!isSaved && savedNotifier.hasReachedGuestLimit) {
           await GuestLimitDialog.showSavedSakeLimit(
             context,
             maxCount: SavedSakeNotifier.guestSavedLimit,
           );
           return;
         }
-        if (!isSaved && notifier.hasReachedMemberLimit) {
+        if (!isSaved && savedNotifier.hasReachedMemberLimit) {
           SnackBarUtils.showWarningSnackBar(
             context,
             message: context.l10n.savedSakeLimit(
@@ -461,7 +519,7 @@ class _MasterSaveButton extends StatelessWidget {
           return;
         }
         try {
-          await notifier.toggleSavedSake(_asSake(venueSake));
+          await savedNotifier.toggleSavedSake(_asSake(venueSake));
           if (!isSaved && context.mounted) {
             SnackBarUtils.showInfoSnackBar(
               context,
@@ -489,14 +547,18 @@ class _MasterSaveButton extends StatelessWidget {
 }
 
 class _MasterFavoriteButton extends StatelessWidget {
-  const _MasterFavoriteButton({required this.venueSake});
+  const _MasterFavoriteButton({
+    required this.venueSake,
+    required this.notifier,
+  });
   final VenueSake venueSake;
+  final FavoriteNotifier? notifier;
 
   @override
   Widget build(BuildContext context) {
-    final notifier = Provider.of<FavoriteNotifier?>(context);
-    if (notifier == null) return const SizedBox.shrink();
-    final isFavorite = notifier.state.myFavoriteList.any(
+    final favoriteNotifier = notifier;
+    if (favoriteNotifier == null) return const SizedBox.shrink();
+    final isFavorite = favoriteNotifier.state.myFavoriteList.any(
       (item) => item.name == venueSake.name && item.type == venueSake.type,
     );
     return IconButton(
@@ -506,7 +568,7 @@ class _MasterFavoriteButton extends StatelessWidget {
         color: isFavorite ? Colors.redAccent : Colors.white,
       ),
       onPressed: () async {
-        if (!isFavorite && notifier.hasReachedGuestLimit) {
+        if (!isFavorite && favoriteNotifier.hasReachedGuestLimit) {
           await GuestLimitDialog.showFavoriteLimit(
             context,
             maxCount: FavoriteNotifier.guestFavoriteLimit,
@@ -514,7 +576,7 @@ class _MasterFavoriteButton extends StatelessWidget {
           return;
         }
         try {
-          await notifier.addOrRemoveFavorite(
+          await favoriteNotifier.addOrRemoveFavorite(
             FavoriteSake(name: venueSake.name, type: venueSake.type),
           );
         } on FavoriteGuestLimitReachedException {
@@ -537,21 +599,92 @@ Sake _asSake(VenueSake venueSake) => Sake(
   primaryImageUrl: venueSake.primaryImageUrl,
 );
 
-class _PersonalRecordSection extends StatelessWidget {
-  const _PersonalRecordSection({required this.sake});
+class _MasterRecordCta extends StatelessWidget {
+  const _MasterRecordCta({required this.sake, required this.notifier});
   final Sake sake;
+  final SavedSakeNotifier? notifier;
 
   @override
   Widget build(BuildContext context) {
-    final notifier = Provider.of<SavedSakeNotifier?>(context);
-    if (notifier == null) return const SizedBox.shrink();
-    Sake? saved;
-    for (final candidate in notifier.state.savedSakeList) {
-      if (_isSameSake(candidate)) {
-        saved = candidate;
-        break;
-      }
+    final savedNotifier = notifier;
+    if (savedNotifier == null || _isSaved(savedNotifier, sake)) {
+      return const SizedBox.shrink();
     }
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      child: FilledButton.icon(
+        onPressed: () => _addSakeRecord(context, savedNotifier, sake),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(52),
+          backgroundColor: const Color(0xFFFFC107),
+          foregroundColor: _navy,
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        icon: const Icon(Icons.bookmark_add_outlined),
+        label: const Text('このお酒を記録する'),
+      ),
+    );
+  }
+}
+
+bool _isSaved(SavedSakeNotifier notifier, Sake sake) =>
+    notifier.state.savedSakeList.any(
+      (candidate) =>
+          (sake.sakeId != null && candidate.sakeId == sake.sakeId) ||
+          (candidate.name == sake.name && candidate.type == sake.type),
+    );
+
+Future<void> _addSakeRecord(
+  BuildContext context,
+  SavedSakeNotifier notifier,
+  Sake sake,
+) async {
+  if (notifier.hasReachedGuestLimit) {
+    await GuestLimitDialog.showSavedSakeLimit(
+      context,
+      maxCount: SavedSakeNotifier.guestSavedLimit,
+    );
+    return;
+  }
+  if (notifier.hasReachedMemberLimit) {
+    SnackBarUtils.showWarningSnackBar(
+      context,
+      message: context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+    );
+    return;
+  }
+  try {
+    await notifier.toggleSavedSake(sake);
+    if (!context.mounted) return;
+    SnackBarUtils.showInfoSnackBar(
+      context,
+      message: context.l10n.savedToMyPage,
+    );
+  } on SavedSakeGuestLimitReachedException {
+    if (!context.mounted) return;
+    await GuestLimitDialog.showSavedSakeLimit(
+      context,
+      maxCount: SavedSakeNotifier.guestSavedLimit,
+    );
+  } on SavedSakeMemberLimitReachedException {
+    if (!context.mounted) return;
+    SnackBarUtils.showWarningSnackBar(
+      context,
+      message: context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+    );
+  }
+}
+
+class _PersonalRecordSection extends StatelessWidget {
+  const _PersonalRecordSection({required this.sake, required this.notifier});
+  final Sake sake;
+  final SavedSakeNotifier? notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final savedNotifier = notifier;
+    if (savedNotifier == null) return const SizedBox.shrink();
+    final saved = _findSavedSake(savedNotifier);
 
     if (saved == null) {
       return Column(
@@ -563,12 +696,6 @@ class _PersonalRecordSection extends StatelessWidget {
             '飲んだ場所や感想、写真をこのお酒に残せます。',
             style: TextStyle(color: Color(0xFF647184), height: 1.5),
           ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () => _addRecord(context, notifier),
-            icon: const Icon(Icons.bookmark_add_outlined),
-            label: const Text('このお酒を記録する'),
-          ),
         ],
       );
     }
@@ -577,119 +704,23 @@ class _PersonalRecordSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(child: _SectionHeading(title: 'あなたの記録')),
-            TextButton.icon(
-              onPressed: () => _openEditor(context, notifier, record),
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('編集'),
-            ),
-          ],
-        ),
-        if (_recordedPlace(record) != null) ...[
-          const SizedBox(height: 6),
-          _RecordLine(
-            icon: Icons.place_outlined,
-            text: _recordedPlace(record)!,
-          ),
-        ],
-        if ((record.impression ?? '').trim().isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            record.impression!.trim(),
-            style: const TextStyle(color: Color(0xFF404A56), height: 1.7),
-          ),
-        ],
-        if ((record.userTags ?? const <String>[]).isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Tags(values: record.userTags!),
-        ],
-        if ((record.imagePaths ?? const <String>[]).isNotEmpty) ...[
-          const SizedBox(height: 14),
-          _RecordImages(paths: record.imagePaths!),
-        ],
-        if ((record.impression ?? '').trim().isEmpty &&
-            _recordedPlace(record) == null &&
-            (record.imagePaths ?? const <String>[]).isEmpty) ...[
-          const SizedBox(height: 8),
-          const Text(
-            'まだ記録はありません。編集から感想や場所を追加できます。',
-            style: TextStyle(color: Color(0xFF647184), height: 1.5),
-          ),
-        ],
+        const _SectionHeading(title: 'あなたの記録'),
+        const SizedBox(height: 16),
+        _InlineRecordEditor(notifier: savedNotifier, sake: record),
       ],
     );
   }
 
+  Sake? _findSavedSake(SavedSakeNotifier savedNotifier) {
+    for (final candidate in savedNotifier.state.savedSakeList) {
+      if (_isSameSake(candidate)) return candidate;
+    }
+    return null;
+  }
+
   bool _isSameSake(Sake candidate) =>
-      sake.sakeId != null && candidate.sakeId == sake.sakeId ||
-      candidate.name == sake.name && candidate.type == sake.type;
-
-  String? _recordedPlace(Sake saved) {
-    final place = saved.place ?? saved.drinkingPlace?.displayName;
-    return place == null || place.trim().isEmpty ? null : place.trim();
-  }
-
-  Future<void> _addRecord(
-    BuildContext context,
-    SavedSakeNotifier notifier,
-  ) async {
-    if (notifier.hasReachedGuestLimit) {
-      await GuestLimitDialog.showSavedSakeLimit(
-        context,
-        maxCount: SavedSakeNotifier.guestSavedLimit,
-      );
-      return;
-    }
-    if (notifier.hasReachedMemberLimit) {
-      SnackBarUtils.showWarningSnackBar(
-        context,
-        message: context.l10n.savedSakeLimit(
-          SavedSakeNotifier.memberSavedLimit,
-        ),
-      );
-      return;
-    }
-    try {
-      await notifier.toggleSavedSake(sake);
-      if (!context.mounted) return;
-      SnackBarUtils.showInfoSnackBar(
-        context,
-        message: context.l10n.savedToMyPage,
-      );
-    } on SavedSakeGuestLimitReachedException {
-      if (!context.mounted) return;
-      await GuestLimitDialog.showSavedSakeLimit(
-        context,
-        maxCount: SavedSakeNotifier.guestSavedLimit,
-      );
-    } on SavedSakeMemberLimitReachedException {
-      if (!context.mounted) return;
-      SnackBarUtils.showWarningSnackBar(
-        context,
-        message: context.l10n.savedSakeLimit(
-          SavedSakeNotifier.memberSavedLimit,
-        ),
-      );
-    }
-  }
-
-  Future<void> _openEditor(
-    BuildContext context,
-    SavedSakeNotifier notifier,
-    Sake saved,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _RecordEditorSheet(notifier: notifier, sake: saved),
-    );
-  }
+      (sake.sakeId != null && candidate.sakeId == sake.sakeId) ||
+      (candidate.name == sake.name && candidate.type == sake.type);
 }
 
 class _SectionHeading extends StatelessWidget {
@@ -755,16 +786,16 @@ class _RecordImages extends StatelessWidget {
   );
 }
 
-class _RecordEditorSheet extends StatefulWidget {
-  const _RecordEditorSheet({required this.notifier, required this.sake});
+class _InlineRecordEditor extends StatefulWidget {
+  const _InlineRecordEditor({required this.notifier, required this.sake});
   final SavedSakeNotifier notifier;
   final Sake sake;
 
   @override
-  State<_RecordEditorSheet> createState() => _RecordEditorSheetState();
+  State<_InlineRecordEditor> createState() => _InlineRecordEditorState();
 }
 
-class _RecordEditorSheetState extends State<_RecordEditorSheet> {
+class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   late final TextEditingController _impressionController;
   late final TextEditingController _placeController;
   late Set<String> _tags;
@@ -806,86 +837,84 @@ class _RecordEditorSheetState extends State<_RecordEditorSheet> {
       await widget.notifier.syncSavedSakeToServer(savedId);
     }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    setState(() => _isSaving = false);
+    SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        20,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        '感想',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'あなたの記録を編集',
-              style: TextStyle(
-                color: _navy,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _impressionController,
-              maxLength: 200,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: '感想',
-                hintText: '飲んだときの印象を残しましょう',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _placeController,
-              maxLength: 60,
-              decoration: const InputDecoration(
-                labelText: '飲んだ場所',
-                hintText: 'お店や自宅など',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'タグ',
-              style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: sake_master.Sake.userMemoTags
-                  .map(
-                    (tag) => FilterChip(
-                      label: Text(tag),
-                      selected: _tags.contains(tag),
-                      onSelected: (selected) => setState(() {
-                        selected ? _tags.add(tag) : _tags.remove(tag);
-                      }),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _isSaving ? null : _save,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                backgroundColor: _orange,
-              ),
-              child: Text(_isSaving ? '保存中…' : '記録を保存'),
-            ),
-          ],
+      const SizedBox(height: 8),
+      TextField(
+        controller: _impressionController,
+        maxLength: 200,
+        maxLines: 4,
+        decoration: const InputDecoration(
+          labelText: '感想',
+          hintText: '飲んだときの印象を残しましょう',
+          border: OutlineInputBorder(),
         ),
       ),
-    ),
+      const SizedBox(height: 16),
+      const Text(
+        '飲んだ場所',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _placeController,
+        maxLength: 60,
+        decoration: const InputDecoration(
+          labelText: '飲んだ場所',
+          hintText: 'お店や自宅など',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'タグ',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: sake_master.Sake.userMemoTags
+            .map(
+              (tag) => FilterChip(
+                label: Text(tag),
+                selected: _tags.contains(tag),
+                onSelected: (selected) => setState(() {
+                  selected ? _tags.add(tag) : _tags.remove(tag);
+                }),
+              ),
+            )
+            .toList(growable: false),
+      ),
+      if ((widget.sake.imagePaths ?? const <String>[]).isNotEmpty) ...[
+        const SizedBox(height: 20),
+        const Text(
+          '写真',
+          style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        _RecordImages(paths: widget.sake.imagePaths!),
+      ],
+      const SizedBox(height: 20),
+      FilledButton(
+        onPressed: _isSaving ? null : _save,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          backgroundColor: _orange,
+        ),
+        child: Text(_isSaving ? '保存中…' : '記録を保存'),
+      ),
+    ],
   );
 }
 
