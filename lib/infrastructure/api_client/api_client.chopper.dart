@@ -394,6 +394,14 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> discoverSakeMasters(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/sakes/discover');
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> comprehensiveSakeBottleAnalysis(
     Map<String, dynamic> body,
   ) {

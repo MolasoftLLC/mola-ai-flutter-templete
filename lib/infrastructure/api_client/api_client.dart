@@ -163,6 +163,9 @@ abstract class ApiClient extends ChopperService {
     @Query('limit') int limit = 20,
   });
 
+  @Post(path: 'sakes/discover')
+  Future<Response> discoverSakeMasters(@Body() Map<String, dynamic> body);
+
   @Post(path: 'sake-bottle/comprehensive-analysis')
   Future<Response> comprehensiveSakeBottleAnalysis(
     @Body() Map<String, dynamic> body,

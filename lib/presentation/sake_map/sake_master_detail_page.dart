@@ -5,9 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../common/localization/localization_extensions.dart';
+import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
+import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 
 const _navy = Color(0xFF143861);
@@ -55,7 +61,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.white,
-    appBar: const PrimaryAppBar(title: '日本酒詳細'),
+    appBar: PrimaryAppBar(
+      title: '日本酒詳細',
+      actions: [
+        _MasterSaveButton(venueSake: widget.venueSake),
+        _MasterFavoriteButton(venueSake: widget.venueSake),
+      ],
+    ),
     body: FutureBuilder<SakeOverview>(
       future: _future,
       builder: (context, snapshot) => RefreshIndicator(
@@ -145,29 +157,13 @@ class _Details extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
+                  SizedBox(
                     height: 250,
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F3F7),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.all(16),
                     child: _BottleImage(
                       url: sake?.primaryImageUrl ?? fallback.primaryImageUrl,
                     ),
                   ),
-                  if (master.imageSource == 'yahoo_shopping') ...[
-                    if (master.imageProductUrl != null)
-                      _WebLink(
-                        url: master.imageProductUrl!,
-                        label: '画像の商品をYahoo!ショッピングで見る',
-                      ),
-                    const _WebLink(
-                      url: 'https://developer.yahoo.co.jp/sitemap/',
-                      label: 'Webサービス by Yahoo! JAPAN',
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   if (master.seriesName != null)
                     Text(
@@ -206,17 +202,6 @@ class _Details extends StatelessWidget {
                 ],
               ),
             ),
-            if (description != null && description.trim().isNotEmpty)
-              _Section(
-                title: 'このお酒について',
-                child: Text(
-                  description,
-                  style: const TextStyle(
-                    height: 1.75,
-                    color: Color(0xFF404A56),
-                  ),
-                ),
-              ),
             if (tasteAxes.isNotEmpty ||
                 master.tasteTags.isNotEmpty ||
                 master.aromaTags.isNotEmpty ||
@@ -252,6 +237,17 @@ class _Details extends StatelessWidget {
                       }.toList(),
                     ),
                   ],
+                ),
+              ),
+            if (description != null && description.trim().isNotEmpty)
+              _Section(
+                title: 'このお酒について',
+                child: Text(
+                  description,
+                  style: const TextStyle(
+                    height: 1.75,
+                    color: Color(0xFF404A56),
+                  ),
                 ),
               ),
             if (pairings.isNotEmpty)
@@ -407,12 +403,134 @@ class _Details extends StatelessWidget {
                 '${DateFormat('yyyy年M月d日').format(master.verifiedAt!)}確認',
                 style: const TextStyle(color: Color(0xFF647184), fontSize: 12),
               ),
+            if (master.imageSource == 'yahoo_shopping') ...[
+              if (master.imageProductUrl != null)
+                _WebLink(
+                  url: master.imageProductUrl!,
+                  label: '画像の商品をYahoo!ショッピングで見る',
+                ),
+              const _WebLink(
+                url: 'https://developer.yahoo.co.jp/sitemap/',
+                label: 'Webサービス by Yahoo! JAPAN',
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 }
+
+class _MasterSaveButton extends StatelessWidget {
+  const _MasterSaveButton({required this.venueSake});
+  final VenueSake venueSake;
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = Provider.of<SavedSakeNotifier?>(context);
+    if (notifier == null) return const SizedBox.shrink();
+    final isSaved = notifier.state.savedSakeList.any(
+      (item) => item.name == venueSake.name && item.type == venueSake.type,
+    );
+    return IconButton(
+      tooltip: isSaved ? context.l10n.removeSavedSake : context.l10n.saveSake,
+      icon: Icon(
+        isSaved ? Icons.bookmark : Icons.bookmark_outline,
+        color: isSaved ? Colors.amberAccent : Colors.white,
+      ),
+      onPressed: () async {
+        if (!isSaved && notifier.hasReachedGuestLimit) {
+          await GuestLimitDialog.showSavedSakeLimit(
+            context,
+            maxCount: SavedSakeNotifier.guestSavedLimit,
+          );
+          return;
+        }
+        if (!isSaved && notifier.hasReachedMemberLimit) {
+          SnackBarUtils.showWarningSnackBar(
+            context,
+            message: context.l10n.savedSakeLimit(
+              SavedSakeNotifier.memberSavedLimit,
+            ),
+          );
+          return;
+        }
+        try {
+          await notifier.toggleSavedSake(_asSake(venueSake));
+          if (!isSaved && context.mounted) {
+            SnackBarUtils.showInfoSnackBar(
+              context,
+              message: context.l10n.savedToMyPage,
+            );
+          }
+        } on SavedSakeGuestLimitReachedException {
+          if (!context.mounted) return;
+          await GuestLimitDialog.showSavedSakeLimit(
+            context,
+            maxCount: SavedSakeNotifier.guestSavedLimit,
+          );
+        } on SavedSakeMemberLimitReachedException {
+          if (!context.mounted) return;
+          SnackBarUtils.showWarningSnackBar(
+            context,
+            message: context.l10n.savedSakeLimit(
+              SavedSakeNotifier.memberSavedLimit,
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+class _MasterFavoriteButton extends StatelessWidget {
+  const _MasterFavoriteButton({required this.venueSake});
+  final VenueSake venueSake;
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = Provider.of<FavoriteNotifier?>(context);
+    if (notifier == null) return const SizedBox.shrink();
+    final isFavorite = notifier.state.myFavoriteList.any(
+      (item) => item.name == venueSake.name && item.type == venueSake.type,
+    );
+    return IconButton(
+      tooltip: context.l10n.favoriteSake,
+      icon: Icon(
+        isFavorite ? Icons.favorite : Icons.favorite_border,
+        color: isFavorite ? Colors.redAccent : Colors.white,
+      ),
+      onPressed: () async {
+        if (!isFavorite && notifier.hasReachedGuestLimit) {
+          await GuestLimitDialog.showFavoriteLimit(
+            context,
+            maxCount: FavoriteNotifier.guestFavoriteLimit,
+          );
+          return;
+        }
+        try {
+          await notifier.addOrRemoveFavorite(
+            FavoriteSake(name: venueSake.name, type: venueSake.type),
+          );
+        } on FavoriteGuestLimitReachedException {
+          if (!context.mounted) return;
+          await GuestLimitDialog.showFavoriteLimit(
+            context,
+            maxCount: FavoriteNotifier.guestFavoriteLimit,
+          );
+        }
+      },
+    );
+  }
+}
+
+Sake _asSake(VenueSake venueSake) => Sake(
+  sakeId: venueSake.sakeId,
+  name: venueSake.name,
+  brewery: venueSake.brewery,
+  type: venueSake.type,
+  primaryImageUrl: venueSake.primaryImageUrl,
+);
 
 class _Section extends StatelessWidget {
   const _Section({required this.child, this.title});

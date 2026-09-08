@@ -1272,6 +1272,7 @@ class _PreferenceSearchShortcut extends StatelessWidget {
                     context.l10n.searchByRegion,
                     style: const TextStyle(
                       color: Color(0xFF143861),
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

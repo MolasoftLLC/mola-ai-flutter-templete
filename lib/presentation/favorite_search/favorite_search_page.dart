@@ -1,366 +1,327 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
-import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/prefecture.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/localization/sake_filter_localizations.dart';
+import '../../common/prefecture.dart';
 import '../../common/sake/master.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'favorite_search_page_notifier.dart';
 
-class FavoriteSearchPage extends StatelessWidget {
-  const FavoriteSearchPage._({Key? key}) : super(key: key);
+class FavoriteSearchPage extends StatefulWidget {
+  const FavoriteSearchPage._({super.key});
 
-  static Widget wrapped() {
-    return MultiProvider(
-      providers: [
-        StateNotifierProvider<
-          FavoriteSearchPageNotifier,
-          FavoriteSearchPageState
-        >(create: (context) => FavoriteSearchPageNotifier(context: context)),
-      ],
-      child: const FavoriteSearchPage._(),
-    );
+  static Widget wrapped() => MultiProvider(
+    providers: [
+      StateNotifierProvider<
+        FavoriteSearchPageNotifier,
+        FavoriteSearchPageState
+      >(create: (context) => FavoriteSearchPageNotifier(context: context)),
+    ],
+    child: const FavoriteSearchPage._(),
+  );
+
+  @override
+  State<FavoriteSearchPage> createState() => _FavoriteSearchPageState();
+}
+
+class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
+  bool _isSearching = false;
+  bool _hasSearched = false;
+  String? _errorMessage;
+  List<SakeMapSearchResult> _results = const [];
+
+  Future<void> _search(FavoriteSearchPageState state) async {
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
+    try {
+      final results = await context
+          .read<PlaceMapRepository>()
+          .discoverSakeMasters(
+            prefecture: state.selectedPrefecture,
+            flavors: state.selectedFlavors,
+            tastes: state.selectedTastes,
+            designs: state.selectedDesigns,
+          );
+      if (!mounted) return;
+      setState(() {
+        _results = results;
+        _hasSearched = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _results = const [];
+        _hasSearched = true;
+        _errorMessage = '検索に失敗しました。通信状況を確認してもう一度お試しください。';
+      });
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final notifier = context.watch<FavoriteSearchPageNotifier>();
-    final isLoading = context.select(
-      (FavoriteSearchPageState state) => state.isLoading,
-    );
-    final geminiResponse = context.select(
-      (FavoriteSearchPageState state) => state.geminiResponse,
-    );
-    final selectedFlavors =
-        context.select(
-          (FavoriteSearchPageState state) => state.selectedFlavors,
-        ) ??
-        [];
-    final selectedTastes =
-        context.select(
-          (FavoriteSearchPageState state) => state.selectedTastes,
-        ) ??
-        [];
-    final selectedDesigns =
-        context.select(
-          (FavoriteSearchPageState state) => state.selectedDesigns,
-        ) ??
-        [];
-    final selectedPrefecture = context.select(
-      (FavoriteSearchPageState state) => state.selectedPrefecture,
-    );
+    final notifier = context.read<FavoriteSearchPageNotifier>();
+    final state = context.watch<FavoriteSearchPageState>();
+    final selectedFlavors = state.selectedFlavors ?? const <String>[];
+    final selectedTastes = state.selectedTastes ?? const <String>[];
+    final selectedDesigns = state.selectedDesigns ?? const <String>[];
+
     return Scaffold(
       appBar: PrimaryAppBar(
-        title: context.l10n.preferenceSearchPageTitle,
+        title: context.l10n.searchByRegion,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back),
+        ),
       ),
-      body: Container(
-        height: MediaQuery.of(context).size.height,
+      body: ColoredBox(
         color: const Color(0xFF1D3567),
-        child: SingleChildScrollView(
-          child: isLoading
-              ? AILoading(loadingText: context.l10n.loadingSakeInfo)
-              : Column(
-                  children: [
-                    const SizedBox(height: 24),
-                    Text(
-                      context.l10n.searchByRegion,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      context.l10n.preferenceSearchDescription,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                    SizedBox(height: 40),
-                    if (geminiResponse != null)
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          style: TextStyle(color: Colors.white),
-                          geminiResponse,
-                        ),
-                      ),
-                    if (geminiResponse != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 40, top: 40),
-                        child: Text(
-                          context.l10n.continueInquiry,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 24, bottom: 24),
-                          child: Text(
-                            context.l10n.region,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10.0), // 角丸の半径を指定
-                      ),
-                      child: Center(
-                        child: DropdownButton(
-                          hint: Text(context.l10n.selectRegion),
-                          underline: SizedBox(),
-                          value: selectedPrefecture,
-                          items: prefectures
-                              .map(
-                                (prefecture) => DropdownMenuItem(
-                                  value: prefecture,
-                                  child: SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.8,
-                                    child: Text(
-                                      localizeSakeFilterLabel(
-                                        context,
-                                        prefecture,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            notifier.setPrefecture(value);
-                          },
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 24, bottom: 0),
-                          child: Text(
-                            context.l10n.flavorGroupOne,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: Sake.flavors.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              childAspectRatio: 2,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                            ),
-                        itemBuilder: (context, index) {
-                          final flavor = Sake.flavors[index];
-                          return InkWell(
-                            onTap: () {
-                              notifier.toggleSelectedFlavor(flavor);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: selectedFlavors.contains(flavor)
-                                    ? Colors.blue
-                                    : Colors.white60,
-                                borderRadius: BorderRadius.circular(
-                                  10.0,
-                                ), // 角丸の半径を指定
-                              ),
-                              child: Center(
-                                child: Text(
-                                  localizeSakeFilterLabel(context, flavor),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 24, bottom: 0),
-                          child: Text(
-                            context.l10n.flavorGroupTwo,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: Sake.tastes.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              childAspectRatio: 2,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                            ),
-                        itemBuilder: (context, index) {
-                          final taste = Sake.tastes[index];
-                          return InkWell(
-                            onTap: () {
-                              notifier.toggleSelectedTaste(taste);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: selectedTastes.contains(taste)
-                                    ? Colors.blue
-                                    : Colors.white60,
-                                borderRadius: BorderRadius.circular(
-                                  10.0,
-                                ), // 角丸の半径を指定
-                              ),
-                              child: Center(
-                                child: Text(
-                                  localizeSakeFilterLabel(context, taste),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 24, bottom: 0),
-                          child: Text(
-                            context.l10n.specificDesignation,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        itemCount: Sake.designs.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              childAspectRatio: 2,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                            ),
-                        itemBuilder: (context, index) {
-                          final design = Sake.designs[index];
-                          return InkWell(
-                            onTap: () {
-                              notifier.toggleSelectedDesigns(design);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: selectedDesigns.contains(design)
-                                    ? Colors.blue
-                                    : Colors.white60,
-                                borderRadius: BorderRadius.circular(
-                                  10.0,
-                                ), // 角丸の半径を指定
-                              ),
-                              child: Center(
-                                child: Text(
-                                  localizeSakeFilterLabel(context, design),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    SizedBox(
-                      width: 220,
-                      child: FilledButton(
-                        onPressed: () async {
-                          await notifier.promptWithFavorite();
-                        },
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                        ),
-                        child: Text(context.l10n.askAi),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            children: [
+              const Text(
+                '産地と味わいから、日本酒マスターを絞り込みます。',
+                style: TextStyle(color: Colors.white, fontSize: 13),
+              ),
+              const SizedBox(height: 28),
+              _SectionLabel(label: context.l10n.region),
+              const SizedBox(height: 10),
+              _PrefectureDropdown(
+                value: state.selectedPrefecture,
+                onChanged: notifier.setPrefecture,
+              ),
+              const SizedBox(height: 28),
+              _FilterGrid(
+                label: context.l10n.flavorGroupOne,
+                choices: Sake.flavors,
+                selected: selectedFlavors,
+                onTap: notifier.toggleSelectedFlavor,
+              ),
+              const SizedBox(height: 28),
+              _FilterGrid(
+                label: context.l10n.flavorGroupTwo,
+                choices: Sake.tastes,
+                selected: selectedTastes,
+                onTap: notifier.toggleSelectedTaste,
+              ),
+              const SizedBox(height: 28),
+              _FilterGrid(
+                label: context.l10n.specificDesignation,
+                choices: Sake.designs,
+                selected: selectedDesigns,
+                onTap: notifier.toggleSelectedDesigns,
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: _isSearching ? null : () => _search(state),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: const Color(0xFFFF7A1A),
+                  foregroundColor: Colors.white,
                 ),
+                icon: _isSearching
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.search),
+                label: Text(_isSearching ? '検索中…' : 'この条件で検索'),
+              ),
+              if (_hasSearched) ...[
+                const SizedBox(height: 32),
+                _SearchResults(results: _results, errorMessage: _errorMessage),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-final ButtonStyle flatButtonStyle = TextButton.styleFrom(
-  foregroundColor: Colors.black,
-  minimumSize: Size(88, 36),
-  padding: EdgeInsets.symmetric(horizontal: 16),
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(2)),
-  ),
-);
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    label,
+    style: const TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+    ),
+  );
+}
+
+class _PrefectureDropdown extends StatelessWidget {
+  const _PrefectureDropdown({required this.value, required this.onChanged});
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: DropdownButton<String>(
+        isExpanded: true,
+        value: value,
+        hint: Text(context.l10n.selectRegion),
+        underline: const SizedBox(),
+        items: prefectures
+            .map(
+              (prefecture) => DropdownMenuItem<String>(
+                value: prefecture,
+                child: Text(localizeSakeFilterLabel(context, prefecture)),
+              ),
+            )
+            .toList(growable: false),
+        onChanged: onChanged,
+      ),
+    ),
+  );
+}
+
+class _FilterGrid extends StatelessWidget {
+  const _FilterGrid({
+    required this.label,
+    required this.choices,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final List<String> choices;
+  final List<String> selected;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _SectionLabel(label: label),
+      const SizedBox(height: 10),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: choices
+            .map(
+              (choice) => FilterChip(
+                label: Text(localizeSakeFilterLabel(context, choice)),
+                selected: selected.contains(choice),
+                onSelected: (_) => onTap(choice),
+                backgroundColor: Colors.white,
+                selectedColor: const Color(0xFF4F90E6),
+                checkmarkColor: Colors.white,
+                labelStyle: TextStyle(
+                  color: selected.contains(choice)
+                      ? Colors.white
+                      : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    ],
+  );
+}
+
+class _SearchResults extends StatelessWidget {
+  const _SearchResults({required this.results, required this.errorMessage});
+  final List<SakeMapSearchResult> results;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (errorMessage != null) {
+      return Text(errorMessage!, style: const TextStyle(color: Colors.white));
+    }
+    if (results.isEmpty) {
+      return const Text(
+        '条件に合う日本酒が見つかりませんでした。条件を少しゆるめてお試しください。',
+        style: TextStyle(color: Colors.white),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${results.length}件見つかりました',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...results.map(
+          (result) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              borderRadius: BorderRadius.circular(12),
+              child: ListTile(
+                onTap: result.sakeId == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SakeMasterDetailPage(
+                            venueSake: VenueSake(
+                              sakeId: result.sakeId,
+                              name: result.name,
+                              brewery: result.brewery,
+                              type: result.type,
+                              recordCount: 0,
+                              primaryImageUrl: result.primaryImageUrl,
+                            ),
+                          ),
+                        ),
+                      ),
+                leading: result.primaryImageUrl == null
+                    ? const CircleAvatar(child: Icon(Icons.local_bar_outlined))
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          result.primaryImageUrl!,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const CircleAvatar(
+                            child: Icon(Icons.local_bar_outlined),
+                          ),
+                        ),
+                      ),
+                title: Text(result.name),
+                subtitle: Text(
+                  [result.brewery, result.type]
+                      .whereType<String>()
+                      .where((value) => value.isNotEmpty)
+                      .join(' / '),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
