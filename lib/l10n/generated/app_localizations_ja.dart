@@ -15,6 +15,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navigationSearch => '検索';
 
   @override
+  String get navigationMap => 'マップ';
+
+  @override
+  String get newFeatureBadge => 'NEW&便利';
+
+  @override
+  String get mapSearchShortcut => '地図検索';
+
+  @override
+  String get mapSearchShortcutDescription => 'お店から日本酒を探す';
+
+  @override
+  String get fastSearchShortcut => '高速検索';
+
+  @override
+  String get fastSearchShortcutDescription => 'ラベルを撮ってすぐ検索';
+
+  @override
+  String registeredVenueCount(int count) {
+    return '登録店舗 $count件';
+  }
+
+  @override
   String get navigationMenuAnalysis => 'メニュー解析';
 
   @override
@@ -477,6 +500,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get totalEnvyPoints => '累計うらやまポイント';
 
   @override
+  String get mapContributionPoints => 'マップ貢献ポイント';
+
+  @override
+  String mapContributionPointCount(int count) {
+    return '$count pt';
+  }
+
+  @override
+  String get mapContributionHint => '店舗と日本酒の登録で5pt、写真公開で追加10pt';
+
+  @override
   String get collectEnvy => 'うらやまを集めよう';
 
   @override
@@ -800,7 +834,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get enterOptionalSakeType => '種類を入力（任意）';
 
   @override
-  String get selectBottleImage => 'ラベルを撮るだけですぐに日本酒を探せます';
+  String get selectBottleImage => '日本酒のラベルや瓶の画像を選択してください';
 
   @override
   String get tapToSelectImage => 'タップして画像を選択';
@@ -1027,16 +1061,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get impressionHint => '味わいや香りの印象を記録しましょう';
 
   @override
-  String get placeConsumed => '飲んだ場所';
+  String get placeConsumed => 'この日本酒がある店舗';
 
   @override
-  String get placeConsumedHint => 'お店やイベント名などを記録できます';
+  String registeredShop(String shop) {
+    return '登録店舗：$shop';
+  }
 
   @override
-  String get addConsumedPlace => '飲んだ場所を追加';
+  String get placeConsumedHint => 'Google検索候補から店舗を登録できます';
 
   @override
-  String get changeConsumedPlace => '飲んだ場所を変更';
+  String get addConsumedPlace => '店舗を登録';
+
+  @override
+  String get changeConsumedPlace => '登録店舗を変更';
+
+  @override
+  String get shopContributionNotice => '店舗を選ぶと、この店舗と日本酒が匿名でマップに登録され、5ptを獲得します。';
 
   @override
   String get findPlaceNearby => '近くで探す';
@@ -1065,7 +1107,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get placeSearchFailed => '場所を検索できませんでした。手入力も利用できます。';
+  String get placeSearchFailed => '店舗を検索できませんでした。時間をおいて再度お試しください。';
 
   @override
   String get locationServicesDisabled => '端末の位置情報をオンにしてください';

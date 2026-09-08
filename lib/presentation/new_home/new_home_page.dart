@@ -13,9 +13,9 @@ import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
+import '../my_page/my_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../sake_scan/sake_scan_page.dart';
-import '../sake_map/sake_map_page.dart';
 import '../timeline/envy_result.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'new_home_page_notifier.dart';
@@ -69,6 +69,9 @@ class NewHomePage extends StatelessWidget {
           _HomeHeader(
             onSearchTap: () => _openSearch(context),
             onScanTap: () => openNewHomeScanner(context),
+            onMyPageTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => MyPage.wrapped())),
           ),
           Expanded(
             child: RefreshIndicator(
@@ -85,14 +88,6 @@ class NewHomePage extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.only(top: 34, bottom: 34),
                 children: [
-                  _SakeMapEntry(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => SakeMapPage.wrapped(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
                   _SectionTitle(title: context.l10n.newHomeRecentSakes),
                   const SizedBox(height: 10),
                   if (savedSakes.isEmpty)
@@ -180,7 +175,7 @@ class NewHomePage extends StatelessWidget {
                       subtitleBuilder: (sake) =>
                           _displayUserName(context, sake),
                       onTap: (_) =>
-                          context.read<AppPageNotifier>().onTabTapped(1),
+                          context.read<AppPageNotifier>().onTabTapped(3),
                     ),
                 ],
               ),
@@ -251,10 +246,15 @@ Future<void> openNewHomeScanner(BuildContext context) async {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.onSearchTap, required this.onScanTap});
+  const _HomeHeader({
+    required this.onSearchTap,
+    required this.onScanTap,
+    required this.onMyPageTap,
+  });
 
   final VoidCallback onSearchTap;
   final VoidCallback onScanTap;
+  final VoidCallback onMyPageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -268,12 +268,32 @@ class _HomeHeader extends StatelessWidget {
             width: double.infinity,
             padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
             color: _brandColor,
-            alignment: Alignment.center,
-            child: Image.asset(
-              'assets/images/sake_logo.png',
-              width: 66,
-              height: 66,
-              fit: BoxFit.contain,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/sake_logo.png',
+                  width: 66,
+                  height: 66,
+                  fit: BoxFit.contain,
+                ),
+                Positioned(
+                  right: 10,
+                  child: Semantics(
+                    button: true,
+                    label: context.l10n.navigationMyPage,
+                    child: IconButton(
+                      tooltip: context.l10n.navigationMyPage,
+                      onPressed: onMyPageTap,
+                      icon: const Icon(
+                        Icons.account_circle_outlined,
+                        color: Colors.white,
+                        size: 35,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(
@@ -359,61 +379,6 @@ class _SectionTitle extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SakeMapEntry extends StatelessWidget {
-  const _SakeMapEntry({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Material(
-        color: _brandColor,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.map_outlined, color: _brandColor, size: 29),
-                ),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '日本酒マップ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'この地域で飲まれた日本酒を探す',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: Colors.white),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

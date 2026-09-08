@@ -862,7 +862,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           const SizedBox(height: 16),
           TextField(
             controller: _placeController,
-            onChanged: (_) => _placeDirty = true,
+            readOnly: true,
+            onTap: _openPlacePicker,
             maxLines: 1,
             maxLength: 60,
             style: const TextStyle(color: Colors.white, fontSize: 15),
@@ -899,20 +900,21 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               contentPadding: EdgeInsets.zero,
               activeThumbColor: Colors.amber,
               title: const Text(
-                '店舗情報を公開',
+                '写真をマップに表示',
                 style: TextStyle(color: Colors.white),
               ),
               subtitle: Text(
-                _currentSake.isPublic
-                    ? 'みんなのマップに「この店で飲まれた」記録として表示します'
-                    : '保存酒を公開すると変更できます',
+                _currentSake.drinkingPlace!.mapPhotoPublic
+                    ? '店舗のマップにこの写真を表示します'
+                    : '店舗と日本酒の情報だけがマップに登録されます',
                 style: const TextStyle(color: Colors.white60, fontSize: 12),
               ),
-              value:
-                  _currentSake.drinkingPlace!.visibility ==
-                  PlaceVisibility.public,
-              onChanged: _currentSake.isPublic && !_isSyncing
-                  ? _updatePlaceVisibility
+              value: _currentSake.drinkingPlace!.mapPhotoPublic,
+              onChanged:
+                  !_isSyncing &&
+                      (_imagePaths.isNotEmpty ||
+                          _currentSake.drinkingPlace!.mapPhotoPublic)
+                  ? _updateMapPhotoVisibility
                   : null,
             ),
             Align(
@@ -920,7 +922,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
               child: TextButton.icon(
                 onPressed: _isSyncing ? null : _deleteDrinkingPlace,
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('場所を削除'),
+                label: const Text('店舗登録を削除'),
                 style: TextButton.styleFrom(foregroundColor: Colors.white70),
               ),
             ),
@@ -1435,38 +1437,49 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
   Future<void> _openPlacePicker() async {
     FocusScope.of(context).unfocus();
+    if (_currentSake.sakeId == null) {
+      _showSnack('日本酒マスターと紐付いたお酒だけ店舗へ登録できます。');
+      return;
+    }
     var place = await PlacePickerSheet.show(
       context,
       initialPlace: _placeController.text.trim(),
     );
-    if (!mounted || place == null || place.displayName.trim().isEmpty) return;
+    if (!mounted ||
+        place == null ||
+        place.providerPlaceId == null ||
+        place.displayName.trim().isEmpty) {
+      return;
+    }
 
-    var selectedVisibility =
-        _currentSake.drinkingPlace?.visibility ?? PlaceVisibility.private;
-    if (_currentSake.isPublic) {
-      final makePublic = await showDialog<bool>(
+    var mapPhotoPublic = false;
+    if (_imagePaths.isNotEmpty) {
+      final publishPhoto = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('店舗情報の公開範囲'),
-          content: const Text('店舗情報を公開すると、みんなの日本酒マップに「この店で飲まれた」記録として表示されます。'),
+          title: const Text('この写真をマップに表示しますか？'),
+          content: const Text(
+            '表示しない場合も、この店舗と日本酒の情報はマップに登録され、5ptを獲得します。写真を表示すると、さらに10ptを獲得できます。',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('自分だけ'),
+              child: const Text('写真は表示しない'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('店舗も公開'),
+              child: const Text('写真を表示する（+10pt）'),
             ),
           ],
         ),
       );
-      if (!mounted || makePublic == null) return;
-      selectedVisibility = makePublic
-          ? PlaceVisibility.public
-          : PlaceVisibility.private;
+      if (!mounted || publishPhoto == null) return;
+      mapPhotoPublic = publishPhoto;
     }
-    place = place.copyWith(visibility: selectedVisibility);
+    place = place.copyWith(
+      visibility: PlaceVisibility.public,
+      mapPhotoPublic: mapPhotoPublic,
+    );
     _placeController.text = place.displayName.trim();
     _placeDirty = true;
     _applySakeUpdate(
@@ -1478,29 +1491,39 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     await _saveMemo();
   }
 
-  Future<void> _updatePlaceVisibility(bool makePublic) async {
+  Future<void> _updateMapPhotoVisibility(bool makePublic) async {
     final savedId = _currentSake.savedId;
     final currentPlace = _currentSake.drinkingPlace;
     if (savedId == null || savedId.isEmpty || currentPlace == null) return;
     setState(() => _isSyncing = true);
-    DrinkingPlace? updated;
+    MapContributionSaveResult? result;
     try {
-      updated = await context.read<PlaceMapRepository>().updatePlaceVisibility(
-        savedId: savedId,
-        visibility: makePublic
-            ? PlaceVisibility.public
-            : PlaceVisibility.private,
-      );
+      result = await context
+          .read<PlaceMapRepository>()
+          .updateMapPhotoVisibility(
+            savedId: savedId,
+            mapPhotoPublic: makePublic,
+          );
     } catch (error) {
-      logger.warning('店舗公開範囲の変更に失敗しました: $error');
+      logger.warning('マップ写真の公開設定変更に失敗しました: $error');
     }
     if (!mounted) return;
     setState(() => _isSyncing = false);
-    if (updated == null) {
+    if (result == null) {
       _showSnack(context.l10n.errorVisibilityUpdate);
       return;
     }
-    _applySakeUpdate(_currentSake.copyWith(drinkingPlace: updated));
+    _applySakeUpdate(
+      _currentSake.copyWith(drinkingPlace: result.drinkingPlace),
+      toastMessage: result.pointsAwarded > 0
+          ? '写真をマップに公開しました（+${result.pointsAwarded}pt）'
+          : makePublic
+          ? '写真をマップに表示します'
+          : '写真をマップから非表示にしました',
+    );
+    if (result.pointsAwarded > 0) {
+      unawaited(context.read<MyPageNotifier>().loadAchievementStats());
+    }
   }
 
   Future<void> _deleteDrinkingPlace() async {
@@ -1624,17 +1647,14 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       _isSyncing = true;
       _progressMessage = context.l10n.savingToServer;
     });
-    DrinkingPlace? verifiedPlace;
+    MapContributionSaveResult? result;
     var deleted = false;
     try {
       final repository = context.read<PlaceMapRepository>();
       if (place == null || place.displayName.trim().isEmpty) {
         deleted = await repository.deletePlace(savedId);
       } else {
-        verifiedPlace = await repository.savePlace(
-          savedId: savedId,
-          place: place,
-        );
+        result = await repository.savePlace(savedId: savedId, place: place);
       }
     } catch (error, stackTrace) {
       logger.warning('店舗情報の同期に失敗しました: $error');
@@ -1645,12 +1665,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       _isSyncing = false;
       _progressMessage = null;
     });
-    if (verifiedPlace == null && !deleted) {
+    if (result == null && !deleted) {
       _showSnack(context.l10n.errorSaveToServer);
       return;
     }
     _placeDirty = false;
-    if (verifiedPlace != null) {
+    if (result != null) {
+      final verifiedPlace = result.drinkingPlace;
       _placeController.text = verifiedPlace.displayName;
       _applySakeUpdate(
         _currentSake.copyWith(
@@ -1658,8 +1679,13 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           drinkingPlace: verifiedPlace,
           syncStatus: SavedSakeSyncStatus.serverSynced,
         ),
-        toastMessage: context.l10n.savedToServer,
+        toastMessage: result.pointsAwarded > 0
+            ? 'マップへ登録しました（+${result.pointsAwarded}pt）'
+            : context.l10n.savedToServer,
       );
+      if (result.pointsAwarded > 0) {
+        unawaited(context.read<MyPageNotifier>().loadAchievementStats());
+      }
     } else {
       _clearLocalDrinkingPlace();
     }

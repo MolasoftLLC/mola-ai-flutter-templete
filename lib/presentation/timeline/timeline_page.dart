@@ -69,7 +69,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
 
   bool _isTimelineTabActive(BuildContext context) {
     try {
-      return context.select((AppPageState state) => state.currentIndex == 1);
+      return context.select((AppPageState state) => state.currentIndex == 3);
     } on ProviderNotFoundException {
       return false;
     }

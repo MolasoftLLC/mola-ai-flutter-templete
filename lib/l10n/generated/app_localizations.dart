@@ -110,6 +110,48 @@ abstract class AppLocalizations {
   /// **'検索'**
   String get navigationSearch;
 
+  /// No description provided for @navigationMap.
+  ///
+  /// In ja, this message translates to:
+  /// **'マップ'**
+  String get navigationMap;
+
+  /// No description provided for @newFeatureBadge.
+  ///
+  /// In ja, this message translates to:
+  /// **'NEW&便利'**
+  String get newFeatureBadge;
+
+  /// No description provided for @mapSearchShortcut.
+  ///
+  /// In ja, this message translates to:
+  /// **'地図検索'**
+  String get mapSearchShortcut;
+
+  /// No description provided for @mapSearchShortcutDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'お店から日本酒を探す'**
+  String get mapSearchShortcutDescription;
+
+  /// No description provided for @fastSearchShortcut.
+  ///
+  /// In ja, this message translates to:
+  /// **'高速検索'**
+  String get fastSearchShortcut;
+
+  /// No description provided for @fastSearchShortcutDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベルを撮ってすぐ検索'**
+  String get fastSearchShortcutDescription;
+
+  /// No description provided for @registeredVenueCount.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録店舗 {count}件'**
+  String registeredVenueCount(int count);
+
   /// No description provided for @navigationMenuAnalysis.
   ///
   /// In ja, this message translates to:
@@ -986,6 +1028,24 @@ abstract class AppLocalizations {
   /// **'累計うらやまポイント'**
   String get totalEnvyPoints;
 
+  /// No description provided for @mapContributionPoints.
+  ///
+  /// In ja, this message translates to:
+  /// **'マップ貢献ポイント'**
+  String get mapContributionPoints;
+
+  /// No description provided for @mapContributionPointCount.
+  ///
+  /// In ja, this message translates to:
+  /// **'{count} pt'**
+  String mapContributionPointCount(int count);
+
+  /// No description provided for @mapContributionHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'店舗と日本酒の登録で5pt、写真公開で追加10pt'**
+  String get mapContributionHint;
+
   /// No description provided for @collectEnvy.
   ///
   /// In ja, this message translates to:
@@ -1601,7 +1661,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectBottleImage.
   ///
   /// In ja, this message translates to:
-  /// **'ラベルを撮るだけですぐに日本酒を探せます'**
+  /// **'日本酒のラベルや瓶の画像を選択してください'**
   String get selectBottleImage;
 
   /// No description provided for @tapToSelectImage.
@@ -2039,26 +2099,38 @@ abstract class AppLocalizations {
   /// No description provided for @placeConsumed.
   ///
   /// In ja, this message translates to:
-  /// **'飲んだ場所'**
+  /// **'この日本酒がある店舗'**
   String get placeConsumed;
+
+  /// No description provided for @registeredShop.
+  ///
+  /// In ja, this message translates to:
+  /// **'登録店舗：{shop}'**
+  String registeredShop(String shop);
 
   /// No description provided for @placeConsumedHint.
   ///
   /// In ja, this message translates to:
-  /// **'お店やイベント名などを記録できます'**
+  /// **'Google検索候補から店舗を登録できます'**
   String get placeConsumedHint;
 
   /// No description provided for @addConsumedPlace.
   ///
   /// In ja, this message translates to:
-  /// **'飲んだ場所を追加'**
+  /// **'店舗を登録'**
   String get addConsumedPlace;
 
   /// No description provided for @changeConsumedPlace.
   ///
   /// In ja, this message translates to:
-  /// **'飲んだ場所を変更'**
+  /// **'登録店舗を変更'**
   String get changeConsumedPlace;
+
+  /// No description provided for @shopContributionNotice.
+  ///
+  /// In ja, this message translates to:
+  /// **'店舗を選ぶと、この店舗と日本酒が匿名でマップに登録され、5ptを獲得します。'**
+  String get shopContributionNotice;
 
   /// No description provided for @findPlaceNearby.
   ///
@@ -2111,7 +2183,7 @@ abstract class AppLocalizations {
   /// No description provided for @placeSearchFailed.
   ///
   /// In ja, this message translates to:
-  /// **'場所を検索できませんでした。手入力も利用できます。'**
+  /// **'店舗を検索できませんでした。時間をおいて再度お試しください。'**
   String get placeSearchFailed;
 
   /// No description provided for @locationServicesDisabled.

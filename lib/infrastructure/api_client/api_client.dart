@@ -126,8 +126,8 @@ abstract class ApiClient extends ChopperService {
   @Delete(path: 'saved-sakes/{savedId}/place')
   Future<Response> deleteSavedSakePlace(@Path('savedId') String savedId);
 
-  @Patch(path: 'saved-sakes/{savedId}/place-visibility')
-  Future<Response> updateSavedSakePlaceVisibility(
+  @Patch(path: 'saved-sakes/{savedId}/map-photo-visibility')
+  Future<Response> updateSavedSakeMapPhotoVisibility(
     @Path('savedId') String savedId,
     @Body() Map<String, dynamic> body,
   );
@@ -151,8 +151,14 @@ abstract class ApiClient extends ChopperService {
     @Query('sinceDays') int? sinceDays,
   });
 
-  @Get(path: 'sakes/search')
+  @Get(path: 'map/sakes/search')
   Future<Response> searchSakesForMap(
+    @Query('q') String query, {
+    @Query('limit') int limit = 20,
+  });
+
+  @Get(path: 'sakes/search')
+  Future<Response> searchSakeMasters(
     @Query('q') String query, {
     @Query('limit') int limit = 20,
   });

@@ -29,6 +29,7 @@ _$DrinkingPlaceImpl _$$DrinkingPlaceImplFromJson(Map<String, dynamic> json) =>
       visibility:
           $enumDecodeNullable(_$PlaceVisibilityEnumMap, json['visibility']) ??
           PlaceVisibility.private,
+      mapPhotoPublic: json['mapPhotoPublic'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$DrinkingPlaceImplToJson(_$DrinkingPlaceImpl instance) =>
@@ -40,6 +41,7 @@ Map<String, dynamic> _$$DrinkingPlaceImplToJson(_$DrinkingPlaceImpl instance) =>
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'visibility': _$PlaceVisibilityEnumMap[instance.visibility]!,
+      'mapPhotoPublic': instance.mapPhotoPublic,
     };
 
 const _$PlaceVisibilityEnumMap = {

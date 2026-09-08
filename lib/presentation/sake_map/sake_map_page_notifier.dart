@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:state_notifier/state_notifier.dart';
@@ -81,9 +82,60 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
     }
   }
 
-  Future<void> selectSake(SakeMapSearchResult sake) async {
-    state = state.copyWith(selectedSake: sake, searchResults: const []);
-    await refresh();
+  Future<MapVenue?> selectSake(
+    SakeMapSearchResult sake, {
+    required LatLng origin,
+  }) async {
+    final requestId = ++_venueRequestId;
+    state = state.copyWith(
+      selectedSake: sake,
+      searchResults: const [],
+      venues: const [],
+      isLoading: true,
+      clearError: true,
+    );
+
+    final foundVenues = <String, MapVenue>{};
+    try {
+      for (final area in _nearestSearchAreas(origin)) {
+        final venues = await _repository.fetchVenues(
+          swLat: area.bounds.southwest.latitude,
+          swLng: area.bounds.southwest.longitude,
+          neLat: area.bounds.northeast.latitude,
+          neLng: area.bounds.northeast.longitude,
+          zoom: area.zoom,
+          sakeId: sake.sakeId,
+          sakeToken: sake.searchToken,
+        );
+        if (requestId != _venueRequestId) return null;
+        for (final venue in venues) {
+          foundVenues[venue.venueId] = venue;
+        }
+        if (foundVenues.isEmpty) continue;
+
+        final nearest = _nearestVenue(foundVenues.values, origin);
+        if (area.acceptNearest ||
+            _distanceMeters(origin, nearest) <= area.radiusMeters) {
+          state = state.copyWith(
+            venues: foundVenues.values.toList(growable: false),
+            isLoading: false,
+          );
+          return nearest;
+        }
+      }
+      if (requestId == _venueRequestId) {
+        state = state.copyWith(venues: const [], isLoading: false);
+      }
+      return null;
+    } catch (_) {
+      if (requestId != _venueRequestId) return null;
+      state = state.copyWith(
+        venues: const [],
+        isLoading: false,
+        errorMessage: '地図の店舗情報を取得できませんでした。',
+      );
+      return null;
+    }
   }
 
   Future<void> clearSakeFilter() async {
@@ -111,7 +163,6 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
         zoom: _lastZoom,
         sakeId: state.selectedSake?.sakeId,
         sakeToken: state.selectedSake?.searchToken,
-        sinceDays: 90,
       );
       if (requestId != _venueRequestId) return;
       state = state.copyWith(venues: venues, isLoading: false);
@@ -132,4 +183,97 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
     _searchDebounce?.cancel();
     super.dispose();
   }
+}
+
+Iterable<_NearestSearchArea> _nearestSearchAreas(LatLng origin) sync* {
+  for (final radiusMeters in const <double>[
+    5000,
+    25000,
+    100000,
+    500000,
+    2500000,
+  ]) {
+    final latitudeDelta = radiusMeters / 111320;
+    final longitudeScale = math.cos(origin.latitude * math.pi / 180).abs();
+    final longitudeDelta = math.min(
+      179.999,
+      radiusMeters / (111320 * math.max(longitudeScale, 0.01)),
+    );
+    yield _NearestSearchArea(
+      bounds: LatLngBounds(
+        southwest: LatLng(
+          math.max(-85, origin.latitude - latitudeDelta),
+          math.max(-180, origin.longitude - longitudeDelta),
+        ),
+        northeast: LatLng(
+          math.min(85, origin.latitude + latitudeDelta),
+          math.min(180, origin.longitude + longitudeDelta),
+        ),
+      ),
+      radiusMeters: radiusMeters,
+      zoom: switch (radiusMeters) {
+        <= 5000 => 12,
+        <= 25000 => 10,
+        <= 100000 => 8,
+        <= 500000 => 6,
+        _ => 3,
+      },
+    );
+  }
+  // 世界全体の境界はAPI側で広すぎる範囲として除外される場合があるため、
+  // 国内店舗を確実に拾える日本周辺の範囲を先に検索する。
+  yield _NearestSearchArea(
+    bounds: LatLngBounds(
+      southwest: const LatLng(20, 122),
+      northeast: const LatLng(48, 154),
+    ),
+    radiusMeters: double.infinity,
+    zoom: 4,
+    acceptNearest: true,
+  );
+  yield _NearestSearchArea(
+    bounds: LatLngBounds(
+      southwest: const LatLng(-85, -180),
+      northeast: const LatLng(85, 180),
+    ),
+    radiusMeters: double.infinity,
+    zoom: 1,
+    acceptNearest: true,
+  );
+}
+
+MapVenue _nearestVenue(Iterable<MapVenue> venues, LatLng origin) =>
+    venues.reduce(
+      (nearest, venue) =>
+          _distanceMeters(origin, venue) < _distanceMeters(origin, nearest)
+          ? venue
+          : nearest,
+    );
+
+double _distanceMeters(LatLng origin, MapVenue venue) {
+  const earthRadiusMeters = 6371000.0;
+  final originLatitude = origin.latitude * math.pi / 180;
+  final venueLatitude = venue.latitude * math.pi / 180;
+  final latitudeDelta = venueLatitude - originLatitude;
+  final longitudeDelta = (venue.longitude - origin.longitude) * math.pi / 180;
+  final haversine =
+      math.pow(math.sin(latitudeDelta / 2), 2) +
+      math.cos(originLatitude) *
+          math.cos(venueLatitude) *
+          math.pow(math.sin(longitudeDelta / 2), 2);
+  return 2 * earthRadiusMeters * math.asin(math.sqrt(haversine));
+}
+
+class _NearestSearchArea {
+  const _NearestSearchArea({
+    required this.bounds,
+    required this.radiusMeters,
+    required this.zoom,
+    this.acceptNearest = false,
+  });
+
+  final LatLngBounds bounds;
+  final double radiusMeters;
+  final double zoom;
+  final bool acceptNearest;
 }

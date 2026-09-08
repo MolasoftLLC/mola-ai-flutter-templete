@@ -33,6 +33,7 @@ class DrinkingPlace with _$DrinkingPlace {
     double? latitude,
     double? longitude,
     @Default(PlaceVisibility.private) PlaceVisibility visibility,
+    @Default(false) bool mapPhotoPublic,
   }) = _DrinkingPlace;
 
   factory DrinkingPlace.fromJson(Map<String, dynamic> json) =>

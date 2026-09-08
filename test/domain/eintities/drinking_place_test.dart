@@ -11,6 +11,7 @@ void main() {
       latitude: 26.2124,
       longitude: 127.6809,
       visibility: PlaceVisibility.public,
+      mapPhotoPublic: true,
     );
     expect(DrinkingPlace.fromJson(place.toJson()), place);
   });
@@ -23,5 +24,6 @@ void main() {
     });
     expect(sake.place, '以前の店名');
     expect(sake.drinkingPlace?.displayName, '検証済み店舗');
+    expect(sake.drinkingPlace?.mapPhotoPublic, isFalse);
   });
 }

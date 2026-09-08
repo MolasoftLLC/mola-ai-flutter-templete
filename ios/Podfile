@@ -44,6 +44,11 @@ post_install do |installer|
     # ✅ 古い Pod のデプロイターゲット警告を潰す（ビルド安定化）
     t.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # 現在地は利用中のみ取得するため、常時アクセスの要求コードを除外する。
+      if t.name == 'geolocator_apple'
+        definitions = Array(config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || '$(inherited)')
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = (definitions + ['BYPASS_PERMISSION_LOCATION_ALWAYS=1']).uniq
+      end
     end
   end
 end

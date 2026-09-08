@@ -195,6 +195,7 @@ mixin _$DrinkingPlace {
   double? get latitude => throw _privateConstructorUsedError;
   double? get longitude => throw _privateConstructorUsedError;
   PlaceVisibility get visibility => throw _privateConstructorUsedError;
+  bool get mapPhotoPublic => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -217,6 +218,7 @@ abstract class $DrinkingPlaceCopyWith<$Res> {
     double? latitude,
     double? longitude,
     PlaceVisibility visibility,
+    bool mapPhotoPublic,
   });
 }
 
@@ -240,6 +242,7 @@ class _$DrinkingPlaceCopyWithImpl<$Res, $Val extends DrinkingPlace>
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? visibility = null,
+    Object? mapPhotoPublic = null,
   }) {
     return _then(
       _value.copyWith(
@@ -271,6 +274,10 @@ class _$DrinkingPlaceCopyWithImpl<$Res, $Val extends DrinkingPlace>
                 ? _value.visibility
                 : visibility // ignore: cast_nullable_to_non_nullable
                       as PlaceVisibility,
+            mapPhotoPublic: null == mapPhotoPublic
+                ? _value.mapPhotoPublic
+                : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -294,6 +301,7 @@ abstract class _$$DrinkingPlaceImplCopyWith<$Res>
     double? latitude,
     double? longitude,
     PlaceVisibility visibility,
+    bool mapPhotoPublic,
   });
 }
 
@@ -316,6 +324,7 @@ class __$$DrinkingPlaceImplCopyWithImpl<$Res>
     Object? latitude = freezed,
     Object? longitude = freezed,
     Object? visibility = null,
+    Object? mapPhotoPublic = null,
   }) {
     return _then(
       _$DrinkingPlaceImpl(
@@ -347,6 +356,10 @@ class __$$DrinkingPlaceImplCopyWithImpl<$Res>
             ? _value.visibility
             : visibility // ignore: cast_nullable_to_non_nullable
                   as PlaceVisibility,
+        mapPhotoPublic: null == mapPhotoPublic
+            ? _value.mapPhotoPublic
+            : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -363,6 +376,7 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
     this.latitude,
     this.longitude,
     this.visibility = PlaceVisibility.private,
+    this.mapPhotoPublic = false,
   });
 
   factory _$DrinkingPlaceImpl.fromJson(Map<String, dynamic> json) =>
@@ -383,10 +397,13 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
   @override
   @JsonKey()
   final PlaceVisibility visibility;
+  @override
+  @JsonKey()
+  final bool mapPhotoPublic;
 
   @override
   String toString() {
-    return 'DrinkingPlace(venueId: $venueId, providerPlaceId: $providerPlaceId, displayName: $displayName, formattedAddress: $formattedAddress, latitude: $latitude, longitude: $longitude, visibility: $visibility)';
+    return 'DrinkingPlace(venueId: $venueId, providerPlaceId: $providerPlaceId, displayName: $displayName, formattedAddress: $formattedAddress, latitude: $latitude, longitude: $longitude, visibility: $visibility, mapPhotoPublic: $mapPhotoPublic)';
   }
 
   @override
@@ -406,7 +423,9 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
             (identical(other.longitude, longitude) ||
                 other.longitude == longitude) &&
             (identical(other.visibility, visibility) ||
-                other.visibility == visibility));
+                other.visibility == visibility) &&
+            (identical(other.mapPhotoPublic, mapPhotoPublic) ||
+                other.mapPhotoPublic == mapPhotoPublic));
   }
 
   @JsonKey(ignore: true)
@@ -420,6 +439,7 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
     latitude,
     longitude,
     visibility,
+    mapPhotoPublic,
   );
 
   @JsonKey(ignore: true)
@@ -443,6 +463,7 @@ abstract class _DrinkingPlace implements DrinkingPlace {
     final double? latitude,
     final double? longitude,
     final PlaceVisibility visibility,
+    final bool mapPhotoPublic,
   }) = _$DrinkingPlaceImpl;
 
   factory _DrinkingPlace.fromJson(Map<String, dynamic> json) =
@@ -462,6 +483,8 @@ abstract class _DrinkingPlace implements DrinkingPlace {
   double? get longitude;
   @override
   PlaceVisibility get visibility;
+  @override
+  bool get mapPhotoPublic;
   @override
   @JsonKey(ignore: true)
   _$$DrinkingPlaceImplCopyWith<_$DrinkingPlaceImpl> get copyWith =>

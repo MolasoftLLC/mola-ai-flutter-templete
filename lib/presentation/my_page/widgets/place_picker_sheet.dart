@@ -104,6 +104,10 @@ class _PlacePickerSheetState extends State<PlacePickerSheet> {
               ),
             ],
           ),
+          Text(
+            context.l10n.shopContributionNotice,
+            style: const TextStyle(color: Colors.black54, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           SegmentedButton<_PlaceSearchMode>(
             segments: [
@@ -218,15 +222,6 @@ class _PlacePickerSheetState extends State<PlacePickerSheet> {
                 icon: const Icon(Icons.refresh),
                 label: Text(context.l10n.findPlaceNearby),
               ),
-            if (_mode == _PlaceSearchMode.name && query.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _ManualPlaceButton(
-                place: query,
-                onTap: () => Navigator.of(
-                  context,
-                ).pop(DrinkingPlace(displayName: query)),
-              ),
-            ],
           ],
         ),
       );
@@ -247,15 +242,6 @@ class _PlacePickerSheetState extends State<PlacePickerSheet> {
                   : context.l10n.noPlaceResults,
               textAlign: TextAlign.center,
             ),
-            if (_mode == _PlaceSearchMode.name && query.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _ManualPlaceButton(
-                place: query,
-                onTap: () => Navigator.of(
-                  context,
-                ).pop(DrinkingPlace(displayName: query)),
-              ),
-            ],
           ],
         ),
       );
@@ -263,18 +249,9 @@ class _PlacePickerSheetState extends State<PlacePickerSheet> {
 
     return ListView.separated(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount:
-          _places.length +
-          (_mode == _PlaceSearchMode.name && query.isNotEmpty ? 1 : 0),
+      itemCount: _places.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        if (index == _places.length) {
-          return _ManualPlaceButton(
-            place: query,
-            onTap: () =>
-                Navigator.of(context).pop(DrinkingPlace(displayName: query)),
-          );
-        }
         final place = _places[index];
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -407,26 +384,6 @@ class _PlacePickerSheetState extends State<PlacePickerSheet> {
       return '${distanceMeters.round()} m';
     }
     return '${(distanceMeters / 1000).toStringAsFixed(1)} km';
-  }
-}
-
-class _ManualPlaceButton extends StatelessWidget {
-  const _ManualPlaceButton({required this.place, required this.onTap});
-
-  final String place;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: const CircleAvatar(
-        backgroundColor: Color(0xFFF0F3F7),
-        child: Icon(Icons.edit_location_alt_outlined),
-      ),
-      title: Text(context.l10n.useEnteredPlace(place)),
-      onTap: onTap,
-    );
   }
 }
 

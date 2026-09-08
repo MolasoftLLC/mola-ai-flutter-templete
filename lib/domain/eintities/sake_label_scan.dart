@@ -110,6 +110,11 @@ class SakeOverview {
     required this.sake,
     required this.analysisCompleted,
     this.analysisPayload,
+    this.master = const SakeMasterDetails(),
+    this.brand = const SakeBrandDetails(),
+    this.brewery = const SakeBreweryDetails(),
+    this.publicSavedSakeCount = 0,
+    this.relatedProducts = const <RelatedSakeProduct>[],
   });
 
   factory SakeOverview.fromJson(Map<String, dynamic> json) {
@@ -125,12 +130,19 @@ class SakeOverview {
       'recentPublicPosts': recentPublicPosts,
     };
     final sameBrandRaw = json['relatedProducts'];
-    final sameBrandSakes = sameBrandRaw is List
+    final relatedProducts = sameBrandRaw is List
         ? sameBrandRaw
               .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
+              .map(
+                (item) => RelatedSakeProduct.fromJson(
+                  Map<String, dynamic>.from(item),
+                ),
+              )
               .toList(growable: false)
-        : const <Map<String, dynamic>>[];
+        : const <RelatedSakeProduct>[];
+    final sameBrandSakes = relatedProducts
+        .map((item) => item.toJson())
+        .toList(growable: false);
 
     final embeddedSake = _asStringMap(analysisJson['sakeInfo']);
     final analysisSakeJson = embeddedSake.isNotEmpty
@@ -154,12 +166,295 @@ class SakeOverview {
       sake: Sake.fromJson(merged),
       analysisCompleted: analysisJson.isNotEmpty,
       analysisPayload: analysisJson.isEmpty ? null : analysisJson,
+      master: SakeMasterDetails.fromJson(sakeJson),
+      brand: SakeBrandDetails.fromJson(brandJson),
+      brewery: SakeBreweryDetails.fromJson(breweryJson),
+      publicSavedSakeCount: _asInt(json['publicSavedSakeCount']) ?? 0,
+      relatedProducts: relatedProducts,
     );
   }
 
   final Sake sake;
   final bool analysisCompleted;
   final Map<String, dynamic>? analysisPayload;
+  final SakeMasterDetails master;
+  final SakeBrandDetails brand;
+  final SakeBreweryDetails brewery;
+  final int publicSavedSakeCount;
+  final List<RelatedSakeProduct> relatedProducts;
+}
+
+class SakeMasterDetails {
+  const SakeMasterDetails({
+    this.categoryCode,
+    this.imageSource,
+    this.imageProductUrl,
+    this.category,
+    this.specialDesignation,
+    this.seriesName,
+    this.riceVariety,
+    this.riceOrigin,
+    this.polishingRatio,
+    this.alcoholPercentage,
+    this.sakeMeterValue,
+    this.acidity,
+    this.aminoAcid,
+    this.sweetnessLevel,
+    this.bodyLevel,
+    this.aromaLevel,
+    this.tasteTags = const <String>[],
+    this.aromaTags = const <String>[],
+    this.recommendedTemperatures = const <String>[],
+    this.pasteurizationType,
+    this.availabilityType,
+    this.releaseSeason,
+    this.dataSource,
+    this.sourceUrl,
+    this.verifiedAt,
+    this.officialUrl,
+    this.status,
+    this.styles = const <SakeStyleDetails>[],
+    this.variants = const <SakeProductVariant>[],
+    this.tasteProfile,
+  });
+
+  factory SakeMasterDetails.fromJson(Map<String, dynamic> json) {
+    final styles = json['styles'];
+    final variants = json['variants'];
+    final tasteProfile = _asStringMap(json['tasteProfile']);
+    return SakeMasterDetails(
+      categoryCode: _asNonEmptyString(json['categoryCode']),
+      imageSource: _asNonEmptyString(json['imageSource']),
+      imageProductUrl: _asNonEmptyString(json['imageProductUrl']),
+      category: _asNonEmptyString(json['category']),
+      specialDesignation: _asNonEmptyString(json['specialDesignation']),
+      seriesName: _asNonEmptyString(json['seriesName']),
+      riceVariety: _asNonEmptyString(json['riceVariety']),
+      riceOrigin: _asNonEmptyString(json['riceOrigin']),
+      polishingRatio: _asDouble(json['polishingRatio']),
+      alcoholPercentage: _asDouble(json['alcoholPercentage']),
+      sakeMeterValue: _asDouble(json['sakeMeterValue']),
+      acidity: _asDouble(json['acidity']),
+      aminoAcid: _asDouble(json['aminoAcid']),
+      sweetnessLevel: _asDouble(json['sweetnessLevel']),
+      bodyLevel: _asDouble(json['bodyLevel']),
+      aromaLevel: _asDouble(json['aromaLevel']),
+      tasteTags: _asStringList(json['tasteTags']),
+      aromaTags: _asStringList(json['aromaTags']),
+      recommendedTemperatures: _asStringList(json['recommendedTemperatures']),
+      pasteurizationType: _asNonEmptyString(json['pasteurizationType']),
+      availabilityType: _asNonEmptyString(json['availabilityType']),
+      releaseSeason: _asNonEmptyString(json['releaseSeason']),
+      dataSource: _asNonEmptyString(json['dataSource']),
+      sourceUrl: _asNonEmptyString(json['sourceUrl']),
+      verifiedAt: DateTime.tryParse(json['verifiedAt']?.toString() ?? ''),
+      officialUrl: _asNonEmptyString(json['officialUrl']),
+      status: _asNonEmptyString(json['status']),
+      styles: styles is List
+          ? styles
+                .whereType<Map>()
+                .map(
+                  (item) => SakeStyleDetails.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList(growable: false)
+          : const <SakeStyleDetails>[],
+      variants: variants is List
+          ? variants
+                .whereType<Map>()
+                .map(
+                  (item) => SakeProductVariant.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList(growable: false)
+          : const <SakeProductVariant>[],
+      tasteProfile: tasteProfile.isEmpty
+          ? null
+          : SakeTasteProfileDetails.fromJson(tasteProfile),
+    );
+  }
+
+  final String? categoryCode;
+  final String? imageSource;
+  final String? imageProductUrl;
+  final String? category;
+  final String? specialDesignation;
+  final String? seriesName;
+  final String? riceVariety;
+  final String? riceOrigin;
+  final double? polishingRatio;
+  final double? alcoholPercentage;
+  final double? sakeMeterValue;
+  final double? acidity;
+  final double? aminoAcid;
+  final double? sweetnessLevel;
+  final double? bodyLevel;
+  final double? aromaLevel;
+  final List<String> tasteTags;
+  final List<String> aromaTags;
+  final List<String> recommendedTemperatures;
+  final String? pasteurizationType;
+  final String? availabilityType;
+  final String? releaseSeason;
+  final String? dataSource;
+  final String? sourceUrl;
+  final DateTime? verifiedAt;
+  final String? officialUrl;
+  final String? status;
+  final List<SakeStyleDetails> styles;
+  final List<SakeProductVariant> variants;
+  final SakeTasteProfileDetails? tasteProfile;
+}
+
+class SakeStyleDetails {
+  const SakeStyleDetails({required this.code, required this.name});
+
+  factory SakeStyleDetails.fromJson(Map<String, dynamic> json) =>
+      SakeStyleDetails(
+        code: json['code']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+      );
+
+  final String code;
+  final String name;
+}
+
+class SakeProductVariant {
+  const SakeProductVariant({
+    this.variantId,
+    this.volumeMl,
+    this.suggestedPrice,
+    this.taxIncluded,
+    this.currency,
+    this.priceBand,
+  });
+
+  factory SakeProductVariant.fromJson(Map<String, dynamic> json) =>
+      SakeProductVariant(
+        variantId: _asInt(json['variantId']),
+        volumeMl: _asInt(json['volumeMl']),
+        suggestedPrice: _asDouble(json['suggestedPrice']),
+        taxIncluded: json['taxIncluded'] as bool?,
+        currency: _asNonEmptyString(json['currency']),
+        priceBand: _asNonEmptyString(json['priceBand']),
+      );
+
+  final int? variantId;
+  final int? volumeMl;
+  final double? suggestedPrice;
+  final bool? taxIncluded;
+  final String? currency;
+  final String? priceBand;
+}
+
+class SakeTasteProfileDetails {
+  const SakeTasteProfileDetails({
+    required this.fruity,
+    required this.sweetness,
+    required this.acidity,
+    required this.umami,
+    required this.kire,
+    required this.dryness,
+    this.body,
+    this.aroma,
+    this.sourceType,
+    this.confidence,
+  });
+
+  factory SakeTasteProfileDetails.fromJson(Map<String, dynamic> json) =>
+      SakeTasteProfileDetails(
+        fruity: _asDouble(json['fruity']) ?? 0,
+        sweetness: _asDouble(json['sweetness']) ?? 0,
+        acidity: _asDouble(json['acidity']) ?? 0,
+        umami: _asDouble(json['umami']) ?? 0,
+        kire: _asDouble(json['kire']) ?? 0,
+        dryness: _asDouble(json['dryness']) ?? 0,
+        body: _asDouble(json['body']),
+        aroma: _asDouble(json['aroma']),
+        sourceType: _asNonEmptyString(json['sourceType']),
+        confidence: _asDouble(json['confidence']),
+      );
+
+  final double fruity;
+  final double sweetness;
+  final double acidity;
+  final double umami;
+  final double kire;
+  final double dryness;
+  final double? body;
+  final double? aroma;
+  final String? sourceType;
+  final double? confidence;
+}
+
+class SakeBrandDetails {
+  const SakeBrandDetails({this.id, this.name, this.description, this.imageUrl});
+
+  factory SakeBrandDetails.fromJson(Map<String, dynamic> json) =>
+      SakeBrandDetails(
+        id: _asInt(json['id']),
+        name: _asNonEmptyString(json['name']),
+        description: _asNonEmptyString(json['description']),
+        imageUrl: _asNonEmptyString(json['imageUrl']),
+      );
+
+  final int? id;
+  final String? name;
+  final String? description;
+  final String? imageUrl;
+}
+
+class SakeBreweryDetails {
+  const SakeBreweryDetails({
+    this.id,
+    this.name,
+    this.prefectureCode,
+    this.officialUrl,
+  });
+
+  factory SakeBreweryDetails.fromJson(Map<String, dynamic> json) =>
+      SakeBreweryDetails(
+        id: _asInt(json['id']),
+        name: _asNonEmptyString(json['name']),
+        prefectureCode: _asNonEmptyString(json['prefectureCode']),
+        officialUrl: _asNonEmptyString(json['officialUrl']),
+      );
+
+  final int? id;
+  final String? name;
+  final String? prefectureCode;
+  final String? officialUrl;
+}
+
+class RelatedSakeProduct {
+  const RelatedSakeProduct({
+    required this.sakeId,
+    required this.name,
+    this.type,
+    this.imageUrl,
+  });
+
+  factory RelatedSakeProduct.fromJson(Map<String, dynamic> json) =>
+      RelatedSakeProduct(
+        sakeId: _asInt(json['sakeId']) ?? 0,
+        name: json['name']?.toString() ?? '',
+        type: _asNonEmptyString(json['type']),
+        imageUrl: _asNonEmptyString(json['imageUrl']),
+      );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'sakeId': sakeId,
+    'name': name,
+    if (type != null) 'type': type,
+    if (imageUrl != null) 'imageUrl': imageUrl,
+  };
+
+  final int sakeId;
+  final String name;
+  final String? type;
+  final String? imageUrl;
 }
 
 SakeScanApiStatus parseSakeScanApiStatus(dynamic value) {
@@ -195,4 +490,17 @@ int? _asInt(dynamic value) {
 double? _asDouble(dynamic value) {
   if (value is num) return value.toDouble();
   return double.tryParse(value?.toString() ?? '');
+}
+
+String? _asNonEmptyString(dynamic value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+List<String> _asStringList(dynamic value) {
+  if (value is! List) return const <String>[];
+  return value
+      .map(_asNonEmptyString)
+      .whereType<String>()
+      .toList(growable: false);
 }

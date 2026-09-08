@@ -155,6 +155,8 @@ class MyPage extends StatelessWidget {
     final analyzedBottleCount = achievementCounts['analyzedBottle'] ?? 0;
     final menuAnalysisCount = achievementCounts['menuAnalysis'] ?? 0;
     final envyPointCount = achievementCounts['envyPoint'] ?? 0;
+    final mapContributionPointCount =
+        achievementCounts['mapContributionPoint'] ?? 0;
 
     // Notifierから取得したTextEditingControllerを使用
     final preferencesController = notifier.preferencesController;
@@ -202,7 +204,7 @@ class MyPage extends StatelessWidget {
       child: Scaffold(
         appBar: PrimaryAppBar(
           title: context.l10n.navigationMyPage,
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: true,
           actions: [
             IconButton(
               tooltip: context.l10n.helpGuide,
@@ -253,6 +255,7 @@ class MyPage extends StatelessWidget {
                         userName: userName,
                         userIconUrl: userIconUrl,
                         envyPointCount: envyPointCount,
+                        mapContributionPointCount: mapContributionPointCount,
                         onAuthenticate: openLogin,
                         onOpenAccountSettings: () {
                           authNotifier.clearMessages();
@@ -2194,6 +2197,7 @@ class _AuthCard extends StatelessWidget {
     required this.userName,
     this.userIconUrl,
     this.envyPointCount = 0,
+    this.mapContributionPointCount = 0,
     required this.onAuthenticate,
     required this.onOpenAccountSettings,
   });
@@ -2202,6 +2206,7 @@ class _AuthCard extends StatelessWidget {
   final String? userName;
   final String? userIconUrl;
   final int envyPointCount;
+  final int mapContributionPointCount;
   final VoidCallback onAuthenticate;
   final VoidCallback onOpenAccountSettings;
 
@@ -2374,7 +2379,81 @@ class _AuthCard extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _EnvyPointHighlight(count: envyPointCount),
+        const SizedBox(height: 10),
+        _MapContributionPointHighlight(count: mapContributionPointCount),
       ],
+    );
+  }
+}
+
+class _MapContributionPointHighlight extends StatelessWidget {
+  const _MapContributionPointHighlight({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF4FC3F7).withOpacity(0.25),
+            const Color(0xFF66BB6A).withOpacity(0.25),
+          ],
+        ),
+        border: Border.all(color: const Color(0xFF81D4FA).withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF81D4FA).withOpacity(0.18),
+            ),
+            child: const Icon(
+              Icons.add_location_alt_outlined,
+              color: Color(0xFF81D4FA),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.mapContributionPoints,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  context.l10n.mapContributionHint,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            context.l10n.mapContributionPointCount(count),
+            style: const TextStyle(
+              color: Color(0xFF81D4FA),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2496,7 +2575,9 @@ class _SavedSakeList extends StatelessWidget {
       itemCount: savedSakeList.length,
       itemBuilder: (context, index) {
         final sake = savedSakeList[index];
-        final hasPlace = sake.place != null && sake.place!.trim().isNotEmpty;
+        final registeredShop =
+            sake.drinkingPlace?.displayName.trim() ?? sake.place?.trim() ?? '';
+        final hasPlace = registeredShop.isNotEmpty;
         final double recommendationScore = (sake.recommendationScore ?? 0)
             .toDouble();
         final bool isRecommended = recommendationScore >= 6;
@@ -2590,7 +2671,7 @@ class _SavedSakeList extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      context.l10n.consumedAt(sake.place!),
+                      context.l10n.registeredShop(registeredShop),
                       style: const TextStyle(
                         color: Colors.white60,
                         fontSize: 12,

@@ -295,11 +295,11 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
-  Future<Response<dynamic>> updateSavedSakePlaceVisibility(
+  Future<Response<dynamic>> updateSavedSakeMapPhotoVisibility(
     String savedId,
     Map<String, dynamic> body,
   ) {
-    final Uri $url = Uri.parse('/saved-sakes/${savedId}/place-visibility');
+    final Uri $url = Uri.parse('/saved-sakes/${savedId}/map-photo-visibility');
     final $body = body;
     final Request $request = Request(
       'PATCH',
@@ -363,6 +363,22 @@ class _$ApiClient extends ApiClient {
 
   @override
   Future<Response<dynamic>> searchSakesForMap(String query, {int limit = 20}) {
+    final Uri $url = Uri.parse('/map/sakes/search');
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'q': query,
+      'limit': limit,
+    };
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      parameters: $params,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> searchSakeMasters(String query, {int limit = 20}) {
     final Uri $url = Uri.parse('/sakes/search');
     final Map<String, dynamic> $params = <String, dynamic>{
       'q': query,

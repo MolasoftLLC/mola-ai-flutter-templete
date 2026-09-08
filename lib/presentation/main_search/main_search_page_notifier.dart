@@ -63,7 +63,7 @@ abstract class MainSearchPageState with _$MainSearchPageState {
 class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
   MainSearchPageNotifier({required this.context, required this.authNotifier})
-    : super(const MainSearchPageState());
+    : super(const MainSearchPageState(searchMode: SearchMode.name));
 
   final BuildContext context;
   final AuthNotifier authNotifier;

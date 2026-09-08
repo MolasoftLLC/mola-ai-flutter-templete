@@ -121,7 +121,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       state = state.copyWith(currentIndex: index);
     }
     unawaited(_maybeShowHelpGuide(index));
-    if (index == 1) {
+    if (index == 3) {
       unawaited(_maybeShowTimelineIntro());
     }
   }
@@ -135,10 +135,6 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
   HelpGuideType? _mapIndexToHelpType(int index) {
     switch (index) {
-      case 2:
-        return HelpGuideType.menuSearch;
-      case 4:
-        return HelpGuideType.myPage;
       default:
         return null;
     }
@@ -229,7 +225,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
     try {
       await Future.delayed(const Duration(milliseconds: 200));
-      if (!context.mounted || state.currentIndex != 1) {
+      if (!context.mounted || state.currentIndex != 3) {
         _isTimelineIntroDialogOpen = false;
         return;
       }

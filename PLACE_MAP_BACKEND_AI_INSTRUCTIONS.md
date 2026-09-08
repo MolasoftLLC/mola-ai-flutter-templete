@@ -2,11 +2,11 @@
 
 ## 目的
 
-SAKEPEDIAの公開された飲酒記録を店舗単位で集約し、次の検索を提供する。
+SAKEPEDIAの保存酒を根拠に店舗×日本酒の匿名登録を店舗単位で集約し、次の検索を提供する。
 
-- 日本酒から、その日本酒が飲まれた店舗を検索する。
-- 地図の表示範囲から、その地域で飲まれた日本酒を検索する。
-- 自分の非公開記録と、他ユーザー向け公開記録を厳密に分離する。
+- 日本酒から、その日本酒が登録されている店舗を検索する。
+- 地図の表示範囲から、店舗に登録されている日本酒を検索する。
+- 投稿公開とマップ写真公開を分離する。
 - Google Places APIキーをサーバーで安全に管理する。
 
 作業開始時にサーバーリポジトリの`AGENTS.md`、フレームワーク、認証方式、既存DB、保存酒API、テスト規約を必ず確認すること。既存構造に沿って実装し、独自の別レイヤーを無断で増やさないこと。未コミット変更を破棄しないこと。コミット、push、マイグレーション実行、本番デプロイは明示的に依頼された場合のみ行うこと。
@@ -52,9 +52,9 @@ updated_at
 
 Google Place IDは継続保存可能だが、IDが変化する可能性があるため更新日時を持つ。Google由来の店名・住所・座標は無期限保存できる前提にせず、実装時点のGoogle Maps Platform規約を確認し、許可されたキャッシュ期間内に再取得する。Place IDは12か月以上経過した場合の再確認処理を用意する。
 
-### 2. 飲酒記録との関連
+### 2. 店舗×日本酒と根拠保存酒の関連
 
-保存済み日本酒が既に「ユーザーが飲んだ1件の記録」を表しているなら、新しい`drinking_records`を重複作成せず、既存の保存酒テーブルを拡張する。
+店舗×日本酒は`shop_sakes`で一意化し、根拠となる保存酒は`shop_sake_registrations`で関連付ける。画像URLは複製せず`saved_sake_id`から参照する。
 
 ```text
 venue_id          NULL可、venuesへのFK
@@ -62,12 +62,12 @@ place_visibility  private / public、既定値private
 consumed_at       NULL可
 sake_id           既存値を使用、特定不能ならNULL
 sake_name_snapshot 当時の名称。既存name列が同目的なら再利用
-manual_place_name Google候補を使わない手入力場所
+manual_place_name 旧データ互換用。新規登録では使用しない
 ```
 
 - 既存の`place`文字列は後方互換のため残す。
 - Google候補選択時は`venue_id`を設定する。
-- 手入力時は`manual_place_name`または既存`place`のみを設定し、`venue_id`はNULLにする。
+- 新規登録はGoogle候補だけを受け付ける。旧手入力データは表示互換のため残すがマップへ登録しない。
 - 日本酒マスターIDがない記録でも検索できるよう、正規化した日本酒名を補助検索へ利用する。ただし同名酒の誤結合を避け、確定IDと名称一致を区別する。
 - 既存行の`place_visibility`は安全側の`private`でマイグレーションする。既存公開投稿を自動的に地図公開しない。
 
@@ -164,7 +164,7 @@ Content-Type: application/json
 }
 ```
 
-### 3. 保存酒へ店舗を設定
+### 3. 店舗と日本酒を登録
 
 ```http
 PUT /api/saved-sakes/{savedId}/place
@@ -173,20 +173,19 @@ Content-Type: application/json
 
 {
   "providerPlaceId": "ChIJ...",
-  "manualName": null,
-  "placeVisibility": "public"
+  "mapPhotoPublic": false
 }
 ```
 
 処理：
 
 1. 認証ユーザーが`{savedId}`を所有していることを確認する。
-2. `providerPlaceId`と`manualName`は排他的に受け付ける。
+2. Google候補の`providerPlaceId`だけを受け付ける。
 3. Place ID指定時はPlace Details（New）でID・店名・住所・座標をサーバー側で取得する。クライアント送信の座標を信用しない。
 4. `(provider, provider_place_id)`で店舗をupsertする。
-5. 保存酒と店舗をトランザクション内で関連付ける。
-6. `placeVisibility == public`は、保存酒自体が公開可能な状態か検証する。
-7. 更新済みの場所オブジェクトを返す。
+5. `shop_sakes`へ店舗×日本酒を一意に保存し、`shop_sake_registrations`から保存酒を関連付ける。
+6. 店舗×日本酒の初回貢献へ5pt、写真初回公開へ追加10ptを重複なく付与する。
+7. 更新済みの店舗、今回の獲得ポイント、累計マップ貢献ポイントを返す。
 
 レスポンス：
 
@@ -199,28 +198,31 @@ Content-Type: application/json
     "formattedAddress": "沖縄県那覇市...",
     "latitude": 26.2124,
     "longitude": 127.6809,
-    "visibility": "public"
-  }
+    "visibility": "public",
+    "mapPhotoPublic": false
+  },
+  "pointsAwarded": 5,
+  "totalMapContributionPoints": 25
 }
 ```
 
-場所の削除と公開範囲変更も用意する。
+店舗登録の削除と写真公開設定変更も用意する。
 
 ```text
 DELETE /api/saved-sakes/{savedId}/place
-PATCH  /api/saved-sakes/{savedId}/place-visibility
+PATCH  /api/saved-sakes/{savedId}/map-photo-visibility
 ```
 
 ### 4. 地図範囲内の店舗
 
 ```http
-GET /api/map/venues?swLat=26.10&swLng=127.60&neLat=26.30&neLng=127.80&zoom=13&sakeId=123&sinceDays=90
+GET /api/map/venues?swLat=26.10&swLng=127.60&neLat=26.30&neLng=127.80&zoom=13&sakeId=123
 ```
 
 - 必須：南西・北東の緯度経度、zoom。
-- 任意：`sakeId`、日本酒検索トークン、`sinceDays`。
-- 他ユーザー分は`is_public = true AND place_visibility = public`のみ対象。
-- 認証ユーザー本人の非公開記録を混ぜる場合は、各店舗または記録に`scope: own/private/public`を付け、公開集計件数と混同しない。
+- 任意：`sakeId`。
+- 投稿の`is_public`に関係なく、有効な`shop_sake_registrations`を対象にする。
+- 公開APIには登録者を識別できる情報や登録日時を含めない。
 - 店舗単位で集約し、同じ店舗へ複数ピンを返さない。
 - 初版は最大200店舗。超過時はズーム要求またはサーバークラスタを返す。
 - 範囲外の店舗を返さない。
@@ -235,40 +237,64 @@ GET /api/map/venues?swLat=26.10&swLng=127.60&neLat=26.30&neLng=127.80&zoom=13&sa
       "longitude": 127.6809,
       "sakeCount": 3,
       "recordCount": 5,
-      "latestConsumedAt": "2026-09-01T12:00:00Z"
+      "latestImageUrl": "https://cdn.example.com/public/saved-sakes/latest.jpg"
     }
   ],
   "truncated": false
 }
 ```
 
-### 5. 店舗で飲まれた日本酒
+- `latestImageUrl`は、`map_photo_public = true`の登録に紐づく既存画像から選ぶ。
+- 写真公開が許可されていない画像は候補にも含めない。画像がない場合は`null`を返す。
+- URLは短寿命の署名付きURLなど、Flutterの画像GETから認証ヘッダーなしで取得できる形式にする。
+- Flutterはこの画像を円形に切り抜いたカスタムピンへ表示し、`null`または取得失敗時は標準ピンへ戻す。
+
+### 5. 店舗に登録されている日本酒
 
 ```http
 GET /api/map/venues/{venueId}/sakes?sinceDays=90&cursor=...
 ```
 
-- 公開条件を満たす記録だけを集約する。
-- `sakeId`がある場合はID単位、ない場合は正規化名称単位でまとめる。
-- 日本酒名、酒蔵、種類、公開記録数、最後に飲まれた日時、代表画像を返す。
-- 代表画像は公開投稿の画像だけを使用する。
+- `shop_sakes`に有効な登録がある日本酒だけを集約する。
+- `sakeId`単位でまとめる。
+- 日本酒名、酒蔵、種類、登録数、マスター画像を返す。
+- `sakeId`がある酒は`sake_master`のメイン画像を`primaryImageUrl`として返す。画像がない場合は`null`とする。
+- マスター未登録酒は`primaryImageUrl: null`とし、Flutter側でNoImageを表示する。
 - カーソルページングを使用する。
+
+```json
+{
+  "sakes": [
+    {
+      "sakeId": 123,
+      "name": "サンプル純米酒",
+      "brewery": "サンプル酒造",
+      "type": "純米酒",
+      "recordCount": 3,
+      "primaryImageUrl": "https://cdn.example.com/sake-master/123.jpg"
+    }
+  ]
+}
+```
+
+一覧で日本酒を選択した後の詳細は既存の`GET /api/sakes/{sakeId}/overview`を使用する。レスポンス内の`sake.primaryImageUrl`（旧互換として`sake.imageUrl`も可）は`sake_master`のメイン画像を返すこと。
 
 ### 6. 日本酒検索
 
 既存検索APIを再利用できなければ、次を追加する。
 
 ```http
-GET /api/sakes/search?q=獺祭&limit=20
+GET /api/map/sakes/search?q=獺祭&limit=20
 ```
 
-- マスターに存在する日本酒を優先する。
-- マスターIDのない公開飲酒記録の名称候補は区別して返す。
-- レスポンスには地図フィルターへ渡せる安定したIDまたは検索トークンを含める。
+- `shop_sakes`に有効な`shop_sake_registrations`が存在する日本酒だけを返す。
+- レスポンスには地図フィルターへ渡せる`sakeId`と、重複を除いた登録店舗数`venueCount`を含める。
+- 候補ごとの追加問い合わせは行わず、検索クエリ内で店舗数を一括集計する。
+- `shop_sakes.sake_id`に索引を付ける。
 
 ## 「飲める」の扱い
 
-飲酒記録は過去の実績であり、現在の在庫・提供を保証しない。API名・レスポンス・画面文言では「この店で飲まれた」「この地域で飲まれた」を使用する。
+登録情報は現在の在庫・提供を保証しない。画面文言では「この店舗に登録されている日本酒」を使用する。
 
 将来、現在の提供状況を扱う場合は、飲酒記録から分離して次のようなテーブルを追加する。
 
@@ -286,11 +312,12 @@ venue_sake_availability
 
 ## プライバシー・不正対策
 
-- 店舗公開は投稿公開とは別の明示設定にする。
+- 店舗選択は店舗×日本酒の匿名登録を意味し、別の公開スイッチを設けない。
+- 写真公開だけを独立した明示設定にする。
 - 既存公開投稿の店舗を自動公開しない。
 - 端末の検索元現在地を保存しない。
 - 公開マップからメール、Firebase UID、生の内部ユーザーIDを返さない。
-- 投稿直後の正確な時刻と店舗を組み合わせてリアルタイム滞在を推測されないようにする。時刻丸め、表示遅延、一定件数未満の匿名化を検討する。
+- 登録日時を公開APIへ返さない。
 - Place ID・savedIdの所有者確認、座標範囲、公開状態をサーバー側で検証する。
 - Places検索APIと地図APIにレート制限、タイムアウト、件数上限を設定する。
 - 削除・非公開化がマップ集計へ即時反映されるよう、キャッシュを無効化する。
@@ -313,10 +340,10 @@ venue_sake_availability
 - Migrationのup/downまたはロールバック相当。
 - 同一Place IDの店舗重複作成防止。
 - 保存酒の所有者以外による場所更新拒否。
-- Place ID／手入力の排他バリデーション。
+- Google Place ID必須のバリデーション。
 - Places API成功、タイムアウト、429、4xx、5xx、無効Place ID。
 - 緯度経度・半径・検索文字列の境界値。
-- 非公開記録が公開マップへ一件も混入しないこと。
+- `map_photo_public = false`の画像が公開マップへ一件も混入しないこと。
 - 日本酒IDあり／なしの集約。
 - 表示範囲外の店舗を返さないこと。
 - 場所削除・投稿非公開化後に集計から消えること。

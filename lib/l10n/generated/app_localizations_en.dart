@@ -15,6 +15,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSearch => 'Search';
 
   @override
+  String get navigationMap => 'Map';
+
+  @override
+  String get newFeatureBadge => 'NEW & HANDY';
+
+  @override
+  String get mapSearchShortcut => 'Map search';
+
+  @override
+  String get mapSearchShortcutDescription => 'Find sake by shop';
+
+  @override
+  String get fastSearchShortcut => 'Quick search';
+
+  @override
+  String get fastSearchShortcutDescription => 'Scan a label to search';
+
+  @override
+  String registeredVenueCount(int count) {
+    return '$count registered shops';
+  }
+
+  @override
   String get navigationMenuAnalysis => 'Menu Scan';
 
   @override
@@ -498,6 +521,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totalEnvyPoints => 'Total envy points';
 
   @override
+  String get mapContributionPoints => 'Map contribution points';
+
+  @override
+  String mapContributionPointCount(int count) {
+    return '$count pt';
+  }
+
+  @override
+  String get mapContributionHint =>
+      'Earn 5 pt for adding a shop and sake, plus 10 pt for sharing a photo';
+
+  @override
   String get collectEnvy => 'Collect envy';
 
   @override
@@ -829,8 +864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterOptionalSakeType => 'Enter a type (optional)';
 
   @override
-  String get selectBottleImage =>
-      'Take a label photo to find the sake instantly';
+  String get selectBottleImage => 'Select a photo of a sake label or bottle';
 
   @override
   String get tapToSelectImage => 'Tap to select an image';
@@ -1065,16 +1099,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Record your impressions of the flavor and aroma';
 
   @override
-  String get placeConsumed => 'Where you had it';
+  String get placeConsumed => 'Shop carrying this sake';
 
   @override
-  String get placeConsumedHint => 'Record the restaurant or event name';
+  String registeredShop(String shop) {
+    return 'Registered shop: $shop';
+  }
 
   @override
-  String get addConsumedPlace => 'Add where you had it';
+  String get placeConsumedHint => 'Select a shop from Google search results';
 
   @override
-  String get changeConsumedPlace => 'Change where you had it';
+  String get addConsumedPlace => 'Add shop';
+
+  @override
+  String get changeConsumedPlace => 'Change shop';
+
+  @override
+  String get shopContributionNotice =>
+      'Selecting a shop anonymously adds this shop and sake to the map and earns 5 pt.';
 
   @override
   String get findPlaceNearby => 'Nearby';
@@ -1104,7 +1147,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeSearchFailed =>
-      'Could not search for places. You can enter one manually.';
+      'Could not search for shops. Please try again later.';
 
   @override
   String get locationServicesDisabled =>

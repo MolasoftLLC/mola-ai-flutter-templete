@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,15 +7,20 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/assets.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../favorite_search/favorite_search_page.dart';
+import '../sake_map/sake_map_page.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import '../sake_scan/sake_scan_page.dart';
 import 'main_search_page_notifier.dart';
 
@@ -64,12 +70,6 @@ class MainSearchPage extends StatelessWidget {
     final errorMessage = context.select(
       (MainSearchPageState state) => state.errorMessage,
     );
-    final geminiResponse = context.select(
-      (MainSearchPageState state) => state.geminiResponse,
-    );
-    final searchMode = context.select(
-      (MainSearchPageState state) => state.searchMode,
-    );
     final sakeImage = context.select(
       (MainSearchPageState state) => state.sakeImage,
     );
@@ -110,7 +110,7 @@ class MainSearchPage extends StatelessWidget {
     return Scaffold(
       appBar: PrimaryAppBar(
         title: context.l10n.searchPageTitle,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
             tooltip: context.l10n.helpGuide,
@@ -140,86 +140,38 @@ class MainSearchPage extends StatelessWidget {
                     children: [
                       const SizedBox(height: 16),
 
-                      // タブと検索UIの間隔を調整
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          children: [
-                            // タブ部分
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  topRight: Radius.circular(12),
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  topRight: Radius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    // 名前で検索タブ
-                                    Expanded(
-                                      child: _buildTabButton(
-                                        context,
-                                        context.l10n.nameSearch,
-                                        Icons.search,
-                                        SearchMode.name,
-                                        searchMode,
-                                        notifier,
-                                      ),
-                                    ),
-                                    // 酒瓶検索タブ
-                                    Expanded(
-                                      child: _buildTabButton(
-                                        context,
-                                        context.l10n.bottleSearch,
-                                        Icons.camera_alt,
-                                        SearchMode.bottle,
-                                        searchMode,
-                                        notifier,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        child: const _MasterSakeSearchPanel(),
+                      ),
+                      const SizedBox(height: 16),
 
-                            // 検索UI部分（角丸を下部のみに適用）
-                            Container(
-                              margin: EdgeInsets.all(0),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(12),
-                                  bottomRight: Radius.circular(12),
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(0),
-                              child: searchMode == SearchMode.name
-                                  ? _buildNameSearchUI(
-                                      context,
-                                      notifier,
-                                      sakeInfo,
-                                      errorMessage,
-                                    )
-                                  : _buildBottleSearchUI(
-                                      context,
-                                      notifier,
-                                      sakeImage,
-                                      isAnalyzingInBackground,
-                                      shareToTimeline,
-                                      isLoggedIn,
-                                      autoTweetEnabled,
-                                      isAutoTweetUpdating,
-                                    ),
-                            ),
-                          ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _SearchShortcuts(
+                          onMapTap: () => _openMap(context),
+                          onFastSearchTap: () =>
+                              _openFastSearch(context, notifier),
+                          onPreferenceSearchTap: () =>
+                              _openPreferenceSearch(context),
                         ),
                       ),
+                      const SizedBox(height: 18),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: _buildBottleSearchUI(
+                          context,
+                          notifier,
+                          sakeImage,
+                          isAnalyzingInBackground,
+                          shareToTimeline,
+                          isLoggedIn,
+                          autoTweetEnabled,
+                          isAutoTweetUpdating,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
 
                       // 検索結果表示
                       if (sakeInfo != null)
@@ -240,48 +192,10 @@ class MainSearchPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
-                            searchMode == SearchMode.bottle
-                                ? '${localizeLegacyMessage(context.l10n, errorMessage)}\n${context.l10n.tryBackLabelHint}'
-                                : localizeLegacyMessage(
-                                    context.l10n,
-                                    errorMessage,
-                                  ),
+                            localizeLegacyMessage(context.l10n, errorMessage),
                             style: const TextStyle(
                               color: Colors.red,
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-                      if (geminiResponse != null &&
-                          searchMode == SearchMode.bottle)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  context.l10n.aiAnalysisResult,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Color(0xFF1D3567),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  geminiResponse,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                         ),
@@ -293,151 +207,43 @@ class MainSearchPage extends StatelessWidget {
     );
   }
 
-  // タブボタンを構築するメソッド
-  Widget _buildTabButton(
-    BuildContext context,
-    String text,
-    IconData icon,
-    SearchMode mode,
-    SearchMode currentMode,
-    MainSearchPageNotifier notifier,
-  ) {
-    final isSelected = mode == currentMode;
+  Future<void> _openMap(BuildContext context) {
+    return Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => SakeMapPage.wrapped()));
+  }
 
-    return InkWell(
-      onTap: () {
-        notifier.setSearchMode(mode);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? const Color(0xFF1D3567) : Colors.transparent,
-              width: 3,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? const Color(0xFF1D3567) : Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              text,
-              style: TextStyle(
-                color: isSelected ? const Color(0xFF1D3567) : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _openPreferenceSearch(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => FavoriteSearchPage.wrapped()),
     );
   }
 
-  // 名前検索UI
-  Widget _buildNameSearchUI(
+  Future<void> _openFastSearch(
     BuildContext context,
     MainSearchPageNotifier notifier,
-    Sake? sakeInfo,
-    String? errorMessage,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 24),
-          TextField(
-            onChanged: (value) {
-              notifier.setSakeName(value);
-            },
-            decoration: InputDecoration(
-              hintText: context.l10n.enterSakeName,
-              labelText: context.l10n.sakeName,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              prefixIcon: const Icon(Icons.wine_bar),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            onChanged: (value) {
-              notifier.setSakeType(value);
-            },
-            decoration: InputDecoration(
-              hintText: context.l10n.enterOptionalSakeType,
-              labelText: context.l10n.sakeType,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              prefixIcon: const Icon(Icons.category),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              notifier.searchSake();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D3567),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.search),
-                const SizedBox(width: 8),
-                Text(
-                  context.l10n.search,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+  ) async {
+    final result = await Navigator.of(context).push<Sake>(
+      PageRouteBuilder<Sake>(
+        pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
+        transitionsBuilder: (_, animation, __, child) => SlideTransition(
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                  reverseCurve: Curves.easeInCubic,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+              ),
+          child: child,
+        ),
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
       ),
     );
+    if (result != null && context.mounted) {
+      notifier.applySakeScanResult(result);
+    }
   }
 
   // 酒瓶検索UI
@@ -473,237 +279,227 @@ class MainSearchPage extends StatelessWidget {
             style: TextStyle(fontSize: 14, color: Colors.black87),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
+            height: 220,
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: isAnalyzingInBackground
-                  ? null
-                  : () async {
-                      final result = await Navigator.of(context).push<Sake>(
-                        PageRouteBuilder<Sake>(
-                          pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
-                          transitionsBuilder: (_, animation, __, child) {
-                            return SlideTransition(
-                              position:
-                                  Tween<Offset>(
-                                    begin: const Offset(0, 1),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                      reverseCurve: Curves.easeInCubic,
-                                    ),
-                                  ),
-                              child: child,
-                            );
-                          },
-                          transitionDuration: const Duration(milliseconds: 300),
-                          reverseTransitionDuration: const Duration(
-                            milliseconds: 240,
-                          ),
-                        ),
-                      );
-                      if (result != null) {
-                        notifier.applySakeScanResult(result);
-                      }
-                    },
-              icon: const Icon(Icons.document_scanner_outlined),
-              label: Text(context.l10n.fastLabelScan),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD54F),
-                foregroundColor: const Color(0xFF1D3567),
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-            ),
-          ),
-          if (sakeImage == null) ...[
-            const SizedBox(height: 6),
-            TextButton.icon(
-              onPressed: isAnalyzingInBackground
-                  ? null
-                  : () => notifier.pickImage(ImageSource.gallery),
-              icon: const Icon(Icons.photo_library_outlined),
-              label: Text(context.l10n.selectFromGallery),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF1D3567),
-              ),
-            ),
-          ] else ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 220,
-              width: double.infinity,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      sakeImage,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: InkWell(
-                      onTap: notifier.clearImage,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Color(0xFF1D3567),
-                          size: 20,
+            child: sakeImage != null
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          sakeImage,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
                         ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              value: shareToTimeline,
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                notifier.onTimelineShareToggle(value);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: const Color(0xFF1D3567),
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                context.l10n.shareToTimeline,
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(context.l10n.onlyFirstImageShared),
-            ),
-            CheckboxListTile(
-              value: autoTweetEnabled ?? true,
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                if (autoTweetEnabled == null || isAutoTweetUpdating) {
-                  return;
-                }
-                notifier.onAutoTweetToggle(value);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: const Color(0xFF1D3567),
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                context.l10n.autoPostToX,
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(context.l10n.autoPostToXDescription),
-                  if (!isLoggedIn)
-                    Text(
-                      context.l10n.loginToChangeSetting,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  if (isLoggedIn && autoTweetEnabled == null)
-                    Text(
-                      context.l10n.loadingAutoPostSetting,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  if (isAutoTweetUpdating)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(
-                                Color(0xFF1D3567),
-                              ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: InkWell(
+                          onTap: notifier.clearImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Color(0xFF1D3567),
+                              size: 20,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                        ),
+                      ),
+                    ],
+                  )
+                : InkWell(
+                    onTap: () => notifier.pickImage(ImageSource.gallery),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image(
+                            image: Assets.medalBin,
+                            width: 48,
+                            height: 48,
+                            color: const Color(0xFF1D3567),
+                          ),
+                          const SizedBox(height: 12),
                           Text(
-                            context.l10n.updatingSetting,
-                            style: const TextStyle(fontSize: 12),
+                            context.l10n.tapToSelectImage,
+                            style: TextStyle(
+                              color: Color(0xFF1D3567),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: !isAnalyzingInBackground
-                    ? () async {
-                        await notifier.saveAndAnalyzeBottle();
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD54F),
-                  foregroundColor: const Color(0xFF1D3567),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  disabledBackgroundColor: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          if (sakeImage == null)
+            ElevatedButton.icon(
+              onPressed: () => notifier.pickImage(ImageSource.camera),
+              icon: const Icon(Icons.camera_alt),
+              label: Text(context.l10n.takePhoto),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1D3567),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                child: Text(
-                  context.l10n.analyzeAndSave,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: !isAnalyzingInBackground
-                    ? () async {
-                        await notifier.analyzeSakeBottle();
-                      }
-                    : null,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1D3567),
-                  side: BorderSide(
-                    color: const Color(0xFF1D3567).withOpacity(0.4),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: shareToTimeline,
+            onChanged: (value) {
+              if (value == null) return;
+              notifier.onTimelineShareToggle(value);
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF1D3567),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              context.l10n.shareToTimeline,
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(context.l10n.onlyFirstImageShared),
+          ),
+          CheckboxListTile(
+            value: autoTweetEnabled ?? true,
+            onChanged: (value) {
+              if (value == null ||
+                  autoTweetEnabled == null ||
+                  isAutoTweetUpdating) {
+                return;
+              }
+              notifier.onAutoTweetToggle(value);
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: const Color(0xFF1D3567),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              context.l10n.autoPostToX,
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(context.l10n.autoPostToXDescription),
+                if (!isLoggedIn)
+                  Text(
+                    context.l10n.loginToChangeSetting,
+                    style: TextStyle(fontSize: 12),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 14,
+                if (isLoggedIn && autoTweetEnabled == null)
+                  Text(
+                    context.l10n.loadingAutoPostSetting,
+                    style: TextStyle(fontSize: 12),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                if (isAutoTweetUpdating)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(
+                              Color(0xFF1D3567),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.updatingSetting,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
-                  disabledForegroundColor: Colors.grey.shade500,
-                  disabledBackgroundColor: Colors.transparent,
-                ),
-                child: Text(
-                  context.l10n.analyzeOnly,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: sakeImage != null && !isAnalyzingInBackground
+                      ? () async => notifier.saveAndAnalyzeBottle()
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD54F),
+                    foregroundColor: const Color(0xFF1D3567),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledBackgroundColor: Colors.grey.shade400,
+                  ),
+                  child: Text(
+                    context.l10n.analyzeAndSave,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: sakeImage != null && !isAnalyzingInBackground
+                      ? () async => notifier.analyzeSakeBottle()
+                      : null,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1D3567),
+                    side: BorderSide(
+                      color: const Color(0xFF1D3567).withOpacity(0.4),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledForegroundColor: Colors.grey.shade500,
+                    disabledBackgroundColor: Colors.transparent,
+                  ),
+                  child: Text(
+                    context.l10n.analyzeOnly,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
         ],
       ),
@@ -1164,6 +960,435 @@ class MainSearchPage extends StatelessWidget {
         curve: Curves.easeInOut,
       );
     }
+  }
+}
+
+class _MasterSakeSearchPanel extends StatefulWidget {
+  const _MasterSakeSearchPanel();
+
+  @override
+  State<_MasterSakeSearchPanel> createState() => _MasterSakeSearchPanelState();
+}
+
+class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  Timer? _debounce;
+  int _requestId = 0;
+  bool _isLoading = false;
+  bool _hasSearched = false;
+  bool _hasError = false;
+  List<SakeMapSearchResult> _results = const [];
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().isEmpty) {
+      _requestId++;
+      setState(() {
+        _isLoading = false;
+        _hasSearched = false;
+        _hasError = false;
+        _results = const [];
+      });
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 400), _search);
+  }
+
+  Future<void> _search() async {
+    _debounce?.cancel();
+    final query = _controller.text.trim();
+    if (query.isEmpty) return;
+
+    final requestId = ++_requestId;
+    setState(() {
+      _isLoading = true;
+      _hasSearched = false;
+      _hasError = false;
+    });
+    try {
+      final results = await context
+          .read<PlaceMapRepository>()
+          .searchSakeMasters(query);
+      if (!mounted || requestId != _requestId) return;
+      setState(() {
+        _results = results;
+        _isLoading = false;
+        _hasSearched = true;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _requestId) return;
+      setState(() {
+        _results = const [];
+        _isLoading = false;
+        _hasSearched = true;
+        _hasError = true;
+      });
+    }
+  }
+
+  void _openDetail(SakeMapSearchResult sake) {
+    _focusNode.unfocus();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SakeMasterDetailPage(
+          venueSake: VenueSake(
+            sakeId: sake.sakeId,
+            searchToken: sake.searchToken,
+            name: sake.name,
+            brewery: sake.brewery,
+            type: sake.type,
+            recordCount: 0,
+            primaryImageUrl: sake.primaryImageUrl,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            key: const ValueKey('masterSakeNameSearchField'),
+            controller: _controller,
+            focusNode: _focusNode,
+            autofocus: true,
+            textInputAction: TextInputAction.search,
+            onChanged: _onChanged,
+            onSubmitted: (_) => _search(),
+            decoration: InputDecoration(
+              hintText: context.l10n.enterSakeName,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(13),
+                      child: SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      tooltip: context.l10n.search,
+                      icon: const Icon(Icons.search),
+                      onPressed: _search,
+                    ),
+              filled: true,
+              fillColor: const Color(0xFFF5F7FA),
+              contentPadding: const EdgeInsets.symmetric(vertical: 15),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF7A1A),
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+          if (_hasError) ...[
+            const SizedBox(height: 14),
+            Text(
+              context.l10n.dataFetchFailed,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          ] else if (_hasSearched && _results.isEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              context.l10n.errorSakeNotFound,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF666666)),
+            ),
+          ] else if (_results.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFE1E5EB)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _results.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final sake = _results[index];
+                      final details = [
+                        sake.brewery?.trim(),
+                        sake.type?.trim(),
+                      ].whereType<String>().where((value) => value.isNotEmpty);
+                      return ListTile(
+                        key: ValueKey('masterSakeCandidate_${sake.sakeId}'),
+                        leading: _SakeCandidateImage(
+                          imageUrl:
+                              sake.thumbnailImageUrl ?? sake.primaryImageUrl,
+                        ),
+                        title: Text(
+                          sake.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF1D3567),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        subtitle: details.isEmpty
+                            ? null
+                            : Text(
+                                details.join(' / '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openDetail(sake),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SakeCandidateImage extends StatelessWidget {
+  const _SakeCandidateImage({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = this.imageUrl;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 46,
+        height: 46,
+        color: const Color(0xFFF0F2F5),
+        child: imageUrl == null
+            ? const Icon(Icons.local_drink_outlined, color: Color(0xFF1D3567))
+            : Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.local_drink_outlined,
+                  color: Color(0xFF1D3567),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _SearchShortcuts extends StatelessWidget {
+  const _SearchShortcuts({
+    required this.onMapTap,
+    required this.onFastSearchTap,
+    required this.onPreferenceSearchTap,
+  });
+
+  final VoidCallback onMapTap;
+  final VoidCallback onFastSearchTap;
+  final VoidCallback onPreferenceSearchTap;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.map_outlined,
+              title: context.l10n.mapSearchShortcut,
+              description: context.l10n.mapSearchShortcutDescription,
+              onTap: onMapTap,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.document_scanner_outlined,
+              title: context.l10n.fastSearchShortcut,
+              description: context.l10n.fastSearchShortcutDescription,
+              onTap: onFastSearchTap,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
+      _PreferenceSearchShortcut(onTap: onPreferenceSearchTap),
+    ],
+  );
+}
+
+class _PreferenceSearchShortcut extends StatelessWidget {
+  const _PreferenceSearchShortcut({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(14),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.landscape_outlined, color: Color(0xFF143861)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.searchByRegion,
+                    style: const TextStyle(
+                      color: Color(0xFF143861),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.preferenceSearchDescription,
+                    style: const TextStyle(
+                      color: Color(0xFF606060),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF143861)),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _SearchShortcutCard extends StatelessWidget {
+  const _SearchShortcutCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 126,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 18, 12, 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, color: const Color(0xFF1D3567), size: 32),
+                      const SizedBox(height: 8),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF606060),
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -9,
+            right: -7,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF7A1A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                child: Text(
+                  context.l10n.newFeatureBadge,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

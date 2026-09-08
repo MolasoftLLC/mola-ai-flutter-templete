@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/access_url.dart';
 import 'package:mola_gemini_flutter_template/presentation/favorite_search/favorite_search_page.dart';
-import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/new_home_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_map_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page.dart';
 import 'package:provider/provider.dart';
 
 import '../common/localization/localization_extensions.dart';
 import 'app_page_notifier.dart';
-import 'my_page/my_page.dart';
 
 class AppPage extends StatelessWidget {
   const AppPage._({Key? key}) : super(key: key);
@@ -44,10 +43,9 @@ class AppPage extends StatelessWidget {
         index: currentIndex,
         children: [
           NewHomePage.wrapped(),
-          TimelinePage.wrapped(),
-          MenuSearchPage.wrapped(),
+          SakeMapPage.wrapped(),
           FavoriteSearchPage.wrapped(),
-          MyPage.wrapped(),
+          TimelinePage.wrapped(),
         ],
       ),
       bottomNavigationBar: _NewHomeBottomNavigation(
@@ -95,23 +93,23 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
-                      icon: Icons.lightbulb_outline,
-                      label: context.l10n.navigationRecommendation,
-                      selected: currentPageIndex == 3,
-                      onTap: () => onPageSelected(3),
-                    ),
-                    const Expanded(child: SizedBox()),
-                    _NavigationItem(
-                      icon: Icons.timeline,
-                      label: context.l10n.navigationTimeline,
+                      icon: Icons.map_outlined,
+                      label: context.l10n.navigationMap,
                       selected: currentPageIndex == 1,
                       onTap: () => onPageSelected(1),
                     ),
+                    const Expanded(child: SizedBox()),
                     _NavigationItem(
-                      icon: Icons.manage_accounts,
-                      label: context.l10n.navigationMyPage,
-                      selected: currentPageIndex == 4,
-                      onTap: () => onPageSelected(4),
+                      icon: Icons.lightbulb_outline,
+                      label: context.l10n.navigationRecommendation,
+                      selected: currentPageIndex == 2,
+                      onTap: () => onPageSelected(2),
+                    ),
+                    _NavigationItem(
+                      icon: Icons.timeline,
+                      label: context.l10n.navigationTimeline,
+                      selected: currentPageIndex == 3,
+                      onTap: () => onPageSelected(3),
                     ),
                   ],
                 ),

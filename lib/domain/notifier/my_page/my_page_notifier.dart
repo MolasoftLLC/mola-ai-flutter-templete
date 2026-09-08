@@ -429,6 +429,9 @@ class MyPageNotifier extends StateNotifier<MyPageState>
         'analyzedBottle': _parseCount(response['analyzedBottleCount']),
         'menuAnalysis': _parseCount(response['menuAnalysisCount']),
         'envyPoint': _parseCount(response['envyPointCount']),
+        'mapContributionPoint': _parseCount(
+          response['mapContributionPointCount'],
+        ),
       };
 
       state = state.copyWith(achievementCounts: counts);

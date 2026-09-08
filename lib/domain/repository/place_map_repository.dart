@@ -37,6 +37,18 @@ class PlaceCandidate {
   );
 }
 
+class MapContributionSaveResult {
+  const MapContributionSaveResult({
+    required this.drinkingPlace,
+    required this.pointsAwarded,
+    required this.totalMapContributionPoints,
+  });
+
+  final DrinkingPlace drinkingPlace;
+  final int pointsAwarded;
+  final int totalMapContributionPoints;
+}
+
 class MapVenue {
   const MapVenue({
     required this.venueId,
@@ -46,17 +58,27 @@ class MapVenue {
     required this.sakeCount,
     required this.recordCount,
     this.ownRecordCount = 0,
+    this.latestImageUrl,
   });
 
-  factory MapVenue.fromJson(Map<String, dynamic> json) => MapVenue(
-    venueId: json['venueId'] as String,
-    displayName: json['displayName'] as String,
-    latitude: (json['latitude'] as num).toDouble(),
-    longitude: (json['longitude'] as num).toDouble(),
-    sakeCount: (json['sakeCount'] as num?)?.toInt() ?? 0,
-    recordCount: (json['recordCount'] as num?)?.toInt() ?? 0,
-    ownRecordCount: (json['ownRecordCount'] as num?)?.toInt() ?? 0,
-  );
+  factory MapVenue.fromJson(Map<String, dynamic> json) {
+    final latestRecord = json['latestRecord'];
+    final latestRecordJson = latestRecord is Map
+        ? Map<String, dynamic>.from(latestRecord)
+        : const <String, dynamic>{};
+    return MapVenue(
+      venueId: json['venueId'] as String,
+      displayName: json['displayName'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      sakeCount: (json['sakeCount'] as num?)?.toInt() ?? 0,
+      recordCount: (json['recordCount'] as num?)?.toInt() ?? 0,
+      ownRecordCount: (json['ownRecordCount'] as num?)?.toInt() ?? 0,
+      latestImageUrl:
+          _nonEmptyString(json['latestImageUrl']) ??
+          _nonEmptyString(latestRecordJson['imageUrl']),
+    );
+  }
 
   final String venueId;
   final String displayName;
@@ -65,6 +87,7 @@ class MapVenue {
   final int sakeCount;
   final int recordCount;
   final int ownRecordCount;
+  final String? latestImageUrl;
 }
 
 class VenueSake {
@@ -75,8 +98,10 @@ class VenueSake {
     this.brewery,
     this.type,
     required this.recordCount,
-    this.imageUrl,
-  });
+    String? primaryImageUrl,
+    this.thumbnailImageUrl,
+    String? imageUrl,
+  }) : primaryImageUrl = primaryImageUrl ?? imageUrl;
   factory VenueSake.fromJson(Map<String, dynamic> json) => VenueSake(
     sakeId: (json['sakeId'] as num?)?.toInt(),
     searchToken: json['searchToken'] as String?,
@@ -84,7 +109,10 @@ class VenueSake {
     brewery: json['brewery'] as String?,
     type: json['type'] as String?,
     recordCount: (json['recordCount'] as num?)?.toInt() ?? 0,
-    imageUrl: json['imageUrl'] as String?,
+    thumbnailImageUrl: _nonEmptyString(json['thumbnailImageUrl']),
+    primaryImageUrl:
+        _nonEmptyString(json['primaryImageUrl']) ??
+        _nonEmptyString(json['imageUrl']),
   );
   final int? sakeId;
   final String? searchToken;
@@ -92,7 +120,12 @@ class VenueSake {
   final String? brewery;
   final String? type;
   final int recordCount;
-  final String? imageUrl;
+  final String? primaryImageUrl;
+
+  final String? thumbnailImageUrl;
+
+  // 旧レスポンスと既存利用箇所との互換性を維持する。
+  String? get imageUrl => primaryImageUrl;
 }
 
 class SakeMapSearchResult {
@@ -101,7 +134,11 @@ class SakeMapSearchResult {
     this.searchToken,
     required this.name,
     this.brewery,
+    this.type,
+    this.primaryImageUrl,
+    this.thumbnailImageUrl,
     required this.isMaster,
+    this.venueCount = 0,
   });
   factory SakeMapSearchResult.fromJson(Map<String, dynamic> json) =>
       SakeMapSearchResult(
@@ -109,13 +146,28 @@ class SakeMapSearchResult {
         searchToken: json['searchToken'] as String?,
         name: json['name'] as String? ?? '',
         brewery: json['brewery'] as String?,
+        type: json['type'] as String?,
+        primaryImageUrl:
+            _nonEmptyString(json['primaryImageUrl']) ??
+            _nonEmptyString(json['imageUrl']),
+        thumbnailImageUrl: _nonEmptyString(json['thumbnailImageUrl']),
         isMaster: json['source'] == 'master',
+        venueCount: (json['venueCount'] as num?)?.toInt() ?? 0,
       );
   final int? sakeId;
   final String? searchToken;
   final String name;
   final String? brewery;
+  final String? type;
+  final String? primaryImageUrl;
   final bool isMaster;
+  final String? thumbnailImageUrl;
+  final int venueCount;
+}
+
+String? _nonEmptyString(dynamic value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
 }
 
 abstract interface class SakeMapDataSource {
@@ -170,40 +222,48 @@ class PlaceMapRepository implements SakeMapDataSource {
     return _parseList(response.body, 'places', PlaceCandidate.fromJson);
   }
 
-  Future<DrinkingPlace?> savePlace({
+  Future<MapContributionSaveResult?> savePlace({
     required String savedId,
     required DrinkingPlace place,
   }) async {
     final response = await _apiClient.saveSavedSakePlace(savedId, {
       'providerPlaceId': place.providerPlaceId,
-      'manualName': place.providerPlaceId == null ? place.displayName : null,
-      'placeVisibility': place.visibility.name,
+      'mapPhotoPublic': place.mapPhotoPublic,
       'locale': await resolveAppLocaleLanguageCode(),
     });
     if (!response.isSuccessful || response.body is! Map) return null;
     final raw = Map<String, dynamic>.from(response.body as Map);
     final result = raw['drinkingPlace'];
-    return result is Map
-        ? DrinkingPlace.fromJson(Map<String, dynamic>.from(result))
-        : null;
+    if (result is! Map) return null;
+    return MapContributionSaveResult(
+      drinkingPlace: DrinkingPlace.fromJson(Map<String, dynamic>.from(result)),
+      pointsAwarded: (raw['pointsAwarded'] as num?)?.toInt() ?? 0,
+      totalMapContributionPoints:
+          (raw['totalMapContributionPoints'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<bool> deletePlace(String savedId) async =>
       (await _apiClient.deleteSavedSakePlace(savedId)).isSuccessful;
 
-  Future<DrinkingPlace?> updatePlaceVisibility({
+  Future<MapContributionSaveResult?> updateMapPhotoVisibility({
     required String savedId,
-    required PlaceVisibility visibility,
+    required bool mapPhotoPublic,
   }) async {
-    final response = await _apiClient.updateSavedSakePlaceVisibility(savedId, {
-      'placeVisibility': visibility.name,
-    });
+    final response = await _apiClient.updateSavedSakeMapPhotoVisibility(
+      savedId,
+      {'mapPhotoPublic': mapPhotoPublic},
+    );
     if (!response.isSuccessful || response.body is! Map) return null;
     final raw = Map<String, dynamic>.from(response.body as Map);
     final place = raw['drinkingPlace'];
-    return place is Map
-        ? DrinkingPlace.fromJson(Map<String, dynamic>.from(place))
-        : null;
+    if (place is! Map) return null;
+    return MapContributionSaveResult(
+      drinkingPlace: DrinkingPlace.fromJson(Map<String, dynamic>.from(place)),
+      pointsAwarded: (raw['pointsAwarded'] as num?)?.toInt() ?? 0,
+      totalMapContributionPoints:
+          (raw['totalMapContributionPoints'] as num?)?.toInt() ?? 0,
+    );
   }
 
   @override
@@ -232,13 +292,22 @@ class PlaceMapRepository implements SakeMapDataSource {
 
   @override
   Future<List<VenueSake>> fetchVenueSakes(String venueId) async {
-    final response = await _apiClient.fetchVenueSakes(venueId, sinceDays: 90);
+    final response = await _apiClient.fetchVenueSakes(venueId);
     return _parseList(response.body, 'sakes', VenueSake.fromJson);
   }
 
   @override
   Future<List<SakeMapSearchResult>> searchSakes(String query) async {
     final response = await _apiClient.searchSakesForMap(query);
+    return _parseList(
+      response.body,
+      'sakes',
+      SakeMapSearchResult.fromJson,
+    ).where((sake) => sake.venueCount > 0).toList(growable: false);
+  }
+
+  Future<List<SakeMapSearchResult>> searchSakeMasters(String query) async {
+    final response = await _apiClient.searchSakeMasters(query);
     return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
   }
 
