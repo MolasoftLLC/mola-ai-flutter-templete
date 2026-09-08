@@ -450,7 +450,9 @@ class MyPage extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                SavedSakeDetailPage(sake: sake),
+                                                SavedSakeDetailPage.forSake(
+                                                  sake,
+                                                ),
                                           ),
                                         );
                                       },
@@ -474,7 +476,9 @@ class MyPage extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                SavedSakeDetailPage(sake: sake),
+                                                SavedSakeDetailPage.forSake(
+                                                  sake,
+                                                ),
                                           ),
                                         );
                                       },

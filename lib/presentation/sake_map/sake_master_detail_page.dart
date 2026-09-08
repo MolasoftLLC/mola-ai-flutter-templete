@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -284,6 +286,9 @@ class _Details extends StatelessWidget {
                   accent: true,
                 ),
               ),
+            _Section(
+              child: _PersonalRecordSection(sake: sake ?? _asSake(fallback)),
+            ),
             if (master.variants.isNotEmpty)
               _Section(
                 title: '容量と参考価格',
@@ -531,6 +536,358 @@ Sake _asSake(VenueSake venueSake) => Sake(
   type: venueSake.type,
   primaryImageUrl: venueSake.primaryImageUrl,
 );
+
+class _PersonalRecordSection extends StatelessWidget {
+  const _PersonalRecordSection({required this.sake});
+  final Sake sake;
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = Provider.of<SavedSakeNotifier?>(context);
+    if (notifier == null) return const SizedBox.shrink();
+    Sake? saved;
+    for (final candidate in notifier.state.savedSakeList) {
+      if (_isSameSake(candidate)) {
+        saved = candidate;
+        break;
+      }
+    }
+
+    if (saved == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeading(title: 'あなたの記録'),
+          const SizedBox(height: 8),
+          const Text(
+            '飲んだ場所や感想、写真をこのお酒に残せます。',
+            style: TextStyle(color: Color(0xFF647184), height: 1.5),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => _addRecord(context, notifier),
+            icon: const Icon(Icons.bookmark_add_outlined),
+            label: const Text('このお酒を記録する'),
+          ),
+        ],
+      );
+    }
+    final Sake record = saved;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: _SectionHeading(title: 'あなたの記録')),
+            TextButton.icon(
+              onPressed: () => _openEditor(context, notifier, record),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('編集'),
+            ),
+          ],
+        ),
+        if (_recordedPlace(record) != null) ...[
+          const SizedBox(height: 6),
+          _RecordLine(
+            icon: Icons.place_outlined,
+            text: _recordedPlace(record)!,
+          ),
+        ],
+        if ((record.impression ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            record.impression!.trim(),
+            style: const TextStyle(color: Color(0xFF404A56), height: 1.7),
+          ),
+        ],
+        if ((record.userTags ?? const <String>[]).isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Tags(values: record.userTags!),
+        ],
+        if ((record.imagePaths ?? const <String>[]).isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _RecordImages(paths: record.imagePaths!),
+        ],
+        if ((record.impression ?? '').trim().isEmpty &&
+            _recordedPlace(record) == null &&
+            (record.imagePaths ?? const <String>[]).isEmpty) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'まだ記録はありません。編集から感想や場所を追加できます。',
+            style: TextStyle(color: Color(0xFF647184), height: 1.5),
+          ),
+        ],
+      ],
+    );
+  }
+
+  bool _isSameSake(Sake candidate) =>
+      sake.sakeId != null && candidate.sakeId == sake.sakeId ||
+      candidate.name == sake.name && candidate.type == sake.type;
+
+  String? _recordedPlace(Sake saved) {
+    final place = saved.place ?? saved.drinkingPlace?.displayName;
+    return place == null || place.trim().isEmpty ? null : place.trim();
+  }
+
+  Future<void> _addRecord(
+    BuildContext context,
+    SavedSakeNotifier notifier,
+  ) async {
+    if (notifier.hasReachedGuestLimit) {
+      await GuestLimitDialog.showSavedSakeLimit(
+        context,
+        maxCount: SavedSakeNotifier.guestSavedLimit,
+      );
+      return;
+    }
+    if (notifier.hasReachedMemberLimit) {
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: context.l10n.savedSakeLimit(
+          SavedSakeNotifier.memberSavedLimit,
+        ),
+      );
+      return;
+    }
+    try {
+      await notifier.toggleSavedSake(sake);
+      if (!context.mounted) return;
+      SnackBarUtils.showInfoSnackBar(
+        context,
+        message: context.l10n.savedToMyPage,
+      );
+    } on SavedSakeGuestLimitReachedException {
+      if (!context.mounted) return;
+      await GuestLimitDialog.showSavedSakeLimit(
+        context,
+        maxCount: SavedSakeNotifier.guestSavedLimit,
+      );
+    } on SavedSakeMemberLimitReachedException {
+      if (!context.mounted) return;
+      SnackBarUtils.showWarningSnackBar(
+        context,
+        message: context.l10n.savedSakeLimit(
+          SavedSakeNotifier.memberSavedLimit,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openEditor(
+    BuildContext context,
+    SavedSakeNotifier notifier,
+    Sake saved,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _RecordEditorSheet(notifier: notifier, sake: saved),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Container(width: 3, height: 18, color: _orange),
+      const SizedBox(width: 10),
+      Text(
+        title,
+        style: const TextStyle(
+          color: _navy,
+          fontWeight: FontWeight.w800,
+          fontSize: 18,
+        ),
+      ),
+    ],
+  );
+}
+
+class _RecordLine extends StatelessWidget {
+  const _RecordLine({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 18, color: _orange),
+      const SizedBox(width: 7),
+      Expanded(
+        child: Text(text, style: const TextStyle(color: Color(0xFF404A56))),
+      ),
+    ],
+  );
+}
+
+class _RecordImages extends StatelessWidget {
+  const _RecordImages({required this.paths});
+  final List<String> paths;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 82,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: paths.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) {
+        final path = paths[index];
+        final image = path.startsWith('http://') || path.startsWith('https://')
+            ? Image.network(path, fit: BoxFit.cover)
+            : Image.file(File(path), fit: BoxFit.cover);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(width: 82, child: image),
+        );
+      },
+    ),
+  );
+}
+
+class _RecordEditorSheet extends StatefulWidget {
+  const _RecordEditorSheet({required this.notifier, required this.sake});
+  final SavedSakeNotifier notifier;
+  final Sake sake;
+
+  @override
+  State<_RecordEditorSheet> createState() => _RecordEditorSheetState();
+}
+
+class _RecordEditorSheetState extends State<_RecordEditorSheet> {
+  late final TextEditingController _impressionController;
+  late final TextEditingController _placeController;
+  late Set<String> _tags;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _impressionController = TextEditingController(
+      text: widget.sake.impression ?? '',
+    );
+    _placeController = TextEditingController(
+      text: widget.sake.drinkingPlace?.displayName ?? widget.sake.place ?? '',
+    );
+    _tags = {...(widget.sake.userTags ?? const <String>[])};
+  }
+
+  @override
+  void dispose() {
+    _impressionController.dispose();
+    _placeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _isSaving = true);
+    final place = _placeController.text.trim();
+    final updated = widget.sake.copyWith(
+      impression: _impressionController.text.trim(),
+      place: place.isEmpty ? null : place,
+      drinkingPlace: widget.sake.drinkingPlace,
+      userTags: _tags.toList(growable: false),
+    );
+    await widget.notifier.updateSavedSake(updated);
+    final savedId = updated.savedId;
+    if (savedId != null &&
+        savedId.isNotEmpty &&
+        updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
+      await widget.notifier.syncSavedSakeToServer(savedId);
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'あなたの記録を編集',
+              style: TextStyle(
+                color: _navy,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _impressionController,
+              maxLength: 200,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: '感想',
+                hintText: '飲んだときの印象を残しましょう',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _placeController,
+              maxLength: 60,
+              decoration: const InputDecoration(
+                labelText: '飲んだ場所',
+                hintText: 'お店や自宅など',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'タグ',
+              style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: sake_master.Sake.userMemoTags
+                  .map(
+                    (tag) => FilterChip(
+                      label: Text(tag),
+                      selected: _tags.contains(tag),
+                      onSelected: (selected) => setState(() {
+                        selected ? _tags.add(tag) : _tags.remove(tag);
+                      }),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _isSaving ? null : _save,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: _orange,
+              ),
+              child: Text(_isSaving ? '保存中…' : '記録を保存'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 class _Section extends StatelessWidget {
   const _Section({required this.child, this.title});

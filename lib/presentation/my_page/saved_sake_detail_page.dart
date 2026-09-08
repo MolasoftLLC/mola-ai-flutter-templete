@@ -20,6 +20,7 @@ import '../../domain/repository/place_map_repository.dart';
 import '../../common/logger.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/place_picker_sheet.dart';
 
 const double _blockSpacing = 16;
@@ -29,6 +30,24 @@ class SavedSakeDetailPage extends StatefulWidget {
   const SavedSakeDetailPage({super.key, required this.sake});
 
   final Sake sake;
+
+  /// マスターに紐づく保存酒は、客観情報と個人記録を一つにした詳細へ開く。
+  /// 旧データなどマスター未紐付けの酒だけ、従来の編集画面を維持する。
+  static Widget forSake(Sake sake) {
+    if (sake.sakeId != null && sake.sakeId! > 0) {
+      return SakeMasterDetailPage(
+        venueSake: VenueSake(
+          sakeId: sake.sakeId,
+          name: sake.name ?? '名称不明',
+          brewery: sake.brewery,
+          type: sake.type,
+          primaryImageUrl: sake.primaryImageUrl,
+          recordCount: 0,
+        ),
+      );
+    }
+    return SavedSakeDetailPage(sake: sake);
+  }
 
   @override
   State<SavedSakeDetailPage> createState() => _SavedSakeDetailPageState();

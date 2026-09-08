@@ -133,7 +133,7 @@ class NewHomePage extends StatelessWidget {
                       footerBuilder: (sake) => _formatSavedDate(context, sake),
                       onTap: (sake) => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => SavedSakeDetailPage(sake: sake),
+                          builder: (_) => SavedSakeDetailPage.forSake(sake),
                         ),
                       ),
                     ),
@@ -241,7 +241,9 @@ Future<void> openNewHomeScanner(BuildContext context) async {
   );
   if (result == null || !context.mounted) return;
   await Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => SavedSakeDetailPage(sake: result)),
+    MaterialPageRoute<void>(
+      builder: (_) => SavedSakeDetailPage.forSake(result),
+    ),
   );
 }
 
