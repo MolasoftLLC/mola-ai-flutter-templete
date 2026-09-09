@@ -119,32 +119,37 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       sake: _asSake(widget.venueSake),
       notifier: _savedSakeNotifier,
     ),
-    body: FutureBuilder<SakeOverview>(
-      future: _future,
-      builder: (context, snapshot) => RefreshIndicator(
-        onRefresh: _reload,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
-            if (snapshot.connectionState == ConnectionState.waiting)
-              const LinearProgressIndicator(color: _orange),
-            if (snapshot.hasError)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  children: [
-                    const Expanded(child: Text('詳細情報を取得できませんでした。')),
-                    TextButton(onPressed: _reload, child: const Text('再試行')),
-                  ],
+    body: GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: FocusManager.instance.primaryFocus?.unfocus,
+      child: FutureBuilder<SakeOverview>(
+        future: _future,
+        builder: (context, snapshot) => RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+            children: [
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const LinearProgressIndicator(color: _orange),
+              if (snapshot.hasError)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    children: [
+                      const Expanded(child: Text('詳細情報を取得できませんでした。')),
+                      TextButton(onPressed: _reload, child: const Text('再試行')),
+                    ],
+                  ),
                 ),
+              _Details(
+                overview: snapshot.data,
+                fallback: widget.venueSake,
+                savedSakeNotifier: _savedSakeNotifier,
               ),
-            _Details(
-              overview: snapshot.data,
-              fallback: widget.venueSake,
-              savedSakeNotifier: _savedSakeNotifier,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
@@ -804,48 +809,6 @@ class _SectionHeading extends StatelessWidget {
   );
 }
 
-class _RecordLine extends StatelessWidget {
-  const _RecordLine({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Icon(icon, size: 18, color: _orange),
-      const SizedBox(width: 7),
-      Expanded(
-        child: Text(text, style: const TextStyle(color: Color(0xFF404A56))),
-      ),
-    ],
-  );
-}
-
-class _RecordImages extends StatelessWidget {
-  const _RecordImages({required this.paths});
-  final List<String> paths;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 82,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: paths.length,
-      separatorBuilder: (_, _) => const SizedBox(width: 8),
-      itemBuilder: (context, index) {
-        final path = paths[index];
-        final image = path.startsWith('http://') || path.startsWith('https://')
-            ? Image.network(path, fit: BoxFit.cover)
-            : Image.file(File(path), fit: BoxFit.cover);
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: SizedBox(width: 82, child: image),
-        );
-      },
-    ),
-  );
-}
-
 class _InlineRecordEditor extends StatefulWidget {
   const _InlineRecordEditor({required this.notifier, required this.sake});
   final SavedSakeNotifier notifier;
@@ -1130,45 +1093,35 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             )
             .toList(growable: false),
       ),
-      if ((widget.sake.imagePaths ?? const <String>[]).isNotEmpty) ...[
-        const SizedBox(height: 20),
-        const Text(
-          '写真',
-          style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        _RecordImages(paths: widget.sake.imagePaths!),
-      ],
       const SizedBox(height: 20),
       const Text(
         '思い出をのこそう',
         style: TextStyle(
           color: _navy,
           fontWeight: FontWeight.w700,
-          fontSize: 15,
+          fontSize: 17,
         ),
       ),
-      const SizedBox(height: 5),
-      const Text(
-        'その日の景色や料理も、一緒に残せます。',
-        style: TextStyle(color: Color(0xFF647184), fontSize: 13),
-      ),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(
-        onPressed: _isAddingImage ? null : _showImageSourceSheet,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: _navy,
-          side: const BorderSide(color: Color(0xFFFFC58F)),
-          minimumSize: const Size.fromHeight(46),
-        ),
-        icon: _isAddingImage
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.add_a_photo_outlined),
-        label: Text(_isAddingImage ? '追加中…' : '写真を追加'),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          for (var index = 0; index < 3; index++) ...[
+            Expanded(
+              child: _MemoryPhotoTile(
+                path:
+                    index < (widget.sake.imagePaths ?? const <String>[]).length
+                    ? widget.sake.imagePaths![index]
+                    : null,
+                isPrimary:
+                    index ==
+                    (widget.sake.imagePaths ?? const <String>[]).length,
+                isAdding: _isAddingImage,
+                onAdd: _showImageSourceSheet,
+              ),
+            ),
+            if (index < 2) const SizedBox(width: 8),
+          ],
+        ],
       ),
       const SizedBox(height: 20),
       FilledButton(
@@ -1180,6 +1133,117 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         child: Text(_isSaving ? '保存中…' : '記録を保存'),
       ),
     ],
+  );
+}
+
+class _MemoryPhotoTile extends StatelessWidget {
+  const _MemoryPhotoTile({
+    required this.path,
+    required this.isPrimary,
+    required this.isAdding,
+    required this.onAdd,
+  });
+
+  final String? path;
+  final bool isPrimary;
+  final bool isAdding;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(12);
+    if (path == null) {
+      final accent = isPrimary ? _orange : const Color(0xFF9AA5B5);
+      return InkWell(
+        onTap: isAdding ? null : onAdd,
+        borderRadius: borderRadius,
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              color: const Color(0xFFF7F8FA),
+              border: Border.all(
+                color: isPrimary
+                    ? const Color(0xFFFFC58F)
+                    : const Color(0xFFDDE3EA),
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: isAdding && isPrimary
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add_a_photo_outlined,
+                          color: accent,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '追加',
+                          style: TextStyle(color: accent, fontSize: 13),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final image = path!.startsWith('http://') || path!.startsWith('https://')
+        ? Image.network(
+            path!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const _MemoryImageError(),
+          )
+        : Image.file(
+            File(path!),
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const _MemoryImageError(),
+          );
+    return AspectRatio(
+      aspectRatio: 1,
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            image,
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: const Icon(Icons.zoom_in, color: Colors.white, size: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryImageError extends StatelessWidget {
+  const _MemoryImageError();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: const Color(0xFFF0F2F5),
+    alignment: Alignment.center,
+    child: const Icon(Icons.broken_image_outlined, color: Color(0xFF8B96A6)),
   );
 }
 
