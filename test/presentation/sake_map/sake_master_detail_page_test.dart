@@ -77,6 +77,13 @@ void main() {
       ),
       100,
     );
+    expect(
+      calculateTastePreferenceMatchPercent(
+        sakeValues: const [.6, .6, .6, .6, .6, .6],
+        preferenceValues: const [.5, .5, .5, .5, .5, .5],
+      ),
+      78,
+    );
   });
 
   test('あなたが感じた味わいの5段階評価を保存用JSONに保持する', () {
@@ -120,6 +127,9 @@ void main() {
     expect(find.text('サンプル酒造'), findsWidgets);
     expect(find.text('やわらかな香りとすっきりした後味。'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('compact-sake-header')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);
     expect(find.byKey(const Key('sake-taste-radar-chart')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('この食事に合うかも！'), 300);

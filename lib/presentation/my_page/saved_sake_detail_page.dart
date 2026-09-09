@@ -158,9 +158,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   bool get _isNameAnalysisFailed =>
       (_currentSake.name?.trim() ?? '') ==
       SavedSakeNotifier.analysisFailedLabel;
-  bool get _canUploadMemoryImage =>
-      (_currentSake.savedId?.isNotEmpty ?? false) &&
-      _currentSake.syncStatus == SavedSakeSyncStatus.serverSynced;
+  bool get _canUploadMemoryImage => _currentSake.savedId?.isNotEmpty ?? false;
 
   bool _isRemotePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -1305,7 +1303,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       return;
     }
     if (!_canUploadMemoryImage) {
-      _showSnack(context.l10n.syncToAddImages);
+      _showSnack(context.l10n.savedInformationNotFound);
       return;
     }
     if (_isImageProcessing || _isSyncing) {

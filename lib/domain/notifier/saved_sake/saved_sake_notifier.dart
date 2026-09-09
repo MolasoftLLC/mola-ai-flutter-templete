@@ -214,7 +214,13 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       _syncFiltersWithAvailableTags();
       logger.info('保存済み日本酒を削除: ${sake.name ?? '不明な日本酒'}');
     } else {
-      await addSavedSake(sake);
+      final savedId = await addSavedSake(sake);
+      if (!_isGuest) {
+        final synced = await syncSavedSakeToServer(savedId);
+        if (synced == null) {
+          logger.warning('保存酒のサーバー保存に失敗しました: id=$savedId');
+        }
+      }
       return;
     }
 
@@ -248,7 +254,15 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       return null;
     }
 
-    final current = state.savedSakeList[index];
+    var current = state.savedSakeList[index];
+    if (!_isGuest && current.syncStatus != SavedSakeSyncStatus.serverSynced) {
+      final synced = await syncSavedSakeToServer(savedId);
+      if (synced == null) {
+        logger.warning('画像追加前の保存酒同期に失敗しました: id=$savedId');
+        return null;
+      }
+      current = synced;
+    }
     final currentPaths = [...(current.imagePaths ?? const <String>[])];
     if (currentPaths.length >= 3) {
       logger.info('保存酒の画像は最大3枚です (id=$savedId)');

@@ -22,7 +22,6 @@ import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
-import '../common/widgets/primary_app_bar.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
 
 const _navy = Color(0xFF143861);
@@ -38,7 +37,10 @@ class SakeMasterDetailPage extends StatefulWidget {
 
 class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Future<SakeOverview>? _future;
+  final ScrollController _scrollController = ScrollController();
   bool _initialized = false;
+  bool _showCompactHeader = false;
+  SakeOverview? _headerOverview;
   SavedSakeNotifier? _savedSakeNotifier;
   FavoriteNotifier? _favoriteNotifier;
   void Function()? _removeSavedSakeListener;
@@ -51,6 +53,20 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (_initialized) return;
     _initialized = true;
     _future = _fetch();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_updateCompactHeaderVisibility);
+  }
+
+  void _updateCompactHeaderVisibility() {
+    final shouldShow =
+        _scrollController.hasClients && _scrollController.offset >= 180;
+    if (shouldShow != _showCompactHeader && mounted) {
+      setState(() => _showCompactHeader = shouldShow);
+    }
   }
 
   void _bindNotifiers() {
@@ -78,6 +94,9 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_updateCompactHeaderVisibility)
+      ..dispose();
     _removeSavedSakeListener?.call();
     _removeFavoriteListener?.call();
     super.dispose();
@@ -85,9 +104,14 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   Future<SakeOverview>? _fetch() {
     final id = widget.venueSake.sakeId;
-    return id == null || id <= 0
-        ? null
-        : context.read<SakeScanRepository>().fetchOverview(id);
+    if (id == null || id <= 0) return null;
+    final future = context.read<SakeScanRepository>().fetchOverview(id);
+    future
+        .then((overview) {
+          if (mounted) setState(() => _headerOverview = overview);
+        })
+        .catchError((_) {});
+    return future;
   }
 
   Future<void> _reload() async {
@@ -102,61 +126,253 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     }
   }
 
+  Future<void> _selectHeaderPlace() async {
+    final notifier = _savedSakeNotifier;
+    final overviewSake = _headerOverview?.sake;
+    final detailSake = overviewSake ?? _asSake(widget.venueSake);
+    final record = _findSavedSake(notifier, detailSake);
+    if (notifier == null || record == null) {
+      SnackBarUtils.showInfoSnackBar(
+        context,
+        message: 'このお酒を記録すると、飲んだ場所を登録できます。',
+      );
+      return;
+    }
+    final place = await PlacePickerSheet.show(
+      context,
+      initialPlace: record.drinkingPlace?.displayName ?? record.place,
+    );
+    if (!mounted || place == null || place.displayName.trim().isEmpty) return;
+    final updated = record.copyWith(
+      place: place.displayName.trim(),
+      drinkingPlace: place,
+    );
+    await notifier.updateSavedSake(updated);
+    if (updated.savedId != null &&
+        updated.savedId!.isNotEmpty &&
+        updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
+      await notifier.syncSavedSakeToServer(updated.savedId!, force: true);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.white,
-    appBar: PrimaryAppBar(
-      title: '日本酒詳細',
-      actions: [
-        _MasterSaveButton(
-          venueSake: widget.venueSake,
-          notifier: _savedSakeNotifier,
-        ),
-        _MasterFavoriteButton(
-          venueSake: widget.venueSake,
-          notifier: _favoriteNotifier,
-        ),
-      ],
-    ),
-    bottomNavigationBar: _MasterRecordCta(
-      sake: _asSake(widget.venueSake),
-      notifier: _savedSakeNotifier,
-    ),
-    body: GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: FocusManager.instance.primaryFocus?.unfocus,
-      child: FutureBuilder<SakeOverview>(
-        future: _future,
-        builder: (context, snapshot) => RefreshIndicator(
-          onRefresh: _reload,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-            children: [
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const LinearProgressIndicator(color: _orange),
-              if (snapshot.hasError)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    children: [
-                      const Expanded(child: Text('詳細情報を取得できませんでした。')),
-                      TextButton(onPressed: _reload, child: const Text('再試行')),
-                    ],
+  Widget build(BuildContext context) {
+    final overviewSake = _headerOverview?.sake;
+    final detailSake = overviewSake ?? _asSake(widget.venueSake);
+    final record = _findSavedSake(_savedSakeNotifier, detailSake);
+    final profile = _headerOverview?.master.tasteProfile;
+    final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
+    final matchPercent = profile == null || preference == null
+        ? null
+        : calculateTastePreferenceMatchPercent(
+            sakeValues: [
+              profile.fruity,
+              profile.sweetness,
+              profile.acidity,
+              profile.body ?? profile.umami,
+              profile.kire,
+              profile.dryness,
+            ],
+            preferenceValues: [
+              preference.fruity,
+              preference.sweetness,
+              preference.acidity,
+              preference.umami,
+              preference.kire,
+              preference.spiciness,
+            ],
+          );
+    final headerImagePath = (record?.imagePaths ?? const <String>[])
+        .cast<String?>()
+        .firstWhere(
+          (path) => path != null && path.trim().isNotEmpty,
+          orElse: () =>
+              overviewSake?.primaryImageUrl ?? widget.venueSake.primaryImageUrl,
+        );
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: _navy,
+        elevation: 0,
+        titleSpacing: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: _showCompactHeader
+              ? _CompactSakeHeader(
+                  key: const ValueKey('compact-sake-header'),
+                  name: detailSake.name ?? widget.venueSake.name,
+                  imagePath: headerImagePath,
+                  matchPercent: matchPercent,
+                )
+              : const Text(
+                  '日本酒詳細',
+                  key: ValueKey('default-sake-header'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              _Details(
-                overview: snapshot.data,
-                fallback: widget.venueSake,
-                savedSakeNotifier: _savedSakeNotifier,
-              ),
-            ],
+        ),
+        actions: [
+          _MasterSaveButton(
+            venueSake: widget.venueSake,
+            notifier: _savedSakeNotifier,
+          ),
+          _MasterFavoriteButton(
+            venueSake: widget.venueSake,
+            notifier: _favoriteNotifier,
+          ),
+          if (_showCompactHeader)
+            IconButton(
+              tooltip: '飲んだ場所を選ぶ',
+              icon: const Icon(Icons.near_me_outlined),
+              onPressed: _selectHeaderPlace,
+            ),
+        ],
+      ),
+      bottomNavigationBar: _MasterRecordCta(
+        sake: _asSake(widget.venueSake),
+        notifier: _savedSakeNotifier,
+      ),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: FocusManager.instance.primaryFocus?.unfocus,
+        child: FutureBuilder<SakeOverview>(
+          future: _future,
+          builder: (context, snapshot) => RefreshIndicator(
+            onRefresh: _reload,
+            child: ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+              children: [
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const LinearProgressIndicator(color: _orange),
+                if (snapshot.hasError)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('詳細情報を取得できませんでした。')),
+                        TextButton(
+                          onPressed: _reload,
+                          child: const Text('再試行'),
+                        ),
+                      ],
+                    ),
+                  ),
+                _Details(
+                  overview: snapshot.data,
+                  fallback: widget.venueSake,
+                  savedSakeNotifier: _savedSakeNotifier,
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CompactSakeHeader extends StatelessWidget {
+  const _CompactSakeHeader({
+    super.key,
+    required this.name,
+    required this.imagePath,
+    required this.matchPercent,
+  });
+
+  final String? name;
+  final String? imagePath;
+  final int? matchPercent;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 44,
+    child: Row(
+      children: [
+        _CompactSakeThumbnail(path: imagePath),
+        if (matchPercent != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+              ),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              '$matchPercent%',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            name?.trim().isNotEmpty == true ? name! : '日本酒詳細',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              height: 1.15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
     ),
   );
+}
+
+class _CompactSakeThumbnail extends StatelessWidget {
+  const _CompactSakeThumbnail({required this.path});
+
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = path?.trim();
+    final isRemote =
+        value != null &&
+        (value.startsWith('https://') || value.startsWith('http://'));
+    final image = value == null || value.isEmpty
+        ? const Icon(Icons.local_bar_outlined, color: Colors.white70)
+        : isRemote
+        ? Image.network(
+            value,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) =>
+                const Icon(Icons.local_bar_outlined, color: Colors.white70),
+          )
+        : Image.file(
+            File(value),
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) =>
+                const Icon(Icons.local_bar_outlined, color: Colors.white70),
+          );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(9),
+      child: Container(
+        width: 40,
+        height: 40,
+        color: const Color(0xFF284B70),
+        child: image,
+      ),
+    );
+  }
 }
 
 class _Details extends StatelessWidget {
@@ -278,6 +494,11 @@ class _Details extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                  if (category != null) ...[
+                    const SizedBox(height: 8),
+                    _Tags(values: [category], accent: true),
+                  ],
+                  if (category != null) const SizedBox(height: 14),
                   Text(
                     sake?.name ?? fallback.name,
                     style: const TextStyle(
@@ -293,10 +514,6 @@ class _Details extends StatelessWidget {
                       breweryName,
                       style: const TextStyle(color: Color(0xFF647184)),
                     ),
-                  ],
-                  if (category != null) ...[
-                    const SizedBox(height: 16),
-                    _Tags(values: [category], accent: true),
                   ],
                   if (master.styles.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -838,6 +1055,9 @@ List<String> detailImagePaths({
 }
 
 /// 味わいプロフィールの近さを、表示用の30〜100%に換算する。
+///
+/// 線形換算では各軸が少し近いだけで90%台に集中するため、
+/// わずかな差もマッチ度に反映するカーブを適用する。
 int calculateTastePreferenceMatchPercent({
   required List<double> sakeValues,
   required List<double> preferenceValues,
@@ -854,7 +1074,8 @@ int calculateTastePreferenceMatchPercent({
                 .abs(),
       ).reduce((sum, value) => sum + value) /
       sakeValues.length;
-  return (30 + (1 - difference) * 70).round().clamp(30, 100).toInt();
+  final similarity = 1 - difference;
+  return (30 + math.pow(similarity, 3.5) * 70).round().clamp(30, 100).toInt();
 }
 
 String? _preferenceMatchMessage(
@@ -1248,10 +1469,8 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
 
   Future<void> _pickMemoryImage(ImageSource source) async {
     final savedId = widget.sake.savedId;
-    if (savedId == null ||
-        savedId.isEmpty ||
-        widget.sake.syncStatus != SavedSakeSyncStatus.serverSynced) {
-      SnackBarUtils.showWarningSnackBar(context, message: '写真は記録の同期後に追加できます。');
+    if (savedId == null || savedId.isEmpty) {
+      SnackBarUtils.showWarningSnackBar(context, message: '先にこのお酒を記録してください。');
       return;
     }
     setState(() => _isAddingImage = true);
