@@ -15,6 +15,7 @@ import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -176,6 +177,7 @@ class _Details extends StatelessWidget {
     final master = overview?.master ?? const SakeMasterDetails();
     final profile = master.tasteProfile;
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
+    final isLoggedIn = Provider.of<AuthState?>(context)?.user != null;
     final category =
         master.category ??
         master.specialDesignation ??
@@ -214,8 +216,7 @@ class _Details extends StatelessWidget {
             _TasteAxis('キレ', profile.kire),
             _TasteAxis('辛さ', profile.dryness),
           ];
-    final preferenceAxes =
-        profile == null || preference == null || personalRecord == null
+    final preferenceAxes = profile == null || preference == null
         ? null
         : <_TasteAxis>[
             _TasteAxis('フルーティ', preference.fruity),
@@ -342,6 +343,11 @@ class _Details extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            if (preferenceMatchPercent == null && !isLoggedIn)
+              const _Section(
+                title: 'あなたの好みマッチ度',
+                child: _LoginRecommendationPrompt(),
               ),
             if (tasteAxes.isNotEmpty ||
                 master.tasteTags.isNotEmpty ||
@@ -881,6 +887,47 @@ class _PreferenceMatchSection extends StatefulWidget {
   @override
   State<_PreferenceMatchSection> createState() =>
       _PreferenceMatchSectionState();
+}
+
+class _LoginRecommendationPrompt extends StatelessWidget {
+  const _LoginRecommendationPrompt();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF7ED),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFFFD8B0)),
+    ),
+    child: const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.auto_awesome_outlined, color: _orange),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ログインすると、あなたにおすすめかどうかが分かります！',
+                style: TextStyle(color: _navy, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '好みの傾向とこのお酒を比べて、ぴったり度を表示します。',
+                style: TextStyle(
+                  color: Color(0xFF647184),
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {

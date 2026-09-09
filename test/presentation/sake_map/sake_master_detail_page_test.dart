@@ -126,6 +126,11 @@ void main() {
     expect(find.text('ぶり大根・煮付け'), findsOneWidget);
     expect(find.text('50%'), findsOneWidget);
     expect(find.text('+2.5'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('ログインすると、あなたにおすすめかどうかが分かります！'),
+      300,
+    );
+    expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('容量と参考価格'), 300);
     expect(find.text('720 ml'), findsOneWidget);
     expect(find.text('¥2,300（税込）'), findsOneWidget);
