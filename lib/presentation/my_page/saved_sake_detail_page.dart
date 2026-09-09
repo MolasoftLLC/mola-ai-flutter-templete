@@ -31,26 +31,106 @@ class SavedSakeDetailPage extends StatefulWidget {
 
   final Sake sake;
 
-  /// マスターに紐づく保存酒は、客観情報と個人記録を一つにした詳細へ開く。
-  /// 旧データなどマスター未紐付けの酒だけ、従来の編集画面を維持する。
+  /// 保存済みの日本酒は、すべて客観情報と個人記録を一つにした詳細へ開く。
+  /// マスターIDがない過去の記録は、銘柄名からマスターを補完して表示する。
   static Widget forSake(Sake sake) {
-    if (sake.sakeId != null && sake.sakeId! > 0) {
-      return SakeMasterDetailPage(
-        venueSake: VenueSake(
-          sakeId: sake.sakeId,
-          name: sake.name ?? '名称不明',
-          brewery: sake.brewery,
-          type: sake.type,
-          primaryImageUrl: sake.primaryImageUrl,
-          recordCount: 0,
-        ),
-      );
-    }
-    return SavedSakeDetailPage(sake: sake);
+    return _SavedSakeMasterDetailResolver(sake: sake);
   }
 
   @override
   State<SavedSakeDetailPage> createState() => _SavedSakeDetailPageState();
+}
+
+class _SavedSakeMasterDetailResolver extends StatefulWidget {
+  const _SavedSakeMasterDetailResolver({required this.sake});
+
+  final Sake sake;
+
+  @override
+  State<_SavedSakeMasterDetailResolver> createState() =>
+      _SavedSakeMasterDetailResolverState();
+}
+
+class _SavedSakeMasterDetailResolverState
+    extends State<_SavedSakeMasterDetailResolver> {
+  Future<VenueSake>? _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future ??= _resolveMaster();
+  }
+
+  Future<VenueSake> _resolveMaster() async {
+    final sake = widget.sake;
+    if (sake.sakeId != null && sake.sakeId! > 0) {
+      return _asVenueSake(sake);
+    }
+
+    final name = sake.name?.trim() ?? '';
+    if (name.isEmpty) return _asVenueSake(sake);
+    try {
+      final results = await context
+          .read<PlaceMapRepository>()
+          .searchSakeMasters(name);
+      final normalizedName = name.replaceAll(RegExp(r'\s+'), '');
+      final matching = results.where(
+        (result) =>
+            result.sakeId != null &&
+            result.sakeId! > 0 &&
+            result.name.replaceAll(RegExp(r'\s+'), '') == normalizedName,
+      );
+      final exactBrewery = matching.where(
+        (result) =>
+            sake.brewery?.trim().isNotEmpty == true &&
+            result.brewery?.trim() == sake.brewery?.trim(),
+      );
+      final resolved = exactBrewery.isNotEmpty
+          ? exactBrewery.first
+          : matching.isNotEmpty
+          ? matching.first
+          : null;
+      if (resolved == null) return _asVenueSake(sake);
+      return VenueSake(
+        sakeId: resolved.sakeId,
+        searchToken: resolved.searchToken,
+        name: resolved.name,
+        brewery: resolved.brewery ?? sake.brewery,
+        type: resolved.type ?? sake.type,
+        primaryImageUrl: resolved.primaryImageUrl ?? sake.primaryImageUrl,
+        recordCount: 0,
+      );
+    } catch (_) {
+      return _asVenueSake(sake);
+    }
+  }
+
+  VenueSake _asVenueSake(Sake sake) => VenueSake(
+    sakeId: sake.sakeId,
+    name: sake.name ?? '名称不明',
+    brewery: sake.brewery,
+    type: sake.type,
+    primaryImageUrl: sake.primaryImageUrl,
+    recordCount: 0,
+  );
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<VenueSake>(
+    future: _future,
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return const Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+      final sake = snapshot.requireData;
+      return SakeMasterDetailPage(
+        key: ValueKey('saved-sake-master-${sake.sakeId ?? sake.name}'),
+        venueSake: sake,
+      );
+    },
+  );
 }
 
 class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
