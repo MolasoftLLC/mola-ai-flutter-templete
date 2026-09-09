@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,7 +14,6 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
-import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
@@ -182,58 +182,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               preference.spiciness,
             ],
           );
-    final headerImagePath = (record?.imagePaths ?? const <String>[])
-        .cast<String?>()
-        .firstWhere(
-          (path) => path != null && path.trim().isNotEmpty,
-          orElse: () =>
-              overviewSake?.primaryImageUrl ?? widget.venueSake.primaryImageUrl,
-        );
+    final headerImagePaths = detailImagePaths(
+      personalRecord: record,
+      overviewSake: overviewSake,
+      fallback: widget.venueSake,
+    );
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: _navy,
-        elevation: 0,
-        titleSpacing: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          child: _showCompactHeader
-              ? _CompactSakeHeader(
-                  key: const ValueKey('compact-sake-header'),
-                  name: detailSake.name ?? widget.venueSake.name,
-                  imagePath: headerImagePath,
-                  matchPercent: matchPercent,
-                )
-              : const Text(
-                  '日本酒詳細',
-                  key: ValueKey('default-sake-header'),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-        ),
-        actions: [
-          _MasterSaveButton(
-            venueSake: widget.venueSake,
-            notifier: _savedSakeNotifier,
-          ),
-          _MasterFavoriteButton(
-            venueSake: widget.venueSake,
-            notifier: _favoriteNotifier,
-          ),
-          if (_showCompactHeader)
-            IconButton(
-              tooltip: '飲んだ場所を選ぶ',
-              icon: const Icon(Icons.near_me_outlined),
-              onPressed: _selectHeaderPlace,
-            ),
-        ],
-      ),
       bottomNavigationBar: _MasterRecordCta(
         sake: _asSake(widget.venueSake),
         notifier: _savedSakeNotifier,
@@ -245,31 +200,72 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           future: _future,
           builder: (context, snapshot) => RefreshIndicator(
             onRefresh: _reload,
-            child: ListView(
+            child: CustomScrollView(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-              children: [
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  stretch: true,
+                  expandedHeight: 340,
+                  backgroundColor: _navy,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  actions: [
+                    _MasterSaveButton(
+                      venueSake: widget.venueSake,
+                      notifier: _savedSakeNotifier,
+                    ),
+                    _MasterFavoriteButton(
+                      venueSake: widget.venueSake,
+                      notifier: _favoriteNotifier,
+                    ),
+                    if (_showCompactHeader)
+                      IconButton(
+                        tooltip: '飲んだ場所を選ぶ',
+                        icon: const Icon(Icons.location_on_outlined),
+                        onPressed: _selectHeaderPlace,
+                      ),
+                  ],
+                  flexibleSpace: _CollapsingSakeHero(
+                    name: detailSake.name ?? widget.venueSake.name,
+                    imagePaths: headerImagePaths,
+                    matchPercent: matchPercent,
+                  ),
+                ),
                 if (snapshot.connectionState == ConnectionState.waiting)
-                  const LinearProgressIndicator(color: _orange),
+                  const SliverToBoxAdapter(
+                    child: LinearProgressIndicator(color: _orange),
+                  ),
                 if (snapshot.hasError)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      children: [
-                        const Expanded(child: Text('詳細情報を取得できませんでした。')),
-                        TextButton(
-                          onPressed: _reload,
-                          child: const Text('再試行'),
-                        ),
-                      ],
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Row(
+                        children: [
+                          const Expanded(child: Text('詳細情報を取得できませんでした。')),
+                          TextButton(
+                            onPressed: _reload,
+                            child: const Text('再試行'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                _Details(
-                  overview: snapshot.data,
-                  fallback: widget.venueSake,
-                  savedSakeNotifier: _savedSakeNotifier,
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                  sliver: SliverToBoxAdapter(
+                    child: _Details(
+                      overview: snapshot.data,
+                      fallback: widget.venueSake,
+                      savedSakeNotifier: _savedSakeNotifier,
+                      showHeroImage: false,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -280,99 +276,210 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 }
 
-class _CompactSakeHeader extends StatelessWidget {
-  const _CompactSakeHeader({
-    super.key,
+class _CollapsingSakeHero extends StatefulWidget {
+  const _CollapsingSakeHero({
     required this.name,
-    required this.imagePath,
+    required this.imagePaths,
     required this.matchPercent,
   });
 
   final String? name;
-  final String? imagePath;
+  final List<String> imagePaths;
   final int? matchPercent;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 44,
-    child: Row(
-      children: [
-        _CompactSakeThumbnail(path: imagePath),
-        if (matchPercent != null) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+  State<_CollapsingSakeHero> createState() => _CollapsingSakeHeroState();
+}
+
+class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
+  late final PageController _pageController;
+  var _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final topInset = MediaQuery.paddingOf(context).top;
+      final collapsedHeight = topInset + kToolbarHeight;
+      const expandedHeight = 340.0;
+      final expandedProgress =
+          ((constraints.maxHeight - collapsedHeight) /
+                  (expandedHeight - collapsedHeight))
+              .clamp(0.0, 1.0);
+      final collapsedProgress = 1 - expandedProgress;
+      final imageWidth = lerpDouble(
+        MediaQuery.sizeOf(context).width - 40,
+        40,
+        collapsedProgress,
+      )!;
+      final imageHeight = lerpDouble(240, 40, collapsedProgress)!;
+      final imageLeft = lerpDouble(20, 64, collapsedProgress)!;
+      final imageTop = lerpDouble(
+        topInset + kToolbarHeight + 18,
+        topInset + 8,
+        collapsedProgress,
+      )!;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          const ColoredBox(color: _navy),
+          Positioned(
+            left: imageLeft,
+            top: imageTop,
+            width: imageWidth,
+            height: imageHeight,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(
+                lerpDouble(16, 9, collapsedProgress)!,
               ),
-              borderRadius: BorderRadius.circular(99),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (widget.imagePaths.isEmpty)
+                    const _DetailSakeImage()
+                  else
+                    PageView.builder(
+                      controller: _pageController,
+                      itemCount: widget.imagePaths.length,
+                      onPageChanged: (index) =>
+                          setState(() => _currentPage = index),
+                      itemBuilder: (context, index) =>
+                          _DetailSakeImage(path: widget.imagePaths[index]),
+                    ),
+                  if (widget.imagePaths.length > 1)
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: Opacity(
+                        opacity: expandedProgress,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            '${_currentPage + 1}/${widget.imagePaths.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            child: Text(
-              '$matchPercent%',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+          ),
+          Positioned(
+            left: 56,
+            right: 56,
+            top: topInset + 18,
+            child: Opacity(
+              opacity: expandedProgress,
+              child: const Text(
+                '日本酒詳細',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 112,
+            right: 156,
+            top: topInset + 11,
+            child: collapsedProgress > .5
+                ? KeyedSubtree(
+                    key: const Key('compact-sake-header'),
+                    child: Row(
+                      children: [
+                        if (widget.matchPercent != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+                              ),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              '${widget.matchPercent}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            widget.name?.trim().isNotEmpty == true
+                                ? widget.name!
+                                : '日本酒詳細',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 18,
+            child: Opacity(
+              opacity: expandedProgress,
+              child: Text(
+                widget.name?.trim().isNotEmpty == true ? widget.name! : '日本酒詳細',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                  shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
+                ),
               ),
             ),
           ),
         ],
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            name?.trim().isNotEmpty == true ? name! : '日本酒詳細',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              height: 1.15,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
-    ),
+      );
+    },
   );
-}
-
-class _CompactSakeThumbnail extends StatelessWidget {
-  const _CompactSakeThumbnail({required this.path});
-
-  final String? path;
-
-  @override
-  Widget build(BuildContext context) {
-    final value = path?.trim();
-    final isRemote =
-        value != null &&
-        (value.startsWith('https://') || value.startsWith('http://'));
-    final image = value == null || value.isEmpty
-        ? const Icon(Icons.local_bar_outlined, color: Colors.white70)
-        : isRemote
-        ? Image.network(
-            value,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) =>
-                const Icon(Icons.local_bar_outlined, color: Colors.white70),
-          )
-        : Image.file(
-            File(value),
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) =>
-                const Icon(Icons.local_bar_outlined, color: Colors.white70),
-          );
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(9),
-      child: Container(
-        width: 40,
-        height: 40,
-        color: const Color(0xFF284B70),
-        child: image,
-      ),
-    );
-  }
 }
 
 class _Details extends StatelessWidget {
@@ -380,10 +487,12 @@ class _Details extends StatelessWidget {
     required this.overview,
     required this.fallback,
     required this.savedSakeNotifier,
+    required this.showHeroImage,
   });
   final SakeOverview? overview;
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
+  final bool showHeroImage;
 
   @override
   Widget build(BuildContext context) {
@@ -477,15 +586,17 @@ class _Details extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 250,
-                    width: double.infinity,
-                    child: _SakeImageCarousel(
-                      key: ValueKey<String>(imagePaths.join('|')),
-                      imagePaths: imagePaths,
+                  if (showHeroImage) ...[
+                    SizedBox(
+                      height: 250,
+                      width: double.infinity,
+                      child: _SakeImageCarousel(
+                        key: ValueKey<String>(imagePaths.join('|')),
+                        imagePaths: imagePaths,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
                   if (master.seriesName != null)
                     Text(
                       master.seriesName!,

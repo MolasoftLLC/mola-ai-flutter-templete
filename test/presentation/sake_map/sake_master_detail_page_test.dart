@@ -123,11 +123,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('マスター純米酒'), findsOneWidget);
+    expect(find.text('マスター純米酒'), findsWidgets);
     expect(find.text('サンプル酒造'), findsWidgets);
     expect(find.text('やわらかな香りとすっきりした後味。'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('compact-sake-header')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);
@@ -183,12 +183,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('一覧の名称'), findsOneWidget);
+    expect(find.text('一覧の名称'), findsWidgets);
     expect(find.text('詳細情報を取得できませんでした。'), findsOneWidget);
     repository.fail = false;
     await tester.tap(find.text('再試行'));
     await tester.pumpAndSettle();
-    expect(find.text('マスター純米酒'), findsOneWidget);
+    expect(find.text('マスター純米酒'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
