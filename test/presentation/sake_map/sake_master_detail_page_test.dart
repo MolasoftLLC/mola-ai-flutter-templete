@@ -27,6 +27,57 @@ void main() {
     expect(legacy.primaryImageUrl, 'https://example.com/old.jpg');
     expect(legacy.thumbnailImageUrl, isNull);
   });
+
+  test('保存した思い出の写真を商品画像より先に詳細へ並べる', () {
+    const fallback = VenueSake(
+      sakeId: 123,
+      name: '冩樂 純米吟醸',
+      recordCount: 0,
+      primaryImageUrl: 'https://images.example/yahoo.jpg',
+    );
+    final paths = detailImagePaths(
+      personalRecord: const Sake(
+        imagePaths: [
+          '/local/front-bottle.jpg',
+          'https://images.example/memory.jpg',
+        ],
+      ),
+      overviewSake: const Sake(
+        primaryImageUrl: 'https://images.example/yahoo.jpg',
+      ),
+      fallback: fallback,
+    );
+
+    expect(paths, [
+      '/local/front-bottle.jpg',
+      'https://images.example/memory.jpg',
+      'https://images.example/yahoo.jpg',
+    ]);
+  });
+
+  test('味わいプロフィールの一致度は30〜100%で算出する', () {
+    expect(
+      calculateTastePreferenceMatchPercent(
+        sakeValues: const [.7, .5, .4, .6, .8, .3],
+        preferenceValues: const [.7, .5, .4, .6, .8, .3],
+      ),
+      100,
+    );
+    expect(
+      calculateTastePreferenceMatchPercent(
+        sakeValues: const [0, 0, 0, 0, 0, 0],
+        preferenceValues: const [1, 1, 1, 1, 1, 1],
+      ),
+      30,
+    );
+    expect(
+      calculateTastePreferenceMatchPercent(
+        sakeValues: const [.5, .5, .5, .5, .5, .5],
+        preferenceValues: const [.5, .5, .5, .5, .5, .5],
+      ),
+      100,
+    );
+  });
   testWidgets('sake_masterから取得した詳細を表示する', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

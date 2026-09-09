@@ -13,6 +13,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
+import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
@@ -224,6 +225,12 @@ class _Details extends StatelessWidget {
             _TasteAxis('キレ', preference.kire),
             _TasteAxis('辛さ', preference.spiciness),
           ];
+    final preferenceMatchPercent = preferenceAxes == null
+        ? null
+        : calculateTastePreferenceMatchPercent(
+            sakeValues: tasteAxes.map((axis) => axis.value).toList(),
+            preferenceValues: preferenceAxes.map((axis) => axis.value).toList(),
+          );
     final pairings = _pairingsFor(
       profile: profile,
       category: category,
@@ -234,6 +241,11 @@ class _Details extends StatelessWidget {
     final description = sake?.description;
     final recommendationScore =
         sake?.recommendationScore ?? personalRecord?.recommendationScore;
+    final imagePaths = detailImagePaths(
+      personalRecord: personalRecord,
+      overviewSake: sake,
+      fallback: fallback,
+    );
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
@@ -247,8 +259,9 @@ class _Details extends StatelessWidget {
                   SizedBox(
                     height: 250,
                     width: double.infinity,
-                    child: _BottleImage(
-                      url: sake?.primaryImageUrl ?? fallback.primaryImageUrl,
+                    child: _SakeImageCarousel(
+                      key: ValueKey<String>(imagePaths.join('|')),
+                      imagePaths: imagePaths,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -298,6 +311,7 @@ class _Details extends StatelessWidget {
                 child: _PersonalRecordSection(
                   sake: detailSake,
                   notifier: savedSakeNotifier,
+                  preference: preference,
                 ),
               ),
             if (tasteAxes.isNotEmpty ||
@@ -345,6 +359,11 @@ class _Details extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            if (preferenceMatchPercent != null)
+              _Section(
+                title: 'あなたの好みマッチ度',
+                child: _PreferenceMatchSection(percent: preferenceMatchPercent),
               ),
             if (description != null && description.trim().isNotEmpty)
               _Section(
@@ -736,9 +755,14 @@ Future<void> _addSakeRecord(
 }
 
 class _PersonalRecordSection extends StatelessWidget {
-  const _PersonalRecordSection({required this.sake, required this.notifier});
+  const _PersonalRecordSection({
+    required this.sake,
+    required this.notifier,
+    required this.preference,
+  });
   final Sake sake;
   final SavedSakeNotifier? notifier;
+  final TastePreferenceProfile? preference;
 
   @override
   Widget build(BuildContext context) {
@@ -753,7 +777,11 @@ class _PersonalRecordSection extends StatelessWidget {
       children: [
         const _SectionHeading(title: 'あなたの記録'),
         const SizedBox(height: 16),
-        _InlineRecordEditor(notifier: savedNotifier, sake: record),
+        _InlineRecordEditor(
+          notifier: savedNotifier,
+          sake: record,
+          preference: preference,
+        ),
       ],
     );
   }
@@ -765,6 +793,158 @@ Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
     if (_isSameSakeIdentity(candidate, sake)) return candidate;
   }
   return null;
+}
+
+/// 保存した思い出を最優先にし、商品画像は続きのスライドへ並べる。
+List<String> detailImagePaths({
+  required Sake? personalRecord,
+  required Sake? overviewSake,
+  required VenueSake fallback,
+}) {
+  final paths = <String>[];
+  void add(String? value) {
+    final path = value?.trim();
+    if (path == null || path.isEmpty || paths.contains(path)) return;
+    paths.add(path);
+  }
+
+  for (final path in personalRecord?.imagePaths ?? const <String>[]) {
+    add(path);
+  }
+  add(overviewSake?.primaryImageUrl);
+  add(fallback.primaryImageUrl);
+  return paths;
+}
+
+/// 味わいプロフィールの近さを、表示用の30〜100%に換算する。
+int calculateTastePreferenceMatchPercent({
+  required List<double> sakeValues,
+  required List<double> preferenceValues,
+}) {
+  if (sakeValues.isEmpty || sakeValues.length != preferenceValues.length) {
+    return 30;
+  }
+  final difference =
+      List<double>.generate(
+        sakeValues.length,
+        (index) =>
+            (sakeValues[index].clamp(0, 1).toDouble() -
+                    preferenceValues[index].clamp(0, 1).toDouble())
+                .abs(),
+      ).reduce((sum, value) => sum + value) /
+      sakeValues.length;
+  return (30 + (1 - difference) * 70).round().clamp(30, 100).toInt();
+}
+
+class _PreferenceMatchSection extends StatefulWidget {
+  const _PreferenceMatchSection({required this.percent});
+
+  final int percent;
+
+  @override
+  State<_PreferenceMatchSection> createState() =>
+      _PreferenceMatchSectionState();
+}
+
+class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
+  ScrollPosition? _scrollPosition;
+  var _hasEnteredViewport = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextPosition = Scrollable.maybeOf(context)?.position;
+    if (identical(_scrollPosition, nextPosition)) return;
+    _scrollPosition?.removeListener(_checkViewport);
+    _scrollPosition = nextPosition;
+    _scrollPosition?.addListener(_checkViewport);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkViewport());
+  }
+
+  @override
+  void dispose() {
+    _scrollPosition?.removeListener(_checkViewport);
+    super.dispose();
+  }
+
+  void _checkViewport() {
+    if (!mounted || _hasEnteredViewport) return;
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+    final top = renderObject.localToGlobal(Offset.zero).dy;
+    final bottom = top + renderObject.size.height;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    if (top >= viewportHeight * 0.9 || bottom <= 0) return;
+    setState(() => _hasEnteredViewport = true);
+  }
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    key: const Key('taste-preference-match'),
+    duration: const Duration(milliseconds: 900),
+    curve: Curves.easeOutCubic,
+    tween: Tween<double>(
+      end: _hasEnteredViewport ? widget.percent.toDouble() : 0,
+    ),
+    builder: (context, value, _) {
+      final shownPercent = value.round();
+      return Semantics(
+        label: 'あなたの好みマッチ度 $shownPercent%',
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFD),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '味わいプロフィールから算出',
+                      style: TextStyle(color: Color(0xFF647184), fontSize: 12),
+                    ),
+                  ),
+                  Text(
+                    '$shownPercent%',
+                    style: const TextStyle(
+                      color: _navy,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) => Container(
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE6EBF1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: constraints.maxWidth * value / 100,
+                    child: const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _RecommendationBadge extends StatelessWidget {
@@ -833,9 +1013,14 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _InlineRecordEditor extends StatefulWidget {
-  const _InlineRecordEditor({required this.notifier, required this.sake});
+  const _InlineRecordEditor({
+    required this.notifier,
+    required this.sake,
+    required this.preference,
+  });
   final SavedSakeNotifier notifier;
   final Sake sake;
+  final TastePreferenceProfile? preference;
 
   @override
   State<_InlineRecordEditor> createState() => _InlineRecordEditorState();
@@ -884,7 +1069,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     if (savedId != null &&
         savedId.isNotEmpty &&
         updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
-      await widget.notifier.syncSavedSakeToServer(savedId);
+      await widget.notifier.syncSavedSakeToServer(savedId, force: true);
     }
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -1064,39 +1249,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       ),
       const SizedBox(height: 18),
       const Text(
-        'タイムラインに表示',
-        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 4),
-      Row(
-        children: [
-          const Expanded(
-            child: Text(
-              'みんなのタイムラインにこの記録を表示します。',
-              style: TextStyle(
-                color: Color(0xFF647184),
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: widget.sake.isPublic,
-            onChanged: _isVisibilityUpdating ? null : _updateTimelineVisibility,
-            activeColor: _orange,
-          ),
-        ],
-      ),
-      if (widget.sake.syncStatus != SavedSakeSyncStatus.serverSynced)
-        const Padding(
-          padding: EdgeInsets.only(top: 2),
-          child: Text(
-            '同期が完了すると公開設定を変更できます。',
-            style: TextStyle(color: Color(0xFF8B96A6), fontSize: 12),
-          ),
-        ),
-      const SizedBox(height: 8),
-      const Text(
         'タグ',
         style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
       ),
@@ -1116,6 +1268,15 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             )
             .toList(growable: false),
       ),
+      if (widget.preference != null) ...[
+        const SizedBox(height: 20),
+        const Text(
+          'あなたの好みプロフィール',
+          style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        _PersonalTasteProfile(profile: widget.preference!),
+      ],
       const SizedBox(height: 20),
       const Text(
         '思い出をのこそう',
@@ -1147,6 +1308,8 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         ],
       ),
       const SizedBox(height: 20),
+      _timelineVisibility(),
+      const SizedBox(height: 20),
       FilledButton(
         onPressed: _isSaving ? null : _save,
         style: FilledButton.styleFrom(
@@ -1157,6 +1320,97 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       ),
     ],
   );
+
+  Widget _timelineVisibility() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'タイムラインに表示',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 4),
+      Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'みんなのタイムラインにこの記録を表示します。',
+              style: TextStyle(
+                color: Color(0xFF647184),
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: widget.sake.isPublic,
+            onChanged: _isVisibilityUpdating ? null : _updateTimelineVisibility,
+            activeColor: _orange,
+          ),
+        ],
+      ),
+      if (widget.sake.syncStatus != SavedSakeSyncStatus.serverSynced)
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Text(
+            '同期が完了すると公開設定を変更できます。',
+            style: TextStyle(color: Color(0xFF8B96A6), fontSize: 12),
+          ),
+        ),
+    ],
+  );
+}
+
+class _PersonalTasteProfile extends StatelessWidget {
+  const _PersonalTasteProfile({required this.profile});
+
+  final TastePreferenceProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final axes = <(String, double)>[
+      ('フルーティ', profile.fruity),
+      ('甘み', profile.sweetness),
+      ('酸味', profile.acidity),
+      ('コク', profile.umami),
+      ('キレ', profile.kire),
+      ('辛さ', profile.spiciness),
+    ];
+    return Column(
+      children: [
+        for (final axis in axes)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    axis.$1,
+                    style: const TextStyle(
+                      color: Color(0xFF647184),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      value: axis.$2.clamp(0, 1).toDouble(),
+                      minHeight: 8,
+                      backgroundColor: const Color(0xFFE6EBF1),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4E9CD5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _MemoryPhotoTile extends StatelessWidget {
@@ -1397,6 +1651,93 @@ class _BottleImage extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => placeholder(),
           );
+  }
+}
+
+class _SakeImageCarousel extends StatefulWidget {
+  const _SakeImageCarousel({super.key, required this.imagePaths});
+
+  final List<String> imagePaths;
+
+  @override
+  State<_SakeImageCarousel> createState() => _SakeImageCarouselState();
+}
+
+class _SakeImageCarouselState extends State<_SakeImageCarousel> {
+  var _currentPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImages = widget.imagePaths.isNotEmpty;
+    final imageCount = widget.imagePaths.length;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (hasImages)
+            PageView.builder(
+              key: const Key('sake-image-carousel'),
+              itemCount: imageCount,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder: (context, index) =>
+                  _DetailSakeImage(path: widget.imagePaths[index]),
+            )
+          else
+            const _DetailSakeImage(),
+          if (imageCount > 1)
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  '${_currentPage + 1} / $imageCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailSakeImage extends StatelessWidget {
+  const _DetailSakeImage({this.path});
+
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget placeholder() => Image.asset(
+      'assets/images/sake_placeholder.png',
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) =>
+          const Icon(Icons.wine_bar_outlined, color: _navy),
+    );
+    final value = path?.trim();
+    if (value == null || value.isEmpty) return placeholder();
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return Image.network(
+        value,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => placeholder(),
+      );
+    }
+    return Image.file(
+      File(value),
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => placeholder(),
+    );
   }
 }
 

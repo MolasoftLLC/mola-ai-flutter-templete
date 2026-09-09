@@ -202,7 +202,15 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       imageFile: image,
       isPublic: isPublic,
     );
-    if (!synced || stage != SavedSakeSyncStage.analysisStart) return;
+    if (!synced) return;
+
+    if (stage != SavedSakeSyncStage.analysisStart) {
+      final savedId = sake.savedId;
+      if (savedId != null && savedId.isNotEmpty) {
+        await _savedSakeNotifier.markSavedSakeServerSynced(savedId);
+      }
+      return;
+    }
 
     for (final additionalImage in additionalImages) {
       await _syncRepository.uploadSavedSakeImage(

@@ -365,7 +365,10 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     return updated;
   }
 
-  Future<Sake?> syncSavedSakeToServer(String savedId) async {
+  Future<Sake?> syncSavedSakeToServer(
+    String savedId, {
+    bool force = false,
+  }) async {
     final user = _authRepository.currentUser;
     if (user == null) {
       logger.warning('保存酒の同期を実行できません: ログイン情報がありません');
@@ -388,7 +391,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
     try {
       final target = state.savedSakeList[index];
-      if (target.syncStatus == SavedSakeSyncStatus.serverSynced) {
+      if (!force && target.syncStatus == SavedSakeSyncStatus.serverSynced) {
         logger.info('保存酒は既にサーバーと同期済みです: id=$savedId');
         return target;
       }
@@ -492,6 +495,29 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     } finally {
       _syncingImageIds.remove(savedId);
     }
+  }
+
+  /// スキャン完了後、ローカル記録をサーバー同期済みとして保存します。
+  Future<void> markSavedSakeServerSynced(String savedId) async {
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId != null && item.savedId == savedId,
+    );
+    if (index == -1) {
+      logger.warning('同期済み状態に更新する保存酒が見つかりません: id=$savedId');
+      return;
+    }
+
+    final current = state.savedSakeList[index];
+    if (current.syncStatus == SavedSakeSyncStatus.serverSynced) return;
+
+    final updatedList = [...state.savedSakeList];
+    updatedList[index] = current.copyWith(
+      syncStatus: SavedSakeSyncStatus.serverSynced,
+    );
+    state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
+    await _persistSavedSakes();
+    logger.info('保存酒をサーバー同期済みとして更新しました: id=$savedId');
   }
 
   Future<bool> updateTimelineVisibility({
