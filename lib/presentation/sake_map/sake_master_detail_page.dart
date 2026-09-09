@@ -231,6 +231,10 @@ class _Details extends StatelessWidget {
             sakeValues: tasteAxes.map((axis) => axis.value).toList(),
             preferenceValues: preferenceAxes.map((axis) => axis.value).toList(),
           );
+    final preferenceMatchMessage = _preferenceMatchMessage(
+      tasteAxes,
+      preferenceAxes,
+    );
     final pairings = _pairingsFor(
       profile: profile,
       category: category,
@@ -311,7 +315,32 @@ class _Details extends StatelessWidget {
                 child: _PersonalRecordSection(
                   sake: detailSake,
                   notifier: savedSakeNotifier,
-                  preference: preference,
+                ),
+              ),
+            if (preferenceMatchPercent != null)
+              _Section(
+                title: 'あなたの好みマッチ度',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _PreferenceMatchSection(percent: preferenceMatchPercent),
+                    if (preferenceMatchMessage != null) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        preferenceMatchMessage,
+                        style: const TextStyle(
+                          color: _navy,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.auto_awesome_outlined),
+                      label: const Text('AIがあなた向けに評価（準備中）'),
+                    ),
+                  ],
                 ),
               ),
             if (tasteAxes.isNotEmpty ||
@@ -359,11 +388,6 @@ class _Details extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            if (preferenceMatchPercent != null)
-              _Section(
-                title: 'あなたの好みマッチ度',
-                child: _PreferenceMatchSection(percent: preferenceMatchPercent),
               ),
             if (description != null && description.trim().isNotEmpty)
               _Section(
@@ -755,14 +779,9 @@ Future<void> _addSakeRecord(
 }
 
 class _PersonalRecordSection extends StatelessWidget {
-  const _PersonalRecordSection({
-    required this.sake,
-    required this.notifier,
-    required this.preference,
-  });
+  const _PersonalRecordSection({required this.sake, required this.notifier});
   final Sake sake;
   final SavedSakeNotifier? notifier;
-  final TastePreferenceProfile? preference;
 
   @override
   Widget build(BuildContext context) {
@@ -777,11 +796,7 @@ class _PersonalRecordSection extends StatelessWidget {
       children: [
         const _SectionHeading(title: 'あなたの記録'),
         const SizedBox(height: 16),
-        _InlineRecordEditor(
-          notifier: savedNotifier,
-          sake: record,
-          preference: preference,
-        ),
+        _InlineRecordEditor(notifier: savedNotifier, sake: record),
       ],
     );
   }
@@ -834,6 +849,28 @@ int calculateTastePreferenceMatchPercent({
       ).reduce((sum, value) => sum + value) /
       sakeValues.length;
   return (30 + (1 - difference) * 70).round().clamp(30, 100).toInt();
+}
+
+String? _preferenceMatchMessage(
+  List<_TasteAxis> sakeAxes,
+  List<_TasteAxis>? preferenceAxes,
+) {
+  if (sakeAxes.isEmpty ||
+      preferenceAxes == null ||
+      sakeAxes.length != preferenceAxes.length) {
+    return null;
+  }
+  var closestIndex = 0;
+  var smallestDifference = double.infinity;
+  for (var index = 0; index < sakeAxes.length; index++) {
+    final difference = (sakeAxes[index].value - preferenceAxes[index].value)
+        .abs();
+    if (difference < smallestDifference) {
+      smallestDifference = difference;
+      closestIndex = index;
+    }
+  }
+  return '${sakeAxes[closestIndex].label}なお酒が好きなあなたにぴったりです。';
 }
 
 class _PreferenceMatchSection extends StatefulWidget {
@@ -929,6 +966,7 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     width: constraints.maxWidth * value / 100,
+                    height: 14,
                     child: const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1013,23 +1051,28 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _InlineRecordEditor extends StatefulWidget {
-  const _InlineRecordEditor({
-    required this.notifier,
-    required this.sake,
-    required this.preference,
-  });
+  const _InlineRecordEditor({required this.notifier, required this.sake});
   final SavedSakeNotifier notifier;
   final Sake sake;
-  final TastePreferenceProfile? preference;
 
   @override
   State<_InlineRecordEditor> createState() => _InlineRecordEditorState();
 }
 
 class _InlineRecordEditorState extends State<_InlineRecordEditor> {
+  static const _perceivedTasteAxes = <(String, String)>[
+    ('fruity', 'フルーティ'),
+    ('sweetness', '甘み'),
+    ('acidity', '酸味'),
+    ('umami', 'コク'),
+    ('kire', 'キレ'),
+    ('spiciness', '辛さ'),
+  ];
+
   late final TextEditingController _impressionController;
   late final TextEditingController _placeController;
   late Set<String> _tags;
+  late Map<String, double> _personalTasteRatings;
   DrinkingPlace? _selectedPlace;
   bool _isSaving = false;
   bool _isVisibilityUpdating = false;
@@ -1046,6 +1089,11 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     );
     _selectedPlace = widget.sake.drinkingPlace;
     _tags = {...(widget.sake.userTags ?? const <String>[])};
+    final savedRatings = widget.sake.personalTasteRatings;
+    _personalTasteRatings = {
+      for (final axis in _perceivedTasteAxes)
+        axis.$1: (savedRatings?[axis.$1] ?? 3).clamp(1, 5).toDouble(),
+    };
   }
 
   @override
@@ -1063,6 +1111,9 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       place: place.isEmpty ? null : place,
       drinkingPlace: _selectedPlace,
       userTags: _tags.toList(growable: false),
+      personalTasteRatings: _personalTasteRatings.map(
+        (key, value) => MapEntry(key, value.round()),
+      ),
     );
     await widget.notifier.updateSavedSake(updated);
     final savedId = updated.savedId;
@@ -1184,34 +1235,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       const Text(
-        '今日の一杯、どうだった？',
-        style: TextStyle(
-          color: _navy,
-          fontWeight: FontWeight.w700,
-          fontSize: 15,
-        ),
-      ),
-      const SizedBox(height: 8),
-      TextField(
-        controller: _impressionController,
-        maxLength: 200,
-        maxLines: 4,
-        textAlign: TextAlign.start,
-        style: const TextStyle(color: _navy, height: 1.5),
-        decoration: InputDecoration(
-          hintText: '香りや味、食事との相性を残す',
-          hintStyle: const TextStyle(color: Color(0xFF8B96A6)),
-          filled: true,
-          fillColor: const Color(0xFFF7F8FA),
-          contentPadding: const EdgeInsets.all(14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-      const SizedBox(height: 16),
-      const Text(
         '飲んだ場所',
         style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
       ),
@@ -1268,15 +1291,24 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             )
             .toList(growable: false),
       ),
-      if (widget.preference != null) ...[
-        const SizedBox(height: 20),
-        const Text(
-          'あなたの好みプロフィール',
-          style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        _PersonalTasteProfile(profile: widget.preference!),
-      ],
+      const SizedBox(height: 20),
+      const Text(
+        'あなたが感じた味わい',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 4),
+      const Text(
+        '各項目を5段階で記録できます。',
+        style: TextStyle(color: Color(0xFF647184), fontSize: 12),
+      ),
+      const SizedBox(height: 8),
+      _PerceivedTasteSliders(
+        axes: _perceivedTasteAxes,
+        values: _personalTasteRatings,
+        onChanged: (key, value) => setState(() {
+          _personalTasteRatings[key] = value;
+        }),
+      ),
       const SizedBox(height: 20),
       const Text(
         '思い出をのこそう',
@@ -1306,6 +1338,30 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             if (index < 2) const SizedBox(width: 8),
           ],
         ],
+      ),
+      const SizedBox(height: 20),
+      const Text(
+        '感想メモ',
+        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _impressionController,
+        maxLength: 200,
+        maxLines: 4,
+        textAlign: TextAlign.start,
+        style: const TextStyle(color: _navy, height: 1.5),
+        decoration: InputDecoration(
+          hintText: '香りや味、食事との相性を残す',
+          hintStyle: const TextStyle(color: Color(0xFF8B96A6)),
+          filled: true,
+          fillColor: const Color(0xFFF7F8FA),
+          contentPadding: const EdgeInsets.all(14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
       const SizedBox(height: 20),
       _timelineVisibility(),
@@ -1360,21 +1416,19 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   );
 }
 
-class _PersonalTasteProfile extends StatelessWidget {
-  const _PersonalTasteProfile({required this.profile});
+class _PerceivedTasteSliders extends StatelessWidget {
+  const _PerceivedTasteSliders({
+    required this.axes,
+    required this.values,
+    required this.onChanged,
+  });
 
-  final TastePreferenceProfile profile;
+  final List<(String, String)> axes;
+  final Map<String, double> values;
+  final void Function(String key, double value) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final axes = <(String, double)>[
-      ('フルーティ', profile.fruity),
-      ('甘み', profile.sweetness),
-      ('酸味', profile.acidity),
-      ('コク', profile.umami),
-      ('キレ', profile.kire),
-      ('辛さ', profile.spiciness),
-    ];
     return Column(
       children: [
         for (final axis in axes)
@@ -1385,23 +1439,40 @@ class _PersonalTasteProfile extends StatelessWidget {
                 SizedBox(
                   width: 72,
                   child: Text(
-                    axis.$1,
-                    style: const TextStyle(
-                      color: Color(0xFF647184),
-                      fontSize: 12,
-                    ),
+                    axis.$2,
+                    style: const TextStyle(color: _navy, fontSize: 13),
                   ),
                 ),
                 Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      value: axis.$2.clamp(0, 1).toDouble(),
-                      minHeight: 8,
-                      backgroundColor: const Color(0xFFE6EBF1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF4E9CD5),
-                      ),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: _orange,
+                      inactiveTrackColor: const Color(0xFFE6EBF1),
+                      thumbColor: _orange,
+                      overlayColor: _orange.withOpacity(.12),
+                      trackHeight: 5,
+                    ),
+                    child: Slider(
+                      value: values[axis.$1] ?? 3,
+                      min: 1,
+                      max: 5,
+                      divisions: 4,
+                      label: '${(values[axis.$1] ?? 3).round()}',
+                      semanticFormatterCallback: (value) =>
+                          '${axis.$2} ${value.round()}段階',
+                      onChanged: (value) => onChanged(axis.$1, value),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    '${(values[axis.$1] ?? 3).round()}/5',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Color(0xFF647184),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

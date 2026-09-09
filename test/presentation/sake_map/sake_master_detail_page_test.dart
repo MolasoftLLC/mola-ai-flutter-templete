@@ -78,6 +78,29 @@ void main() {
       100,
     );
   });
+
+  test('あなたが感じた味わいの5段階評価を保存用JSONに保持する', () {
+    const sake = Sake(
+      personalTasteRatings: {
+        'fruity': 5,
+        'sweetness': 3,
+        'acidity': 2,
+        'umami': 4,
+        'kire': 1,
+        'spiciness': 2,
+      },
+    );
+
+    expect(Sake.fromJson(sake.toJson()).personalTasteRatings, {
+      'fruity': 5,
+      'sweetness': 3,
+      'acidity': 2,
+      'umami': 4,
+      'kire': 1,
+      'spiciness': 2,
+    });
+  });
+
   testWidgets('sake_masterから取得した詳細を表示する', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));

@@ -58,6 +58,7 @@ class Sake with _$Sake {
     String? place,
     DrinkingPlace? drinkingPlace,
     List<String>? userTags,
+    Map<String, int>? personalTasteRatings,
     String? savedId,
     List<String>? imagePaths,
     String? username,

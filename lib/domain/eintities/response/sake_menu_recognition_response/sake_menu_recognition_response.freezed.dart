@@ -12,12 +12,10 @@ part of 'sake_menu_recognition_response.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 SakeMenuRecognitionResponse _$SakeMenuRecognitionResponseFromJson(
-  Map<String, dynamic> json,
-) {
+    Map<String, dynamic> json) {
   return _SakeMenuRecognitionResponse.fromJson(json);
 }
 
@@ -28,28 +26,23 @@ mixin _$SakeMenuRecognitionResponse {
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $SakeMenuRecognitionResponseCopyWith<SakeMenuRecognitionResponse>
-  get copyWith => throw _privateConstructorUsedError;
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
 abstract class $SakeMenuRecognitionResponseCopyWith<$Res> {
   factory $SakeMenuRecognitionResponseCopyWith(
-    SakeMenuRecognitionResponse value,
-    $Res Function(SakeMenuRecognitionResponse) then,
-  ) =
-      _$SakeMenuRecognitionResponseCopyWithImpl<
-        $Res,
-        SakeMenuRecognitionResponse
-      >;
+          SakeMenuRecognitionResponse value,
+          $Res Function(SakeMenuRecognitionResponse) then) =
+      _$SakeMenuRecognitionResponseCopyWithImpl<$Res,
+          SakeMenuRecognitionResponse>;
   @useResult
   $Res call({List<Sake>? sakes});
 }
 
 /// @nodoc
-class _$SakeMenuRecognitionResponseCopyWithImpl<
-  $Res,
-  $Val extends SakeMenuRecognitionResponse
->
+class _$SakeMenuRecognitionResponseCopyWithImpl<$Res,
+        $Val extends SakeMenuRecognitionResponse>
     implements $SakeMenuRecognitionResponseCopyWith<$Res> {
   _$SakeMenuRecognitionResponseCopyWithImpl(this._value, this._then);
 
@@ -60,16 +53,15 @@ class _$SakeMenuRecognitionResponseCopyWithImpl<
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? sakes = freezed}) {
-    return _then(
-      _value.copyWith(
-            sakes: freezed == sakes
-                ? _value.sakes
-                : sakes // ignore: cast_nullable_to_non_nullable
-                      as List<Sake>?,
-          )
-          as $Val,
-    );
+  $Res call({
+    Object? sakes = freezed,
+  }) {
+    return _then(_value.copyWith(
+      sakes: freezed == sakes
+          ? _value.sakes
+          : sakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>?,
+    ) as $Val);
   }
 }
 
@@ -77,9 +69,9 @@ class _$SakeMenuRecognitionResponseCopyWithImpl<
 abstract class _$$SakeMenuRecognitionResponseImplCopyWith<$Res>
     implements $SakeMenuRecognitionResponseCopyWith<$Res> {
   factory _$$SakeMenuRecognitionResponseImplCopyWith(
-    _$SakeMenuRecognitionResponseImpl value,
-    $Res Function(_$SakeMenuRecognitionResponseImpl) then,
-  ) = __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>;
+          _$SakeMenuRecognitionResponseImpl value,
+          $Res Function(_$SakeMenuRecognitionResponseImpl) then) =
+      __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<Sake>? sakes});
@@ -87,28 +79,25 @@ abstract class _$$SakeMenuRecognitionResponseImplCopyWith<$Res>
 
 /// @nodoc
 class __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>
-    extends
-        _$SakeMenuRecognitionResponseCopyWithImpl<
-          $Res,
-          _$SakeMenuRecognitionResponseImpl
-        >
+    extends _$SakeMenuRecognitionResponseCopyWithImpl<$Res,
+        _$SakeMenuRecognitionResponseImpl>
     implements _$$SakeMenuRecognitionResponseImplCopyWith<$Res> {
   __$$SakeMenuRecognitionResponseImplCopyWithImpl(
-    _$SakeMenuRecognitionResponseImpl _value,
-    $Res Function(_$SakeMenuRecognitionResponseImpl) _then,
-  ) : super(_value, _then);
+      _$SakeMenuRecognitionResponseImpl _value,
+      $Res Function(_$SakeMenuRecognitionResponseImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? sakes = freezed}) {
-    return _then(
-      _$SakeMenuRecognitionResponseImpl(
-        sakes: freezed == sakes
-            ? _value._sakes
-            : sakes // ignore: cast_nullable_to_non_nullable
-                  as List<Sake>?,
-      ),
-    );
+  $Res call({
+    Object? sakes = freezed,
+  }) {
+    return _then(_$SakeMenuRecognitionResponseImpl(
+      sakes: freezed == sakes
+          ? _value._sakes
+          : sakes // ignore: cast_nullable_to_non_nullable
+              as List<Sake>?,
+    ));
   }
 }
 
@@ -117,11 +106,11 @@ class __$$SakeMenuRecognitionResponseImplCopyWithImpl<$Res>
 class _$SakeMenuRecognitionResponseImpl
     implements _SakeMenuRecognitionResponse {
   const _$SakeMenuRecognitionResponseImpl({final List<Sake>? sakes})
-    : _sakes = sakes;
+      : _sakes = sakes;
 
   factory _$SakeMenuRecognitionResponseImpl.fromJson(
-    Map<String, dynamic> json,
-  ) => _$$SakeMenuRecognitionResponseImplFromJson(json);
+          Map<String, dynamic> json) =>
+      _$$SakeMenuRecognitionResponseImplFromJson(json);
 
   final List<Sake>? _sakes;
   @override
@@ -155,14 +144,14 @@ class _$SakeMenuRecognitionResponseImpl
   @override
   @pragma('vm:prefer-inline')
   _$$SakeMenuRecognitionResponseImplCopyWith<_$SakeMenuRecognitionResponseImpl>
-  get copyWith =>
-      __$$SakeMenuRecognitionResponseImplCopyWithImpl<
-        _$SakeMenuRecognitionResponseImpl
-      >(this, _$identity);
+      get copyWith => __$$SakeMenuRecognitionResponseImplCopyWithImpl<
+          _$SakeMenuRecognitionResponseImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SakeMenuRecognitionResponseImplToJson(this);
+    return _$$SakeMenuRecognitionResponseImplToJson(
+      this,
+    );
   }
 }
 
@@ -179,7 +168,7 @@ abstract class _SakeMenuRecognitionResponse
   @override
   @JsonKey(ignore: true)
   _$$SakeMenuRecognitionResponseImplCopyWith<_$SakeMenuRecognitionResponseImpl>
-  get copyWith => throw _privateConstructorUsedError;
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 DrinkingPlace _$DrinkingPlaceFromJson(Map<String, dynamic> json) {
@@ -206,20 +195,18 @@ mixin _$DrinkingPlace {
 /// @nodoc
 abstract class $DrinkingPlaceCopyWith<$Res> {
   factory $DrinkingPlaceCopyWith(
-    DrinkingPlace value,
-    $Res Function(DrinkingPlace) then,
-  ) = _$DrinkingPlaceCopyWithImpl<$Res, DrinkingPlace>;
+          DrinkingPlace value, $Res Function(DrinkingPlace) then) =
+      _$DrinkingPlaceCopyWithImpl<$Res, DrinkingPlace>;
   @useResult
-  $Res call({
-    String? venueId,
-    String? providerPlaceId,
-    String displayName,
-    String? formattedAddress,
-    double? latitude,
-    double? longitude,
-    PlaceVisibility visibility,
-    bool mapPhotoPublic,
-  });
+  $Res call(
+      {String? venueId,
+      String? providerPlaceId,
+      String displayName,
+      String? formattedAddress,
+      double? latitude,
+      double? longitude,
+      PlaceVisibility visibility,
+      bool mapPhotoPublic});
 }
 
 /// @nodoc
@@ -244,43 +231,40 @@ class _$DrinkingPlaceCopyWithImpl<$Res, $Val extends DrinkingPlace>
     Object? visibility = null,
     Object? mapPhotoPublic = null,
   }) {
-    return _then(
-      _value.copyWith(
-            venueId: freezed == venueId
-                ? _value.venueId
-                : venueId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            providerPlaceId: freezed == providerPlaceId
-                ? _value.providerPlaceId
-                : providerPlaceId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            displayName: null == displayName
-                ? _value.displayName
-                : displayName // ignore: cast_nullable_to_non_nullable
-                      as String,
-            formattedAddress: freezed == formattedAddress
-                ? _value.formattedAddress
-                : formattedAddress // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            latitude: freezed == latitude
-                ? _value.latitude
-                : latitude // ignore: cast_nullable_to_non_nullable
-                      as double?,
-            longitude: freezed == longitude
-                ? _value.longitude
-                : longitude // ignore: cast_nullable_to_non_nullable
-                      as double?,
-            visibility: null == visibility
-                ? _value.visibility
-                : visibility // ignore: cast_nullable_to_non_nullable
-                      as PlaceVisibility,
-            mapPhotoPublic: null == mapPhotoPublic
-                ? _value.mapPhotoPublic
-                : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
-                      as bool,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      venueId: freezed == venueId
+          ? _value.venueId
+          : venueId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      providerPlaceId: freezed == providerPlaceId
+          ? _value.providerPlaceId
+          : providerPlaceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: null == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      formattedAddress: freezed == formattedAddress
+          ? _value.formattedAddress
+          : formattedAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      latitude: freezed == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double?,
+      longitude: freezed == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double?,
+      visibility: null == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as PlaceVisibility,
+      mapPhotoPublic: null == mapPhotoPublic
+          ? _value.mapPhotoPublic
+          : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
   }
 }
 
@@ -288,21 +272,19 @@ class _$DrinkingPlaceCopyWithImpl<$Res, $Val extends DrinkingPlace>
 abstract class _$$DrinkingPlaceImplCopyWith<$Res>
     implements $DrinkingPlaceCopyWith<$Res> {
   factory _$$DrinkingPlaceImplCopyWith(
-    _$DrinkingPlaceImpl value,
-    $Res Function(_$DrinkingPlaceImpl) then,
-  ) = __$$DrinkingPlaceImplCopyWithImpl<$Res>;
+          _$DrinkingPlaceImpl value, $Res Function(_$DrinkingPlaceImpl) then) =
+      __$$DrinkingPlaceImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String? venueId,
-    String? providerPlaceId,
-    String displayName,
-    String? formattedAddress,
-    double? latitude,
-    double? longitude,
-    PlaceVisibility visibility,
-    bool mapPhotoPublic,
-  });
+  $Res call(
+      {String? venueId,
+      String? providerPlaceId,
+      String displayName,
+      String? formattedAddress,
+      double? latitude,
+      double? longitude,
+      PlaceVisibility visibility,
+      bool mapPhotoPublic});
 }
 
 /// @nodoc
@@ -310,9 +292,8 @@ class __$$DrinkingPlaceImplCopyWithImpl<$Res>
     extends _$DrinkingPlaceCopyWithImpl<$Res, _$DrinkingPlaceImpl>
     implements _$$DrinkingPlaceImplCopyWith<$Res> {
   __$$DrinkingPlaceImplCopyWithImpl(
-    _$DrinkingPlaceImpl _value,
-    $Res Function(_$DrinkingPlaceImpl) _then,
-  ) : super(_value, _then);
+      _$DrinkingPlaceImpl _value, $Res Function(_$DrinkingPlaceImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -326,58 +307,55 @@ class __$$DrinkingPlaceImplCopyWithImpl<$Res>
     Object? visibility = null,
     Object? mapPhotoPublic = null,
   }) {
-    return _then(
-      _$DrinkingPlaceImpl(
-        venueId: freezed == venueId
-            ? _value.venueId
-            : venueId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        providerPlaceId: freezed == providerPlaceId
-            ? _value.providerPlaceId
-            : providerPlaceId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        displayName: null == displayName
-            ? _value.displayName
-            : displayName // ignore: cast_nullable_to_non_nullable
-                  as String,
-        formattedAddress: freezed == formattedAddress
-            ? _value.formattedAddress
-            : formattedAddress // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        latitude: freezed == latitude
-            ? _value.latitude
-            : latitude // ignore: cast_nullable_to_non_nullable
-                  as double?,
-        longitude: freezed == longitude
-            ? _value.longitude
-            : longitude // ignore: cast_nullable_to_non_nullable
-                  as double?,
-        visibility: null == visibility
-            ? _value.visibility
-            : visibility // ignore: cast_nullable_to_non_nullable
-                  as PlaceVisibility,
-        mapPhotoPublic: null == mapPhotoPublic
-            ? _value.mapPhotoPublic
-            : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
-                  as bool,
-      ),
-    );
+    return _then(_$DrinkingPlaceImpl(
+      venueId: freezed == venueId
+          ? _value.venueId
+          : venueId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      providerPlaceId: freezed == providerPlaceId
+          ? _value.providerPlaceId
+          : providerPlaceId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: null == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      formattedAddress: freezed == formattedAddress
+          ? _value.formattedAddress
+          : formattedAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      latitude: freezed == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double?,
+      longitude: freezed == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double?,
+      visibility: null == visibility
+          ? _value.visibility
+          : visibility // ignore: cast_nullable_to_non_nullable
+              as PlaceVisibility,
+      mapPhotoPublic: null == mapPhotoPublic
+          ? _value.mapPhotoPublic
+          : mapPhotoPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$DrinkingPlaceImpl implements _DrinkingPlace {
-  const _$DrinkingPlaceImpl({
-    this.venueId,
-    this.providerPlaceId,
-    required this.displayName,
-    this.formattedAddress,
-    this.latitude,
-    this.longitude,
-    this.visibility = PlaceVisibility.private,
-    this.mapPhotoPublic = false,
-  });
+  const _$DrinkingPlaceImpl(
+      {this.venueId,
+      this.providerPlaceId,
+      required this.displayName,
+      this.formattedAddress,
+      this.latitude,
+      this.longitude,
+      this.visibility = PlaceVisibility.private,
+      this.mapPhotoPublic = false});
 
   factory _$DrinkingPlaceImpl.fromJson(Map<String, dynamic> json) =>
       _$$DrinkingPlaceImplFromJson(json);
@@ -431,16 +409,15 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    venueId,
-    providerPlaceId,
-    displayName,
-    formattedAddress,
-    latitude,
-    longitude,
-    visibility,
-    mapPhotoPublic,
-  );
+      runtimeType,
+      venueId,
+      providerPlaceId,
+      displayName,
+      formattedAddress,
+      latitude,
+      longitude,
+      visibility,
+      mapPhotoPublic);
 
   @JsonKey(ignore: true)
   @override
@@ -450,21 +427,22 @@ class _$DrinkingPlaceImpl implements _DrinkingPlace {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DrinkingPlaceImplToJson(this);
+    return _$$DrinkingPlaceImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _DrinkingPlace implements DrinkingPlace {
-  const factory _DrinkingPlace({
-    final String? venueId,
-    final String? providerPlaceId,
-    required final String displayName,
-    final String? formattedAddress,
-    final double? latitude,
-    final double? longitude,
-    final PlaceVisibility visibility,
-    final bool mapPhotoPublic,
-  }) = _$DrinkingPlaceImpl;
+  const factory _DrinkingPlace(
+      {final String? venueId,
+      final String? providerPlaceId,
+      required final String displayName,
+      final String? formattedAddress,
+      final double? latitude,
+      final double? longitude,
+      final PlaceVisibility visibility,
+      final bool mapPhotoPublic}) = _$DrinkingPlaceImpl;
 
   factory _DrinkingPlace.fromJson(Map<String, dynamic> json) =
       _$DrinkingPlaceImpl.fromJson;
@@ -512,6 +490,8 @@ mixin _$Sake {
   String? get place => throw _privateConstructorUsedError;
   DrinkingPlace? get drinkingPlace => throw _privateConstructorUsedError;
   List<String>? get userTags => throw _privateConstructorUsedError;
+  Map<String, int>? get personalTasteRatings =>
+      throw _privateConstructorUsedError;
   String? get savedId => throw _privateConstructorUsedError;
   List<String>? get imagePaths => throw _privateConstructorUsedError;
   String? get username => throw _privateConstructorUsedError;
@@ -538,36 +518,36 @@ abstract class $SakeCopyWith<$Res> {
   factory $SakeCopyWith(Sake value, $Res Function(Sake) then) =
       _$SakeCopyWithImpl<$Res, Sake>;
   @useResult
-  $Res call({
-    int? sakeId,
-    int? brandId,
-    String? name,
-    String? brewery,
-    List<String>? types,
-    String? taste,
-    int? sakeMeterValue,
-    String? type,
-    String? price,
-    String? description,
-    int? recommendationScore,
-    String? impression,
-    String? place,
-    DrinkingPlace? drinkingPlace,
-    List<String>? userTags,
-    String? savedId,
-    List<String>? imagePaths,
-    String? username,
-    String? displayName,
-    String? iconUrl,
-    String? prefectureCode,
-    String? primaryImageUrl,
-    Map<String, dynamic>? community,
-    List<Map<String, dynamic>>? sameBrandSakes,
-    int envyCount,
-    @JsonKey(name: 'is_public') bool isPublic,
-    @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
-    SavedSakeSyncStatus syncStatus,
-  });
+  $Res call(
+      {int? sakeId,
+      int? brandId,
+      String? name,
+      String? brewery,
+      List<String>? types,
+      String? taste,
+      int? sakeMeterValue,
+      String? type,
+      String? price,
+      String? description,
+      int? recommendationScore,
+      String? impression,
+      String? place,
+      DrinkingPlace? drinkingPlace,
+      List<String>? userTags,
+      Map<String, int>? personalTasteRatings,
+      String? savedId,
+      List<String>? imagePaths,
+      String? username,
+      String? displayName,
+      String? iconUrl,
+      String? prefectureCode,
+      String? primaryImageUrl,
+      Map<String, dynamic>? community,
+      List<Map<String, dynamic>>? sameBrandSakes,
+      int envyCount,
+      @JsonKey(name: 'is_public') bool isPublic,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+      SavedSakeSyncStatus syncStatus});
 
   $DrinkingPlaceCopyWith<$Res>? get drinkingPlace;
 }
@@ -600,6 +580,7 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? place = freezed,
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
+    Object? personalTasteRatings = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
     Object? username = freezed,
@@ -613,119 +594,120 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? isPublic = null,
     Object? syncStatus = null,
   }) {
-    return _then(
-      _value.copyWith(
-            sakeId: freezed == sakeId
-                ? _value.sakeId
-                : sakeId // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            brandId: freezed == brandId
-                ? _value.brandId
-                : brandId // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            name: freezed == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            brewery: freezed == brewery
-                ? _value.brewery
-                : brewery // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            types: freezed == types
-                ? _value.types
-                : types // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            taste: freezed == taste
-                ? _value.taste
-                : taste // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            sakeMeterValue: freezed == sakeMeterValue
-                ? _value.sakeMeterValue
-                : sakeMeterValue // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            type: freezed == type
-                ? _value.type
-                : type // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            price: freezed == price
-                ? _value.price
-                : price // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            description: freezed == description
-                ? _value.description
-                : description // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            recommendationScore: freezed == recommendationScore
-                ? _value.recommendationScore
-                : recommendationScore // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            impression: freezed == impression
-                ? _value.impression
-                : impression // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            place: freezed == place
-                ? _value.place
-                : place // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            drinkingPlace: freezed == drinkingPlace
-                ? _value.drinkingPlace
-                : drinkingPlace // ignore: cast_nullable_to_non_nullable
-                      as DrinkingPlace?,
-            userTags: freezed == userTags
-                ? _value.userTags
-                : userTags // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            savedId: freezed == savedId
-                ? _value.savedId
-                : savedId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            imagePaths: freezed == imagePaths
-                ? _value.imagePaths
-                : imagePaths // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            username: freezed == username
-                ? _value.username
-                : username // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            displayName: freezed == displayName
-                ? _value.displayName
-                : displayName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            iconUrl: freezed == iconUrl
-                ? _value.iconUrl
-                : iconUrl // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            prefectureCode: freezed == prefectureCode
-                ? _value.prefectureCode
-                : prefectureCode // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            primaryImageUrl: freezed == primaryImageUrl
-                ? _value.primaryImageUrl
-                : primaryImageUrl // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            community: freezed == community
-                ? _value.community
-                : community // ignore: cast_nullable_to_non_nullable
-                      as Map<String, dynamic>?,
-            sameBrandSakes: freezed == sameBrandSakes
-                ? _value.sameBrandSakes
-                : sameBrandSakes // ignore: cast_nullable_to_non_nullable
-                      as List<Map<String, dynamic>>?,
-            envyCount: null == envyCount
-                ? _value.envyCount
-                : envyCount // ignore: cast_nullable_to_non_nullable
-                      as int,
-            isPublic: null == isPublic
-                ? _value.isPublic
-                : isPublic // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            syncStatus: null == syncStatus
-                ? _value.syncStatus
-                : syncStatus // ignore: cast_nullable_to_non_nullable
-                      as SavedSakeSyncStatus,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      sakeId: freezed == sakeId
+          ? _value.sakeId
+          : sakeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      brandId: freezed == brandId
+          ? _value.brandId
+          : brandId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
+      brewery: freezed == brewery
+          ? _value.brewery
+          : brewery // ignore: cast_nullable_to_non_nullable
+              as String?,
+      types: freezed == types
+          ? _value.types
+          : types // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      taste: freezed == taste
+          ? _value.taste
+          : taste // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeMeterValue: freezed == sakeMeterValue
+          ? _value.sakeMeterValue
+          : sakeMeterValue // ignore: cast_nullable_to_non_nullable
+              as int?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      recommendationScore: freezed == recommendationScore
+          ? _value.recommendationScore
+          : recommendationScore // ignore: cast_nullable_to_non_nullable
+              as int?,
+      impression: freezed == impression
+          ? _value.impression
+          : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      place: freezed == place
+          ? _value.place
+          : place // ignore: cast_nullable_to_non_nullable
+              as String?,
+      drinkingPlace: freezed == drinkingPlace
+          ? _value.drinkingPlace
+          : drinkingPlace // ignore: cast_nullable_to_non_nullable
+              as DrinkingPlace?,
+      userTags: freezed == userTags
+          ? _value.userTags
+          : userTags // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      personalTasteRatings: freezed == personalTasteRatings
+          ? _value.personalTasteRatings
+          : personalTasteRatings // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>?,
+      savedId: freezed == savedId
+          ? _value.savedId
+          : savedId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imagePaths: freezed == imagePaths
+          ? _value.imagePaths
+          : imagePaths // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      username: freezed == username
+          ? _value.username
+          : username // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: freezed == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      prefectureCode: freezed == prefectureCode
+          ? _value.prefectureCode
+          : prefectureCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      primaryImageUrl: freezed == primaryImageUrl
+          ? _value.primaryImageUrl
+          : primaryImageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      community: freezed == community
+          ? _value.community
+          : community // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      sameBrandSakes: freezed == sameBrandSakes
+          ? _value.sameBrandSakes
+          : sameBrandSakes // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>?,
+      envyCount: null == envyCount
+          ? _value.envyCount
+          : envyCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isPublic: null == isPublic
+          ? _value.isPublic
+          : isPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
+      syncStatus: null == syncStatus
+          ? _value.syncStatus
+          : syncStatus // ignore: cast_nullable_to_non_nullable
+              as SavedSakeSyncStatus,
+    ) as $Val);
   }
 
   @override
@@ -744,41 +726,40 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
 /// @nodoc
 abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
   factory _$$SakeImplCopyWith(
-    _$SakeImpl value,
-    $Res Function(_$SakeImpl) then,
-  ) = __$$SakeImplCopyWithImpl<$Res>;
+          _$SakeImpl value, $Res Function(_$SakeImpl) then) =
+      __$$SakeImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    int? sakeId,
-    int? brandId,
-    String? name,
-    String? brewery,
-    List<String>? types,
-    String? taste,
-    int? sakeMeterValue,
-    String? type,
-    String? price,
-    String? description,
-    int? recommendationScore,
-    String? impression,
-    String? place,
-    DrinkingPlace? drinkingPlace,
-    List<String>? userTags,
-    String? savedId,
-    List<String>? imagePaths,
-    String? username,
-    String? displayName,
-    String? iconUrl,
-    String? prefectureCode,
-    String? primaryImageUrl,
-    Map<String, dynamic>? community,
-    List<Map<String, dynamic>>? sameBrandSakes,
-    int envyCount,
-    @JsonKey(name: 'is_public') bool isPublic,
-    @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
-    SavedSakeSyncStatus syncStatus,
-  });
+  $Res call(
+      {int? sakeId,
+      int? brandId,
+      String? name,
+      String? brewery,
+      List<String>? types,
+      String? taste,
+      int? sakeMeterValue,
+      String? type,
+      String? price,
+      String? description,
+      int? recommendationScore,
+      String? impression,
+      String? place,
+      DrinkingPlace? drinkingPlace,
+      List<String>? userTags,
+      Map<String, int>? personalTasteRatings,
+      String? savedId,
+      List<String>? imagePaths,
+      String? username,
+      String? displayName,
+      String? iconUrl,
+      String? prefectureCode,
+      String? primaryImageUrl,
+      Map<String, dynamic>? community,
+      List<Map<String, dynamic>>? sameBrandSakes,
+      int envyCount,
+      @JsonKey(name: 'is_public') bool isPublic,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+      SavedSakeSyncStatus syncStatus});
 
   @override
   $DrinkingPlaceCopyWith<$Res>? get drinkingPlace;
@@ -789,7 +770,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     extends _$SakeCopyWithImpl<$Res, _$SakeImpl>
     implements _$$SakeImplCopyWith<$Res> {
   __$$SakeImplCopyWithImpl(_$SakeImpl _value, $Res Function(_$SakeImpl) _then)
-    : super(_value, _then);
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -809,6 +790,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? place = freezed,
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
+    Object? personalTasteRatings = freezed,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
     Object? username = freezed,
@@ -822,158 +804,162 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? isPublic = null,
     Object? syncStatus = null,
   }) {
-    return _then(
-      _$SakeImpl(
-        sakeId: freezed == sakeId
-            ? _value.sakeId
-            : sakeId // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        brandId: freezed == brandId
-            ? _value.brandId
-            : brandId // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        name: freezed == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        brewery: freezed == brewery
-            ? _value.brewery
-            : brewery // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        types: freezed == types
-            ? _value._types
-            : types // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        taste: freezed == taste
-            ? _value.taste
-            : taste // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        sakeMeterValue: freezed == sakeMeterValue
-            ? _value.sakeMeterValue
-            : sakeMeterValue // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        type: freezed == type
-            ? _value.type
-            : type // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        price: freezed == price
-            ? _value.price
-            : price // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        description: freezed == description
-            ? _value.description
-            : description // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        recommendationScore: freezed == recommendationScore
-            ? _value.recommendationScore
-            : recommendationScore // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        impression: freezed == impression
-            ? _value.impression
-            : impression // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        place: freezed == place
-            ? _value.place
-            : place // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        drinkingPlace: freezed == drinkingPlace
-            ? _value.drinkingPlace
-            : drinkingPlace // ignore: cast_nullable_to_non_nullable
-                  as DrinkingPlace?,
-        userTags: freezed == userTags
-            ? _value._userTags
-            : userTags // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        savedId: freezed == savedId
-            ? _value.savedId
-            : savedId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        imagePaths: freezed == imagePaths
-            ? _value._imagePaths
-            : imagePaths // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        username: freezed == username
-            ? _value.username
-            : username // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        displayName: freezed == displayName
-            ? _value.displayName
-            : displayName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        iconUrl: freezed == iconUrl
-            ? _value.iconUrl
-            : iconUrl // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        prefectureCode: freezed == prefectureCode
-            ? _value.prefectureCode
-            : prefectureCode // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        primaryImageUrl: freezed == primaryImageUrl
-            ? _value.primaryImageUrl
-            : primaryImageUrl // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        community: freezed == community
-            ? _value._community
-            : community // ignore: cast_nullable_to_non_nullable
-                  as Map<String, dynamic>?,
-        sameBrandSakes: freezed == sameBrandSakes
-            ? _value._sameBrandSakes
-            : sameBrandSakes // ignore: cast_nullable_to_non_nullable
-                  as List<Map<String, dynamic>>?,
-        envyCount: null == envyCount
-            ? _value.envyCount
-            : envyCount // ignore: cast_nullable_to_non_nullable
-                  as int,
-        isPublic: null == isPublic
-            ? _value.isPublic
-            : isPublic // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        syncStatus: null == syncStatus
-            ? _value.syncStatus
-            : syncStatus // ignore: cast_nullable_to_non_nullable
-                  as SavedSakeSyncStatus,
-      ),
-    );
+    return _then(_$SakeImpl(
+      sakeId: freezed == sakeId
+          ? _value.sakeId
+          : sakeId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      brandId: freezed == brandId
+          ? _value.brandId
+          : brandId // ignore: cast_nullable_to_non_nullable
+              as int?,
+      name: freezed == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String?,
+      brewery: freezed == brewery
+          ? _value.brewery
+          : brewery // ignore: cast_nullable_to_non_nullable
+              as String?,
+      types: freezed == types
+          ? _value._types
+          : types // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      taste: freezed == taste
+          ? _value.taste
+          : taste // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeMeterValue: freezed == sakeMeterValue
+          ? _value.sakeMeterValue
+          : sakeMeterValue // ignore: cast_nullable_to_non_nullable
+              as int?,
+      type: freezed == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String?,
+      price: freezed == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      recommendationScore: freezed == recommendationScore
+          ? _value.recommendationScore
+          : recommendationScore // ignore: cast_nullable_to_non_nullable
+              as int?,
+      impression: freezed == impression
+          ? _value.impression
+          : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      place: freezed == place
+          ? _value.place
+          : place // ignore: cast_nullable_to_non_nullable
+              as String?,
+      drinkingPlace: freezed == drinkingPlace
+          ? _value.drinkingPlace
+          : drinkingPlace // ignore: cast_nullable_to_non_nullable
+              as DrinkingPlace?,
+      userTags: freezed == userTags
+          ? _value._userTags
+          : userTags // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      personalTasteRatings: freezed == personalTasteRatings
+          ? _value._personalTasteRatings
+          : personalTasteRatings // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>?,
+      savedId: freezed == savedId
+          ? _value.savedId
+          : savedId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imagePaths: freezed == imagePaths
+          ? _value._imagePaths
+          : imagePaths // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      username: freezed == username
+          ? _value.username
+          : username // ignore: cast_nullable_to_non_nullable
+              as String?,
+      displayName: freezed == displayName
+          ? _value.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      iconUrl: freezed == iconUrl
+          ? _value.iconUrl
+          : iconUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      prefectureCode: freezed == prefectureCode
+          ? _value.prefectureCode
+          : prefectureCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      primaryImageUrl: freezed == primaryImageUrl
+          ? _value.primaryImageUrl
+          : primaryImageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      community: freezed == community
+          ? _value._community
+          : community // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      sameBrandSakes: freezed == sameBrandSakes
+          ? _value._sameBrandSakes
+          : sameBrandSakes // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>?,
+      envyCount: null == envyCount
+          ? _value.envyCount
+          : envyCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isPublic: null == isPublic
+          ? _value.isPublic
+          : isPublic // ignore: cast_nullable_to_non_nullable
+              as bool,
+      syncStatus: null == syncStatus
+          ? _value.syncStatus
+          : syncStatus // ignore: cast_nullable_to_non_nullable
+              as SavedSakeSyncStatus,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$SakeImpl implements _Sake {
-  const _$SakeImpl({
-    this.sakeId,
-    this.brandId,
-    this.name,
-    this.brewery,
-    final List<String>? types,
-    this.taste,
-    this.sakeMeterValue,
-    this.type,
-    this.price,
-    this.description,
-    this.recommendationScore,
-    this.impression,
-    this.place,
-    this.drinkingPlace,
-    final List<String>? userTags,
-    this.savedId,
-    final List<String>? imagePaths,
-    this.username,
-    this.displayName,
-    this.iconUrl,
-    this.prefectureCode,
-    this.primaryImageUrl,
-    final Map<String, dynamic>? community,
-    final List<Map<String, dynamic>>? sameBrandSakes,
-    this.envyCount = 0,
-    @JsonKey(name: 'is_public') this.isPublic = false,
-    @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
-    this.syncStatus = SavedSakeSyncStatus.localOnly,
-  }) : _types = types,
-       _userTags = userTags,
-       _imagePaths = imagePaths,
-       _community = community,
-       _sameBrandSakes = sameBrandSakes;
+  const _$SakeImpl(
+      {this.sakeId,
+      this.brandId,
+      this.name,
+      this.brewery,
+      final List<String>? types,
+      this.taste,
+      this.sakeMeterValue,
+      this.type,
+      this.price,
+      this.description,
+      this.recommendationScore,
+      this.impression,
+      this.place,
+      this.drinkingPlace,
+      final List<String>? userTags,
+      final Map<String, int>? personalTasteRatings,
+      this.savedId,
+      final List<String>? imagePaths,
+      this.username,
+      this.displayName,
+      this.iconUrl,
+      this.prefectureCode,
+      this.primaryImageUrl,
+      final Map<String, dynamic>? community,
+      final List<Map<String, dynamic>>? sameBrandSakes,
+      this.envyCount = 0,
+      @JsonKey(name: 'is_public') this.isPublic = false,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+      this.syncStatus = SavedSakeSyncStatus.localOnly})
+      : _types = types,
+        _userTags = userTags,
+        _personalTasteRatings = personalTasteRatings,
+        _imagePaths = imagePaths,
+        _community = community,
+        _sameBrandSakes = sameBrandSakes;
 
   factory _$SakeImpl.fromJson(Map<String, dynamic> json) =>
       _$$SakeImplFromJson(json);
@@ -1022,6 +1008,17 @@ class _$SakeImpl implements _Sake {
     if (_userTags is EqualUnmodifiableListView) return _userTags;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
+  }
+
+  final Map<String, int>? _personalTasteRatings;
+  @override
+  Map<String, int>? get personalTasteRatings {
+    final value = _personalTasteRatings;
+    if (value == null) return null;
+    if (_personalTasteRatings is EqualUnmodifiableMapView)
+      return _personalTasteRatings;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
   }
 
   @override
@@ -1078,7 +1075,7 @@ class _$SakeImpl implements _Sake {
 
   @override
   String toString() {
-    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
+    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -1106,11 +1103,11 @@ class _$SakeImpl implements _Sake {
             (identical(other.drinkingPlace, drinkingPlace) ||
                 other.drinkingPlace == drinkingPlace) &&
             const DeepCollectionEquality().equals(other._userTags, _userTags) &&
+            const DeepCollectionEquality()
+                .equals(other._personalTasteRatings, _personalTasteRatings) &&
             (identical(other.savedId, savedId) || other.savedId == savedId) &&
-            const DeepCollectionEquality().equals(
-              other._imagePaths,
-              _imagePaths,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._imagePaths, _imagePaths) &&
             (identical(other.username, username) ||
                 other.username == username) &&
             (identical(other.displayName, displayName) ||
@@ -1120,14 +1117,10 @@ class _$SakeImpl implements _Sake {
                 other.prefectureCode == prefectureCode) &&
             (identical(other.primaryImageUrl, primaryImageUrl) ||
                 other.primaryImageUrl == primaryImageUrl) &&
-            const DeepCollectionEquality().equals(
-              other._community,
-              _community,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._sameBrandSakes,
-              _sameBrandSakes,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._community, _community) &&
+            const DeepCollectionEquality()
+                .equals(other._sameBrandSakes, _sameBrandSakes) &&
             (identical(other.envyCount, envyCount) ||
                 other.envyCount == envyCount) &&
             (identical(other.isPublic, isPublic) ||
@@ -1139,35 +1132,36 @@ class _$SakeImpl implements _Sake {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hashAll([
-    runtimeType,
-    sakeId,
-    brandId,
-    name,
-    brewery,
-    const DeepCollectionEquality().hash(_types),
-    taste,
-    sakeMeterValue,
-    type,
-    price,
-    description,
-    recommendationScore,
-    impression,
-    place,
-    drinkingPlace,
-    const DeepCollectionEquality().hash(_userTags),
-    savedId,
-    const DeepCollectionEquality().hash(_imagePaths),
-    username,
-    displayName,
-    iconUrl,
-    prefectureCode,
-    primaryImageUrl,
-    const DeepCollectionEquality().hash(_community),
-    const DeepCollectionEquality().hash(_sameBrandSakes),
-    envyCount,
-    isPublic,
-    syncStatus,
-  ]);
+        runtimeType,
+        sakeId,
+        brandId,
+        name,
+        brewery,
+        const DeepCollectionEquality().hash(_types),
+        taste,
+        sakeMeterValue,
+        type,
+        price,
+        description,
+        recommendationScore,
+        impression,
+        place,
+        drinkingPlace,
+        const DeepCollectionEquality().hash(_userTags),
+        const DeepCollectionEquality().hash(_personalTasteRatings),
+        savedId,
+        const DeepCollectionEquality().hash(_imagePaths),
+        username,
+        displayName,
+        iconUrl,
+        prefectureCode,
+        primaryImageUrl,
+        const DeepCollectionEquality().hash(_community),
+        const DeepCollectionEquality().hash(_sameBrandSakes),
+        envyCount,
+        isPublic,
+        syncStatus
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -1177,41 +1171,43 @@ class _$SakeImpl implements _Sake {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SakeImplToJson(this);
+    return _$$SakeImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _Sake implements Sake {
-  const factory _Sake({
-    final int? sakeId,
-    final int? brandId,
-    final String? name,
-    final String? brewery,
-    final List<String>? types,
-    final String? taste,
-    final int? sakeMeterValue,
-    final String? type,
-    final String? price,
-    final String? description,
-    final int? recommendationScore,
-    final String? impression,
-    final String? place,
-    final DrinkingPlace? drinkingPlace,
-    final List<String>? userTags,
-    final String? savedId,
-    final List<String>? imagePaths,
-    final String? username,
-    final String? displayName,
-    final String? iconUrl,
-    final String? prefectureCode,
-    final String? primaryImageUrl,
-    final Map<String, dynamic>? community,
-    final List<Map<String, dynamic>>? sameBrandSakes,
-    final int envyCount,
-    @JsonKey(name: 'is_public') final bool isPublic,
-    @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
-    final SavedSakeSyncStatus syncStatus,
-  }) = _$SakeImpl;
+  const factory _Sake(
+      {final int? sakeId,
+      final int? brandId,
+      final String? name,
+      final String? brewery,
+      final List<String>? types,
+      final String? taste,
+      final int? sakeMeterValue,
+      final String? type,
+      final String? price,
+      final String? description,
+      final int? recommendationScore,
+      final String? impression,
+      final String? place,
+      final DrinkingPlace? drinkingPlace,
+      final List<String>? userTags,
+      final Map<String, int>? personalTasteRatings,
+      final String? savedId,
+      final List<String>? imagePaths,
+      final String? username,
+      final String? displayName,
+      final String? iconUrl,
+      final String? prefectureCode,
+      final String? primaryImageUrl,
+      final Map<String, dynamic>? community,
+      final List<Map<String, dynamic>>? sameBrandSakes,
+      final int envyCount,
+      @JsonKey(name: 'is_public') final bool isPublic,
+      @JsonKey(unknownEnumValue: SavedSakeSyncStatus.localOnly)
+      final SavedSakeSyncStatus syncStatus}) = _$SakeImpl;
 
   factory _Sake.fromJson(Map<String, dynamic> json) = _$SakeImpl.fromJson;
 
@@ -1245,6 +1241,8 @@ abstract class _Sake implements Sake {
   DrinkingPlace? get drinkingPlace;
   @override
   List<String>? get userTags;
+  @override
+  Map<String, int>? get personalTasteRatings;
   @override
   String? get savedId;
   @override
