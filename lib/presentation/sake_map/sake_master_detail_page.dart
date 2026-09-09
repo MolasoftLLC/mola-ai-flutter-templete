@@ -12,9 +12,11 @@ import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
@@ -173,6 +175,7 @@ class _Details extends StatelessWidget {
     final personalRecord = _findSavedSake(savedSakeNotifier, detailSake);
     final master = overview?.master ?? const SakeMasterDetails();
     final profile = master.tasteProfile;
+    final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
     final category =
         master.category ??
         master.specialDesignation ??
@@ -204,12 +207,15 @@ class _Details extends StatelessWidget {
     final tasteAxes = profile == null
         ? const <_TasteAxis>[]
         : <_TasteAxis>[
-            _TasteAxis('香り', profile.aroma ?? profile.fruity),
+            _TasteAxis('フルーティ', profile.fruity),
             _TasteAxis('甘み', profile.sweetness),
             _TasteAxis('酸味', profile.acidity),
-            _TasteAxis('旨み', profile.umami),
+            _TasteAxis('コク', profile.body ?? profile.umami),
             _TasteAxis('キレ', profile.kire),
           ];
+    final preferenceMatch = profile == null || preference == null
+        ? null
+        : _TastePreferenceMatch.from(profile, preference);
     final pairings = _pairingsFor(
       profile: profile,
       category: category,
@@ -314,6 +320,10 @@ class _Details extends StatelessWidget {
                       ),
                     if (tasteAxes.isNotEmpty)
                       Center(child: _SakeTasteRadarChart(axes: tasteAxes)),
+                    if (preferenceMatch != null) ...[
+                      const SizedBox(height: 14),
+                      _TastePreferenceMatchSummary(match: preferenceMatch),
+                    ],
                     _Tags(
                       values: {
                         ...master.tasteTags,
@@ -1414,6 +1424,90 @@ class _TasteAxis {
 
   final String label;
   final double value;
+}
+
+class _TastePreferenceMatch {
+  const _TastePreferenceMatch({
+    required this.score,
+    required this.closestLabels,
+  });
+
+  factory _TastePreferenceMatch.from(
+    SakeTasteProfileDetails sake,
+    TastePreferenceProfile preference,
+  ) {
+    final comparisons = <_TasteComparison>[
+      _TasteComparison('フルーティ', sake.fruity, preference.fruity),
+      _TasteComparison('甘み', sake.sweetness, preference.sweetness),
+      _TasteComparison('酸味', sake.acidity, preference.acidity),
+      _TasteComparison('コク', sake.body ?? sake.umami, preference.umami),
+      _TasteComparison('キレ', sake.kire, preference.kire),
+    ]..sort((a, b) => a.difference.compareTo(b.difference));
+    final averageDifference =
+        comparisons
+            .map((comparison) => comparison.difference)
+            .reduce((sum, difference) => sum + difference) /
+        comparisons.length;
+    return _TastePreferenceMatch(
+      score: ((1 - averageDifference.clamp(0.0, 1.0)) * 100).round(),
+      closestLabels: comparisons
+          .take(2)
+          .map((comparison) => comparison.label)
+          .toList(growable: false),
+    );
+  }
+
+  final int score;
+  final List<String> closestLabels;
+}
+
+class _TasteComparison {
+  const _TasteComparison(this.label, this.sakeValue, this.preferenceValue);
+
+  final String label;
+  final double sakeValue;
+  final double preferenceValue;
+
+  double get difference => (sakeValue - preferenceValue).abs();
+}
+
+class _TastePreferenceMatchSummary extends StatelessWidget {
+  const _TastePreferenceMatchSummary({required this.match});
+
+  final _TastePreferenceMatch match;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Padding(
+        padding: EdgeInsets.only(top: 1),
+        child: Icon(Icons.favorite_rounded, color: _orange, size: 18),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: RichText(
+          text: TextSpan(
+            style: const TextStyle(
+              color: Color(0xFF536174),
+              fontSize: 13,
+              height: 1.5,
+            ),
+            children: [
+              TextSpan(
+                text: '好きなお酒の傾向と ${match.score}% 一致',
+                style: const TextStyle(
+                  color: _navy,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              TextSpan(text: ' ・ ${match.closestLabels.join('・')}が好みに近いです。'),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 class _SakeTasteRadarChart extends StatelessWidget {
