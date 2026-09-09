@@ -12,7 +12,6 @@ import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/snack_bar_utils.dart';
-import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
@@ -212,10 +211,19 @@ class _Details extends StatelessWidget {
             _TasteAxis('酸味', profile.acidity),
             _TasteAxis('コク', profile.body ?? profile.umami),
             _TasteAxis('キレ', profile.kire),
+            _TasteAxis('辛さ', profile.dryness),
           ];
-    final preferenceMatch = profile == null || preference == null
+    final preferenceAxes =
+        profile == null || preference == null || personalRecord == null
         ? null
-        : _TastePreferenceMatch.from(profile, preference);
+        : <_TasteAxis>[
+            _TasteAxis('フルーティ', preference.fruity),
+            _TasteAxis('甘み', preference.sweetness),
+            _TasteAxis('酸味', preference.acidity),
+            _TasteAxis('コク', preference.umami),
+            _TasteAxis('キレ', preference.kire),
+            _TasteAxis('辛さ', preference.spiciness),
+          ];
     final pairings = _pairingsFor(
       profile: profile,
       category: category,
@@ -319,10 +327,15 @@ class _Details extends StatelessWidget {
                         child: Text(sake!.taste!),
                       ),
                     if (tasteAxes.isNotEmpty)
-                      Center(child: _SakeTasteRadarChart(axes: tasteAxes)),
-                    if (preferenceMatch != null) ...[
+                      Center(
+                        child: _SakeTasteRadarChart(
+                          axes: tasteAxes,
+                          preferenceAxes: preferenceAxes,
+                        ),
+                      ),
+                    if (preferenceAxes != null) ...[
                       const SizedBox(height: 14),
-                      _TastePreferenceMatchSummary(match: preferenceMatch),
+                      const _TasteChartLegend(),
                     ],
                     _Tags(
                       values: {
@@ -1426,94 +1439,58 @@ class _TasteAxis {
   final double value;
 }
 
-class _TastePreferenceMatch {
-  const _TastePreferenceMatch({
-    required this.score,
-    required this.closestLabels,
-  });
+class _TasteChartLegend extends StatelessWidget {
+  const _TasteChartLegend();
 
-  factory _TastePreferenceMatch.from(
-    SakeTasteProfileDetails sake,
-    TastePreferenceProfile preference,
-  ) {
-    final comparisons = <_TasteComparison>[
-      _TasteComparison('フルーティ', sake.fruity, preference.fruity),
-      _TasteComparison('甘み', sake.sweetness, preference.sweetness),
-      _TasteComparison('酸味', sake.acidity, preference.acidity),
-      _TasteComparison('コク', sake.body ?? sake.umami, preference.umami),
-      _TasteComparison('キレ', sake.kire, preference.kire),
-    ]..sort((a, b) => a.difference.compareTo(b.difference));
-    final averageDifference =
-        comparisons
-            .map((comparison) => comparison.difference)
-            .reduce((sum, difference) => sum + difference) /
-        comparisons.length;
-    return _TastePreferenceMatch(
-      score: ((1 - averageDifference.clamp(0.0, 1.0)) * 100).round(),
-      closestLabels: comparisons
-          .take(2)
-          .map((comparison) => comparison.label)
-          .toList(growable: false),
-    );
-  }
-
-  final int score;
-  final List<String> closestLabels;
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 16,
+    runSpacing: 8,
+    children: const [
+      _TasteChartLegendItem(
+        colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+        label: '橙・紫：このお酒',
+      ),
+      _TasteChartLegendItem(
+        colors: [Color(0xFF2E8BFF), Color(0xFF65C7FF)],
+        label: '青：あなたの好きな傾向',
+      ),
+    ],
+  );
 }
 
-class _TasteComparison {
-  const _TasteComparison(this.label, this.sakeValue, this.preferenceValue);
+class _TasteChartLegendItem extends StatelessWidget {
+  const _TasteChartLegendItem({required this.colors, required this.label});
 
+  final List<Color> colors;
   final String label;
-  final double sakeValue;
-  final double preferenceValue;
-
-  double get difference => (sakeValue - preferenceValue).abs();
-}
-
-class _TastePreferenceMatchSummary extends StatelessWidget {
-  const _TastePreferenceMatchSummary({required this.match});
-
-  final _TastePreferenceMatch match;
 
   @override
   Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
     children: [
-      const Padding(
-        padding: EdgeInsets.only(top: 1),
-        child: Icon(Icons.favorite_rounded, color: _orange, size: 18),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: RichText(
-          text: TextSpan(
-            style: const TextStyle(
-              color: Color(0xFF536174),
-              fontSize: 13,
-              height: 1.5,
-            ),
-            children: [
-              TextSpan(
-                text: '好きなお酒の傾向と ${match.score}% 一致',
-                style: const TextStyle(
-                  color: _navy,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              TextSpan(text: ' ・ ${match.closestLabels.join('・')}が好みに近いです。'),
-            ],
-          ),
+      Container(
+        width: 22,
+        height: 8,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(99),
+          gradient: LinearGradient(colors: colors),
         ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        label,
+        style: const TextStyle(color: Color(0xFF647184), fontSize: 12),
       ),
     ],
   );
 }
 
 class _SakeTasteRadarChart extends StatelessWidget {
-  const _SakeTasteRadarChart({required this.axes});
+  const _SakeTasteRadarChart({required this.axes, this.preferenceAxes});
 
   final List<_TasteAxis> axes;
+  final List<_TasteAxis>? preferenceAxes;
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
@@ -1535,6 +1512,7 @@ class _SakeTasteRadarChart extends StatelessWidget {
                 size: Size.square(size),
                 painter: _SakeTasteRadarPainter(
                   axes: axes,
+                  preferenceAxes: preferenceAxes,
                   radius: radius,
                   progress: progress,
                 ),
@@ -1601,11 +1579,13 @@ class _RadarLabel extends StatelessWidget {
 class _SakeTasteRadarPainter extends CustomPainter {
   const _SakeTasteRadarPainter({
     required this.axes,
+    required this.preferenceAxes,
     required this.radius,
     required this.progress,
   });
 
   final List<_TasteAxis> axes;
+  final List<_TasteAxis>? preferenceAxes;
   final double radius;
   final double progress;
 
@@ -1639,19 +1619,38 @@ class _SakeTasteRadarPainter extends CustomPainter {
       );
     }
 
-    final path = Path();
-    for (var index = 0; index < axes.length; index++) {
-      final value = axes[index].value.clamp(0.0, 1.0) * progress;
-      final point = _point(center, radius * value, index, angleStep);
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
-    }
-    path.close();
-
     final bounds = Rect.fromCircle(center: center, radius: radius);
+    final userAxes = preferenceAxes;
+    if (userAxes != null && userAxes.length == axes.length) {
+      final userPath = _tastePath(
+        center: center,
+        axes: userAxes,
+        radius: radius,
+        angleStep: angleStep,
+      );
+      final userFillPaint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xFF65C7FF).withValues(alpha: .42),
+            const Color(0xFF2E8BFF).withValues(alpha: .16),
+          ],
+        ).createShader(bounds);
+      final userStrokePaint = Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF65C7FF), Color(0xFF2E8BFF)],
+        ).createShader(bounds)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4;
+      canvas.drawPath(userPath, userFillPaint);
+      canvas.drawPath(userPath, userStrokePaint);
+    }
+
+    final path = _tastePath(
+      center: center,
+      axes: axes,
+      radius: radius,
+      angleStep: angleStep,
+    );
     final fillPaint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -1668,6 +1667,25 @@ class _SakeTasteRadarPainter extends CustomPainter {
       ..strokeWidth = 2.5;
     canvas.drawPath(path, fillPaint);
     canvas.drawPath(path, strokePaint);
+  }
+
+  Path _tastePath({
+    required Offset center,
+    required List<_TasteAxis> axes,
+    required double radius,
+    required double angleStep,
+  }) {
+    final path = Path();
+    for (var index = 0; index < axes.length; index++) {
+      final value = axes[index].value.clamp(0.0, 1.0) * progress;
+      final point = _point(center, radius * value, index, angleStep);
+      if (index == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    return path..close();
   }
 
   Path _polygonPath({
@@ -1698,7 +1716,9 @@ class _SakeTasteRadarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SakeTasteRadarPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.axes != axes;
+      oldDelegate.progress != progress ||
+      oldDelegate.axes != axes ||
+      oldDelegate.preferenceAxes != preferenceAxes;
 }
 
 class _Pairing {
