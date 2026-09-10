@@ -123,12 +123,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
     expect(find.text('マスター純米酒'), findsWidgets);
     expect(find.text('サンプル酒造'), findsWidgets);
     expect(find.text('やわらかな香りとすっきりした後味。'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-    await tester.pumpAndSettle();
     expect(find.byKey(const Key('compact-sake-header')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);
     expect(find.byKey(const Key('sake-taste-radar-chart')), findsOneWidget);
@@ -136,11 +137,6 @@ void main() {
     expect(find.text('ぶり大根・煮付け'), findsOneWidget);
     expect(find.text('50%'), findsOneWidget);
     expect(find.text('+2.5'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('ログインすると、あなたにおすすめかどうかが分かります！'),
-      300,
-    );
-    expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('容量と参考価格'), 300);
     expect(find.text('720 ml'), findsOneWidget);
     expect(find.text('¥2,300（税込）'), findsOneWidget);
@@ -182,6 +178,9 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
     expect(find.text('一覧の名称'), findsWidgets);
     expect(find.text('詳細情報を取得できませんでした。'), findsOneWidget);

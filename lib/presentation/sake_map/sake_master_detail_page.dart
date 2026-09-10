@@ -134,7 +134,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (notifier == null || record == null) {
       SnackBarUtils.showInfoSnackBar(
         context,
-        message: 'このお酒を記録すると、飲んだ場所を登録できます。',
+        message: 'このお酒を保存すると、飲んだ場所を登録できます。',
       );
       return;
     }
@@ -208,7 +208,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                 SliverAppBar(
                   pinned: true,
                   stretch: true,
-                  expandedHeight: 340,
+                  collapsedHeight: 98,
+                  expandedHeight: 370,
                   backgroundColor: _navy,
                   elevation: 0,
                   iconTheme: const IconThemeData(color: Colors.white),
@@ -233,6 +234,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     imagePaths: headerImagePaths,
                     matchPercent: matchPercent,
                   ),
+                ),
+                const SliverToBoxAdapter(child: _ShopPriceTitle()),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: const _ShopPriceHeaderDelegate(),
                 ),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const SliverToBoxAdapter(
@@ -311,22 +317,22 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final topInset = MediaQuery.paddingOf(context).top;
-      final collapsedHeight = topInset + kToolbarHeight;
-      const expandedHeight = 340.0;
+      final collapsedHeight = topInset + 98;
+      final expandedHeight = topInset + 370;
       final expandedProgress =
           ((constraints.maxHeight - collapsedHeight) /
                   (expandedHeight - collapsedHeight))
               .clamp(0.0, 1.0);
       final collapsedProgress = 1 - expandedProgress;
       final imageWidth = lerpDouble(
-        MediaQuery.sizeOf(context).width - 40,
+        MediaQuery.sizeOf(context).width - 44,
         40,
         collapsedProgress,
       )!;
       final imageHeight = lerpDouble(240, 40, collapsedProgress)!;
       final imageLeft = lerpDouble(20, 64, collapsedProgress)!;
       final imageTop = lerpDouble(
-        topInset + kToolbarHeight + 18,
+        topInset + kToolbarHeight + (widget.matchPercent == null ? 18 : 58),
         topInset + 8,
         collapsedProgress,
       )!;
@@ -404,77 +410,69 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
               ),
             ),
           ),
+          if (widget.matchPercent != null)
+            Positioned(
+              left: 20,
+              right: 20,
+              top: topInset + 50,
+              child: Opacity(
+                opacity: expandedProgress,
+                child: _PreferenceMatchSection(percent: widget.matchPercent!),
+              ),
+            ),
           Positioned(
-            left: 112,
+            left: 120,
             right: 156,
-            top: topInset + 11,
+            top: topInset + 15,
             child: collapsedProgress > .5
-                ? KeyedSubtree(
-                    key: const Key('compact-sake-header'),
-                    child: Row(
-                      children: [
-                        if (widget.matchPercent != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
-                              ),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              '${widget.matchPercent}%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
+                ? widget.matchPercent == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+                            ),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
                           child: Text(
-                            widget.name?.trim().isNotEmpty == true
-                                ? widget.name!
-                                : '日本酒詳細',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            '${widget.matchPercent}%',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
-                              height: 1.15,
                               fontWeight: FontWeight.w800,
+                              fontSize: 12,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  )
+                        )
                 : const SizedBox.shrink(),
           ),
           Positioned(
             left: 20,
             right: 20,
-            bottom: 18,
-            child: Opacity(
-              opacity: expandedProgress,
-              child: Text(
-                widget.name?.trim().isNotEmpty == true ? widget.name! : '日本酒詳細',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  height: 1.2,
-                  fontWeight: FontWeight.w800,
-                  shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
-                ),
-              ),
-            ),
+            top: topInset + 62,
+            child: collapsedProgress > .5
+                ? KeyedSubtree(
+                    key: const Key('compact-sake-header'),
+                    child: Text(
+                      widget.name?.trim().isNotEmpty == true
+                          ? widget.name!
+                          : '日本酒詳細',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       );
@@ -551,16 +549,6 @@ class _Details extends StatelessWidget {
             _TasteAxis('キレ', preference.kire),
             _TasteAxis('辛さ', preference.spiciness),
           ];
-    final preferenceMatchPercent = preferenceAxes == null
-        ? null
-        : calculateTastePreferenceMatchPercent(
-            sakeValues: tasteAxes.map((axis) => axis.value).toList(),
-            preferenceValues: preferenceAxes.map((axis) => axis.value).toList(),
-          );
-    final preferenceMatchMessage = _preferenceMatchMessage(
-      tasteAxes,
-      preferenceAxes,
-    );
     final pairings = _pairingsFor(
       profile: profile,
       category: category,
@@ -583,6 +571,7 @@ class _Details extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Section(
+              topPadding: 12,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -606,7 +595,7 @@ class _Details extends StatelessWidget {
                       ),
                     ),
                   if (category != null) ...[
-                    const SizedBox(height: 8),
+                    if (master.seriesName != null) const SizedBox(height: 8),
                     _Tags(values: [category], accent: true),
                   ],
                   if (category != null) const SizedBox(height: 14),
@@ -646,33 +635,7 @@ class _Details extends StatelessWidget {
                   notifier: savedSakeNotifier,
                 ),
               ),
-            if (preferenceMatchPercent != null)
-              _Section(
-                title: 'あなたの好みマッチ度',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PreferenceMatchSection(percent: preferenceMatchPercent),
-                    if (preferenceMatchMessage != null) ...[
-                      const SizedBox(height: 14),
-                      Text(
-                        preferenceMatchMessage,
-                        style: const TextStyle(
-                          color: _navy,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: null,
-                      icon: const Icon(Icons.auto_awesome_outlined),
-                      label: const Text('AIがあなた向けに評価（準備中）'),
-                    ),
-                  ],
-                ),
-              ),
-            if (preferenceMatchPercent == null && !isLoggedIn)
+            if (preferenceAxes == null && !isLoggedIn)
               const _Section(
                 title: 'あなたの好みマッチ度',
                 child: _LoginRecommendationPrompt(),
@@ -1043,7 +1006,7 @@ class _MasterRecordCta extends StatelessWidget {
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
         icon: const Icon(Icons.bookmark_add_outlined),
-        label: const Text('このお酒を記録する'),
+        label: const Text('このお酒を保存する'),
       ),
     );
   }
@@ -1125,16 +1088,201 @@ class _PersonalRecordSection extends StatelessWidget {
     if (saved == null) return const SizedBox.shrink();
     final Sake record = saved;
 
+    final location = record.drinkingPlace?.displayName ?? record.place;
+    final photoCount = (record.imagePaths ?? const <String>[]).length;
+    final hasImpression = record.impression?.trim().isNotEmpty == true;
+    const tasteAxes = <(String, String)>[
+      ('fruity', 'フルーティ'),
+      ('sweetness', '甘み'),
+      ('acidity', '酸味'),
+      ('umami', 'コク'),
+      ('kire', 'キレ'),
+      ('spiciness', '辛さ'),
+    ];
+    final selectedTastes = tasteAxes
+        .map((axis) => (axis.$2, record.personalTasteRatings?[axis.$1]))
+        .where((taste) => taste.$2 != null && taste.$2 != 3)
+        .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeading(title: 'あなたの記録'),
-        const SizedBox(height: 16),
-        _InlineRecordEditor(notifier: savedNotifier, sake: record),
+        Row(
+          children: [
+            const Expanded(child: _SectionHeading(title: 'あなたの記録')),
+            TextButton.icon(
+              onPressed: () => _showRecordEditorSheet(
+                context,
+                notifier: savedNotifier,
+                sake: record,
+              ),
+              icon: const Icon(Icons.edit_outlined, size: 17),
+              label: const Text('編集'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Material(
+          color: const Color(0xFFF8FAFD),
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _showRecordEditorSheet(
+              context,
+              notifier: savedNotifier,
+              sake: record,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(Icons.auto_stories_outlined, color: _navy),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          location?.trim().isNotEmpty == true
+                              ? location!
+                              : '飲んだ場所は未記録',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _navy,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '写真 $photoCount枚 ・ ${hasImpression ? '感想あり' : '感想未入力'}',
+                          style: const TextStyle(
+                            color: Color(0xFF647184),
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (hasImpression) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            record.impression!.trim(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF46566A),
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                        if (selectedTastes.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final taste in selectedTastes)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E7),
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                  child: Text(
+                                    '${taste.$1} ${taste.$2}/5',
+                                    style: const TextStyle(
+                                      color: _navy,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Color(0xFF647184)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
+
+Future<void> _showRecordEditorSheet(
+  BuildContext context, {
+  required SavedSakeNotifier notifier,
+  required Sake sake,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: Colors.white,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+  ),
+  builder: (sheetContext) => DraggableScrollableSheet(
+    initialChildSize: .86,
+    minChildSize: .55,
+    maxChildSize: .96,
+    expand: false,
+    builder: (context, scrollController) => SafeArea(
+      top: false,
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD3DAE4),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'あなたの記録を編集',
+                    style: TextStyle(
+                      color: _navy,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: '閉じる',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE5EAF0)),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+              child: _InlineRecordEditor(notifier: notifier, sake: sake),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
 
 Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
   if (notifier == null) return null;
@@ -1307,11 +1455,8 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
       return Semantics(
         label: 'あなたの好みマッチ度 $shownPercent%',
         child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFD),
-            borderRadius: BorderRadius.circular(16),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1319,33 +1464,38 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
                 children: [
                   const Expanded(
                     child: Text(
-                      '味わいプロフィールから算出',
-                      style: TextStyle(color: Color(0xFF647184), fontSize: 12),
+                      'あなたの好みマッチ度',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   Text(
                     '$shownPercent%',
                     style: const TextStyle(
-                      color: _navy,
-                      fontSize: 28,
+                      color: Color(0xFFFFB347),
+                      fontSize: 20,
+                      height: 1,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 7),
               LayoutBuilder(
                 builder: (context, constraints) => Container(
-                  height: 14,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6EBF1),
+                    color: Colors.white24,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   clipBehavior: Clip.antiAlias,
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     width: constraints.maxWidth * value / 100,
-                    height: 14,
+                    height: 8,
                     child: const DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -1973,12 +2123,13 @@ class _MemoryImageError extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.child, this.title});
+  const _Section({required this.child, this.title, this.topPadding = 24});
   final Widget child;
   final String? title;
+  final double topPadding;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 24),
+    padding: EdgeInsets.only(top: topPadding),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2048,6 +2199,119 @@ class _DetailRow extends StatelessWidget {
       const Divider(height: 1, color: Color(0xFFE5EAF0)),
     ],
   );
+}
+
+class _ShopPriceTitle extends StatelessWidget {
+  const _ShopPriceTitle();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: const Color(0xFF111315),
+    padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+    child: const Row(
+      children: [
+        Icon(Icons.shopping_bag_outlined, color: Color(0xFFFFB347), size: 18),
+        SizedBox(width: 8),
+        Text(
+          'このお酒を買う',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Spacer(),
+        Text('参考価格', style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 11)),
+      ],
+    ),
+  );
+}
+
+class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _ShopPriceHeaderDelegate();
+
+  @override
+  double get minExtent => 62;
+
+  @override
+  double get maxExtent => 62;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => const _ShopPriceBar();
+
+  @override
+  bool shouldRebuild(covariant _ShopPriceHeaderDelegate oldDelegate) => false;
+}
+
+class _ShopPriceBar extends StatelessWidget {
+  const _ShopPriceBar();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: const Color(0xFF111315),
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+    child: const Row(
+      children: [
+        Expanded(
+          child: _ShopPrice(name: 'Amazon', price: '¥2,180'),
+        ),
+        _ShopPriceDivider(),
+        Expanded(
+          child: _ShopPrice(name: '楽天市場', price: '¥2,080'),
+        ),
+        _ShopPriceDivider(),
+        Expanded(
+          child: _ShopPrice(name: 'Yahoo!', price: '¥2,150'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShopPrice extends StatelessWidget {
+  const _ShopPrice({required this.name, required this.price});
+
+  final String name;
+  final String price;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Text(
+        name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xFFC2CAD4),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        price,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 17,
+          height: 1,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    ],
+  );
+}
+
+class _ShopPriceDivider extends StatelessWidget {
+  const _ShopPriceDivider();
+
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 34, color: const Color(0xFF30363D));
 }
 
 class _Tags extends StatelessWidget {
