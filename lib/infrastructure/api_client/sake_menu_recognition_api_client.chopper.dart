@@ -152,9 +152,13 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   Future<Response<Map<String, dynamic>>> fetchSakeOverview(
     int sakeId,
     String locale,
+    bool trackView,
   ) {
     final Uri $url = Uri.parse('/api/sakes/${sakeId}/overview');
-    final Map<String, dynamic> $params = <String, dynamic>{'locale': locale};
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'locale': locale,
+      'trackView': trackView,
+    };
     final Request $request = Request(
       'GET',
       $url,
