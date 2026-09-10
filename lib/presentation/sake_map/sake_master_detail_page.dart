@@ -1317,7 +1317,7 @@ List<String> detailImagePaths({
   }
   if (paths.isEmpty) {
     add(overviewSake?.primaryImageUrl);
-    add(fallback.primaryImageUrl);
+    if (paths.isEmpty) add(fallback.primaryImageUrl);
   }
   return paths;
 }
