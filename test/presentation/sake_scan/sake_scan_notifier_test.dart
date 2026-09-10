@@ -434,7 +434,10 @@ class _FakeScanRepository implements SakeScanRepository {
   }
 
   @override
-  Future<SakeOverview> fetchOverview(int sakeId) async {
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  }) async {
     return overview ?? _overview(completed: true);
   }
 }
