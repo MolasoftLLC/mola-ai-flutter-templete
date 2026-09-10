@@ -105,7 +105,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Future<SakeOverview>? _fetch() {
     final id = widget.venueSake.sakeId;
     if (id == null || id <= 0) return null;
-    final future = context.read<SakeScanRepository>().fetchOverview(id);
+    final future = context.read<SakeScanRepository>().fetchOverview(
+      id,
+      trackView: true,
+    );
     future
         .then((overview) {
           if (mounted) setState(() => _headerOverview = overview);
@@ -236,9 +239,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   ),
                 ),
                 const SliverToBoxAdapter(child: _ShopPriceTitle()),
-                const SliverPersistentHeader(
+                SliverPersistentHeader(
                   pinned: true,
-                  delegate: _ShopPriceHeaderDelegate(),
+                  delegate: _ShopPriceHeaderDelegate(
+                    yahooPrice: snapshot.data?.master.imagePrice,
+                    yahooCurrency: snapshot.data?.master.imageCurrency,
+                    yahooProductUrl: snapshot.data?.master.imageProductUrl,
+                  ),
                 ),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const SliverToBoxAdapter(
@@ -2208,7 +2215,15 @@ class _ShopPriceTitle extends StatelessWidget {
 }
 
 class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _ShopPriceHeaderDelegate();
+  const _ShopPriceHeaderDelegate({
+    this.yahooPrice,
+    this.yahooCurrency,
+    this.yahooProductUrl,
+  });
+
+  final double? yahooPrice;
+  final String? yahooCurrency;
+  final String? yahooProductUrl;
 
   @override
   double get minExtent => 62;
@@ -2221,69 +2236,120 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => const _ShopPriceBar();
+  ) => _ShopPriceBar(
+    yahooPrice: yahooPrice,
+    yahooCurrency: yahooCurrency,
+    yahooProductUrl: yahooProductUrl,
+  );
 
   @override
-  bool shouldRebuild(covariant _ShopPriceHeaderDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _ShopPriceHeaderDelegate oldDelegate) =>
+      yahooPrice != oldDelegate.yahooPrice ||
+      yahooCurrency != oldDelegate.yahooCurrency ||
+      yahooProductUrl != oldDelegate.yahooProductUrl;
 }
 
 class _ShopPriceBar extends StatelessWidget {
-  const _ShopPriceBar();
+  const _ShopPriceBar({
+    this.yahooPrice,
+    this.yahooCurrency,
+    this.yahooProductUrl,
+  });
+
+  final double? yahooPrice;
+  final String? yahooCurrency;
+  final String? yahooProductUrl;
 
   @override
   Widget build(BuildContext context) => Container(
     color: const Color(0xFF111315),
     padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-    child: const Row(
+    child: Row(
       children: [
-        Expanded(
-          child: _ShopPrice(name: 'Amazon', price: '¥2,180'),
+        const Expanded(
+          child: _ShopPrice(name: 'Amazon', price: '—'),
         ),
-        _ShopPriceDivider(),
-        Expanded(
-          child: _ShopPrice(name: '楽天市場', price: '¥2,080'),
+        const _ShopPriceDivider(),
+        const Expanded(
+          child: _ShopPrice(name: '楽天市場', price: '—'),
         ),
-        _ShopPriceDivider(),
+        const _ShopPriceDivider(),
         Expanded(
-          child: _ShopPrice(name: 'Yahoo!', price: '¥2,150'),
+          child: _ShopPrice(
+            name: 'Yahoo!',
+            price: _formatShopPrice(yahooPrice, yahooCurrency),
+            url: yahooProductUrl,
+          ),
         ),
       ],
     ),
   );
 }
 
+String _formatShopPrice(double? price, String? currency) {
+  if (price == null) return '—';
+  final prefix = currency == null || currency == 'JPY' ? '¥' : '$currency ';
+  return '$prefix${NumberFormat('#,##0').format(price)}';
+}
+
 class _ShopPrice extends StatelessWidget {
-  const _ShopPrice({required this.name, required this.price});
+  const _ShopPrice({required this.name, required this.price, this.url});
 
   final String name;
   final String price;
+  final String? url;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      Text(
-        name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFFC2CAD4),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Color(0xFFC2CAD4),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        price,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 17,
-          height: 1,
-          fontWeight: FontWeight.w800,
+        const SizedBox(height: 4),
+        Text(
+          price,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            height: 1,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+    final uri = Uri.tryParse(url ?? '');
+    if (uri == null || !['https', 'http'].contains(uri.scheme)) return content;
+    return InkWell(
+      key: Key('shop-price-link-$name'),
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        try {
+          final opened = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+          if (opened || !context.mounted) return;
+        } catch (_) {
+          if (!context.mounted) return;
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('リンクを開けませんでした。')));
+        }
+      },
+      child: content,
+    );
+  }
 }
 
 class _ShopPriceDivider extends StatelessWidget {
