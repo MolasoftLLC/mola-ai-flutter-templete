@@ -128,9 +128,10 @@ void main() {
   testWidgets('sake_masterから取得した詳細を表示する', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = _FakeSakeScanRepository();
     await tester.pumpWidget(
       Provider<SakeScanRepository>.value(
-        value: _FakeSakeScanRepository(),
+        value: repository,
         child: const MaterialApp(
           home: SakeMasterDetailPage(
             venueSake: VenueSake(sakeId: 123, name: '一覧の名称', recordCount: 2),
@@ -140,6 +141,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(repository.lastTrackView, isTrue);
     expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
@@ -171,6 +173,11 @@ void main() {
         'name': '純米吟醸',
         'polishingRatio': '50.0',
         'category': '純米吟醸',
+        'imageProductUrl':
+            'https://store.shopping.yahoo.co.jp/example/sake.html',
+        'imagePrice': '2150',
+        'imageCurrency': 'JPY',
+        'detailViewCount': '8',
         'styles': [
           {'code': 'nama', 'name': '生酒'},
         ],
@@ -182,6 +189,9 @@ void main() {
     });
     expect(overview.master.polishingRatio, 50);
     expect(overview.master.category, '純米吟醸');
+    expect(overview.master.imagePrice, 2150);
+    expect(overview.master.imageCurrency, 'JPY');
+    expect(overview.master.detailViewCount, 8);
     expect(overview.master.styles.single.name, '生酒');
     expect(overview.master.variants.single.suggestedPrice, 2300);
     expect(overview.sake.brewery, 'サンプル酒造');
@@ -215,11 +225,14 @@ void main() {
 
 class _FakeSakeScanRepository implements SakeScanRepository {
   bool fail = false;
+  bool? lastTrackView;
+
   @override
   Future<SakeOverview> fetchOverview(
     int sakeId, {
     bool trackView = false,
   }) async {
+    lastTrackView = trackView;
     if (fail) throw Exception('test failure');
     return const SakeOverview(
       sake: Sake(
