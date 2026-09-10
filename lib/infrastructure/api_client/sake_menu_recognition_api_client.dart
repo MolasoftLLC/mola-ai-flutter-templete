@@ -61,6 +61,7 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
   Future<Response<Map<String, dynamic>>> fetchSakeOverview(
     @Path('sakeId') int sakeId,
     @Query('locale') String locale,
+    @Query('trackView') bool trackView,
   );
 
   @Post(path: 'sake-preference/analyze')
