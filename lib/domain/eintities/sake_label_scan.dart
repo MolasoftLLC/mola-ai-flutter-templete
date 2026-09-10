@@ -189,6 +189,9 @@ class SakeMasterDetails {
     this.categoryCode,
     this.imageSource,
     this.imageProductUrl,
+    this.imagePrice,
+    this.imageCurrency,
+    this.detailViewCount = 0,
     this.category,
     this.specialDesignation,
     this.seriesName,
@@ -226,6 +229,9 @@ class SakeMasterDetails {
       categoryCode: _asNonEmptyString(json['categoryCode']),
       imageSource: _asNonEmptyString(json['imageSource']),
       imageProductUrl: _asNonEmptyString(json['imageProductUrl']),
+      imagePrice: _asDouble(json['imagePrice']),
+      imageCurrency: _asNonEmptyString(json['imageCurrency']),
+      detailViewCount: _asInt(json['detailViewCount']) ?? 0,
       category: _asNonEmptyString(json['category']),
       specialDesignation: _asNonEmptyString(json['specialDesignation']),
       seriesName: _asNonEmptyString(json['seriesName']),
@@ -279,6 +285,9 @@ class SakeMasterDetails {
   final String? categoryCode;
   final String? imageSource;
   final String? imageProductUrl;
+  final double? imagePrice;
+  final String? imageCurrency;
+  final int detailViewCount;
   final String? category;
   final String? specialDesignation;
   final String? seriesName;
