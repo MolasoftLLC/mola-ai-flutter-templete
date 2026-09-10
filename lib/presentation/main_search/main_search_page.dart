@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/presentation/common/loading/ai_loading.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/assets.dart';
 import '../../common/localization/localization_extensions.dart';
@@ -971,6 +973,9 @@ class _MasterSakeSearchPanel extends StatefulWidget {
 }
 
 class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
+  static const _recentSearchesKey = 'master_sake_search_recent_v1';
+  static const _recentSearchLimit = 3;
+
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
@@ -980,13 +985,93 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
   bool _hasSearched = false;
   bool _hasError = false;
   List<SakeMapSearchResult> _results = const [];
+  List<SakeMapSearchResult> _recentResults = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChanged);
+    unawaited(_loadRecentSearches());
+  }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadRecentSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getStringList(_recentSearchesKey) ?? const [];
+      final recent = stored
+          .map(_recentSearchResultFromJson)
+          .whereType<SakeMapSearchResult>()
+          .take(_recentSearchLimit)
+          .toList(growable: false);
+      if (mounted) setState(() => _recentResults = recent);
+    } catch (_) {
+      // 検索履歴が利用できない端末でも検索機能は継続する。
+    }
+  }
+
+  SakeMapSearchResult? _recentSearchResultFromJson(String source) {
+    try {
+      final json = jsonDecode(source);
+      if (json is! Map<String, dynamic>) return null;
+      final name = json['name'] as String?;
+      if (name == null || name.trim().isEmpty) return null;
+      return SakeMapSearchResult(
+        sakeId: (json['sakeId'] as num?)?.toInt(),
+        searchToken: json['searchToken'] as String?,
+        name: name,
+        brewery: json['brewery'] as String?,
+        type: json['type'] as String?,
+        primaryImageUrl: json['primaryImageUrl'] as String?,
+        thumbnailImageUrl: json['thumbnailImageUrl'] as String?,
+        isMaster: true,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _saveRecentSearch(SakeMapSearchResult sake) async {
+    final next = [
+      sake,
+      ..._recentResults.where(
+        (recent) => recent.sakeId != sake.sakeId && recent.name != sake.name,
+      ),
+    ].take(_recentSearchLimit).toList(growable: false);
+    setState(() => _recentResults = next);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _recentSearchesKey,
+        next
+            .map(
+              (item) => jsonEncode({
+                'sakeId': item.sakeId,
+                'searchToken': item.searchToken,
+                'name': item.name,
+                'brewery': item.brewery,
+                'type': item.type,
+                'primaryImageUrl': item.primaryImageUrl,
+                'thumbnailImageUrl': item.thumbnailImageUrl,
+              }),
+            )
+            .toList(growable: false),
+      );
+    } catch (_) {
+      // 保存できない場合も、今回の画面では候補を表示する。
+    }
   }
 
   void _onChanged(String value) {
@@ -1037,6 +1122,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
   }
 
   void _openDetail(SakeMapSearchResult sake) {
+    unawaited(_saveRecentSearch(sake));
     _focusNode.unfocus();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -1057,6 +1143,9 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final showRecentSearches =
+        _focusNode.hasFocus && _controller.text.trim().isEmpty;
+    final displayedResults = showRecentSearches ? _recentResults : _results;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Column(
@@ -1116,8 +1205,27 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF666666)),
             ),
-          ] else if (_results.isNotEmpty) ...[
+          ] else if (displayedResults.isNotEmpty) ...[
             const SizedBox(height: 12),
+            if (showRecentSearches) ...[
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.history, size: 17, color: Color(0xFF697386)),
+                    SizedBox(width: 6),
+                    Text(
+                      '最近見た日本酒',
+                      style: TextStyle(
+                        color: Color(0xFF697386),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 360),
               child: DecoratedBox(
@@ -1131,10 +1239,10 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
-                    itemCount: _results.length,
+                    itemCount: displayedResults.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final sake = _results[index];
+                      final sake = displayedResults[index];
                       final details = [
                         sake.brewery?.trim(),
                         sake.type?.trim(),
