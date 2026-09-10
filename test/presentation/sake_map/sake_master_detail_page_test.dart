@@ -157,6 +157,10 @@ void main() {
     await tester.scrollUntilVisible(find.text('容量と参考価格'), 300);
     expect(find.text('720 ml'), findsOneWidget);
     expect(find.text('¥2,300（税込）'), findsOneWidget);
+    expect(find.text('¥2,150'), findsOneWidget);
+    expect(find.byKey(const Key('shop-price-link-Yahoo!')), findsOneWidget);
+    expect(find.text('¥2,180'), findsNothing);
+    expect(find.text('¥2,080'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -212,7 +216,10 @@ void main() {
 class _FakeSakeScanRepository implements SakeScanRepository {
   bool fail = false;
   @override
-  Future<SakeOverview> fetchOverview(int sakeId) async {
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  }) async {
     if (fail) throw Exception('test failure');
     return const SakeOverview(
       sake: Sake(
@@ -224,6 +231,10 @@ class _FakeSakeScanRepository implements SakeScanRepository {
       ),
       analysisCompleted: true,
       master: SakeMasterDetails(
+        imageSource: 'yahoo_shopping',
+        imageProductUrl: 'https://store.shopping.yahoo.co.jp/example/sake.html',
+        imagePrice: 2150,
+        imageCurrency: 'JPY',
         category: '純米',
         polishingRatio: 50,
         sakeMeterValue: 2.5,
