@@ -236,9 +236,9 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   ),
                 ),
                 const SliverToBoxAdapter(child: _ShopPriceTitle()),
-                SliverPersistentHeader(
+                const SliverPersistentHeader(
                   pinned: true,
-                  delegate: const _ShopPriceHeaderDelegate(),
+                  delegate: _ShopPriceHeaderDelegate(),
                 ),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const SliverToBoxAdapter(
@@ -1335,28 +1335,6 @@ int calculateTastePreferenceMatchPercent({
       sakeValues.length;
   final similarity = 1 - difference;
   return (30 + math.pow(similarity, 3.5) * 70).round().clamp(30, 100).toInt();
-}
-
-String? _preferenceMatchMessage(
-  List<_TasteAxis> sakeAxes,
-  List<_TasteAxis>? preferenceAxes,
-) {
-  if (sakeAxes.isEmpty ||
-      preferenceAxes == null ||
-      sakeAxes.length != preferenceAxes.length) {
-    return null;
-  }
-  var closestIndex = 0;
-  var smallestDifference = double.infinity;
-  for (var index = 0; index < sakeAxes.length; index++) {
-    final difference = (sakeAxes[index].value - preferenceAxes[index].value)
-        .abs();
-    if (difference < smallestDifference) {
-      smallestDifference = difference;
-      closestIndex = index;
-    }
-  }
-  return '${sakeAxes[closestIndex].label}なお酒が好きなあなたにぴったりです。';
 }
 
 class _PreferenceMatchSection extends StatefulWidget {
@@ -2496,10 +2474,10 @@ class _TasteChartLegend extends StatelessWidget {
   const _TasteChartLegend();
 
   @override
-  Widget build(BuildContext context) => Wrap(
+  Widget build(BuildContext context) => const Wrap(
     spacing: 16,
     runSpacing: 8,
-    children: const [
+    children: [
       _TasteChartLegendItem(
         colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
         label: '橙・紫：このお酒',
