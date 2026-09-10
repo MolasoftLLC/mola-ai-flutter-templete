@@ -28,7 +28,7 @@ void main() {
     expect(legacy.thumbnailImageUrl, isNull);
   });
 
-  test('保存した思い出の写真を商品画像より先に詳細へ並べる', () {
+  test('保存した写真がある場合はYahoo商品画像を詳細へ混在させない', () {
     const fallback = VenueSake(
       sakeId: 123,
       name: '冩樂 純米吟醸',
@@ -51,8 +51,25 @@ void main() {
     expect(paths, [
       '/local/front-bottle.jpg',
       'https://images.example/memory.jpg',
-      'https://images.example/yahoo.jpg',
     ]);
+  });
+
+  test('保存した写真がない場合だけYahooの600px商品画像を表示する', () {
+    const fallback = VenueSake(
+      sakeId: 123,
+      name: '冩樂 純米吟醸',
+      recordCount: 0,
+      primaryImageUrl: 'https://images.example/list-fallback-600.jpg',
+    );
+    final paths = detailImagePaths(
+      personalRecord: const Sake(imagePaths: []),
+      overviewSake: const Sake(
+        primaryImageUrl: 'https://images.example/yahoo-600.jpg',
+      ),
+      fallback: fallback,
+    );
+
+    expect(paths, ['https://images.example/yahoo-600.jpg']);
   });
 
   test('味わいプロフィールの一致度は30〜100%で算出する', () {

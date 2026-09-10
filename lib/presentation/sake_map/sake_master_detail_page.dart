@@ -1292,7 +1292,7 @@ Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
   return null;
 }
 
-/// 保存した思い出を最優先にし、商品画像は続きのスライドへ並べる。
+/// 保存したボトル・思い出写真を優先し、1枚もない場合だけ商品画像を使う。
 List<String> detailImagePaths({
   required Sake? personalRecord,
   required Sake? overviewSake,
@@ -1308,8 +1308,10 @@ List<String> detailImagePaths({
   for (final path in personalRecord?.imagePaths ?? const <String>[]) {
     add(path);
   }
-  add(overviewSake?.primaryImageUrl);
-  add(fallback.primaryImageUrl);
+  if (paths.isEmpty) {
+    add(overviewSake?.primaryImageUrl);
+    add(fallback.primaryImageUrl);
+  }
   return paths;
 }
 
