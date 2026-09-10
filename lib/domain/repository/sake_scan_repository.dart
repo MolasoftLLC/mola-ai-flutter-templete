@@ -17,17 +17,33 @@ abstract class SakeScanRepository {
 
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId);
 
-  Future<SakeOverview> fetchOverview(int sakeId);
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  });
+}
+
+class SakeDetailViewMemory {
+  final Set<int> _viewedSakeIds = <int>{};
+
+  bool markViewed(int sakeId) => _viewedSakeIds.add(sakeId);
+
+  void forget(int sakeId) => _viewedSakeIds.remove(sakeId);
 }
 
 class SakeScanApiRepository implements SakeScanRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
-  });
+    SakeDetailViewMemory? detailViewMemory,
+  }) : _detailViewMemory = detailViewMemory ?? _appDetailViewMemory;
+
+  static final SakeDetailViewMemory _appDetailViewMemory =
+      SakeDetailViewMemory();
 
   final SakeMenuRecognitionApiClient _apiClient;
   final Duration requestTimeout;
+  final SakeDetailViewMemory _detailViewMemory;
 
   @override
   Future<SakeScanResult> scanFront(File image) async {
@@ -78,12 +94,22 @@ class SakeScanApiRepository implements SakeScanRepository {
   }
 
   @override
-  Future<SakeOverview> fetchOverview(int sakeId) async {
-    final locale = await resolveAppLocaleLanguageCode();
-    final response = await _apiClient
-        .fetchSakeOverview(sakeId, locale)
-        .timeout(requestTimeout);
-    return SakeOverview.fromJson(_requireBody(response));
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  }) async {
+    final shouldTrackView =
+        trackView && _detailViewMemory.markViewed(sakeId);
+    try {
+      final locale = await resolveAppLocaleLanguageCode();
+      final response = await _apiClient
+          .fetchSakeOverview(sakeId, locale, shouldTrackView)
+          .timeout(requestTimeout);
+      return SakeOverview.fromJson(_requireBody(response));
+    } catch (_) {
+      if (shouldTrackView) _detailViewMemory.forget(sakeId);
+      rethrow;
+    }
   }
 
   Future<File> _prepareImage(File image) async {
