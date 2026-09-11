@@ -27,10 +27,12 @@ import '../sake_scan/sake_scan_page.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
-  const MainSearchPage._({Key? key}) : super(key: key);
+  MainSearchPage._()
+    : _masterSakeSearchPanelKey = GlobalKey<_MasterSakeSearchPanelState>();
 
   static final ScrollController _scrollController = ScrollController();
   static final GlobalKey _resultSectionKey = GlobalKey();
+  final GlobalKey<_MasterSakeSearchPanelState> _masterSakeSearchPanelKey;
 
   static Widget wrapped() {
     return MultiProvider(
@@ -42,7 +44,7 @@ class MainSearchPage extends StatelessWidget {
           ),
         ),
       ],
-      child: const MainSearchPage._(),
+      child: MainSearchPage._(),
     );
   }
 
@@ -71,6 +73,12 @@ class MainSearchPage extends StatelessWidget {
     );
     final errorMessage = context.select(
       (MainSearchPageState state) => state.errorMessage,
+    );
+    final manualSearchSuggested = context.select(
+      (MainSearchPageState state) => state.manualSearchSuggested,
+    );
+    final manualSearchQuery = context.select(
+      (MainSearchPageState state) => state.manualSearchQuery,
     );
     final sakeImage = context.select(
       (MainSearchPageState state) => state.sakeImage,
@@ -144,7 +152,9 @@ class MainSearchPage extends StatelessWidget {
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: const _MasterSakeSearchPanel(),
+                        child: _MasterSakeSearchPanel(
+                          key: _masterSakeSearchPanelKey,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
@@ -174,6 +184,24 @@ class MainSearchPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 18),
+
+                      if (manualSearchSuggested &&
+                          manualSearchQuery != null &&
+                          manualSearchQuery.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: _ManualSakeSearchSuggestion(
+                            query: manualSearchQuery,
+                            onTap: () => _openManualNameSearch(
+                              notifier,
+                              manualSearchQuery,
+                            ),
+                          ),
+                        ),
+                      if (manualSearchSuggested &&
+                          manualSearchQuery != null &&
+                          manualSearchQuery.trim().isNotEmpty)
+                        const SizedBox(height: 18),
 
                       // 検索結果表示
                       if (sakeInfo != null)
@@ -207,6 +235,18 @@ class MainSearchPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _openManualNameSearch(MainSearchPageNotifier notifier, String query) {
+    notifier.dismissManualSearchSuggestion();
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _masterSakeSearchPanelKey.currentState?.searchFor(query);
+    });
   }
 
   Future<void> _openMap(BuildContext context) {
@@ -965,8 +1005,66 @@ class MainSearchPage extends StatelessWidget {
   }
 }
 
+class _ManualSakeSearchSuggestion extends StatelessWidget {
+  const _ManualSakeSearchSuggestion({required this.query, required this.onTap});
+
+  final String query;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7E8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFB74D)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.manage_search, color: Color(0xFF8A4B00)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.l10n.manualSakeSearchTitle,
+                  style: const TextStyle(
+                    color: Color(0xFF5D3500),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.manualSakeSearchDescription(query),
+            style: const TextStyle(color: Color(0xFF5D3500), height: 1.45),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.search),
+              label: Text(context.l10n.manualSakeSearchAction(query)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF8A4B00),
+                side: const BorderSide(color: Color(0xFFFF9800)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MasterSakeSearchPanel extends StatefulWidget {
-  const _MasterSakeSearchPanel();
+  const _MasterSakeSearchPanel({super.key});
 
   @override
   State<_MasterSakeSearchPanel> createState() => _MasterSakeSearchPanelState();
@@ -1072,6 +1170,17 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
     } catch (_) {
       // 保存できない場合も、今回の画面では候補を表示する。
     }
+  }
+
+  void searchFor(String query) {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) return;
+    _controller.value = TextEditingValue(
+      text: normalizedQuery,
+      selection: TextSelection.collapsed(offset: normalizedQuery.length),
+    );
+    _focusNode.requestFocus();
+    _onChanged(normalizedQuery);
   }
 
   void _onChanged(String value) {

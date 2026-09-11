@@ -2852,6 +2852,24 @@ abstract class AppLocalizations {
   /// **'日本酒名を入力してください'**
   String get errorEnterSakeName;
 
+  /// No description provided for @manualSakeSearchTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'酒名を十分に特定できませんでした'**
+  String get manualSakeSearchTitle;
+
+  /// No description provided for @manualSakeSearchDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'「{query}」で検索し、候補から選んでください。'**
+  String manualSakeSearchDescription(String query);
+
+  /// No description provided for @manualSakeSearchAction.
+  ///
+  /// In ja, this message translates to:
+  /// **'「{query}」で検索する'**
+  String manualSakeSearchAction(String query);
+
   /// No description provided for @errorSakeNotFound.
   ///
   /// In ja, this message translates to:

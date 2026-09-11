@@ -1453,6 +1453,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get errorEnterSakeName => '日本酒名を入力してください';
 
   @override
+  String get manualSakeSearchTitle => '酒名を十分に特定できませんでした';
+
+  @override
+  String manualSakeSearchDescription(String query) {
+    return '「$query」で検索し、候補から選んでください。';
+  }
+
+  @override
+  String manualSakeSearchAction(String query) {
+    return '「$query」で検索する';
+  }
+
+  @override
   String get errorSakeNotFound => '日本酒情報が見つかりませんでした';
 
   @override

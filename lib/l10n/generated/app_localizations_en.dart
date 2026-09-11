@@ -1525,6 +1525,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorEnterSakeName => 'Enter a sake name.';
 
   @override
+  String get manualSakeSearchTitle =>
+      'We could not identify the sake name with enough confidence';
+
+  @override
+  String manualSakeSearchDescription(String query) {
+    return 'Search for “$query” and choose from the candidates.';
+  }
+
+  @override
+  String manualSakeSearchAction(String query) {
+    return 'Search for “$query”';
+  }
+
+  @override
   String get errorSakeNotFound => 'No sake information was found.';
 
   @override

@@ -259,12 +259,20 @@ class SakeMenuRecognitionRepository {
         if (sakeInfo != null && responseSakeId != null) {
           sakeInfo = sakeInfo.copyWith(sakeId: responseSakeId);
         }
+        final manualSearchQuery = (body['manualSearchQuery'] as String?)
+            ?.trim();
+        final manualSearchSuggested =
+            body['manualSearchSuggested'] == true &&
+            manualSearchQuery != null &&
+            manualSearchQuery.isNotEmpty;
 
         return SakeBottleComprehensiveResponse(
           sakeId: responseSakeId,
           sakeName: body['sakeName'] as String?,
           type: body['type'] as String?,
           sakeInfo: sakeInfo,
+          manualSearchSuggested: manualSearchSuggested,
+          manualSearchQuery: manualSearchQuery,
         );
       } else {
         final statusCode = response.statusCode ?? -1;

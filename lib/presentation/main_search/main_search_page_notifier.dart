@@ -49,6 +49,8 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     Sake? sakeInfo,
     String? errorMessage,
     String? geminiResponse,
+    @Default(false) bool manualSearchSuggested,
+    String? manualSearchQuery,
     @Default(SearchMode.bottle) SearchMode searchMode,
     @Default([]) List<String> pendingSavedSakeIds,
     String? analyzingImagePath,
@@ -339,7 +341,12 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         logger.info('クロップした画像をギャラリーに保存しました: $galleryPath');
       }
 
-      state = state.copyWith(sakeImage: croppedFile, errorMessage: null);
+      state = state.copyWith(
+        sakeImage: croppedFile,
+        errorMessage: null,
+        manualSearchSuggested: false,
+        manualSearchQuery: null,
+      );
     } catch (error, stackTrace) {
       logger.shout('画像選択に失敗しました: $error\n$stackTrace');
     } finally {
@@ -349,7 +356,11 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
   // 画像をクリアする
   void clearImage() {
-    state = state.copyWith(sakeImage: null);
+    state = state.copyWith(
+      sakeImage: null,
+      manualSearchSuggested: false,
+      manualSearchQuery: null,
+    );
   }
 
   void applySakeScanResult(Sake sake) {
@@ -358,6 +369,15 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       sakeImage: null,
       errorMessage: null,
       geminiResponse: null,
+      manualSearchSuggested: false,
+      manualSearchQuery: null,
+    );
+  }
+
+  void dismissManualSearchSuggestion() {
+    state = state.copyWith(
+      manualSearchSuggested: false,
+      manualSearchQuery: null,
     );
   }
 
@@ -853,7 +873,27 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
-      if (response == null || response.sakeInfo == null) {
+      if (response == null) {
+        logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
+        await _handleAnalysisFailure(currentPendingId, '日本酒情報が見つかりませんでした');
+        return;
+      }
+
+      if (response.manualSearchSuggested) {
+        final query = response.manualSearchQuery?.trim();
+        if (query != null && query.isNotEmpty) {
+          logger.info('酒瓶解析: 酒名検索を案内 - query=$query');
+          await _handleAnalysisFailure(currentPendingId, '酒名を十分に特定できませんでした');
+          state = state.copyWith(
+            manualSearchSuggested: true,
+            manualSearchQuery: query,
+            errorMessage: null,
+          );
+          return;
+        }
+      }
+
+      if (response.sakeInfo == null) {
         logger.shout('酒瓶解析: 日本酒情報が見つかりませんでした');
         await _handleAnalysisFailure(currentPendingId, '日本酒情報が見つかりませんでした');
         return;
@@ -866,7 +906,11 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
           response.type ?? sakeInfo.type ?? context.l10n.unknownType;
       logger.info('酒瓶解析: 認識成功 - 日本酒名=$recognizedName, タイプ=$recognizedType');
 
-      state = state.copyWith(sakeInfo: sakeInfo);
+      state = state.copyWith(
+        sakeInfo: sakeInfo,
+        manualSearchSuggested: false,
+        manualSearchQuery: null,
+      );
       logger.info('酒瓶解析: 日本酒情報取得成功');
 
       // 結果を更新
