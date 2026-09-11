@@ -3002,6 +3002,12 @@ abstract class AppLocalizations {
   /// **'この日本酒ですか？'**
   String get isThisSake;
 
+  /// No description provided for @whichSakeCandidate.
+  ///
+  /// In ja, this message translates to:
+  /// **'この中のどれかですか？'**
+  String get whichSakeCandidate;
+
   /// No description provided for @yesThisSake.
   ///
   /// In ja, this message translates to:
@@ -3019,6 +3025,12 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'違います・裏ラベルを撮る'**
   String get wrongTakeBackLabel;
+
+  /// No description provided for @wrongRetakeBackLabel.
+  ///
+  /// In ja, this message translates to:
+  /// **'違います・もう一度撮る'**
+  String get wrongRetakeBackLabel;
 
   /// No description provided for @loadingSakeOverview.
   ///

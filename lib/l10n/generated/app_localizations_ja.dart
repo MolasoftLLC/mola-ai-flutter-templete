@@ -1535,6 +1535,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get isThisSake => 'この日本酒ですか？';
 
   @override
+  String get whichSakeCandidate => 'この中のどれかですか？';
+
+  @override
   String get yesThisSake => 'はい、この日本酒です';
 
   @override
@@ -1542,6 +1545,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get wrongTakeBackLabel => '違います・裏ラベルを撮る';
+
+  @override
+  String get wrongRetakeBackLabel => '違います・もう一度撮る';
 
   @override
   String get loadingSakeOverview => '日本酒の情報を読み込んでいます…';

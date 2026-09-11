@@ -1612,6 +1612,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get isThisSake => 'Is this the sake?';
 
   @override
+  String get whichSakeCandidate => 'Is it one of these?';
+
+  @override
   String get yesThisSake => 'Yes, this is it';
 
   @override
@@ -1619,6 +1622,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wrongTakeBackLabel => 'Not this one — scan back label';
+
+  @override
+  String get wrongRetakeBackLabel => 'Not this one — retake back label';
 
   @override
   String get loadingSakeOverview => 'Loading sake information…';

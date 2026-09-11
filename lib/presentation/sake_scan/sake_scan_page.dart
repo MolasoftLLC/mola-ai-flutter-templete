@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
+import 'package:image/image.dart' as image;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -53,6 +54,7 @@ class SakeScanPage extends StatefulWidget {
 class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
   CameraController? _cameraController;
+  final GlobalKey _cameraSurfaceKey = GlobalKey();
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
   bool _initializingCamera = false;
@@ -220,13 +222,24 @@ class _SakeScanPageState extends State<SakeScanPage>
     _capturing = true;
     if (mounted) setState(() {});
     try {
+      final previewSize = controller.value.previewSize;
+      final surfaceSize = _cameraSurfaceKey.currentContext?.size;
+      final guideCrop = previewSize == null || surfaceSize == null
+          ? const Rect.fromLTWH(0.11, 0.21, 0.78, 0.58)
+          : labelGuideCropRect(
+              viewportSize: surfaceSize,
+              previewSize: Size(previewSize.height, previewSize.width),
+            );
       final captured = await controller.takePicture();
       final directory = await getTemporaryDirectory();
-      final file = File(
-        '${directory.path}/sake_scan_photo_'
-        '${DateTime.now().microsecondsSinceEpoch}.jpg',
+      final targetPath =
+          '${directory.path}/sake_scan_photo_'
+          '${DateTime.now().microsecondsSinceEpoch}.jpg';
+      final file = await cropSakeScanPhotoToGuide(
+        source: File(captured.path),
+        outputPath: targetPath,
+        normalizedCropRect: guideCrop,
       );
-      await File(captured.path).copy(file.path);
       if (!mounted) return;
       await HapticFeedback.mediumImpact();
       await _submitImage(file);
@@ -479,46 +492,51 @@ class _SakeScanPageState extends State<SakeScanPage>
       return const ColoredBox(color: Colors.black);
     }
     final displayedPreviewSize = Size(previewSize.height, previewSize.width);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapUp: (details) => unawaited(
-              _focusAt(
-                details.localPosition,
-                viewportSize: constraints.biggest,
-                previewSize: displayedPreviewSize,
+    return SizedBox.expand(
+      key: _cameraSurfaceKey,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) => GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (details) => unawaited(
+                _focusAt(
+                  details.localPosition,
+                  viewportSize: constraints.biggest,
+                  previewSize: displayedPreviewSize,
+                ),
               ),
-            ),
-            onScaleStart: (_) {
-              _zoomLevelAtScaleStart = _currentZoomLevel;
-            },
-            onScaleUpdate: (details) {
-              if (details.pointerCount != 2) return;
-              unawaited(_setZoomLevel(_zoomLevelAtScaleStart * details.scale));
-            },
-            child: ClipRect(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                child: SizedBox.fromSize(
-                  size: displayedPreviewSize,
-                  child: CameraPreview(controller),
+              onScaleStart: (_) {
+                _zoomLevelAtScaleStart = _currentZoomLevel;
+              },
+              onScaleUpdate: (details) {
+                if (details.pointerCount != 2) return;
+                unawaited(
+                  _setZoomLevel(_zoomLevelAtScaleStart * details.scale),
+                );
+              },
+              child: ClipRect(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  child: SizedBox.fromSize(
+                    size: displayedPreviewSize,
+                    child: CameraPreview(controller),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        if (_focusRingPosition != null)
-          Positioned(
-            left: _focusRingPosition!.dx - 24,
-            top: _focusRingPosition!.dy - 24,
-            child: const IgnorePointer(child: _CameraFocusRing()),
-          ),
-        const _LabelGuideOverlay(),
-      ],
+          if (_focusRingPosition != null)
+            Positioned(
+              left: _focusRingPosition!.dx - 24,
+              top: _focusRingPosition!.dy - 24,
+              child: const IgnorePointer(child: _CameraFocusRing()),
+            ),
+          const _LabelGuideOverlay(),
+        ],
+      ),
     );
   }
 
@@ -656,7 +674,7 @@ class _SakeScanPageState extends State<SakeScanPage>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              context.l10n.isThisSake,
+              context.l10n.whichSakeCandidate,
               style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontSize: 16,
@@ -732,7 +750,11 @@ class _SakeScanPageState extends State<SakeScanPage>
             TextButton.icon(
               onPressed: context.read<SakeScanNotifier>().rejectCandidates,
               icon: const Icon(Icons.flip_camera_ios_outlined),
-              label: Text(context.l10n.wrongTakeBackLabel),
+              label: Text(
+                state.backImage == null
+                    ? context.l10n.wrongTakeBackLabel
+                    : context.l10n.wrongRetakeBackLabel,
+              ),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF1D3567),
               ),
@@ -929,6 +951,92 @@ Offset normalizeCameraPreviewPoint({
   );
 }
 
+/// 黄色いガイド枠を、実際にカメラが写している画像内の範囲へ変換する。
+@visibleForTesting
+Rect labelGuideCropRect({
+  required Size viewportSize,
+  required Size previewSize,
+}) {
+  if (viewportSize.isEmpty || previewSize.isEmpty) {
+    return const Rect.fromLTWH(0.11, 0.21, 0.78, 0.58);
+  }
+  final guideRect = Rect.fromCenter(
+    center: viewportSize.center(Offset.zero),
+    width: viewportSize.width * 0.78,
+    height: viewportSize.height * 0.58,
+  );
+  final fittedSizes = applyBoxFit(BoxFit.cover, previewSize, viewportSize);
+  final sourceRect = Alignment.center.inscribe(
+    fittedSizes.source,
+    Offset.zero & previewSize,
+  );
+  final destinationRect = Alignment.center.inscribe(
+    fittedSizes.destination,
+    Offset.zero & viewportSize,
+  );
+
+  double sourceX(double x) =>
+      (sourceRect.left +
+          ((x - destinationRect.left) / destinationRect.width).clamp(0.0, 1.0) *
+              sourceRect.width) /
+      previewSize.width;
+  double sourceY(double y) =>
+      (sourceRect.top +
+          ((y - destinationRect.top) / destinationRect.height).clamp(0.0, 1.0) *
+              sourceRect.height) /
+      previewSize.height;
+
+  return Rect.fromLTRB(
+    sourceX(guideRect.left),
+    sourceY(guideRect.top),
+    sourceX(guideRect.right),
+    sourceY(guideRect.bottom),
+  );
+}
+
+Future<File> cropSakeScanPhotoToGuide({
+  required File source,
+  required String outputPath,
+  required Rect normalizedCropRect,
+}) async {
+  final croppedBytes = await compute<Map<String, Object>, Uint8List>(
+    cropSakeScanPhotoBytes,
+    <String, Object>{
+      'bytes': await source.readAsBytes(),
+      'left': normalizedCropRect.left,
+      'top': normalizedCropRect.top,
+      'right': normalizedCropRect.right,
+      'bottom': normalizedCropRect.bottom,
+    },
+  );
+  final output = File(outputPath);
+  await output.writeAsBytes(croppedBytes, flush: true);
+  return output;
+}
+
+@visibleForTesting
+Uint8List cropSakeScanPhotoBytes(Map<String, Object> data) {
+  final source = image.decodeImage(data['bytes']! as Uint8List);
+  if (source == null) throw StateError('撮影画像を読み込めませんでした');
+  final oriented = image.bakeOrientation(source);
+  final left = ((data['left']! as double).clamp(0.0, 1.0) * oriented.width)
+      .floor();
+  final top = ((data['top']! as double).clamp(0.0, 1.0) * oriented.height)
+      .floor();
+  final right = ((data['right']! as double).clamp(0.0, 1.0) * oriented.width)
+      .ceil();
+  final bottom = ((data['bottom']! as double).clamp(0.0, 1.0) * oriented.height)
+      .ceil();
+  final cropped = image.copyCrop(
+    oriented,
+    x: left.clamp(0, oriented.width - 1),
+    y: top.clamp(0, oriented.height - 1),
+    width: (right - left).clamp(1, oriented.width - left),
+    height: (bottom - top).clamp(1, oriented.height - top),
+  );
+  return Uint8List.fromList(image.encodeJpg(cropped, quality: 92));
+}
+
 double clampSakeScanZoomLevel({
   required double requestedZoomLevel,
   required double minZoomLevel,
@@ -1081,33 +1189,69 @@ class _CompactCandidate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          candidate.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFF1D3567),
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+        _ScanCandidateThumbnail(imageUrl: candidate.imageUrl),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                candidate.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF1D3567),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (candidate.type?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 3),
+                Text(candidate.type!, style: const TextStyle(fontSize: 13)),
+              ],
+              if (candidate.brewery?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 3),
+                Text(
+                  candidate.brewery!,
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                ),
+              ],
+            ],
           ),
         ),
-        if (candidate.type?.isNotEmpty ?? false) ...[
-          const SizedBox(height: 3),
-          Text(candidate.type!, style: const TextStyle(fontSize: 13)),
-        ],
-        if (candidate.brewery?.isNotEmpty ?? false) ...[
-          const SizedBox(height: 3),
-          Text(
-            candidate.brewery!,
-            style: const TextStyle(color: Colors.black54, fontSize: 12),
-          ),
-        ],
       ],
     );
   }
+}
+
+class _ScanCandidateThumbnail extends StatelessWidget {
+  const _ScanCandidateThumbnail({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(9),
+    child: ColoredBox(
+      color: const Color(0xFFEAF0F7),
+      child: SizedBox(
+        width: 48,
+        height: 60,
+        child: imageUrl?.isNotEmpty ?? false
+            ? Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.wine_bar_outlined,
+                  color: Color(0xFF1D3567),
+                ),
+              )
+            : const Icon(Icons.wine_bar_outlined, color: Color(0xFF1D3567)),
+      ),
+    ),
+  );
 }
 
 class _CompactSakeSummary extends StatelessWidget {
