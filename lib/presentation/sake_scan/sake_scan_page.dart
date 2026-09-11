@@ -683,48 +683,76 @@ class _SakeScanPageState extends State<SakeScanPage>
             ),
             const SizedBox(height: 12),
             Flexible(
-              child: Scrollbar(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: state.candidates.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (_, index) {
-                    final item = state.candidates[index];
-                    final selected = index == state.selectedCandidateIndex;
-                    return Material(
-                      color: selected
-                          ? const Color(0xFFFFF8D6)
-                          : const Color(0xFFF6F7FA),
-                      borderRadius: BorderRadius.circular(14),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: state.isSubmitting
-                            ? null
-                            : () {
-                                context
-                                    .read<SakeScanNotifier>()
-                                    .selectCandidate(index);
-                                unawaited(HapticFeedback.selectionClick());
-                              },
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
-                          child: Row(
-                            children: [
-                              Icon(
-                                selected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                                color: const Color(0xFF1D3567),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: const Color(0xFFE1E5EB)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Scrollbar(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: state.candidates.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final item = state.candidates[index];
+                        final selected = index == state.selectedCandidateIndex;
+                        final details =
+                            [item.brewery?.trim(), item.type?.trim()]
+                                .whereType<String>()
+                                .where((value) => value.isNotEmpty);
+                        return Material(
+                          color: selected
+                              ? const Color(0xFFFFF8ED)
+                              : Colors.white,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 3,
+                            ),
+                            leading: _ScanCandidateThumbnail(
+                              imageUrl: item.imageUrl,
+                            ),
+                            title: Text(
+                              item.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontWeight: FontWeight.w700,
                               ),
-                              Expanded(
-                                child: _CompactCandidate(candidate: item),
-                              ),
-                            ],
+                            ),
+                            subtitle: details.isEmpty
+                                ? null
+                                : Text(
+                                    details.join(' / '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                            trailing: Icon(
+                              selected
+                                  ? Icons.check_circle
+                                  : Icons.chevron_right,
+                              color: selected
+                                  ? const Color(0xFFFF7A1A)
+                                  : const Color(0xFF697386),
+                            ),
+                            onTap: state.isSubmitting
+                                ? null
+                                : () {
+                                    context
+                                        .read<SakeScanNotifier>()
+                                        .selectCandidate(index);
+                                    unawaited(HapticFeedback.selectionClick());
+                                  },
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -1182,50 +1210,6 @@ class _BottomCard extends StatelessWidget {
   }
 }
 
-class _CompactCandidate extends StatelessWidget {
-  const _CompactCandidate({required this.candidate});
-
-  final SakeScanCandidate candidate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _ScanCandidateThumbnail(imageUrl: candidate.imageUrl),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                candidate.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF1D3567),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (candidate.type?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 3),
-                Text(candidate.type!, style: const TextStyle(fontSize: 13)),
-              ],
-              if (candidate.brewery?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 3),
-                Text(
-                  candidate.brewery!,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ScanCandidateThumbnail extends StatelessWidget {
   const _ScanCandidateThumbnail({this.imageUrl});
 
@@ -1233,22 +1217,22 @@ class _ScanCandidateThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(9),
+    borderRadius: BorderRadius.circular(8),
     child: ColoredBox(
-      color: const Color(0xFFEAF0F7),
+      color: const Color(0xFFF0F2F5),
       child: SizedBox(
-        width: 48,
-        height: 60,
+        width: 46,
+        height: 46,
         child: imageUrl?.isNotEmpty ?? false
             ? Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const Icon(
-                  Icons.wine_bar_outlined,
+                  Icons.local_drink_outlined,
                   color: Color(0xFF1D3567),
                 ),
               )
-            : const Icon(Icons.wine_bar_outlined, color: Color(0xFF1D3567)),
+            : const Icon(Icons.local_drink_outlined, color: Color(0xFF1D3567)),
       ),
     ),
   );
