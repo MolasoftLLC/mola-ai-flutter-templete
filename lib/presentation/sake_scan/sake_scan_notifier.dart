@@ -464,15 +464,17 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   Sake _mergeBasicAndAnalysis(Sake? basic, Sake analyzed) {
     if (basic == null) return analyzed;
     return analyzed.copyWith(
-      sakeId: analyzed.sakeId ?? basic.sakeId,
-      brandId: analyzed.brandId ?? basic.brandId,
-      name: analyzed.name ?? basic.name,
-      brewery: analyzed.brewery ?? basic.brewery,
-      type: analyzed.type ?? basic.type,
-      prefectureCode: analyzed.prefectureCode ?? basic.prefectureCode,
-      primaryImageUrl: analyzed.primaryImageUrl ?? basic.primaryImageUrl,
-      community: analyzed.community ?? basic.community,
-      sameBrandSakes: analyzed.sameBrandSakes ?? basic.sameBrandSakes,
+      // 候補画面でユーザーが確定したマスターが正とする。AI解析は味や
+      // 説明を補う処理であり、別バリエーションへ紐付けを変えてはいけない。
+      sakeId: basic.sakeId ?? analyzed.sakeId,
+      brandId: basic.brandId ?? analyzed.brandId,
+      name: basic.name ?? analyzed.name,
+      brewery: basic.brewery ?? analyzed.brewery,
+      type: basic.type ?? analyzed.type,
+      prefectureCode: basic.prefectureCode ?? analyzed.prefectureCode,
+      primaryImageUrl: basic.primaryImageUrl ?? analyzed.primaryImageUrl,
+      community: basic.community ?? analyzed.community,
+      sameBrandSakes: basic.sameBrandSakes ?? analyzed.sameBrandSakes,
     );
   }
 
