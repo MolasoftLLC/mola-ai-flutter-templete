@@ -21,6 +21,7 @@ import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../favorite_search/favorite_search_page.dart';
+import '../menu_search/menu_search_page.dart';
 import '../sake_map/sake_map_page.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import '../sake_scan/sake_scan_page.dart';
@@ -165,6 +166,7 @@ class MainSearchPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: _SearchShortcuts(
                             onMapTap: () => _openMap(context),
+                            onMenuSearchTap: () => _openMenuSearch(context),
                             onFastSearchTap: () =>
                                 _openFastSearch(context, notifier),
                             onPreferenceSearchTap: () =>
@@ -262,6 +264,12 @@ class MainSearchPage extends StatelessWidget {
   Future<void> _openPreferenceSearch(BuildContext context) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => FavoriteSearchPage.wrapped()),
+    );
+  }
+
+  Future<void> _openMenuSearch(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => MenuSearchPage.wrapped()),
     );
   }
 
@@ -1429,11 +1437,13 @@ class _SakeCandidateImage extends StatelessWidget {
 class _SearchShortcuts extends StatelessWidget {
   const _SearchShortcuts({
     required this.onMapTap,
+    required this.onMenuSearchTap,
     required this.onFastSearchTap,
     required this.onPreferenceSearchTap,
   });
 
   final VoidCallback onMapTap;
+  final VoidCallback onMenuSearchTap;
   final VoidCallback onFastSearchTap;
   final VoidCallback onPreferenceSearchTap;
 
@@ -1461,58 +1471,29 @@ class _SearchShortcuts extends StatelessWidget {
           ),
         ],
       ),
-      const SizedBox(height: 10),
-      _PreferenceSearchShortcut(onTap: onPreferenceSearchTap),
-    ],
-  );
-}
-
-class _PreferenceSearchShortcut extends StatelessWidget {
-  const _PreferenceSearchShortcut({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(14),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            const Icon(Icons.landscape_outlined, color: Color(0xFF143861)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.searchByRegion,
-                    style: const TextStyle(
-                      color: Color(0xFF143861),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.preferenceSearchDescription,
-                    style: const TextStyle(
-                      color: Color(0xFF606060),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.landscape_outlined,
+              title: context.l10n.searchByRegion,
+              description: context.l10n.preferenceSearchDescription,
+              onTap: onPreferenceSearchTap,
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF143861)),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.menu_book_outlined,
+              title: context.l10n.menuSearchPageTitle,
+              description: context.l10n.menuPhotoDescription,
+              onTap: onMenuSearchTap,
+            ),
+          ),
+        ],
       ),
-    ),
+    ],
   );
 }
 
