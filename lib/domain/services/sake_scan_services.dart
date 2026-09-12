@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import '../../common/utils/image_cropper_service.dart';
+import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../notifier/saved_sake/saved_sake_notifier.dart';
@@ -102,7 +103,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     File? secondaryImage,
     required bool isPublic,
   }) async {
-    final savedPath = await ImageCropperService.saveImagePermanently(
+    final savedPath = await _saveCompressedImagePermanently(
       primaryImage,
       'saved_sake',
     );
@@ -111,7 +112,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     }
     final savedPaths = <String>[savedPath];
     if (secondaryImage != null && secondaryImage.path != primaryImage.path) {
-      final secondaryPath = await ImageCropperService.saveImagePermanently(
+      final secondaryPath = await _saveCompressedImagePermanently(
         secondaryImage,
         'saved_sake',
       );
@@ -169,6 +170,22 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       isPublic: isPublic,
     );
     return stored;
+  }
+
+  Future<String?> _saveCompressedImagePermanently(
+    File image,
+    String prefix,
+  ) async {
+    final compressed = await ImageUtils.compressForSakeStorage(image);
+    try {
+      return await ImageCropperService.saveImagePermanently(compressed, prefix);
+    } finally {
+      try {
+        if (await compressed.exists()) await compressed.delete();
+      } catch (error) {
+        logger.info('保存用一時画像を削除できませんでした: $error');
+      }
+    }
   }
 
   void _sync({
