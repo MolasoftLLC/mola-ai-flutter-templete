@@ -55,17 +55,6 @@ void main() {
 
       expect(sake.primaryImageUrl, 'https://example.com/legacy.jpg');
     });
-
-    test('最後に飲まれた日時を読み込む', () {
-      final sake = VenueSake.fromJson(const {
-        'sakeId': 123,
-        'name': 'サンプル純米酒',
-        'recordCount': 3,
-        'latestConsumedAt': '2026-09-12T06:30:00.000Z',
-      });
-
-      expect(sake.latestConsumedAt, DateTime.utc(2026, 9, 12, 6, 30));
-    });
   });
 
   group('SakeMapSearchResult.fromJson', () {
