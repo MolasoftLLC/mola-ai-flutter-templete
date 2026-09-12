@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/logger.dart';
@@ -39,8 +41,8 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   final _searchController = TextEditingController();
   final _markerIcons = <String, BitmapDescriptor>{};
-  final _requestedMarkerUrls = <String>{};
-  final _pendingMarkerUrls = Queue<String>();
+  final _requestedMarkerKeys = <String>{};
+  final _pendingMarkerRequests = Queue<_MarkerIconRequest>();
   int _activeMarkerLoads = 0;
   bool _isLocating = false;
   bool _showMyLocation = false;
@@ -65,15 +67,14 @@ class _SakeMapPageState extends State<SakeMapPage> {
           (venue) => Marker(
             markerId: MarkerId(venue.venueId),
             position: LatLng(venue.latitude, venue.longitude),
-            icon:
-                _markerIcons[venue.latestImageUrl] ??
+            icon: _markerIcons[_markerKey(venue)] ??
                 BitmapDescriptor.defaultMarker,
-            anchor: venue.latestImageUrl == null
-                ? const Offset(0.5, 1)
-                : const Offset(0.5, 0.96),
+            anchor: _markerIcons.containsKey(_markerKey(venue))
+                ? const Offset(0.5, 0.96)
+                : const Offset(0.5, 1),
             infoWindow: InfoWindow(
               title: venue.displayName,
-              snippet: '${venue.sakeCount}種類・${venue.recordCount}件の登録',
+              snippet: 'みんなの飲酒記録 ${venue.recordCount}件・${venue.sakeCount}種類',
             ),
             onTap: () => _showVenueSakes(context, notifier, venue),
           ),
@@ -411,27 +412,31 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   void _requestMarkerIcons(List<MapVenue> venues) {
     for (final venue in venues) {
-      final imageUrl = venue.latestImageUrl;
-      if (imageUrl == null ||
-          _markerIcons.containsKey(imageUrl) ||
-          !_requestedMarkerUrls.add(imageUrl)) {
+      final key = _markerKey(venue);
+      if (_markerIcons.containsKey(key) || !_requestedMarkerKeys.add(key)) {
         continue;
       }
-      _pendingMarkerUrls.add(imageUrl);
+      _pendingMarkerRequests.add(
+        _MarkerIconRequest(
+          key: key,
+          imageUrl: venue.latestImageUrl,
+          recordCount: venue.recordCount,
+        ),
+      );
     }
     _drainMarkerQueue();
   }
 
   void _drainMarkerQueue() {
     if (!mounted) {
-      _pendingMarkerUrls.clear();
+      _pendingMarkerRequests.clear();
       return;
     }
-    while (_activeMarkerLoads < 4 && _pendingMarkerUrls.isNotEmpty) {
-      final imageUrl = _pendingMarkerUrls.removeFirst();
+    while (_activeMarkerLoads < 4 && _pendingMarkerRequests.isNotEmpty) {
+      final request = _pendingMarkerRequests.removeFirst();
       _activeMarkerLoads += 1;
       unawaited(
-        _loadMarkerIcon(imageUrl).whenComplete(() {
+        _loadMarkerIcon(request).whenComplete(() {
           _activeMarkerLoads -= 1;
           _drainMarkerQueue();
         }),
@@ -439,21 +444,43 @@ class _SakeMapPageState extends State<SakeMapPage> {
     }
   }
 
-  Future<void> _loadMarkerIcon(String imageUrl) async {
+  Future<void> _loadMarkerIcon(_MarkerIconRequest request) async {
     try {
-      final uri = Uri.tryParse(imageUrl);
-      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-        return;
+      Uint8List? imageBytes;
+      final imageUrl = request.imageUrl;
+      if (imageUrl != null) {
+        final uri = Uri.tryParse(imageUrl);
+        if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+          final response = await http
+              .get(uri)
+              .timeout(const Duration(seconds: 10));
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            imageBytes = response.bodyBytes;
+          }
+        }
       }
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (response.statusCode < 200 || response.statusCode >= 300) return;
-      final icon = await createCircularSakeMarker(response.bodyBytes);
+      final icon = await createCircularSakeMarker(
+        imageBytes,
+        recordCount: request.recordCount,
+      );
       if (!mounted) return;
-      setState(() => _markerIcons[imageUrl] = icon);
+      setState(() => _markerIcons[request.key] = icon);
     } catch (error) {
       logger.info('地図ピン画像を読み込めませんでした: $error');
+      try {
+        final fallback = await createCircularSakeMarker(
+          null,
+          recordCount: request.recordCount,
+        );
+        if (mounted) setState(() => _markerIcons[request.key] = fallback);
+      } catch (fallbackError) {
+        logger.info('地図の代替ピンを生成できませんでした: $fallbackError');
+      }
     }
   }
+
+  String _markerKey(MapVenue venue) =>
+      '${venue.latestImageUrl ?? 'fallback'}#${venue.recordCount}';
 
   Future<void> _showVenueSakes(
     BuildContext context,
@@ -473,9 +500,10 @@ class _SakeMapPageState extends State<SakeMapPage> {
             );
           }
           final sakes = snapshot.data ?? const <VenueSake>[];
+          final latestSake = sakes.isEmpty ? null : sakes.first;
           return SafeArea(
             child: SizedBox(
-              height: 420,
+              height: 520,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -490,10 +518,31 @@ class _SakeMapPageState extends State<SakeMapPage> {
                             sheetContentContext,
                           ).textTheme.titleLarge,
                         ),
-                        const Text('この店舗に登録されている日本酒'),
+                        Text(
+                          'みんなの飲酒記録 ${venue.recordCount}件・${venue.sakeCount}種類',
+                        ),
                       ],
                     ),
                   ),
+                  if (latestSake != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: _LatestSakeCard(
+                        sake: latestSake,
+                        imageUrl:
+                            venue.latestImageUrl ??
+                            latestSake.thumbnailImageUrl ??
+                            latestSake.primaryImageUrl,
+                      ),
+                    ),
+                  if (sakes.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: Text(
+                        'この店舗で飲まれた日本酒',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
                   Expanded(
                     child: sakes.isEmpty
                         ? const Center(child: Text('公開された日本酒記録はありません。'))
@@ -538,6 +587,79 @@ class _SakeMapPageState extends State<SakeMapPage> {
       ),
     );
   }
+}
+
+class _LatestSakeCard extends StatelessWidget {
+  const _LatestSakeCard({required this.sake, this.imageUrl});
+
+  final VenueSake sake;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final consumedAt = sake.latestConsumedAt;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F6FA),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            SizedBox.square(
+              dimension: 64,
+              child: _SakeThumbnail(imageUrl: imageUrl),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '最近飲まれた日本酒',
+                    style: TextStyle(
+                      color: Color(0xFF5F6B78),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sake.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    [
+                      if (sake.brewery != null) sake.brewery!,
+                      if (consumedAt != null)
+                        DateFormat('M月d日 H:mm').format(consumedAt.toLocal()),
+                    ].join('・'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MarkerIconRequest {
+  const _MarkerIconRequest({
+    required this.key,
+    required this.imageUrl,
+    required this.recordCount,
+  });
+
+  final String key;
+  final String? imageUrl;
+  final int recordCount;
 }
 
 class _SakeThumbnail extends StatelessWidget {
