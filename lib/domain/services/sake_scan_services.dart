@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import '../../common/logger.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';

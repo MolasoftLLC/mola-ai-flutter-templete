@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chopper/chopper.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 
