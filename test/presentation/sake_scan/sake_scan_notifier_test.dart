@@ -139,8 +139,9 @@ void main() {
       final notifier = _buildNotifier(repository);
 
       await notifier.submitFront(image);
-      notifier.rejectCandidates();
+      await notifier.rejectCandidates();
       expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(repository.rejectedSakeIds, [101]);
 
       await notifier.submitBack(image);
       expect(
@@ -410,6 +411,7 @@ class _FakeScanRepository implements SakeScanRepository {
   final Object? frontError;
   final Completer<SakeScanResult>? frontCompleter;
   int frontCalls = 0;
+  List<int>? rejectedSakeIds;
 
   @override
   Future<SakeScanResult> scanFront(File image) async {
@@ -431,6 +433,11 @@ class _FakeScanRepository implements SakeScanRepository {
           status: SakeScanApiStatus.cacheHit,
           sakeId: sakeId,
         );
+  }
+
+  @override
+  Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds) async {
+    rejectedSakeIds = sakeIds;
   }
 
   @override

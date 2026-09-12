@@ -184,15 +184,35 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     state = state.copyWith(selectedCandidateIndex: next);
   }
 
-  void rejectCandidates() {
+  Future<void> rejectCandidates() async {
     if (state.isSubmitting) return;
-    state = state.copyWith(
-      status: SakeScanViewStatus.backScanning,
-      candidates: const <SakeScanCandidate>[],
-      selectedCandidateIndex: 0,
-      clearError: true,
-      clearBackLabelReason: true,
-    );
+    final sessionId = state.scanSessionId;
+    final candidateIds = state.candidates
+        .map((candidate) => candidate.sakeId)
+        .where((sakeId) => sakeId > 0)
+        .toList(growable: false);
+    if (sessionId == null || sessionId.isEmpty || candidateIds.isEmpty) {
+      retry();
+      return;
+    }
+    final operation = ++_operation;
+    _emit(state.copyWith(isSubmitting: true, clearError: true));
+    try {
+      await _scanRepository.rejectCandidates(sessionId, candidateIds);
+      if (!_isCurrent(operation)) return;
+      _emit(
+        state.copyWith(
+          status: SakeScanViewStatus.backScanning,
+          candidates: const <SakeScanCandidate>[],
+          selectedCandidateIndex: 0,
+          isSubmitting: false,
+          clearError: true,
+          clearBackLabelReason: true,
+        ),
+      );
+    } catch (error, stackTrace) {
+      _handleError(error, stackTrace, operation);
+    }
   }
 
   void startNextScan() {
@@ -244,7 +264,10 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       if (!_isCurrent(operation)) return;
       _emit(state.copyWith(sake: overview.sake, savedSake: saved));
 
-      if (overview.analysisCompleted) {
+      // confirm時点で解析キャッシュを確認済み。Overviewの表示用ペイロードが
+      // 空でも、既解析の酒に画像解析を重ねて走らせない。
+      if (overview.analysisCompleted ||
+          confirmation.status == SakeScanApiStatus.cacheHit) {
         final completed = await _persistenceService.saveCompleted(
           saved,
           overview.sake,

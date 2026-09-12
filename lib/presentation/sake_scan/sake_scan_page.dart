@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
-import 'package:image/image.dart' as image;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
@@ -54,7 +51,6 @@ class SakeScanPage extends StatefulWidget {
 class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
   CameraController? _cameraController;
-  final GlobalKey _cameraSurfaceKey = GlobalKey();
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
   bool _initializingCamera = false;
@@ -222,24 +218,9 @@ class _SakeScanPageState extends State<SakeScanPage>
     _capturing = true;
     if (mounted) setState(() {});
     try {
-      final previewSize = controller.value.previewSize;
-      final surfaceSize = _cameraSurfaceKey.currentContext?.size;
-      final guideCrop = previewSize == null || surfaceSize == null
-          ? const Rect.fromLTWH(0.11, 0.21, 0.78, 0.58)
-          : labelGuideCropRect(
-              viewportSize: surfaceSize,
-              previewSize: Size(previewSize.height, previewSize.width),
-            );
       final captured = await controller.takePicture();
-      final directory = await getTemporaryDirectory();
-      final targetPath =
-          '${directory.path}/sake_scan_photo_'
-          '${DateTime.now().microsecondsSinceEpoch}.jpg';
-      final file = await cropSakeScanPhotoToGuide(
-        source: File(captured.path),
-        outputPath: targetPath,
-        normalizedCropRect: guideCrop,
-      );
+      // ガイド枠は構図の目安にせず、プレビュー全体をそのままOCRへ渡す。
+      final file = File(captured.path);
       if (!mounted) return;
       await HapticFeedback.mediumImpact();
       await _submitImage(file);
@@ -493,7 +474,6 @@ class _SakeScanPageState extends State<SakeScanPage>
     }
     final displayedPreviewSize = Size(previewSize.height, previewSize.width);
     return SizedBox.expand(
-      key: _cameraSurfaceKey,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -534,7 +514,6 @@ class _SakeScanPageState extends State<SakeScanPage>
               top: _focusRingPosition!.dy - 24,
               child: const IgnorePointer(child: _CameraFocusRing()),
             ),
-          const _LabelGuideOverlay(),
         ],
       ),
     );
@@ -579,7 +558,6 @@ class _SakeScanPageState extends State<SakeScanPage>
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (selectCloseUpSakeScanCamera(_availableCameras) != null) ...[
                 _CameraCloseUpButton(
@@ -589,20 +567,33 @@ class _SakeScanPageState extends State<SakeScanPage>
                       ? null
                       : () => unawaited(_toggleCloseUpMode()),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
               ],
-              _CameraZoomButton(
-                label: '1x',
-                selected: (_currentZoomLevel - 1).abs() < 0.05,
-                onPressed: () => unawaited(_setZoomLevel(1)),
+              const Icon(Icons.zoom_out, color: Colors.white70),
+              Expanded(
+                child: Slider(
+                  value: _currentZoomLevel,
+                  min: _minZoomLevel,
+                  max: _maxZoomLevel,
+                  onChanged: _maxZoomLevel > _minZoomLevel
+                      ? (value) => unawaited(_setZoomLevel(value))
+                      : null,
+                  activeColor: const Color(0xFFFFD54F),
+                  inactiveColor: Colors.white30,
+                ),
               ),
-              const SizedBox(width: 10),
-              _CameraZoomButton(
-                label: '2x',
-                selected: (_currentZoomLevel - 2).abs() < 0.05,
-                onPressed: _maxZoomLevel >= 2
-                    ? () => unawaited(_setZoomLevel(2))
-                    : null,
+              const Icon(Icons.zoom_in, color: Colors.white70),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '${_currentZoomLevel.toStringAsFixed(1)}×',
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
@@ -776,7 +767,11 @@ class _SakeScanPageState extends State<SakeScanPage>
             ),
             const SizedBox(height: 4),
             TextButton.icon(
-              onPressed: context.read<SakeScanNotifier>().rejectCandidates,
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => unawaited(
+                      context.read<SakeScanNotifier>().rejectCandidates(),
+                    ),
               icon: const Icon(Icons.flip_camera_ios_outlined),
               label: Text(
                 state.backImage == null
@@ -979,92 +974,6 @@ Offset normalizeCameraPreviewPoint({
   );
 }
 
-/// 黄色いガイド枠を、実際にカメラが写している画像内の範囲へ変換する。
-@visibleForTesting
-Rect labelGuideCropRect({
-  required Size viewportSize,
-  required Size previewSize,
-}) {
-  if (viewportSize.isEmpty || previewSize.isEmpty) {
-    return const Rect.fromLTWH(0.11, 0.21, 0.78, 0.58);
-  }
-  final guideRect = Rect.fromCenter(
-    center: viewportSize.center(Offset.zero),
-    width: viewportSize.width * 0.78,
-    height: viewportSize.height * 0.58,
-  );
-  final fittedSizes = applyBoxFit(BoxFit.cover, previewSize, viewportSize);
-  final sourceRect = Alignment.center.inscribe(
-    fittedSizes.source,
-    Offset.zero & previewSize,
-  );
-  final destinationRect = Alignment.center.inscribe(
-    fittedSizes.destination,
-    Offset.zero & viewportSize,
-  );
-
-  double sourceX(double x) =>
-      (sourceRect.left +
-          ((x - destinationRect.left) / destinationRect.width).clamp(0.0, 1.0) *
-              sourceRect.width) /
-      previewSize.width;
-  double sourceY(double y) =>
-      (sourceRect.top +
-          ((y - destinationRect.top) / destinationRect.height).clamp(0.0, 1.0) *
-              sourceRect.height) /
-      previewSize.height;
-
-  return Rect.fromLTRB(
-    sourceX(guideRect.left),
-    sourceY(guideRect.top),
-    sourceX(guideRect.right),
-    sourceY(guideRect.bottom),
-  );
-}
-
-Future<File> cropSakeScanPhotoToGuide({
-  required File source,
-  required String outputPath,
-  required Rect normalizedCropRect,
-}) async {
-  final croppedBytes = await compute<Map<String, Object>, Uint8List>(
-    cropSakeScanPhotoBytes,
-    <String, Object>{
-      'bytes': await source.readAsBytes(),
-      'left': normalizedCropRect.left,
-      'top': normalizedCropRect.top,
-      'right': normalizedCropRect.right,
-      'bottom': normalizedCropRect.bottom,
-    },
-  );
-  final output = File(outputPath);
-  await output.writeAsBytes(croppedBytes, flush: true);
-  return output;
-}
-
-@visibleForTesting
-Uint8List cropSakeScanPhotoBytes(Map<String, Object> data) {
-  final source = image.decodeImage(data['bytes']! as Uint8List);
-  if (source == null) throw StateError('撮影画像を読み込めませんでした');
-  final oriented = image.bakeOrientation(source);
-  final left = ((data['left']! as double).clamp(0.0, 1.0) * oriented.width)
-      .floor();
-  final top = ((data['top']! as double).clamp(0.0, 1.0) * oriented.height)
-      .floor();
-  final right = ((data['right']! as double).clamp(0.0, 1.0) * oriented.width)
-      .ceil();
-  final bottom = ((data['bottom']! as double).clamp(0.0, 1.0) * oriented.height)
-      .ceil();
-  final cropped = image.copyCrop(
-    oriented,
-    x: left.clamp(0, oriented.width - 1),
-    y: top.clamp(0, oriented.height - 1),
-    width: (right - left).clamp(1, oriented.width - left),
-    height: (bottom - top).clamp(1, oriented.height - top),
-  );
-  return Uint8List.fromList(image.encodeJpg(cropped, quality: 92));
-}
-
 double clampSakeScanZoomLevel({
   required double requestedZoomLevel,
   required double minZoomLevel,
@@ -1090,37 +999,6 @@ class _CameraFocusRing extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFFFD54F), width: 2),
         borderRadius: BorderRadius.circular(8),
-      ),
-    );
-  }
-}
-
-class _CameraZoomButton extends StatelessWidget {
-  const _CameraZoomButton({
-    required this.label,
-    required this.selected,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 44,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          padding: EdgeInsets.zero,
-          shape: const CircleBorder(),
-          backgroundColor: selected ? const Color(0xFFFFD54F) : Colors.black54,
-          foregroundColor: selected ? const Color(0xFF1D3567) : Colors.white,
-          disabledBackgroundColor: Colors.black26,
-          disabledForegroundColor: Colors.white38,
-        ),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -1155,28 +1033,6 @@ class _CameraCloseUpButton extends StatelessWidget {
         label: Text(
           label,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-class _LabelGuideOverlay extends StatelessWidget {
-  const _LabelGuideOverlay();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Center(
-        child: FractionallySizedBox(
-          widthFactor: 0.78,
-          heightFactor: 0.58,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFFFD54F), width: 3),
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
         ),
       ),
     );

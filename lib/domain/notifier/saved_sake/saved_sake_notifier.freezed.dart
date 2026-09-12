@@ -12,8 +12,7 @@ part of 'saved_sake_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$SavedSakeState {
@@ -29,15 +28,13 @@ mixin _$SavedSakeState {
 /// @nodoc
 abstract class $SavedSakeStateCopyWith<$Res> {
   factory $SavedSakeStateCopyWith(
-    SavedSakeState value,
-    $Res Function(SavedSakeState) then,
-  ) = _$SavedSakeStateCopyWithImpl<$Res, SavedSakeState>;
+          SavedSakeState value, $Res Function(SavedSakeState) then) =
+      _$SavedSakeStateCopyWithImpl<$Res, SavedSakeState>;
   @useResult
-  $Res call({
-    List<Sake> savedSakeList,
-    bool isGridView,
-    List<String> activeFilterTags,
-  });
+  $Res call(
+      {List<Sake> savedSakeList,
+      bool isGridView,
+      List<String> activeFilterTags});
 }
 
 /// @nodoc
@@ -57,40 +54,35 @@ class _$SavedSakeStateCopyWithImpl<$Res, $Val extends SavedSakeState>
     Object? isGridView = null,
     Object? activeFilterTags = null,
   }) {
-    return _then(
-      _value.copyWith(
-            savedSakeList: null == savedSakeList
-                ? _value.savedSakeList
-                : savedSakeList // ignore: cast_nullable_to_non_nullable
-                      as List<Sake>,
-            isGridView: null == isGridView
-                ? _value.isGridView
-                : isGridView // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            activeFilterTags: null == activeFilterTags
-                ? _value.activeFilterTags
-                : activeFilterTags // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      savedSakeList: null == savedSakeList
+          ? _value.savedSakeList
+          : savedSakeList // ignore: cast_nullable_to_non_nullable
+              as List<Sake>,
+      isGridView: null == isGridView
+          ? _value.isGridView
+          : isGridView // ignore: cast_nullable_to_non_nullable
+              as bool,
+      activeFilterTags: null == activeFilterTags
+          ? _value.activeFilterTags
+          : activeFilterTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$SavedSakeStateImplCopyWith<$Res>
     implements $SavedSakeStateCopyWith<$Res> {
-  factory _$$SavedSakeStateImplCopyWith(
-    _$SavedSakeStateImpl value,
-    $Res Function(_$SavedSakeStateImpl) then,
-  ) = __$$SavedSakeStateImplCopyWithImpl<$Res>;
+  factory _$$SavedSakeStateImplCopyWith(_$SavedSakeStateImpl value,
+          $Res Function(_$SavedSakeStateImpl) then) =
+      __$$SavedSakeStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    List<Sake> savedSakeList,
-    bool isGridView,
-    List<String> activeFilterTags,
-  });
+  $Res call(
+      {List<Sake> savedSakeList,
+      bool isGridView,
+      List<String> activeFilterTags});
 }
 
 /// @nodoc
@@ -98,9 +90,8 @@ class __$$SavedSakeStateImplCopyWithImpl<$Res>
     extends _$SavedSakeStateCopyWithImpl<$Res, _$SavedSakeStateImpl>
     implements _$$SavedSakeStateImplCopyWith<$Res> {
   __$$SavedSakeStateImplCopyWithImpl(
-    _$SavedSakeStateImpl _value,
-    $Res Function(_$SavedSakeStateImpl) _then,
-  ) : super(_value, _then);
+      _$SavedSakeStateImpl _value, $Res Function(_$SavedSakeStateImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -109,34 +100,32 @@ class __$$SavedSakeStateImplCopyWithImpl<$Res>
     Object? isGridView = null,
     Object? activeFilterTags = null,
   }) {
-    return _then(
-      _$SavedSakeStateImpl(
-        savedSakeList: null == savedSakeList
-            ? _value._savedSakeList
-            : savedSakeList // ignore: cast_nullable_to_non_nullable
-                  as List<Sake>,
-        isGridView: null == isGridView
-            ? _value.isGridView
-            : isGridView // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        activeFilterTags: null == activeFilterTags
-            ? _value._activeFilterTags
-            : activeFilterTags // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-      ),
-    );
+    return _then(_$SavedSakeStateImpl(
+      savedSakeList: null == savedSakeList
+          ? _value._savedSakeList
+          : savedSakeList // ignore: cast_nullable_to_non_nullable
+              as List<Sake>,
+      isGridView: null == isGridView
+          ? _value.isGridView
+          : isGridView // ignore: cast_nullable_to_non_nullable
+              as bool,
+      activeFilterTags: null == activeFilterTags
+          ? _value._activeFilterTags
+          : activeFilterTags // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$SavedSakeStateImpl implements _SavedSakeState {
-  const _$SavedSakeStateImpl({
-    final List<Sake> savedSakeList = const [],
-    this.isGridView = true,
-    final List<String> activeFilterTags = const <String>[],
-  }) : _savedSakeList = savedSakeList,
-       _activeFilterTags = activeFilterTags;
+  const _$SavedSakeStateImpl(
+      {final List<Sake> savedSakeList = const [],
+      this.isGridView = true,
+      final List<String> activeFilterTags = const <String>[]})
+      : _savedSakeList = savedSakeList,
+        _activeFilterTags = activeFilterTags;
 
   final List<Sake> _savedSakeList;
   @override
@@ -170,42 +159,34 @@ class _$SavedSakeStateImpl implements _SavedSakeState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SavedSakeStateImpl &&
-            const DeepCollectionEquality().equals(
-              other._savedSakeList,
-              _savedSakeList,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._savedSakeList, _savedSakeList) &&
             (identical(other.isGridView, isGridView) ||
                 other.isGridView == isGridView) &&
-            const DeepCollectionEquality().equals(
-              other._activeFilterTags,
-              _activeFilterTags,
-            ));
+            const DeepCollectionEquality()
+                .equals(other._activeFilterTags, _activeFilterTags));
   }
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    const DeepCollectionEquality().hash(_savedSakeList),
-    isGridView,
-    const DeepCollectionEquality().hash(_activeFilterTags),
-  );
+      runtimeType,
+      const DeepCollectionEquality().hash(_savedSakeList),
+      isGridView,
+      const DeepCollectionEquality().hash(_activeFilterTags));
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$SavedSakeStateImplCopyWith<_$SavedSakeStateImpl> get copyWith =>
       __$$SavedSakeStateImplCopyWithImpl<_$SavedSakeStateImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 }
 
 abstract class _SavedSakeState implements SavedSakeState {
-  const factory _SavedSakeState({
-    final List<Sake> savedSakeList,
-    final bool isGridView,
-    final List<String> activeFilterTags,
-  }) = _$SavedSakeStateImpl;
+  const factory _SavedSakeState(
+      {final List<Sake> savedSakeList,
+      final bool isGridView,
+      final List<String> activeFilterTags}) = _$SavedSakeStateImpl;
 
   @override
   List<Sake> get savedSakeList;

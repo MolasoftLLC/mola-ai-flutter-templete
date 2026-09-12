@@ -17,10 +17,9 @@ abstract class SakeScanRepository {
 
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId);
 
-  Future<SakeOverview> fetchOverview(
-    int sakeId, {
-    bool trackView = false,
-  });
+  Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds);
+
+  Future<SakeOverview> fetchOverview(int sakeId, {bool trackView = false});
 }
 
 class SakeDetailViewMemory {
@@ -94,12 +93,22 @@ class SakeScanApiRepository implements SakeScanRepository {
   }
 
   @override
+  Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds) async {
+    final response = await _apiClient
+        .rejectScannedSakeCandidates(scanSessionId, <String, dynamic>{
+          'sakeIds': sakeIds,
+        })
+        .timeout(requestTimeout);
+    if (response.isSuccessful) return;
+    _requireBody(response);
+  }
+
+  @override
   Future<SakeOverview> fetchOverview(
     int sakeId, {
     bool trackView = false,
   }) async {
-    final shouldTrackView =
-        trackView && _detailViewMemory.markViewed(sakeId);
+    final shouldTrackView = trackView && _detailViewMemory.markViewed(sakeId);
     try {
       final locale = await resolveAppLocaleLanguageCode();
       final response = await _apiClient

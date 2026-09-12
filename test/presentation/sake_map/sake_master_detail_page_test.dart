@@ -283,4 +283,8 @@ class _FakeSakeScanRepository implements SakeScanRepository {
   @override
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId) =>
       throw UnimplementedError();
+
+  @override
+  Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds) =>
+      throw UnimplementedError();
 }

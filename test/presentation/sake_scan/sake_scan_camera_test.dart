@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:image/image.dart' as image;
 import 'package:mola_gemini_flutter_template/presentation/sake_scan/sake_scan_page.dart';
 
 void main() {
@@ -94,35 +93,5 @@ void main() {
       ),
       4,
     );
-  });
-
-  test('黄色いラベルガイドを撮影画像内の範囲へ変換する', () {
-    final cropRect = labelGuideCropRect(
-      viewportSize: const Size(400, 800),
-      previewSize: const Size(1080, 1920),
-    );
-
-    expect(cropRect.left, greaterThan(0));
-    expect(cropRect.top, greaterThan(0));
-    expect(cropRect.right, lessThan(1));
-    expect(cropRect.bottom, lessThan(1));
-    expect(cropRect.width, closeTo(0.69, 0.02));
-    expect(cropRect.height, closeTo(0.58, 0.01));
-  });
-
-  test('撮影画像はガイド枠の範囲だけを切り出す', () {
-    final source = image.Image(width: 100, height: 100);
-    final bytes = cropSakeScanPhotoBytes(<String, Object>{
-      'bytes': image.encodeJpg(source),
-      'left': 0.1,
-      'top': 0.2,
-      'right': 0.9,
-      'bottom': 0.8,
-    });
-    final cropped = image.decodeJpg(bytes);
-
-    expect(cropped, isNotNull);
-    expect(cropped!.width, 80);
-    expect(cropped.height, 60);
   });
 }
