@@ -174,10 +174,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     final notifier = _savedSakeNotifier;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
-    final displayName = _preferProductName(
-      fallback: widget.venueSake.name,
-      overview: overviewSake?.name,
-    );
     final record = _findSavedSake(notifier, detailSake);
     if (notifier == null || record == null) {
       SnackBarUtils.showInfoSnackBar(
@@ -235,6 +231,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         (widget.venueSake.searchToken?.startsWith('candidate:') ?? false);
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
+    final displayName = _preferProductName(
+      fallback: widget.venueSake.name,
+      overview: overviewSake?.name,
+    );
     final record = _findSavedSake(_savedSakeNotifier, detailSake);
     final profile = _headerOverview?.master.tasteProfile;
     final isProfileEnrichmentPending =
