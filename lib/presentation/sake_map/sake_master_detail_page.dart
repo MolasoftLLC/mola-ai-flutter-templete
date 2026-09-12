@@ -174,6 +174,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     final notifier = _savedSakeNotifier;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
+    final displayName = _preferProductName(
+      fallback: widget.venueSake.name,
+      overview: overviewSake?.name,
+    );
     final record = _findSavedSake(notifier, detailSake);
     if (notifier == null || record == null) {
       SnackBarUtils.showInfoSnackBar(
@@ -308,7 +312,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       ),
                   ],
                   flexibleSpace: _CollapsingSakeHero(
-                    name: detailSake.name ?? widget.venueSake.name,
+                    name: displayName,
                     imagePaths: headerImagePaths,
                     matchPercent: matchPercent,
                     isProfileEnrichmentPending: isProfileEnrichmentPending,
@@ -354,6 +358,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       savedSakeNotifier: _savedSakeNotifier,
                       showHeroImage: false,
                       isPendingAiCandidate: isPendingAiCandidate,
+                      preferredName: displayName,
                     ),
                   ),
                 ),
@@ -587,12 +592,14 @@ class _Details extends StatelessWidget {
     required this.savedSakeNotifier,
     required this.showHeroImage,
     this.isPendingAiCandidate = false,
+    this.preferredName,
   });
   final SakeOverview? overview;
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
   final bool showHeroImage;
   final bool isPendingAiCandidate;
+  final String? preferredName;
 
   @override
   Widget build(BuildContext context) {
@@ -693,7 +700,7 @@ class _Details extends StatelessWidget {
                   ],
                   if (category != null) const SizedBox(height: 14),
                   Text(
-                    sake?.name ?? fallback.name,
+                    preferredName ?? sake?.name ?? fallback.name,
                     style: const TextStyle(
                       color: _navy,
                       fontSize: 26,
@@ -1133,6 +1140,17 @@ bool _isSameSakeIdentity(Sake candidate, Sake sake) {
 
 String _normalizedSakeName(String? name) =>
     (name ?? '').replaceAll(RegExp(r'\s+'), '');
+
+String _preferProductName({required String fallback, String? overview}) {
+  final masterName = overview?.trim();
+  final candidateName = fallback.trim();
+  if (masterName == null || masterName.isEmpty) return candidateName;
+  if (candidateName.length > masterName.length &&
+      candidateName.contains(masterName)) {
+    return candidateName;
+  }
+  return masterName;
+}
 
 Future<void> _addSakeRecord(
   BuildContext context,

@@ -47,10 +47,19 @@ class SakeScanCandidate {
   final double? ocrScore;
   final double? confidence;
 
+  String get canonicalProductName {
+    final productType = type?.trim();
+    return productType == null ||
+            productType.isEmpty ||
+            name.contains(productType)
+        ? name
+        : '$name $productType';
+  }
+
   Sake toSake() => Sake(
     sakeId: sakeId > 0 ? sakeId : null,
     brandId: brandId,
-    name: name,
+    name: canonicalProductName,
     type: type,
     brewery: brewery,
     primaryImageUrl: imageUrl,

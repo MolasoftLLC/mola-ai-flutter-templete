@@ -344,11 +344,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   String _manualSearchQuery(SakeScanCandidate candidate) {
-    final name = candidate.name.trim();
-    final type = candidate.type?.trim();
-    return type == null || type.isEmpty || name.contains(type)
-        ? name
-        : '$name $type';
+    return candidate.canonicalProductName;
   }
 
   Future<void> _submitImage(File file) async {
@@ -745,7 +741,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                               imageUrl: item.imageUrl,
                             ),
                             title: Text(
-                              item.name,
+                              item.canonicalProductName,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
