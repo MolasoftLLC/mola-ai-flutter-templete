@@ -112,6 +112,7 @@ class VenueSake {
     String? primaryImageUrl,
     this.thumbnailImageUrl,
     String? imageUrl,
+    this.latestConsumedAt,
   }) : primaryImageUrl = primaryImageUrl ?? imageUrl;
   factory VenueSake.fromJson(Map<String, dynamic> json) => VenueSake(
     sakeId: (json['sakeId'] as num?)?.toInt(),
@@ -124,6 +125,7 @@ class VenueSake {
     primaryImageUrl:
         _nonEmptyString(json['primaryImageUrl']) ??
         _nonEmptyString(json['imageUrl']),
+    latestConsumedAt: _dateTimeOrNull(json['latestConsumedAt']),
   );
   final int? sakeId;
   final String? searchToken;
@@ -134,6 +136,7 @@ class VenueSake {
   final String? primaryImageUrl;
 
   final String? thumbnailImageUrl;
+  final DateTime? latestConsumedAt;
 
   // 旧レスポンスと既存利用箇所との互換性を維持する。
   String? get imageUrl => primaryImageUrl;
@@ -179,6 +182,11 @@ class SakeMapSearchResult {
 String? _nonEmptyString(dynamic value) {
   final text = value?.toString().trim();
   return text == null || text.isEmpty ? null : text;
+}
+
+DateTime? _dateTimeOrNull(dynamic value) {
+  final text = _nonEmptyString(value);
+  return text == null ? null : DateTime.tryParse(text);
 }
 
 abstract interface class SakeMapDataSource {
