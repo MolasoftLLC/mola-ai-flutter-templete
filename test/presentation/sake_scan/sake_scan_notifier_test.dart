@@ -57,7 +57,7 @@ void main() {
       expect(persistence.completedSakes.single.isPublic, isFalse);
     });
 
-    test('キャッシュなしの場合は基本情報にsakeIdを保持してAI解析する', () async {
+    test('キャッシュなしの場合も基本情報を保存して詳細画面へ渡す', () async {
       final repository = _FakeScanRepository(
         frontResult: _candidatesResult(),
         confirmation: const SakeScanConfirmation(
@@ -81,12 +81,11 @@ void main() {
 
       expect(notifier.currentState.status, SakeScanViewStatus.completed);
       expect(notifier.currentState.sake?.sakeId, 101);
-      expect(notifier.currentState.sake?.description, '解析済み');
-      expect(analysis.calls, 1);
-      expect(analysis.lastSakeId, 101);
+      expect(notifier.currentState.sake?.description, isNull);
+      expect(analysis.calls, 0);
     });
 
-    test('詳細解析中でも保存後は次の一本を撮影できる', () async {
+    test('詳細補完は撮影画面で待たず、保存後は次の一本を撮影できる', () async {
       final repository = _FakeScanRepository(
         frontResult: _candidatesResult(),
         confirmation: const SakeScanConfirmation(
@@ -95,10 +94,8 @@ void main() {
         ),
         overview: _overview(completed: false),
       );
-      final analysisCompleter = Completer<Sake>();
       final analysis = _FakeAnalysisService(
         const Sake(name: '獺祭', description: '解析済み'),
-        completer: analysisCompleter,
       );
       final persistence = _FakePersistenceService();
       final notifier = _buildNotifier(
@@ -108,21 +105,18 @@ void main() {
       );
 
       await notifier.submitFront(image);
-      final confirmation = notifier.confirmCandidate();
-      await Future<void>.delayed(Duration.zero);
+      await notifier.confirmCandidate();
 
-      expect(notifier.currentState.status, SakeScanViewStatus.aiAnalyzing);
+      expect(notifier.currentState.status, SakeScanViewStatus.completed);
       expect(notifier.currentState.savedSake, isNotNull);
+      expect(analysis.calls, 0);
 
       notifier.startNextScan();
       expect(notifier.currentState.status, SakeScanViewStatus.frontScanning);
       expect(notifier.currentState.frontImage, isNull);
 
-      analysisCompleter.complete(const Sake(name: '獺祭', description: '解析済み'));
-      await confirmation;
-
       expect(notifier.currentState.status, SakeScanViewStatus.frontScanning);
-      expect(persistence.completedSakes.single.description, '解析済み');
+      expect(persistence.completedSakes, isEmpty);
     });
 
     test('正面候補が違う場合は裏ラベルへ進み、新しい候補を表示する', () async {

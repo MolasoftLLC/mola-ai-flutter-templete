@@ -137,7 +137,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       if (!mounted ||
           sakeId == null ||
           sakeId <= 0 ||
-          _masterEnrichmentPollCount >= 8) {
+          _masterEnrichmentPollCount >= 30) {
         timer.cancel();
         return;
       }

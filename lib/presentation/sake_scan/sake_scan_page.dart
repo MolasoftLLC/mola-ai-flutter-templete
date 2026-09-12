@@ -12,10 +12,12 @@ import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
 
 class SakeScanPage extends StatefulWidget {
@@ -320,6 +322,33 @@ class _SakeScanPageState extends State<SakeScanPage>
     _lastResult = state.savedSake ?? state.sake ?? _lastResult;
     context.read<SakeScanNotifier>().startNextScan();
     unawaited(HapticFeedback.selectionClick());
+  }
+
+  Future<void> _confirmAndOpenDetail() async {
+    final sake = await context.read<SakeScanNotifier>().confirmCandidate();
+    if (!mounted || sake == null || (sake.sakeId ?? 0) <= 0) return;
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => SakeMasterDetailPage(
+          venueSake: VenueSake(
+            sakeId: sake.sakeId,
+            name: sake.name ?? '',
+            brewery: sake.brewery,
+            type: sake.type,
+            recordCount: 0,
+            primaryImageUrl: sake.primaryImageUrl,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _manualSearchQuery(SakeScanCandidate candidate) {
+    final name = candidate.name.trim();
+    final type = candidate.type?.trim();
+    return type == null || type.isEmpty || name.contains(type)
+        ? name
+        : '$name $type';
   }
 
   Future<void> _submitImage(File file) async {
@@ -761,9 +790,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ? null
                   : () {
                       unawaited(HapticFeedback.selectionClick());
-                      unawaited(
-                        context.read<SakeScanNotifier>().confirmCandidate(),
-                      );
+                      unawaited(_confirmAndOpenDetail());
                     },
               icon: const Icon(Icons.check_circle_outline),
               label: Text(context.l10n.yesThisSake),
@@ -786,6 +813,18 @@ class _SakeScanPageState extends State<SakeScanPage>
                     ? context.l10n.wrongTakeBackLabel
                     : context.l10n.wrongRetakeBackLabel,
               ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1D3567),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => Navigator.of(
+                      context,
+                    ).pop<String>(_manualSearchQuery(candidate)),
+              icon: const Icon(Icons.search),
+              label: const Text('名前から検索する'),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF1D3567),
               ),

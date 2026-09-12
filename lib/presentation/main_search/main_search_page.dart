@@ -277,8 +277,8 @@ class MainSearchPage extends StatelessWidget {
     BuildContext context,
     MainSearchPageNotifier notifier,
   ) async {
-    final result = await Navigator.of(context).push<Sake>(
-      PageRouteBuilder<Sake>(
+    final result = await Navigator.of(context).push<Object>(
+      PageRouteBuilder<Object>(
         pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
         transitionsBuilder: (_, animation, __, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
@@ -295,7 +295,9 @@ class MainSearchPage extends StatelessWidget {
         reverseTransitionDuration: const Duration(milliseconds: 240),
       ),
     );
-    if (result != null && context.mounted) {
+    if (result is String && result.trim().isNotEmpty && context.mounted) {
+      _openManualNameSearch(notifier, result);
+    } else if (result is Sake && context.mounted) {
       notifier.applySakeScanResult(result);
     }
   }

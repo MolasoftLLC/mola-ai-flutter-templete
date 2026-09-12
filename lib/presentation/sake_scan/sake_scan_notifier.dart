@@ -222,10 +222,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     state = SakeScanState(shareToTimeline: state.shareToTimeline);
   }
 
-  Future<void> confirmCandidate() async {
+  Future<Sake?> confirmCandidate() async {
     final candidate = state.selectedCandidate;
     final sessionId = state.scanSessionId;
-    if (candidate == null || sessionId == null || !_beginSubmission()) return;
+    if (candidate == null || sessionId == null || !_beginSubmission()) {
+      return null;
+    }
     final operation = ++_operation;
     _emit(
       state.copyWith(
@@ -237,14 +239,19 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     try {
       if (candidate.sakeId <= 0) {
         await _runAiAnalysis(operation);
-        return;
+        return state.savedSake ?? state.sake;
       }
       final confirmation = await _scanRepository.confirm(
         sessionId,
         candidate.sakeId,
       );
       final overview = await _scanRepository.fetchOverview(confirmation.sakeId);
-      if (!_isCurrent(operation)) return;
+      if (!_isCurrent(operation)) return null;
+
+      final confirmedSake = _mergeBasicAndAnalysis(
+        candidate.toSake(),
+        overview.sake,
+      );
 
       final primaryImage = state.frontImage ?? state.backImage;
       if (primaryImage == null) {
@@ -257,13 +264,13 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           ? null
           : state.backImage;
       final saved = await _persistenceService.saveInitial(
-        overview.sake,
+        confirmedSake,
         primaryImage,
         secondaryImage: secondaryImage,
         isPublic: state.shareToTimeline,
       );
-      if (!_isCurrent(operation)) return;
-      _emit(state.copyWith(sake: overview.sake, savedSake: saved));
+      if (!_isCurrent(operation)) return null;
+      _emit(state.copyWith(sake: confirmedSake, savedSake: saved));
 
       // confirm時点で解析キャッシュを確認済み。Overviewの表示用ペイロードが
       // 空でも、既解析の酒に画像解析を重ねて走らせない。
@@ -271,24 +278,35 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           confirmation.status == SakeScanApiStatus.cacheHit) {
         final completed = await _persistenceService.saveCompleted(
           saved,
-          overview.sake,
+          confirmedSake,
           primaryImage,
           isPublic: state.shareToTimeline,
         );
-        if (!_isCurrent(operation)) return;
+        if (!_isCurrent(operation)) return null;
         _emit(
           state.copyWith(
             status: SakeScanViewStatus.completed,
-            sake: overview.sake,
+            sake: confirmedSake,
             savedSake: completed,
             isSubmitting: false,
           ),
         );
-        return;
+        return completed;
       }
-      await _runAiAnalysis(operation);
+      // 詳細補完はoverview取得時にサーバーへ依頼済み。撮影画面で待たず、
+      // 詳細画面がpending状態をポーリングして更新する。
+      _emit(
+        state.copyWith(
+          status: SakeScanViewStatus.completed,
+          sake: confirmedSake,
+          savedSake: saved,
+          isSubmitting: false,
+        ),
+      );
+      return confirmedSake;
     } catch (error, stackTrace) {
       _handleError(error, stackTrace, operation);
+      return null;
     }
   }
 
