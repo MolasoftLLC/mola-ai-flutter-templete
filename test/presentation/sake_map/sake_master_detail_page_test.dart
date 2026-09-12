@@ -171,6 +171,8 @@ void main() {
       'sake': {
         'sakeId': 123,
         'name': '純米吟醸',
+        'primaryImageUrl': 'https://example.com/detail.jpg',
+        'thumbnailImageUrl': 'https://example.com/card.jpg',
         'polishingRatio': '50.0',
         'category': '純米吟醸',
         'imageProductUrl':
@@ -192,6 +194,8 @@ void main() {
     expect(overview.master.imagePrice, 2150);
     expect(overview.master.imageCurrency, 'JPY');
     expect(overview.master.detailViewCount, 8);
+    expect(overview.sake.primaryImageUrl, 'https://example.com/detail.jpg');
+    expect(overview.sake.thumbnailImageUrl, 'https://example.com/card.jpg');
     expect(overview.master.styles.single.name, '生酒');
     expect(overview.master.variants.single.suggestedPrice, 2300);
     expect(overview.sake.brewery, 'サンプル酒造');

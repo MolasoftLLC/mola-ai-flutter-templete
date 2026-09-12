@@ -2779,7 +2779,7 @@ class _SavedSakeGrid extends StatelessWidget {
         final sake = savedSakeList[index];
         final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
             ? sake.imagePaths!.first
-            : null;
+            : sake.thumbnailImageUrl ?? sake.primaryImageUrl;
         final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
         Widget preview = Container(
           color: Colors.white.withOpacity(0.1),
