@@ -226,6 +226,9 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isPendingAiCandidate =
+        widget.venueSake.sakeId == null &&
+        (widget.venueSake.searchToken?.startsWith('candidate:') ?? false);
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
     final record = _findSavedSake(_savedSakeNotifier, detailSake);
@@ -260,10 +263,12 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     );
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: _MasterRecordCta(
-        sake: _asSake(widget.venueSake),
-        notifier: _savedSakeNotifier,
-      ),
+      bottomNavigationBar: isPendingAiCandidate
+          ? null
+          : _MasterRecordCta(
+              sake: _asSake(widget.venueSake),
+              notifier: _savedSakeNotifier,
+            ),
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: FocusManager.instance.primaryFocus?.unfocus,
@@ -285,14 +290,16 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   elevation: 0,
                   iconTheme: const IconThemeData(color: Colors.white),
                   actions: [
-                    _MasterSaveButton(
-                      venueSake: widget.venueSake,
-                      notifier: _savedSakeNotifier,
-                    ),
-                    _MasterFavoriteButton(
-                      venueSake: widget.venueSake,
-                      notifier: _favoriteNotifier,
-                    ),
+                    if (!isPendingAiCandidate) ...[
+                      _MasterSaveButton(
+                        venueSake: widget.venueSake,
+                        notifier: _savedSakeNotifier,
+                      ),
+                      _MasterFavoriteButton(
+                        venueSake: widget.venueSake,
+                        notifier: _favoriteNotifier,
+                      ),
+                    ],
                     if (_showCompactHeader)
                       IconButton(
                         tooltip: '飲んだ場所を選ぶ',
@@ -346,6 +353,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       fallback: widget.venueSake,
                       savedSakeNotifier: _savedSakeNotifier,
                       showHeroImage: false,
+                      isPendingAiCandidate: isPendingAiCandidate,
                     ),
                   ),
                 ),
@@ -578,11 +586,13 @@ class _Details extends StatelessWidget {
     required this.fallback,
     required this.savedSakeNotifier,
     required this.showHeroImage,
+    this.isPendingAiCandidate = false,
   });
   final SakeOverview? overview;
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
   final bool showHeroImage;
+  final bool isPendingAiCandidate;
 
   @override
   Widget build(BuildContext context) {
@@ -696,6 +706,13 @@ class _Details extends StatelessWidget {
                     Text(
                       breweryName,
                       style: const TextStyle(color: Color(0xFF647184)),
+                    ),
+                  ],
+                  if (isPendingAiCandidate) ...[
+                    const SizedBox(height: 10),
+                    const Text(
+                      'AIが見つけた未検証の候補です。確認後に日本酒マスターへ追加されます。',
+                      style: TextStyle(color: Color(0xFF647184), height: 1.5),
                     ),
                   ],
                   if (master.styles.isNotEmpty) ...[

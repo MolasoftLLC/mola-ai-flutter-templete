@@ -268,9 +268,9 @@ class MainSearchPage extends StatelessWidget {
   }
 
   Future<void> _openMenuSearch(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => MenuSearchPage.wrapped()),
-    );
+    return Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => MenuSearchPage.wrapped()));
   }
 
   Future<void> _openFastSearch(
@@ -1092,6 +1092,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
   Timer? _debounce;
   int _requestId = 0;
   bool _isLoading = false;
+  bool _isAiSearching = false;
   bool _hasSearched = false;
   bool _hasError = false;
   List<SakeMapSearchResult> _results = const [];
@@ -1197,14 +1198,15 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
 
   void _onChanged(String value) {
     _debounce?.cancel();
+    _requestId++;
+    setState(() {
+      _isLoading = false;
+      _isAiSearching = false;
+      _hasSearched = false;
+      _hasError = false;
+      _results = const [];
+    });
     if (value.trim().isEmpty) {
-      _requestId++;
-      setState(() {
-        _isLoading = false;
-        _hasSearched = false;
-        _hasError = false;
-        _results = const [];
-      });
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 400), _search);
@@ -1212,6 +1214,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
 
   Future<void> _search() async {
     _debounce?.cancel();
+    if (_isAiSearching) return;
     final query = _controller.text.trim();
     if (query.isEmpty) return;
 
@@ -1236,6 +1239,42 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
       setState(() {
         _results = const [];
         _isLoading = false;
+        _hasSearched = true;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<void> _searchByAi() async {
+    _debounce?.cancel();
+    final query = _controller.text.trim();
+    if (query.isEmpty || _isAiSearching) return;
+
+    final requestId = ++_requestId;
+    setState(() {
+      _isLoading = true;
+      _isAiSearching = true;
+      _hasSearched = false;
+      _hasError = false;
+      _results = const [];
+    });
+    try {
+      final results = await context
+          .read<PlaceMapRepository>()
+          .searchSakeMastersByAi(query);
+      if (!mounted || requestId != _requestId) return;
+      setState(() {
+        _results = results;
+        _isLoading = false;
+        _isAiSearching = false;
+        _hasSearched = true;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _requestId) return;
+      setState(() {
+        _results = const [];
+        _isLoading = false;
+        _isAiSearching = false;
         _hasSearched = true;
         _hasError = true;
       });
@@ -1267,6 +1306,12 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
     final showRecentSearches =
         _focusNode.hasFocus && _controller.text.trim().isEmpty;
     final displayedResults = showRecentSearches ? _recentResults : _results;
+    final showAiAction =
+        _hasSearched &&
+        _results.isEmpty &&
+        !_hasError &&
+        _controller.text.trim().isNotEmpty &&
+        !_isAiSearching;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Column(
@@ -1291,11 +1336,13 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     )
-                  : IconButton(
-                      tooltip: context.l10n.search,
-                      icon: const Icon(Icons.search),
-                      onPressed: _search,
-                    ),
+                  : showAiAction
+                  ? TextButton(
+                      key: const ValueKey('masterSakeAiSearchButton'),
+                      onPressed: _searchByAi,
+                      child: const Text('AI解析開始'),
+                    )
+                  : null,
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
               contentPadding: const EdgeInsets.symmetric(vertical: 15),
@@ -1324,7 +1371,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
             Text(
               context.l10n.errorSakeNotFound,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF666666)),
+              style: const TextStyle(color: Color(0xFFFF7A1A)),
             ),
           ] else if (displayedResults.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -1369,7 +1416,9 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
                         sake.type?.trim(),
                       ].whereType<String>().where((value) => value.isNotEmpty);
                       return ListTile(
-                        key: ValueKey('masterSakeCandidate_${sake.sakeId}'),
+                        key: ValueKey(
+                          'masterSakeCandidate_${sake.searchToken ?? sake.sakeId}',
+                        ),
                         leading: _SakeCandidateImage(
                           imageUrl:
                               sake.thumbnailImageUrl ?? sake.primaryImageUrl,

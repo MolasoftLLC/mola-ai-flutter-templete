@@ -328,6 +328,23 @@ class PlaceMapRepository implements SakeMapDataSource {
     return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
   }
 
+  Future<List<SakeMapSearchResult>> searchSakeMastersByAi(
+    String query, {
+    int limit = 7,
+  }) async {
+    final response = await _apiClient.searchSakeMastersByAi({
+      'query': query,
+      'limit': limit,
+    });
+    if (!response.isSuccessful) {
+      throw PlaceMapException(
+        statusCode: response.statusCode,
+        message: 'AIによる日本酒候補の取得に失敗しました。',
+      );
+    }
+    return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
+  }
+
   Future<List<SakeMapSearchResult>> discoverSakeMasters({
     String? prefecture,
     List<String>? flavors,

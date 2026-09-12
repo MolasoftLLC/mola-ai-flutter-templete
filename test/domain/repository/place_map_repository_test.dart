@@ -72,5 +72,22 @@ void main() {
       expect(sake.type, '純米大吟醸');
       expect(sake.primaryImageUrl, 'https://example.com/dassai.jpg');
     });
+
+    test('AI未検証候補はマスターIDを持たず検索トークンを保持する', () {
+      final sake = SakeMapSearchResult.fromJson(const {
+        'sakeId': null,
+        'searchToken': 'candidate:12',
+        'name': '鍋島 純米吟醸',
+        'brewery': '富久千代酒造',
+        'type': '純米吟醸',
+        'source': 'ai_candidate',
+        'venueCount': 0,
+      });
+
+      expect(sake.sakeId, isNull);
+      expect(sake.searchToken, 'candidate:12');
+      expect(sake.isMaster, isFalse);
+      expect(sake.venueCount, 0);
+    });
   });
 }

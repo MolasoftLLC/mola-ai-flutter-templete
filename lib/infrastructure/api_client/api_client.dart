@@ -171,6 +171,9 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'sakes/ai-search')
+  Future<Response> searchSakeMastersByAi(@Body() Map<String, dynamic> body);
+
   @Get(path: 'favorites')
   Future<Response> fetchFavorites(@Query('userId') String userId);
 
