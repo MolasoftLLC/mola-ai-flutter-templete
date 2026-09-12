@@ -109,9 +109,8 @@ void _drawFallbackSakeIcon(Canvas canvas) {
 void _drawCountBadge(Canvas canvas, int count) {
   final badgePaint = Paint()..color = const Color(0xFFFF7A00);
   canvas.drawShadow(
-    Path()..addOval(
-      Rect.fromCircle(center: _badgeCenter, radius: _badgeRadius),
-    ),
+    Path()
+      ..addOval(Rect.fromCircle(center: _badgeCenter, radius: _badgeRadius)),
     Colors.black45,
     4,
     false,
