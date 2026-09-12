@@ -6,7 +6,6 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/logger.dart';
@@ -75,7 +74,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
                 : const Offset(0.5, 1),
             infoWindow: InfoWindow(
               title: venue.displayName,
-              snippet: 'みんなの飲酒記録 ${venue.recordCount}件・${venue.sakeCount}種類',
+              snippet: '${venue.sakeCount}種類・${venue.recordCount}件の登録',
             ),
             onTap: () => _showVenueSakes(context, notifier, venue),
           ),
@@ -498,10 +497,9 @@ class _SakeMapPageState extends State<SakeMapPage> {
             );
           }
           final sakes = snapshot.data ?? const <VenueSake>[];
-          final latestSake = sakes.isEmpty ? null : sakes.first;
           return SafeArea(
             child: SizedBox(
-              height: 520,
+              height: 420,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -512,35 +510,14 @@ class _SakeMapPageState extends State<SakeMapPage> {
                       children: [
                         Text(
                           venue.displayName,
-                          style: Theme.of(sheetContentContext)
-                              .textTheme
-                              .titleLarge,
+                          style: Theme.of(
+                            sheetContentContext,
+                          ).textTheme.titleLarge,
                         ),
-                        Text(
-                          'みんなの飲酒記録 ${venue.recordCount}件・${venue.sakeCount}種類',
-                        ),
+                        const Text('この店舗に登録されている日本酒'),
                       ],
                     ),
                   ),
-                  if (latestSake != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: _LatestSakeCard(
-                        sake: latestSake,
-                        imageUrl:
-                            venue.latestImageUrl ??
-                            latestSake.thumbnailImageUrl ??
-                            latestSake.primaryImageUrl,
-                      ),
-                    ),
-                  if (sakes.isNotEmpty)
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-                      child: Text(
-                        'この店舗で飲まれた日本酒',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ),
                   Expanded(
                     child: sakes.isEmpty
                         ? const Center(child: Text('公開された日本酒記録はありません。'))
@@ -582,64 +559,6 @@ class _SakeMapPageState extends State<SakeMapPage> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _LatestSakeCard extends StatelessWidget {
-  const _LatestSakeCard({required this.sake, this.imageUrl});
-
-  final VenueSake sake;
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final consumedAt = sake.latestConsumedAt;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F6FA),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            SizedBox.square(
-              dimension: 64,
-              child: _SakeThumbnail(imageUrl: imageUrl),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '最近飲まれた日本酒',
-                    style: TextStyle(color: Color(0xFF5F6B78), fontSize: 12),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    sake.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    [
-                      if (sake.brewery != null) sake.brewery!,
-                      if (consumedAt != null)
-                        DateFormat('M月d日 H:mm').format(consumedAt.toLocal()),
-                    ].join('・'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
