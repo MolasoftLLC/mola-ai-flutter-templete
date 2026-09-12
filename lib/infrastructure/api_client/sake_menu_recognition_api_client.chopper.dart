@@ -95,13 +95,46 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   }
 
   @override
-  Future<Response<Map<String, dynamic>>> recognizeSakeBottle(String file) {
+  Future<Response<Map<String, dynamic>>> recognizeSakeBottle(
+    String file,
+    String? secondaryFile,
+  ) {
     final Uri $url = Uri.parse('/api/sake-bottle/recognize');
     final List<PartValue> $parts = <PartValue>[
       PartValue<String>(
         'file',
         file,
-      )
+      ),
+      PartValue<String?>(
+        'secondaryFile',
+        secondaryFile,
+      ),
+    ];
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      parts: $parts,
+      multipart: true,
+    );
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
+  Future<Response<Map<String, dynamic>>> recognizeSakeBottleCandidates(
+    String file,
+    String? secondaryFile,
+  ) {
+    final Uri $url = Uri.parse('/api/sake-bottle/scan/ai-candidates');
+    final List<PartValue> $parts = <PartValue>[
+      PartValue<String>(
+        'file',
+        file,
+      ),
+      PartValue<String?>(
+        'secondaryFile',
+        secondaryFile,
+      ),
     ];
     final Request $request = Request(
       'POST',

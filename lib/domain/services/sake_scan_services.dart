@@ -10,7 +10,7 @@ import '../repository/sake_menu_recognition_repository.dart';
 import '../repository/saved_sake_sync_repository.dart';
 
 abstract class SakeScanAnalysisService {
-  Future<Sake> identify(File image);
+  Future<List<Sake>> identifyCandidates(File image, {File? secondaryImage});
 
   Future<Sake> analyze(File image, {int? sakeId, String? scanSessionId});
 }
@@ -25,16 +25,21 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
   final String? Function() preferencesProvider;
 
   @override
-  Future<Sake> identify(File image) async {
-    final response = await _repository.recognizeSakeBottle(image);
-    final name = response?.sakeName?.trim();
-    if (name == null || name.isEmpty) {
+  Future<List<Sake>> identifyCandidates(
+    File image, {
+    File? secondaryImage,
+  }) async {
+    final candidates = await _repository.recognizeSakeBottleCandidates(
+      image,
+      secondaryFile: secondaryImage,
+    );
+    if (candidates.isEmpty) {
       throw SakeBottleRecognitionException(
         statusCode: 404,
         message: '日本酒の候補を特定できませんでした',
       );
     }
-    return Sake(name: name, type: response?.type?.trim());
+    return candidates;
   }
 
   @override

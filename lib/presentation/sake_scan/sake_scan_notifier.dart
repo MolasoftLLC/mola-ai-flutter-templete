@@ -15,6 +15,7 @@ enum SakeScanViewStatus {
   backScanning,
   searchingBack,
   loadingOverview,
+  identifyingFallback,
   aiAnalyzing,
   completed,
   error,
@@ -302,10 +303,21 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         message: 'AI候補特定用の画像がありません',
       );
     }
-    final identified = await _analysisService.identify(image);
+    _emit(
+      state.copyWith(
+        status: SakeScanViewStatus.identifyingFallback,
+        isSubmitting: true,
+      ),
+    );
+    final identified = await _analysisService.identifyCandidates(
+      image,
+      secondaryImage:
+          state.backImage == null || state.backImage!.path == image.path
+          ? null
+          : state.backImage,
+    );
     if (!_isCurrent(operation)) return;
-    final name = identified.name?.trim();
-    if (name == null || name.isEmpty) {
+    if (identified.isEmpty) {
       throw const SakeScanException(
         kind: SakeScanErrorKind.noCandidates,
         message: '候補の日本酒が見つかりませんでした',
@@ -315,14 +327,16 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       state.copyWith(
         status: SakeScanViewStatus.confirmingCandidate,
         scanSessionId: result.scanSessionId,
-        candidates: <SakeScanCandidate>[
-          SakeScanCandidate(
-            sakeId: 0,
-            name: name,
-            type: identified.type,
-            brewery: identified.brewery,
-          ),
-        ],
+        candidates: identified
+            .map(
+              (candidate) => SakeScanCandidate(
+                sakeId: 0,
+                name: candidate.name ?? '',
+                type: candidate.type,
+                brewery: candidate.brewery,
+              ),
+            )
+            .toList(growable: false),
         selectedCandidateIndex: 0,
         isSubmitting: false,
       ),

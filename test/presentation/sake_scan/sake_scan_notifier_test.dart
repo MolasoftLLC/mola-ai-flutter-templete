@@ -460,9 +460,12 @@ class _FakeAnalysisService implements SakeScanAnalysisService {
   String? lastImagePath;
 
   @override
-  Future<Sake> identify(File image) async {
+  Future<List<Sake>> identifyCandidates(
+    File image, {
+    File? secondaryImage,
+  }) async {
     identifyCalls++;
-    return result;
+    return <Sake>[result];
   }
 
   @override

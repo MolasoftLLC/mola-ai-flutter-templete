@@ -1,13 +1,8 @@
 import 'dart:io';
 
-import 'package:chopper/chopper.dart';
-import 'package:rxdart/rxdart.dart';
-
-import '../../common/exception/exception.dart';
 import '../../common/localization/app_locale_resolver.dart';
 import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
-import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
@@ -18,19 +13,6 @@ class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
 
   final SakeMenuRecognitionApiClient _apiClient;
-
-  final _errorAuth = PublishSubject<MolaApiException>();
-
-  Stream<MolaApiException> get errorAuth => _errorAuth;
-
-  void _handleError({required Response response, bool throwsAnyError = false}) {
-    final apiException = MolaApiException.fromObject(response.error!);
-    if (response.statusCode != 403 && response.statusCode != 400) {
-      throw throwsAnyError ? MolaApiException.anyError() : apiException;
-    }
-    _errorAuth.add(apiException);
-    logger.info(response.error);
-  }
 
   Future<SakeMenuRecognitionResponse?> recognizeMenu(File file) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
@@ -174,12 +156,21 @@ class SakeMenuRecognitionRepository {
   }
 
   // 酒瓶画像を認識する
-  Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(File file) async {
+  Future<SakeBottleRecognitionResponse?> recognizeSakeBottle(
+    File file, {
+    File? secondaryFile,
+  }) async {
     try {
       // トリミング処理はmain_search_page_notifierで行うため、ここでは行わない
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
+      final secondaryBaseFile = secondaryFile == null
+          ? null
+          : await ImageUtils.compressAndEncodeImage(secondaryFile);
       logger.shout(baseFile.length);
-      final response = await _apiClient.recognizeSakeBottle(baseFile);
+      final response = await _apiClient.recognizeSakeBottle(
+        baseFile,
+        secondaryBaseFile,
+      );
 
       if (response.isSuccessful) {
         final body = response.body;
@@ -195,8 +186,8 @@ class SakeMenuRecognitionRepository {
           type: body['type'] as String?,
         );
       } else {
-        final statusCode = response.statusCode ?? -1;
-        final errorPayload = response.error ?? response.body;
+        final statusCode = response.statusCode;
+        final errorPayload = response.error;
         final message = _extractBottleErrorMessage(errorPayload);
         logger.shout(
           '酒瓶認識API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}',
@@ -215,6 +206,41 @@ class SakeMenuRecognitionRepository {
       logger.shout('スタックトレース: $stackTrace');
       return null;
     }
+  }
+
+  Future<List<Sake>> recognizeSakeBottleCandidates(
+    File file, {
+    File? secondaryFile,
+  }) async {
+    final baseFile = await ImageUtils.compressAndEncodeImage(file);
+    final secondaryBaseFile = secondaryFile == null
+        ? null
+        : await ImageUtils.compressAndEncodeImage(secondaryFile);
+    final response = await _apiClient.recognizeSakeBottleCandidates(
+      baseFile,
+      secondaryBaseFile,
+    );
+    if (!response.isSuccessful || response.body == null) {
+      throw SakeBottleRecognitionException(
+        statusCode: response.statusCode,
+        message: _extractBottleErrorMessage(response.error),
+      );
+    }
+    final rawCandidates = response.body!['candidates'];
+    if (rawCandidates is! List) return const <Sake>[];
+    return rawCandidates
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .map(
+          (item) => Sake(
+            name: item['sakeName']?.toString().trim() ?? '',
+            type: item['type']?.toString().trim(),
+            brewery: item['brewery']?.toString().trim(),
+          ),
+        )
+        .where((item) => item.name?.isNotEmpty ?? false)
+        .take(7)
+        .toList(growable: false);
   }
 
   Future<SakeBottleComprehensiveResponse?> comprehensiveSakeBottleAnalysis(
@@ -275,8 +301,8 @@ class SakeMenuRecognitionRepository {
           manualSearchQuery: manualSearchQuery,
         );
       } else {
-        final statusCode = response.statusCode ?? -1;
-        final errorPayload = response.error ?? response.body;
+        final statusCode = response.statusCode;
+        final errorPayload = response.error;
         final message = _extractBottleErrorMessage(errorPayload);
         logger.shout(
           '酒瓶包括解析API失敗: ステータスコード=$statusCode, メッセージ=$message, エラー=${response.error}',

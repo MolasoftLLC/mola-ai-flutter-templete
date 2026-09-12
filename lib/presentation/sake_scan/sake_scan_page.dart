@@ -135,7 +135,9 @@ class _SakeScanPageState extends State<SakeScanPage>
       var maxZoomLevel = 1.0;
       try {
         minZoomLevel = await controller.getMinZoomLevel();
-        maxZoomLevel = await controller.getMaxZoomLevel();
+        // 端末によっては非常に大きい倍率（例: 50x以上）が返るため、
+        // スライダーの低倍率域が使いにくくならないよう10xまでにする。
+        maxZoomLevel = (await controller.getMaxZoomLevel()).clamp(1.0, 10.0);
       } on CameraException {
         // ズーム取得非対応の端末では等倍のまま利用する。
       }
@@ -439,6 +441,9 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.loadingOverview => _buildStatusPanel(
         context.l10n.loadingSakeOverview,
       ),
+      SakeScanViewStatus.identifyingFallback => _buildStatusPanel(
+        '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
+      ),
       SakeScanViewStatus.aiAnalyzing ||
       SakeScanViewStatus.completed => _buildResultPanel(state),
       SakeScanViewStatus.error => _buildError(state),
@@ -575,6 +580,9 @@ class _SakeScanPageState extends State<SakeScanPage>
                   value: _currentZoomLevel,
                   min: _minZoomLevel,
                   max: _maxZoomLevel,
+                  divisions: ((_maxZoomLevel - _minZoomLevel) * 10)
+                      .round()
+                      .clamp(1, 90),
                   onChanged: _maxZoomLevel > _minZoomLevel
                       ? (value) => unawaited(_setZoomLevel(value))
                       : null,
