@@ -39,8 +39,9 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   final _searchController = TextEditingController();
   final _markerIcons = <String, BitmapDescriptor>{};
-  final _requestedMarkerUrls = <String>{};
-  final _pendingMarkerUrls = Queue<String>();
+  final _fallbackMarkerIcons = <int, Future<BitmapDescriptor>>{};
+  final _requestedMarkerKeys = <String>{};
+  final _pendingMarkerRequests = Queue<_MarkerIconRequest>();
   int _activeMarkerLoads = 0;
   bool _isLocating = false;
   bool _showMyLocation = false;
@@ -66,11 +67,11 @@ class _SakeMapPageState extends State<SakeMapPage> {
             markerId: MarkerId(venue.venueId),
             position: LatLng(venue.latitude, venue.longitude),
             icon:
-                _markerIcons[venue.latestImageUrl] ??
+                _markerIcons[_markerKey(venue)] ??
                 BitmapDescriptor.defaultMarker,
-            anchor: venue.latestImageUrl == null
-                ? const Offset(0.5, 1)
-                : const Offset(0.5, 0.96),
+            anchor: _markerIcons.containsKey(_markerKey(venue))
+                ? const Offset(0.5, 0.96)
+                : const Offset(0.5, 1),
             infoWindow: InfoWindow(
               title: venue.displayName,
               snippet: '${venue.sakeCount}種類・${venue.recordCount}件の登録',
@@ -411,27 +412,31 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   void _requestMarkerIcons(List<MapVenue> venues) {
     for (final venue in venues) {
-      final imageUrl = venue.latestImageUrl;
-      if (imageUrl == null ||
-          _markerIcons.containsKey(imageUrl) ||
-          !_requestedMarkerUrls.add(imageUrl)) {
+      final key = _markerKey(venue);
+      if (_markerIcons.containsKey(key) || !_requestedMarkerKeys.add(key)) {
         continue;
       }
-      _pendingMarkerUrls.add(imageUrl);
+      final request = _MarkerIconRequest(
+        key: key,
+        imageUrl: venue.latestImageUrl,
+        recordCount: venue.recordCount,
+      );
+      unawaited(_loadFallbackMarker(request));
+      if (request.imageUrl != null) _pendingMarkerRequests.add(request);
     }
     _drainMarkerQueue();
   }
 
   void _drainMarkerQueue() {
     if (!mounted) {
-      _pendingMarkerUrls.clear();
+      _pendingMarkerRequests.clear();
       return;
     }
-    while (_activeMarkerLoads < 4 && _pendingMarkerUrls.isNotEmpty) {
-      final imageUrl = _pendingMarkerUrls.removeFirst();
+    while (_activeMarkerLoads < 4 && _pendingMarkerRequests.isNotEmpty) {
+      final request = _pendingMarkerRequests.removeFirst();
       _activeMarkerLoads += 1;
       unawaited(
-        _loadMarkerIcon(imageUrl).whenComplete(() {
+        _loadMarkerIcon(request).whenComplete(() {
           _activeMarkerLoads -= 1;
           _drainMarkerQueue();
         }),
@@ -439,21 +444,40 @@ class _SakeMapPageState extends State<SakeMapPage> {
     }
   }
 
-  Future<void> _loadMarkerIcon(String imageUrl) async {
+  Future<void> _loadMarkerIcon(_MarkerIconRequest request) async {
     try {
+      final imageUrl = request.imageUrl;
+      if (imageUrl == null) return;
       final uri = Uri.tryParse(imageUrl);
       if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
         return;
       }
       final response = await http.get(uri).timeout(const Duration(seconds: 10));
       if (response.statusCode < 200 || response.statusCode >= 300) return;
-      final icon = await createCircularSakeMarker(response.bodyBytes);
+      final icon = await createCircularSakeMarker(
+        response.bodyBytes,
+        recordCount: request.recordCount,
+      );
       if (!mounted) return;
-      setState(() => _markerIcons[imageUrl] = icon);
+      setState(() => _markerIcons[request.key] = icon);
     } catch (error) {
       logger.info('地図ピン画像を読み込めませんでした: $error');
     }
   }
+
+  Future<void> _loadFallbackMarker(_MarkerIconRequest request) async {
+    try {
+      final icon = await (_fallbackMarkerIcons[request.recordCount] ??=
+          createCircularSakeMarker(null, recordCount: request.recordCount));
+      if (!mounted || _markerIcons.containsKey(request.key)) return;
+      setState(() => _markerIcons[request.key] = icon);
+    } catch (error) {
+      logger.info('地図の代替ピンを生成できませんでした: $error');
+    }
+  }
+
+  String _markerKey(MapVenue venue) =>
+      '${venue.latestImageUrl ?? 'fallback'}#${venue.recordCount}';
 
   Future<void> _showVenueSakes(
     BuildContext context,
@@ -538,6 +562,18 @@ class _SakeMapPageState extends State<SakeMapPage> {
       ),
     );
   }
+}
+
+class _MarkerIconRequest {
+  const _MarkerIconRequest({
+    required this.key,
+    required this.imageUrl,
+    required this.recordCount,
+  });
+
+  final String key;
+  final String? imageUrl;
+  final int recordCount;
 }
 
 class _SakeThumbnail extends StatelessWidget {
