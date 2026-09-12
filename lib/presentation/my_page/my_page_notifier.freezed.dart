@@ -12,8 +12,7 @@ part of 'my_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$MyPageState {
@@ -32,18 +31,16 @@ mixin _$MyPageState {
 /// @nodoc
 abstract class $MyPageStateCopyWith<$Res> {
   factory $MyPageStateCopyWith(
-    MyPageState value,
-    $Res Function(MyPageState) then,
-  ) = _$MyPageStateCopyWithImpl<$Res, MyPageState>;
+          MyPageState value, $Res Function(MyPageState) then) =
+      _$MyPageStateCopyWithImpl<$Res, MyPageState>;
   @useResult
-  $Res call({
-    bool isLoading,
-    String? sakeName,
-    String? hint,
-    File? sakeImage,
-    String? geminiResponse,
-    String? preferences,
-  });
+  $Res call(
+      {bool isLoading,
+      String? sakeName,
+      String? hint,
+      File? sakeImage,
+      String? geminiResponse,
+      String? preferences});
 }
 
 /// @nodoc
@@ -66,35 +63,32 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
     Object? geminiResponse = freezed,
     Object? preferences = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            isLoading: null == isLoading
-                ? _value.isLoading
-                : isLoading // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            sakeName: freezed == sakeName
-                ? _value.sakeName
-                : sakeName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            hint: freezed == hint
-                ? _value.hint
-                : hint // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            sakeImage: freezed == sakeImage
-                ? _value.sakeImage
-                : sakeImage // ignore: cast_nullable_to_non_nullable
-                      as File?,
-            geminiResponse: freezed == geminiResponse
-                ? _value.geminiResponse
-                : geminiResponse // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            preferences: freezed == preferences
-                ? _value.preferences
-                : preferences // ignore: cast_nullable_to_non_nullable
-                      as String?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      sakeName: freezed == sakeName
+          ? _value.sakeName
+          : sakeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      preferences: freezed == preferences
+          ? _value.preferences
+          : preferences // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
   }
 }
 
@@ -102,19 +96,17 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
 abstract class _$$MyPageStateImplCopyWith<$Res>
     implements $MyPageStateCopyWith<$Res> {
   factory _$$MyPageStateImplCopyWith(
-    _$MyPageStateImpl value,
-    $Res Function(_$MyPageStateImpl) then,
-  ) = __$$MyPageStateImplCopyWithImpl<$Res>;
+          _$MyPageStateImpl value, $Res Function(_$MyPageStateImpl) then) =
+      __$$MyPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    bool isLoading,
-    String? sakeName,
-    String? hint,
-    File? sakeImage,
-    String? geminiResponse,
-    String? preferences,
-  });
+  $Res call(
+      {bool isLoading,
+      String? sakeName,
+      String? hint,
+      File? sakeImage,
+      String? geminiResponse,
+      String? preferences});
 }
 
 /// @nodoc
@@ -122,9 +114,8 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
     extends _$MyPageStateCopyWithImpl<$Res, _$MyPageStateImpl>
     implements _$$MyPageStateImplCopyWith<$Res> {
   __$$MyPageStateImplCopyWithImpl(
-    _$MyPageStateImpl _value,
-    $Res Function(_$MyPageStateImpl) _then,
-  ) : super(_value, _then);
+      _$MyPageStateImpl _value, $Res Function(_$MyPageStateImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -136,48 +127,45 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
     Object? geminiResponse = freezed,
     Object? preferences = freezed,
   }) {
-    return _then(
-      _$MyPageStateImpl(
-        isLoading: null == isLoading
-            ? _value.isLoading
-            : isLoading // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        sakeName: freezed == sakeName
-            ? _value.sakeName
-            : sakeName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        hint: freezed == hint
-            ? _value.hint
-            : hint // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        sakeImage: freezed == sakeImage
-            ? _value.sakeImage
-            : sakeImage // ignore: cast_nullable_to_non_nullable
-                  as File?,
-        geminiResponse: freezed == geminiResponse
-            ? _value.geminiResponse
-            : geminiResponse // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        preferences: freezed == preferences
-            ? _value.preferences
-            : preferences // ignore: cast_nullable_to_non_nullable
-                  as String?,
-      ),
-    );
+    return _then(_$MyPageStateImpl(
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      sakeName: freezed == sakeName
+          ? _value.sakeName
+          : sakeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      preferences: freezed == preferences
+          ? _value.preferences
+          : preferences // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$MyPageStateImpl implements _MyPageState {
-  const _$MyPageStateImpl({
-    this.isLoading = false,
-    this.sakeName,
-    this.hint,
-    this.sakeImage,
-    this.geminiResponse,
-    this.preferences,
-  });
+  const _$MyPageStateImpl(
+      {this.isLoading = false,
+      this.sakeName,
+      this.hint,
+      this.sakeImage,
+      this.geminiResponse,
+      this.preferences});
 
   @override
   @JsonKey()
@@ -217,15 +205,8 @@ class _$MyPageStateImpl implements _MyPageState {
   }
 
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    isLoading,
-    sakeName,
-    hint,
-    sakeImage,
-    geminiResponse,
-    preferences,
-  );
+  int get hashCode => Object.hash(runtimeType, isLoading, sakeName, hint,
+      sakeImage, geminiResponse, preferences);
 
   @JsonKey(ignore: true)
   @override
@@ -235,14 +216,13 @@ class _$MyPageStateImpl implements _MyPageState {
 }
 
 abstract class _MyPageState implements MyPageState {
-  const factory _MyPageState({
-    final bool isLoading,
-    final String? sakeName,
-    final String? hint,
-    final File? sakeImage,
-    final String? geminiResponse,
-    final String? preferences,
-  }) = _$MyPageStateImpl;
+  const factory _MyPageState(
+      {final bool isLoading,
+      final String? sakeName,
+      final String? hint,
+      final File? sakeImage,
+      final String? geminiResponse,
+      final String? preferences}) = _$MyPageStateImpl;
 
   @override
   bool get isLoading;

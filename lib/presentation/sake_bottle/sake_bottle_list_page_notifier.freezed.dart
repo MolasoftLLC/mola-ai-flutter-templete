@@ -12,8 +12,7 @@ part of 'sake_bottle_list_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$SakeBottleListPageState {
@@ -30,24 +29,20 @@ mixin _$SakeBottleListPageState {
 
 /// @nodoc
 abstract class $SakeBottleListPageStateCopyWith<$Res> {
-  factory $SakeBottleListPageStateCopyWith(
-    SakeBottleListPageState value,
-    $Res Function(SakeBottleListPageState) then,
-  ) = _$SakeBottleListPageStateCopyWithImpl<$Res, SakeBottleListPageState>;
+  factory $SakeBottleListPageStateCopyWith(SakeBottleListPageState value,
+          $Res Function(SakeBottleListPageState) then) =
+      _$SakeBottleListPageStateCopyWithImpl<$Res, SakeBottleListPageState>;
   @useResult
-  $Res call({
-    List<SakeBottleImage> sakeBottleImages,
-    bool isLoading,
-    String? errorMessage,
-    File? selectedImage,
-  });
+  $Res call(
+      {List<SakeBottleImage> sakeBottleImages,
+      bool isLoading,
+      String? errorMessage,
+      File? selectedImage});
 }
 
 /// @nodoc
-class _$SakeBottleListPageStateCopyWithImpl<
-  $Res,
-  $Val extends SakeBottleListPageState
->
+class _$SakeBottleListPageStateCopyWithImpl<$Res,
+        $Val extends SakeBottleListPageState>
     implements $SakeBottleListPageStateCopyWith<$Res> {
   _$SakeBottleListPageStateCopyWithImpl(this._value, this._then);
 
@@ -64,27 +59,24 @@ class _$SakeBottleListPageStateCopyWithImpl<
     Object? errorMessage = freezed,
     Object? selectedImage = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            sakeBottleImages: null == sakeBottleImages
-                ? _value.sakeBottleImages
-                : sakeBottleImages // ignore: cast_nullable_to_non_nullable
-                      as List<SakeBottleImage>,
-            isLoading: null == isLoading
-                ? _value.isLoading
-                : isLoading // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            errorMessage: freezed == errorMessage
-                ? _value.errorMessage
-                : errorMessage // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            selectedImage: freezed == selectedImage
-                ? _value.selectedImage
-                : selectedImage // ignore: cast_nullable_to_non_nullable
-                      as File?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      sakeBottleImages: null == sakeBottleImages
+          ? _value.sakeBottleImages
+          : sakeBottleImages // ignore: cast_nullable_to_non_nullable
+              as List<SakeBottleImage>,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      selectedImage: freezed == selectedImage
+          ? _value.selectedImage
+          : selectedImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+    ) as $Val);
   }
 }
 
@@ -92,31 +84,27 @@ class _$SakeBottleListPageStateCopyWithImpl<
 abstract class _$$SakeBottleListPageStateImplCopyWith<$Res>
     implements $SakeBottleListPageStateCopyWith<$Res> {
   factory _$$SakeBottleListPageStateImplCopyWith(
-    _$SakeBottleListPageStateImpl value,
-    $Res Function(_$SakeBottleListPageStateImpl) then,
-  ) = __$$SakeBottleListPageStateImplCopyWithImpl<$Res>;
+          _$SakeBottleListPageStateImpl value,
+          $Res Function(_$SakeBottleListPageStateImpl) then) =
+      __$$SakeBottleListPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    List<SakeBottleImage> sakeBottleImages,
-    bool isLoading,
-    String? errorMessage,
-    File? selectedImage,
-  });
+  $Res call(
+      {List<SakeBottleImage> sakeBottleImages,
+      bool isLoading,
+      String? errorMessage,
+      File? selectedImage});
 }
 
 /// @nodoc
 class __$$SakeBottleListPageStateImplCopyWithImpl<$Res>
-    extends
-        _$SakeBottleListPageStateCopyWithImpl<
-          $Res,
-          _$SakeBottleListPageStateImpl
-        >
+    extends _$SakeBottleListPageStateCopyWithImpl<$Res,
+        _$SakeBottleListPageStateImpl>
     implements _$$SakeBottleListPageStateImplCopyWith<$Res> {
   __$$SakeBottleListPageStateImplCopyWithImpl(
-    _$SakeBottleListPageStateImpl _value,
-    $Res Function(_$SakeBottleListPageStateImpl) _then,
-  ) : super(_value, _then);
+      _$SakeBottleListPageStateImpl _value,
+      $Res Function(_$SakeBottleListPageStateImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -126,38 +114,36 @@ class __$$SakeBottleListPageStateImplCopyWithImpl<$Res>
     Object? errorMessage = freezed,
     Object? selectedImage = freezed,
   }) {
-    return _then(
-      _$SakeBottleListPageStateImpl(
-        sakeBottleImages: null == sakeBottleImages
-            ? _value._sakeBottleImages
-            : sakeBottleImages // ignore: cast_nullable_to_non_nullable
-                  as List<SakeBottleImage>,
-        isLoading: null == isLoading
-            ? _value.isLoading
-            : isLoading // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        errorMessage: freezed == errorMessage
-            ? _value.errorMessage
-            : errorMessage // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        selectedImage: freezed == selectedImage
-            ? _value.selectedImage
-            : selectedImage // ignore: cast_nullable_to_non_nullable
-                  as File?,
-      ),
-    );
+    return _then(_$SakeBottleListPageStateImpl(
+      sakeBottleImages: null == sakeBottleImages
+          ? _value._sakeBottleImages
+          : sakeBottleImages // ignore: cast_nullable_to_non_nullable
+              as List<SakeBottleImage>,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      selectedImage: freezed == selectedImage
+          ? _value.selectedImage
+          : selectedImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$SakeBottleListPageStateImpl implements _SakeBottleListPageState {
-  const _$SakeBottleListPageStateImpl({
-    final List<SakeBottleImage> sakeBottleImages = const [],
-    this.isLoading = true,
-    this.errorMessage,
-    this.selectedImage,
-  }) : _sakeBottleImages = sakeBottleImages;
+  const _$SakeBottleListPageStateImpl(
+      {final List<SakeBottleImage> sakeBottleImages = const [],
+      this.isLoading = true,
+      this.errorMessage,
+      this.selectedImage})
+      : _sakeBottleImages = sakeBottleImages;
 
   final List<SakeBottleImage> _sakeBottleImages;
   @override
@@ -187,10 +173,8 @@ class _$SakeBottleListPageStateImpl implements _SakeBottleListPageState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SakeBottleListPageStateImpl &&
-            const DeepCollectionEquality().equals(
-              other._sakeBottleImages,
-              _sakeBottleImages,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._sakeBottleImages, _sakeBottleImages) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
             (identical(other.errorMessage, errorMessage) ||
@@ -201,30 +185,26 @@ class _$SakeBottleListPageStateImpl implements _SakeBottleListPageState {
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    const DeepCollectionEquality().hash(_sakeBottleImages),
-    isLoading,
-    errorMessage,
-    selectedImage,
-  );
+      runtimeType,
+      const DeepCollectionEquality().hash(_sakeBottleImages),
+      isLoading,
+      errorMessage,
+      selectedImage);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$SakeBottleListPageStateImplCopyWith<_$SakeBottleListPageStateImpl>
-  get copyWith =>
-      __$$SakeBottleListPageStateImplCopyWithImpl<
-        _$SakeBottleListPageStateImpl
-      >(this, _$identity);
+      get copyWith => __$$SakeBottleListPageStateImplCopyWithImpl<
+          _$SakeBottleListPageStateImpl>(this, _$identity);
 }
 
 abstract class _SakeBottleListPageState implements SakeBottleListPageState {
-  const factory _SakeBottleListPageState({
-    final List<SakeBottleImage> sakeBottleImages,
-    final bool isLoading,
-    final String? errorMessage,
-    final File? selectedImage,
-  }) = _$SakeBottleListPageStateImpl;
+  const factory _SakeBottleListPageState(
+      {final List<SakeBottleImage> sakeBottleImages,
+      final bool isLoading,
+      final String? errorMessage,
+      final File? selectedImage}) = _$SakeBottleListPageStateImpl;
 
   @override
   List<SakeBottleImage> get sakeBottleImages;
@@ -237,5 +217,5 @@ abstract class _SakeBottleListPageState implements SakeBottleListPageState {
   @override
   @JsonKey(ignore: true)
   _$$SakeBottleListPageStateImplCopyWith<_$SakeBottleListPageStateImpl>
-  get copyWith => throw _privateConstructorUsedError;
+      get copyWith => throw _privateConstructorUsedError;
 }

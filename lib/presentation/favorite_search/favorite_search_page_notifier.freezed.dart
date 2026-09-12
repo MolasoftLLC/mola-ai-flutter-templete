@@ -12,8 +12,7 @@ part of 'favorite_search_page_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$FavoriteSearchPageState {
@@ -37,31 +36,27 @@ mixin _$FavoriteSearchPageState {
 
 /// @nodoc
 abstract class $FavoriteSearchPageStateCopyWith<$Res> {
-  factory $FavoriteSearchPageStateCopyWith(
-    FavoriteSearchPageState value,
-    $Res Function(FavoriteSearchPageState) then,
-  ) = _$FavoriteSearchPageStateCopyWithImpl<$Res, FavoriteSearchPageState>;
+  factory $FavoriteSearchPageStateCopyWith(FavoriteSearchPageState value,
+          $Res Function(FavoriteSearchPageState) then) =
+      _$FavoriteSearchPageStateCopyWithImpl<$Res, FavoriteSearchPageState>;
   @useResult
-  $Res call({
-    bool isLoading,
-    String? sakeName,
-    String? hint,
-    File? sakeImage,
-    double? nihonshudo,
-    String? selectedPrefecture,
-    List<String>? selectedFlavors,
-    List<String>? selectedTastes,
-    List<String>? selectedDesigns,
-    String? geminiResponse,
-    List<OpenAIResponse>? openAiResponseList,
-  });
+  $Res call(
+      {bool isLoading,
+      String? sakeName,
+      String? hint,
+      File? sakeImage,
+      double? nihonshudo,
+      String? selectedPrefecture,
+      List<String>? selectedFlavors,
+      List<String>? selectedTastes,
+      List<String>? selectedDesigns,
+      String? geminiResponse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
-class _$FavoriteSearchPageStateCopyWithImpl<
-  $Res,
-  $Val extends FavoriteSearchPageState
->
+class _$FavoriteSearchPageStateCopyWithImpl<$Res,
+        $Val extends FavoriteSearchPageState>
     implements $FavoriteSearchPageStateCopyWith<$Res> {
   _$FavoriteSearchPageStateCopyWithImpl(this._value, this._then);
 
@@ -85,55 +80,52 @@ class _$FavoriteSearchPageStateCopyWithImpl<
     Object? geminiResponse = freezed,
     Object? openAiResponseList = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            isLoading: null == isLoading
-                ? _value.isLoading
-                : isLoading // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            sakeName: freezed == sakeName
-                ? _value.sakeName
-                : sakeName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            hint: freezed == hint
-                ? _value.hint
-                : hint // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            sakeImage: freezed == sakeImage
-                ? _value.sakeImage
-                : sakeImage // ignore: cast_nullable_to_non_nullable
-                      as File?,
-            nihonshudo: freezed == nihonshudo
-                ? _value.nihonshudo
-                : nihonshudo // ignore: cast_nullable_to_non_nullable
-                      as double?,
-            selectedPrefecture: freezed == selectedPrefecture
-                ? _value.selectedPrefecture
-                : selectedPrefecture // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            selectedFlavors: freezed == selectedFlavors
-                ? _value.selectedFlavors
-                : selectedFlavors // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            selectedTastes: freezed == selectedTastes
-                ? _value.selectedTastes
-                : selectedTastes // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            selectedDesigns: freezed == selectedDesigns
-                ? _value.selectedDesigns
-                : selectedDesigns // ignore: cast_nullable_to_non_nullable
-                      as List<String>?,
-            geminiResponse: freezed == geminiResponse
-                ? _value.geminiResponse
-                : geminiResponse // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            openAiResponseList: freezed == openAiResponseList
-                ? _value.openAiResponseList
-                : openAiResponseList // ignore: cast_nullable_to_non_nullable
-                      as List<OpenAIResponse>?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      sakeName: freezed == sakeName
+          ? _value.sakeName
+          : sakeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+      nihonshudo: freezed == nihonshudo
+          ? _value.nihonshudo
+          : nihonshudo // ignore: cast_nullable_to_non_nullable
+              as double?,
+      selectedPrefecture: freezed == selectedPrefecture
+          ? _value.selectedPrefecture
+          : selectedPrefecture // ignore: cast_nullable_to_non_nullable
+              as String?,
+      selectedFlavors: freezed == selectedFlavors
+          ? _value.selectedFlavors
+          : selectedFlavors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      selectedTastes: freezed == selectedTastes
+          ? _value.selectedTastes
+          : selectedTastes // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      selectedDesigns: freezed == selectedDesigns
+          ? _value.selectedDesigns
+          : selectedDesigns // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value.openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
+    ) as $Val);
   }
 }
 
@@ -141,38 +133,34 @@ class _$FavoriteSearchPageStateCopyWithImpl<
 abstract class _$$FavoriteSearchPageStateImplCopyWith<$Res>
     implements $FavoriteSearchPageStateCopyWith<$Res> {
   factory _$$FavoriteSearchPageStateImplCopyWith(
-    _$FavoriteSearchPageStateImpl value,
-    $Res Function(_$FavoriteSearchPageStateImpl) then,
-  ) = __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>;
+          _$FavoriteSearchPageStateImpl value,
+          $Res Function(_$FavoriteSearchPageStateImpl) then) =
+      __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    bool isLoading,
-    String? sakeName,
-    String? hint,
-    File? sakeImage,
-    double? nihonshudo,
-    String? selectedPrefecture,
-    List<String>? selectedFlavors,
-    List<String>? selectedTastes,
-    List<String>? selectedDesigns,
-    String? geminiResponse,
-    List<OpenAIResponse>? openAiResponseList,
-  });
+  $Res call(
+      {bool isLoading,
+      String? sakeName,
+      String? hint,
+      File? sakeImage,
+      double? nihonshudo,
+      String? selectedPrefecture,
+      List<String>? selectedFlavors,
+      List<String>? selectedTastes,
+      List<String>? selectedDesigns,
+      String? geminiResponse,
+      List<OpenAIResponse>? openAiResponseList});
 }
 
 /// @nodoc
 class __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>
-    extends
-        _$FavoriteSearchPageStateCopyWithImpl<
-          $Res,
-          _$FavoriteSearchPageStateImpl
-        >
+    extends _$FavoriteSearchPageStateCopyWithImpl<$Res,
+        _$FavoriteSearchPageStateImpl>
     implements _$$FavoriteSearchPageStateImplCopyWith<$Res> {
   __$$FavoriteSearchPageStateImplCopyWithImpl(
-    _$FavoriteSearchPageStateImpl _value,
-    $Res Function(_$FavoriteSearchPageStateImpl) _then,
-  ) : super(_value, _then);
+      _$FavoriteSearchPageStateImpl _value,
+      $Res Function(_$FavoriteSearchPageStateImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -189,76 +177,74 @@ class __$$FavoriteSearchPageStateImplCopyWithImpl<$Res>
     Object? geminiResponse = freezed,
     Object? openAiResponseList = freezed,
   }) {
-    return _then(
-      _$FavoriteSearchPageStateImpl(
-        isLoading: null == isLoading
-            ? _value.isLoading
-            : isLoading // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        sakeName: freezed == sakeName
-            ? _value.sakeName
-            : sakeName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        hint: freezed == hint
-            ? _value.hint
-            : hint // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        sakeImage: freezed == sakeImage
-            ? _value.sakeImage
-            : sakeImage // ignore: cast_nullable_to_non_nullable
-                  as File?,
-        nihonshudo: freezed == nihonshudo
-            ? _value.nihonshudo
-            : nihonshudo // ignore: cast_nullable_to_non_nullable
-                  as double?,
-        selectedPrefecture: freezed == selectedPrefecture
-            ? _value.selectedPrefecture
-            : selectedPrefecture // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        selectedFlavors: freezed == selectedFlavors
-            ? _value._selectedFlavors
-            : selectedFlavors // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        selectedTastes: freezed == selectedTastes
-            ? _value._selectedTastes
-            : selectedTastes // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        selectedDesigns: freezed == selectedDesigns
-            ? _value._selectedDesigns
-            : selectedDesigns // ignore: cast_nullable_to_non_nullable
-                  as List<String>?,
-        geminiResponse: freezed == geminiResponse
-            ? _value.geminiResponse
-            : geminiResponse // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        openAiResponseList: freezed == openAiResponseList
-            ? _value._openAiResponseList
-            : openAiResponseList // ignore: cast_nullable_to_non_nullable
-                  as List<OpenAIResponse>?,
-      ),
-    );
+    return _then(_$FavoriteSearchPageStateImpl(
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      sakeName: freezed == sakeName
+          ? _value.sakeName
+          : sakeName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      hint: freezed == hint
+          ? _value.hint
+          : hint // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sakeImage: freezed == sakeImage
+          ? _value.sakeImage
+          : sakeImage // ignore: cast_nullable_to_non_nullable
+              as File?,
+      nihonshudo: freezed == nihonshudo
+          ? _value.nihonshudo
+          : nihonshudo // ignore: cast_nullable_to_non_nullable
+              as double?,
+      selectedPrefecture: freezed == selectedPrefecture
+          ? _value.selectedPrefecture
+          : selectedPrefecture // ignore: cast_nullable_to_non_nullable
+              as String?,
+      selectedFlavors: freezed == selectedFlavors
+          ? _value._selectedFlavors
+          : selectedFlavors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      selectedTastes: freezed == selectedTastes
+          ? _value._selectedTastes
+          : selectedTastes // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      selectedDesigns: freezed == selectedDesigns
+          ? _value._selectedDesigns
+          : selectedDesigns // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      geminiResponse: freezed == geminiResponse
+          ? _value.geminiResponse
+          : geminiResponse // ignore: cast_nullable_to_non_nullable
+              as String?,
+      openAiResponseList: freezed == openAiResponseList
+          ? _value._openAiResponseList
+          : openAiResponseList // ignore: cast_nullable_to_non_nullable
+              as List<OpenAIResponse>?,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
-  const _$FavoriteSearchPageStateImpl({
-    this.isLoading = false,
-    this.sakeName,
-    this.hint,
-    this.sakeImage,
-    this.nihonshudo,
-    this.selectedPrefecture,
-    final List<String>? selectedFlavors,
-    final List<String>? selectedTastes,
-    final List<String>? selectedDesigns,
-    this.geminiResponse,
-    final List<OpenAIResponse>? openAiResponseList,
-  }) : _selectedFlavors = selectedFlavors,
-       _selectedTastes = selectedTastes,
-       _selectedDesigns = selectedDesigns,
-       _openAiResponseList = openAiResponseList;
+  const _$FavoriteSearchPageStateImpl(
+      {this.isLoading = false,
+      this.sakeName,
+      this.hint,
+      this.sakeImage,
+      this.nihonshudo,
+      this.selectedPrefecture,
+      final List<String>? selectedFlavors,
+      final List<String>? selectedTastes,
+      final List<String>? selectedDesigns,
+      this.geminiResponse,
+      final List<OpenAIResponse>? openAiResponseList})
+      : _selectedFlavors = selectedFlavors,
+        _selectedTastes = selectedTastes,
+        _selectedDesigns = selectedDesigns,
+        _openAiResponseList = openAiResponseList;
 
   @override
   @JsonKey()
@@ -337,66 +323,55 @@ class _$FavoriteSearchPageStateImpl implements _FavoriteSearchPageState {
                 other.nihonshudo == nihonshudo) &&
             (identical(other.selectedPrefecture, selectedPrefecture) ||
                 other.selectedPrefecture == selectedPrefecture) &&
-            const DeepCollectionEquality().equals(
-              other._selectedFlavors,
-              _selectedFlavors,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._selectedTastes,
-              _selectedTastes,
-            ) &&
-            const DeepCollectionEquality().equals(
-              other._selectedDesigns,
-              _selectedDesigns,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedFlavors, _selectedFlavors) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedTastes, _selectedTastes) &&
+            const DeepCollectionEquality()
+                .equals(other._selectedDesigns, _selectedDesigns) &&
             (identical(other.geminiResponse, geminiResponse) ||
                 other.geminiResponse == geminiResponse) &&
-            const DeepCollectionEquality().equals(
-              other._openAiResponseList,
-              _openAiResponseList,
-            ));
+            const DeepCollectionEquality()
+                .equals(other._openAiResponseList, _openAiResponseList));
   }
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    isLoading,
-    sakeName,
-    hint,
-    sakeImage,
-    nihonshudo,
-    selectedPrefecture,
-    const DeepCollectionEquality().hash(_selectedFlavors),
-    const DeepCollectionEquality().hash(_selectedTastes),
-    const DeepCollectionEquality().hash(_selectedDesigns),
-    geminiResponse,
-    const DeepCollectionEquality().hash(_openAiResponseList),
-  );
+      runtimeType,
+      isLoading,
+      sakeName,
+      hint,
+      sakeImage,
+      nihonshudo,
+      selectedPrefecture,
+      const DeepCollectionEquality().hash(_selectedFlavors),
+      const DeepCollectionEquality().hash(_selectedTastes),
+      const DeepCollectionEquality().hash(_selectedDesigns),
+      geminiResponse,
+      const DeepCollectionEquality().hash(_openAiResponseList));
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
   _$$FavoriteSearchPageStateImplCopyWith<_$FavoriteSearchPageStateImpl>
-  get copyWith =>
-      __$$FavoriteSearchPageStateImplCopyWithImpl<
-        _$FavoriteSearchPageStateImpl
-      >(this, _$identity);
+      get copyWith => __$$FavoriteSearchPageStateImplCopyWithImpl<
+          _$FavoriteSearchPageStateImpl>(this, _$identity);
 }
 
 abstract class _FavoriteSearchPageState implements FavoriteSearchPageState {
-  const factory _FavoriteSearchPageState({
-    final bool isLoading,
-    final String? sakeName,
-    final String? hint,
-    final File? sakeImage,
-    final double? nihonshudo,
-    final String? selectedPrefecture,
-    final List<String>? selectedFlavors,
-    final List<String>? selectedTastes,
-    final List<String>? selectedDesigns,
-    final String? geminiResponse,
-    final List<OpenAIResponse>? openAiResponseList,
-  }) = _$FavoriteSearchPageStateImpl;
+  const factory _FavoriteSearchPageState(
+          {final bool isLoading,
+          final String? sakeName,
+          final String? hint,
+          final File? sakeImage,
+          final double? nihonshudo,
+          final String? selectedPrefecture,
+          final List<String>? selectedFlavors,
+          final List<String>? selectedTastes,
+          final List<String>? selectedDesigns,
+          final String? geminiResponse,
+          final List<OpenAIResponse>? openAiResponseList}) =
+      _$FavoriteSearchPageStateImpl;
 
   @override
   bool get isLoading;
@@ -423,5 +398,5 @@ abstract class _FavoriteSearchPageState implements FavoriteSearchPageState {
   @override
   @JsonKey(ignore: true)
   _$$FavoriteSearchPageStateImplCopyWith<_$FavoriteSearchPageStateImpl>
-  get copyWith => throw _privateConstructorUsedError;
+      get copyWith => throw _privateConstructorUsedError;
 }

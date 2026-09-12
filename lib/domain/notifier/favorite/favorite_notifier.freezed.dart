@@ -12,8 +12,7 @@ part of 'favorite_notifier.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$FavoriteState {
@@ -27,9 +26,8 @@ mixin _$FavoriteState {
 /// @nodoc
 abstract class $FavoriteStateCopyWith<$Res> {
   factory $FavoriteStateCopyWith(
-    FavoriteState value,
-    $Res Function(FavoriteState) then,
-  ) = _$FavoriteStateCopyWithImpl<$Res, FavoriteState>;
+          FavoriteState value, $Res Function(FavoriteState) then) =
+      _$FavoriteStateCopyWithImpl<$Res, FavoriteState>;
   @useResult
   $Res call({List<FavoriteSake> myFavoriteList});
 }
@@ -46,16 +44,15 @@ class _$FavoriteStateCopyWithImpl<$Res, $Val extends FavoriteState>
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? myFavoriteList = null}) {
-    return _then(
-      _value.copyWith(
-            myFavoriteList: null == myFavoriteList
-                ? _value.myFavoriteList
-                : myFavoriteList // ignore: cast_nullable_to_non_nullable
-                      as List<FavoriteSake>,
-          )
-          as $Val,
-    );
+  $Res call({
+    Object? myFavoriteList = null,
+  }) {
+    return _then(_value.copyWith(
+      myFavoriteList: null == myFavoriteList
+          ? _value.myFavoriteList
+          : myFavoriteList // ignore: cast_nullable_to_non_nullable
+              as List<FavoriteSake>,
+    ) as $Val);
   }
 }
 
@@ -63,9 +60,8 @@ class _$FavoriteStateCopyWithImpl<$Res, $Val extends FavoriteState>
 abstract class _$$FavoriteStateImplCopyWith<$Res>
     implements $FavoriteStateCopyWith<$Res> {
   factory _$$FavoriteStateImplCopyWith(
-    _$FavoriteStateImpl value,
-    $Res Function(_$FavoriteStateImpl) then,
-  ) = __$$FavoriteStateImplCopyWithImpl<$Res>;
+          _$FavoriteStateImpl value, $Res Function(_$FavoriteStateImpl) then) =
+      __$$FavoriteStateImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({List<FavoriteSake> myFavoriteList});
@@ -76,30 +72,29 @@ class __$$FavoriteStateImplCopyWithImpl<$Res>
     extends _$FavoriteStateCopyWithImpl<$Res, _$FavoriteStateImpl>
     implements _$$FavoriteStateImplCopyWith<$Res> {
   __$$FavoriteStateImplCopyWithImpl(
-    _$FavoriteStateImpl _value,
-    $Res Function(_$FavoriteStateImpl) _then,
-  ) : super(_value, _then);
+      _$FavoriteStateImpl _value, $Res Function(_$FavoriteStateImpl) _then)
+      : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? myFavoriteList = null}) {
-    return _then(
-      _$FavoriteStateImpl(
-        myFavoriteList: null == myFavoriteList
-            ? _value._myFavoriteList
-            : myFavoriteList // ignore: cast_nullable_to_non_nullable
-                  as List<FavoriteSake>,
-      ),
-    );
+  $Res call({
+    Object? myFavoriteList = null,
+  }) {
+    return _then(_$FavoriteStateImpl(
+      myFavoriteList: null == myFavoriteList
+          ? _value._myFavoriteList
+          : myFavoriteList // ignore: cast_nullable_to_non_nullable
+              as List<FavoriteSake>,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$FavoriteStateImpl implements _FavoriteState {
-  const _$FavoriteStateImpl({
-    final List<FavoriteSake> myFavoriteList = const [],
-  }) : _myFavoriteList = myFavoriteList;
+  const _$FavoriteStateImpl(
+      {final List<FavoriteSake> myFavoriteList = const []})
+      : _myFavoriteList = myFavoriteList;
 
   final List<FavoriteSake> _myFavoriteList;
   @override
@@ -120,17 +115,13 @@ class _$FavoriteStateImpl implements _FavoriteState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$FavoriteStateImpl &&
-            const DeepCollectionEquality().equals(
-              other._myFavoriteList,
-              _myFavoriteList,
-            ));
+            const DeepCollectionEquality()
+                .equals(other._myFavoriteList, _myFavoriteList));
   }
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    const DeepCollectionEquality().hash(_myFavoriteList),
-  );
+      runtimeType, const DeepCollectionEquality().hash(_myFavoriteList));
 
   @JsonKey(ignore: true)
   @override
