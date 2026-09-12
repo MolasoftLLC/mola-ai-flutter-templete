@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
@@ -45,6 +46,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   FavoriteNotifier? _favoriteNotifier;
   void Function()? _removeSavedSakeListener;
   void Function()? _removeFavoriteListener;
+  Timer? _masterEnrichmentPollTimer;
+  var _masterEnrichmentPollCount = 0;
 
   @override
   void didChangeDependencies() {
@@ -94,6 +97,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   @override
   void dispose() {
+    _masterEnrichmentPollTimer?.cancel();
     _scrollController
       ..removeListener(_updateCompactHeaderVisibility)
       ..dispose();
@@ -111,10 +115,47 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     );
     future
         .then((overview) {
-          if (mounted) setState(() => _headerOverview = overview);
+          if (!mounted) return;
+          setState(() => _headerOverview = overview);
+          _scheduleMasterEnrichmentPolling(overview);
         })
         .catchError((_) {});
     return future;
+  }
+
+  void _scheduleMasterEnrichmentPolling(SakeOverview overview) {
+    _masterEnrichmentPollTimer?.cancel();
+    if (!overview.masterEnrichmentPending ||
+        overview.master.tasteProfile != null) {
+      return;
+    }
+    _masterEnrichmentPollCount = 0;
+    _masterEnrichmentPollTimer = Timer.periodic(const Duration(seconds: 2), (
+      timer,
+    ) async {
+      final sakeId = widget.venueSake.sakeId;
+      if (!mounted ||
+          sakeId == null ||
+          sakeId <= 0 ||
+          _masterEnrichmentPollCount >= 8) {
+        timer.cancel();
+        return;
+      }
+      _masterEnrichmentPollCount += 1;
+      try {
+        final refreshed = await context
+            .read<SakeScanRepository>()
+            .fetchOverview(sakeId);
+        if (!mounted) return;
+        setState(() => _headerOverview = refreshed);
+        if (!refreshed.masterEnrichmentPending ||
+            refreshed.master.tasteProfile != null) {
+          timer.cancel();
+        }
+      } catch (_) {
+        // 初回の詳細は表示済みなので、次回アクセス時に再試行する。
+      }
+    });
   }
 
   Future<void> _reload() async {
@@ -154,7 +195,32 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (updated.savedId != null &&
         updated.savedId!.isNotEmpty &&
         updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
-      await notifier.syncSavedSakeToServer(updated.savedId!, force: true);
+      final synced = await notifier.syncSavedSakeToServer(
+        updated.savedId!,
+        force: true,
+      );
+      if (synced == null || !mounted) return;
+      final result = await context.read<PlaceMapRepository>().savePlace(
+        savedId: updated.savedId!,
+        place: place,
+      );
+      if (!mounted) return;
+      if (result == null) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '飲んだ場所を地図へ登録できませんでした。',
+        );
+        return;
+      }
+      await notifier.updateSavedSake(
+        updated.copyWith(
+          place: result.drinkingPlace.displayName,
+          drinkingPlace: result.drinkingPlace,
+        ),
+      );
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(context, message: '飲んだ場所を地図へ登録しました。');
+      }
     }
   }
 
@@ -164,6 +230,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
     final record = _findSavedSake(_savedSakeNotifier, detailSake);
     final profile = _headerOverview?.master.tasteProfile;
+    final isProfileEnrichmentPending =
+        _headerOverview?.masterEnrichmentPending == true && profile == null;
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
     final matchPercent = profile == null || preference == null
         ? null
@@ -236,6 +304,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     name: detailSake.name ?? widget.venueSake.name,
                     imagePaths: headerImagePaths,
                     matchPercent: matchPercent,
+                    isProfileEnrichmentPending: isProfileEnrichmentPending,
                   ),
                 ),
                 const SliverToBoxAdapter(child: _ShopPriceTitle()),
@@ -273,7 +342,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
                   sliver: SliverToBoxAdapter(
                     child: _Details(
-                      overview: snapshot.data,
+                      overview: _headerOverview ?? snapshot.data,
                       fallback: widget.venueSake,
                       savedSakeNotifier: _savedSakeNotifier,
                       showHeroImage: false,
@@ -294,11 +363,13 @@ class _CollapsingSakeHero extends StatefulWidget {
     required this.name,
     required this.imagePaths,
     required this.matchPercent,
+    required this.isProfileEnrichmentPending,
   });
 
   final String? name;
   final List<String> imagePaths;
   final int? matchPercent;
+  final bool isProfileEnrichmentPending;
 
   @override
   State<_CollapsingSakeHero> createState() => _CollapsingSakeHeroState();
@@ -339,7 +410,11 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
       final imageHeight = lerpDouble(240, 40, collapsedProgress)!;
       final imageLeft = lerpDouble(20, 64, collapsedProgress)!;
       final imageTop = lerpDouble(
-        topInset + kToolbarHeight + (widget.matchPercent == null ? 18 : 58),
+        topInset +
+            kToolbarHeight +
+            (widget.matchPercent == null && !widget.isProfileEnrichmentPending
+                ? 18
+                : 58),
         topInset + 8,
         collapsedProgress,
       )!;
@@ -425,6 +500,16 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
               child: Opacity(
                 opacity: expandedProgress,
                 child: _PreferenceMatchSection(percent: widget.matchPercent!),
+              ),
+            ),
+          if (widget.isProfileEnrichmentPending)
+            Positioned(
+              left: 20,
+              right: 20,
+              top: topInset + 50,
+              child: Opacity(
+                opacity: expandedProgress,
+                child: const _ProfileAnalysisProgress(),
               ),
             ),
           Positioned(
@@ -593,16 +678,7 @@ class _Details extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  if (master.seriesName != null)
-                    Text(
-                      master.seriesName!,
-                      style: const TextStyle(
-                        color: _orange,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   if (category != null) ...[
-                    if (master.seriesName != null) const SizedBox(height: 8),
                     _Tags(values: [category], accent: true),
                   ],
                   if (category != null) const SizedBox(height: 14),
@@ -1356,6 +1432,39 @@ class _PreferenceMatchSection extends StatefulWidget {
       _PreferenceMatchSectionState();
 }
 
+class _ProfileAnalysisProgress extends StatelessWidget {
+  const _ProfileAnalysisProgress();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '味わいプロフィールを解析中',
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '味わいプロフィールを解析中',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 8),
+          LinearProgressIndicator(
+            minHeight: 5,
+            color: Color(0xFFFFB347),
+            backgroundColor: Color(0x336D8CB0),
+            borderRadius: BorderRadius.all(Radius.circular(99)),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _LoginRecommendationPrompt extends StatelessWidget {
   const _LoginRecommendationPrompt();
 
@@ -1620,27 +1729,58 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     setState(() => _isSaving = true);
-    final place = _placeController.text.trim();
-    final updated = widget.sake.copyWith(
-      impression: _impressionController.text.trim(),
-      place: place.isEmpty ? null : place,
-      drinkingPlace: _selectedPlace,
-      userTags: _tags.toList(growable: false),
-      personalTasteRatings: _personalTasteRatings.map(
-        (key, value) => MapEntry(key, value.round()),
-      ),
-    );
-    await widget.notifier.updateSavedSake(updated);
-    final savedId = updated.savedId;
-    if (savedId != null &&
-        savedId.isNotEmpty &&
-        updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
-      await widget.notifier.syncSavedSakeToServer(savedId, force: true);
+    try {
+      final place = _placeController.text.trim();
+      var updated = widget.sake.copyWith(
+        impression: _impressionController.text.trim(),
+        place: place.isEmpty ? null : place,
+        drinkingPlace: _selectedPlace,
+        userTags: _tags.toList(growable: false),
+        personalTasteRatings: _personalTasteRatings.map(
+          (key, value) => MapEntry(key, value.round()),
+        ),
+      );
+      await widget.notifier.updateSavedSake(updated);
+      final savedId = updated.savedId;
+      if (savedId != null &&
+          savedId.isNotEmpty &&
+          updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
+        final synced = await widget.notifier.syncSavedSakeToServer(
+          savedId,
+          force: true,
+        );
+        if (synced == null) throw StateError('保存酒をサーバーへ同期できませんでした。');
+        updated = synced;
+        final selectedPlace = _selectedPlace;
+        if (selectedPlace != null && selectedPlace.providerPlaceId != null) {
+          if (!mounted) return;
+          final result = await context.read<PlaceMapRepository>().savePlace(
+            savedId: savedId,
+            place: selectedPlace,
+          );
+          if (result == null) throw StateError('飲んだ場所を地図へ登録できませんでした。');
+          updated = updated.copyWith(
+            place: result.drinkingPlace.displayName,
+            drinkingPlace: result.drinkingPlace,
+          );
+          await widget.notifier.updateSavedSake(updated);
+        }
+      }
+      if (!mounted) return;
+      SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '保存に失敗しました。通信状態を確認してもう一度お試しください。',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-    SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
   }
 
   Future<void> _selectPlace() async {

@@ -110,6 +110,7 @@ class SakeOverview {
     required this.sake,
     required this.analysisCompleted,
     this.analysisPayload,
+    this.masterEnrichmentPending = false,
     this.master = const SakeMasterDetails(),
     this.brand = const SakeBrandDetails(),
     this.brewery = const SakeBreweryDetails(),
@@ -122,6 +123,7 @@ class SakeOverview {
     final analysisJson = _asStringMap(json['analysis']);
     final brandJson = _asStringMap(json['brand']);
     final breweryJson = _asStringMap(json['brewery']);
+    final enrichmentJson = _asStringMap(json['masterEnrichment']);
     final recentPublicPosts = json['recentPublicPosts'] is List
         ? List<dynamic>.from(json['recentPublicPosts'] as List)
         : const <dynamic>[];
@@ -166,6 +168,7 @@ class SakeOverview {
       sake: Sake.fromJson(merged),
       analysisCompleted: analysisJson.isNotEmpty,
       analysisPayload: analysisJson.isEmpty ? null : analysisJson,
+      masterEnrichmentPending: enrichmentJson['status'] == 'pending',
       master: SakeMasterDetails.fromJson(sakeJson),
       brand: SakeBrandDetails.fromJson(brandJson),
       brewery: SakeBreweryDetails.fromJson(breweryJson),
@@ -177,6 +180,7 @@ class SakeOverview {
   final Sake sake;
   final bool analysisCompleted;
   final Map<String, dynamic>? analysisPayload;
+  final bool masterEnrichmentPending;
   final SakeMasterDetails master;
   final SakeBrandDetails brand;
   final SakeBreweryDetails brewery;
