@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
@@ -41,6 +40,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   final _searchController = TextEditingController();
   final _markerIcons = <String, BitmapDescriptor>{};
+  final _fallbackMarkerIcons = <int, Future<BitmapDescriptor>>{};
   final _requestedMarkerKeys = <String>{};
   final _pendingMarkerRequests = Queue<_MarkerIconRequest>();
   int _activeMarkerLoads = 0;
@@ -416,13 +416,13 @@ class _SakeMapPageState extends State<SakeMapPage> {
       if (_markerIcons.containsKey(key) || !_requestedMarkerKeys.add(key)) {
         continue;
       }
-      _pendingMarkerRequests.add(
-        _MarkerIconRequest(
-          key: key,
-          imageUrl: venue.latestImageUrl,
-          recordCount: venue.recordCount,
-        ),
+      final request = _MarkerIconRequest(
+        key: key,
+        imageUrl: venue.latestImageUrl,
+        recordCount: venue.recordCount,
       );
+      unawaited(_loadFallbackMarker(request));
+      if (request.imageUrl != null) _pendingMarkerRequests.add(request);
     }
     _drainMarkerQueue();
   }
@@ -446,36 +446,33 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   Future<void> _loadMarkerIcon(_MarkerIconRequest request) async {
     try {
-      Uint8List? imageBytes;
       final imageUrl = request.imageUrl;
-      if (imageUrl != null) {
-        final uri = Uri.tryParse(imageUrl);
-        if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
-          final response = await http
-              .get(uri)
-              .timeout(const Duration(seconds: 10));
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            imageBytes = response.bodyBytes;
-          }
-        }
+      if (imageUrl == null) return;
+      final uri = Uri.tryParse(imageUrl);
+      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+        return;
       }
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode < 200 || response.statusCode >= 300) return;
       final icon = await createCircularSakeMarker(
-        imageBytes,
+        response.bodyBytes,
         recordCount: request.recordCount,
       );
       if (!mounted) return;
       setState(() => _markerIcons[request.key] = icon);
     } catch (error) {
       logger.info('地図ピン画像を読み込めませんでした: $error');
-      try {
-        final fallback = await createCircularSakeMarker(
-          null,
-          recordCount: request.recordCount,
-        );
-        if (mounted) setState(() => _markerIcons[request.key] = fallback);
-      } catch (fallbackError) {
-        logger.info('地図の代替ピンを生成できませんでした: $fallbackError');
-      }
+    }
+  }
+
+  Future<void> _loadFallbackMarker(_MarkerIconRequest request) async {
+    try {
+      final icon = await (_fallbackMarkerIcons[request.recordCount] ??=
+          createCircularSakeMarker(null, recordCount: request.recordCount));
+      if (!mounted || _markerIcons.containsKey(request.key)) return;
+      setState(() => _markerIcons[request.key] = icon);
+    } catch (error) {
+      logger.info('地図の代替ピンを生成できませんでした: $error');
     }
   }
 
