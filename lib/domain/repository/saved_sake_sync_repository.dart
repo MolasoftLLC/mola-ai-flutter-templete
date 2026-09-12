@@ -512,6 +512,10 @@ class SavedSakeSyncRepository {
       'sake': sakeJson,
     };
 
+    if (sake.sakeId != null && sake.sakeId! > 0) {
+      payload['sakeId'] = sake.sakeId;
+    }
+
     payload['isPublic'] = shareFlag;
 
     if (stage == SavedSakeSyncStage.analysisStart) {

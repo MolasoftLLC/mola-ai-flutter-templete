@@ -49,6 +49,17 @@ class MapContributionSaveResult {
   final int totalMapContributionPoints;
 }
 
+class PlaceMapException implements Exception {
+  const PlaceMapException({required this.message, this.statusCode});
+
+  final String message;
+  final int? statusCode;
+
+  @override
+  String toString() =>
+      'PlaceMapException(statusCode: $statusCode, message: $message)';
+}
+
 class MapVenue {
   const MapVenue({
     required this.venueId,
@@ -231,7 +242,13 @@ class PlaceMapRepository implements SakeMapDataSource {
       'mapPhotoPublic': place.mapPhotoPublic,
       'locale': await resolveAppLocaleLanguageCode(),
     });
-    if (!response.isSuccessful || response.body is! Map) return null;
+    if (!response.isSuccessful) {
+      throw PlaceMapException(
+        statusCode: response.statusCode,
+        message: _apiErrorMessage(response.error) ?? '飲んだ場所を地図へ登録できませんでした。',
+      );
+    }
+    if (response.body is! Map) return null;
     final raw = Map<String, dynamic>.from(response.body as Map);
     final result = raw['drinkingPlace'];
     if (result is! Map) return null;
@@ -341,4 +358,13 @@ class PlaceMapRepository implements SakeMapDataSource {
         .map((item) => parser(Map<String, dynamic>.from(item)))
         .toList(growable: false);
   }
+}
+
+String? _apiErrorMessage(dynamic payload) {
+  if (payload is Map) {
+    final message = payload['error']?.toString().trim();
+    return message == null || message.isEmpty ? null : message;
+  }
+  final message = payload?.toString().trim();
+  return message == null || message.isEmpty ? null : message;
 }

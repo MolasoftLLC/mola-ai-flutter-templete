@@ -1306,66 +1306,71 @@ Future<void> _showRecordEditorSheet(
   BuildContext context, {
   required SavedSakeNotifier notifier,
   required Sake sake,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  backgroundColor: Colors.white,
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-  ),
-  builder: (sheetContext) => DraggableScrollableSheet(
-    initialChildSize: .86,
-    minChildSize: .55,
-    maxChildSize: .96,
-    expand: false,
-    builder: (context, scrollController) => SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD3DAE4),
-              borderRadius: BorderRadius.circular(99),
+}) async {
+  final saved = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+    ),
+    builder: (sheetContext) => DraggableScrollableSheet(
+      initialChildSize: .86,
+      minChildSize: .55,
+      maxChildSize: .96,
+      expand: false,
+      builder: (context, scrollController) => SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD3DAE4),
+                borderRadius: BorderRadius.circular(99),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'あなたの記録を編集',
-                    style: TextStyle(
-                      color: _navy,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'あなたの記録を編集',
+                      style: TextStyle(
+                        color: _navy,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  tooltip: '閉じる',
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                ),
-              ],
+                  IconButton(
+                    tooltip: '閉じる',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1, color: Color(0xFFE5EAF0)),
-          Expanded(
-            child: SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-              child: _InlineRecordEditor(notifier: notifier, sake: sake),
+            const Divider(height: 1, color: Color(0xFFE5EAF0)),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                child: _InlineRecordEditor(notifier: notifier, sake: sake),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
-  ),
-);
+  );
+  if (saved == true && context.mounted) {
+    SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
+  }
+}
 
 Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
   if (notifier == null) return null;
@@ -1700,6 +1705,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   late Map<String, double> _personalTasteRatings;
   DrinkingPlace? _selectedPlace;
   bool _isSaving = false;
+  String? _saveError;
   bool _isVisibilityUpdating = false;
   bool _isAddingImage = false;
 
@@ -1730,7 +1736,11 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
 
   Future<void> _save() async {
     if (_isSaving) return;
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _saveError = null;
+    });
+    final isLoggedIn = context.read<AuthState>().user != null;
     try {
       final place = _placeController.text.trim();
       var updated = widget.sake.copyWith(
@@ -1744,9 +1754,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       );
       await widget.notifier.updateSavedSake(updated);
       final savedId = updated.savedId;
-      if (savedId != null &&
-          savedId.isNotEmpty &&
-          updated.syncStatus == SavedSakeSyncStatus.serverSynced) {
+      if (isLoggedIn && savedId != null && savedId.isNotEmpty) {
         final synced = await widget.notifier.syncSavedSakeToServer(
           savedId,
           force: true,
@@ -1769,14 +1777,14 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         }
       }
       if (!mounted) return;
-      SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
-      Navigator.of(context).pop();
-    } catch (_) {
+      Navigator.of(context).pop(true);
+    } catch (error) {
       if (mounted) {
-        SnackBarUtils.showWarningSnackBar(
-          context,
-          message: '保存に失敗しました。通信状態を確認してもう一度お試しください。',
-        );
+        setState(() {
+          _saveError = error is PlaceMapException
+              ? error.message
+              : '保存に失敗しました。通信状態を確認してもう一度お試しください。';
+        });
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -1888,6 +1896,21 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      if (_saveError != null) ...[
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF1F0),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _saveError!,
+            style: const TextStyle(color: Color(0xFFB42318), fontSize: 13),
+          ),
+        ),
+      ],
       const Text(
         '飲んだ場所',
         style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
