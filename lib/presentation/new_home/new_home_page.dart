@@ -131,11 +131,16 @@ class NewHomePage extends StatelessWidget {
                         return place?.isNotEmpty == true ? place : null;
                       },
                       footerBuilder: (sake) => _formatSavedDate(context, sake),
-                      onTap: (sake) => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => SavedSakeDetailPage.forSake(sake),
-                        ),
-                      ),
+                      onTap: (sake) async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SavedSakeDetailPage.forSake(sake),
+                          ),
+                        );
+                        if (context.mounted) {
+                          await savedNotifier.refreshFromServer();
+                        }
+                      },
                     ),
                   const SizedBox(height: 28),
                   _SectionTitle(title: context.l10n.newHomeTimeline),
@@ -500,9 +505,7 @@ class _SakeImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
-        ? sake.imagePaths!.first
-        : sake.primaryImageUrl;
+    final imagePath = preferredSakeCardImagePath(sake);
     if (imagePath == null || imagePath.trim().isEmpty) {
       return _placeholder();
     }
@@ -543,6 +546,15 @@ class _SakeImage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 一覧カードはユーザー写真、マスターのサムネイル、詳細画像の順で表示する。
+String? preferredSakeCardImagePath(Sake sake) {
+  if (sake.imagePaths?.isNotEmpty ?? false) return sake.imagePaths!.first;
+  final thumbnail = sake.thumbnailImageUrl?.trim();
+  if (thumbnail?.isNotEmpty == true) return thumbnail;
+  final primary = sake.primaryImageUrl?.trim();
+  return primary?.isNotEmpty == true ? primary : null;
 }
 
 class _RoundCardAction extends StatelessWidget {

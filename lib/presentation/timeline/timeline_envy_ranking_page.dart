@@ -299,7 +299,7 @@ class _RankingTile extends StatelessWidget {
         : Colors.white54;
     final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
         ? sake.imagePaths!.first
-        : null;
+        : sake.thumbnailImageUrl ?? sake.primaryImageUrl;
 
     Widget? buildPreview() {
       if (!showImage) {

@@ -170,6 +170,7 @@ class SakeOverview {
     merged['primaryImageUrl'] =
         sakeJson['primaryImageUrl']?.toString() ??
         sakeJson['imageUrl']?.toString();
+    merged['thumbnailImageUrl'] = sakeJson['thumbnailImageUrl']?.toString();
     merged['community'] = communityJson;
     merged['sameBrandSakes'] = sameBrandSakes;
 

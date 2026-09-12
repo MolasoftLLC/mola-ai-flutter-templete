@@ -491,6 +491,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       type: basic.type ?? analyzed.type,
       prefectureCode: basic.prefectureCode ?? analyzed.prefectureCode,
       primaryImageUrl: basic.primaryImageUrl ?? analyzed.primaryImageUrl,
+      thumbnailImageUrl: basic.thumbnailImageUrl ?? analyzed.thumbnailImageUrl,
       community: basic.community ?? analyzed.community,
       sameBrandSakes: basic.sameBrandSakes ?? analyzed.sameBrandSakes,
     );

@@ -117,6 +117,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         .then((overview) {
           if (!mounted) return;
           setState(() => _headerOverview = overview);
+          unawaited(_syncOverviewImagesToSavedRecord(overview));
           _scheduleMasterEnrichmentPolling(overview);
         })
         .catchError((_) {});
@@ -148,6 +149,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
             .fetchOverview(sakeId);
         if (!mounted) return;
         setState(() => _headerOverview = refreshed);
+        unawaited(_syncOverviewImagesToSavedRecord(refreshed));
         if (!refreshed.masterEnrichmentPending ||
             refreshed.master.tasteProfile != null) {
           timer.cancel();
@@ -156,6 +158,31 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         // 初回の詳細は表示済みなので、次回アクセス時に再試行する。
       }
     });
+  }
+
+  Future<void> _syncOverviewImagesToSavedRecord(SakeOverview overview) async {
+    final notifier = _savedSakeNotifier;
+    final record = _findSavedSake(notifier, overview.sake);
+    if (notifier == null || record == null) return;
+    final savedId = record.savedId;
+    if (savedId == null || savedId.isEmpty) return;
+    final primary = overview.sake.primaryImageUrl?.trim();
+    final thumbnail = overview.sake.thumbnailImageUrl?.trim();
+    if ((primary == null || primary.isEmpty) &&
+        (thumbnail == null || thumbnail.isEmpty)) {
+      return;
+    }
+    final nextPrimary = primary?.isNotEmpty == true
+        ? primary
+        : record.primaryImageUrl;
+    final nextThumbnail = thumbnail?.isNotEmpty == true
+        ? thumbnail
+        : record.thumbnailImageUrl;
+    if (record.primaryImageUrl == nextPrimary &&
+        record.thumbnailImageUrl == nextThumbnail) {
+      return;
+    }
+    await notifier.updateSavedSakeWithInfo(savedId, overview.sake);
   }
 
   Future<void> _reload() async {
@@ -1089,6 +1116,7 @@ Sake _asSake(VenueSake venueSake) => Sake(
   brewery: venueSake.brewery,
   type: venueSake.type,
   primaryImageUrl: venueSake.primaryImageUrl,
+  thumbnailImageUrl: venueSake.thumbnailImageUrl,
 );
 
 class _MasterRecordCta extends StatelessWidget {

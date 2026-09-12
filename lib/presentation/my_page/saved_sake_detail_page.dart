@@ -98,6 +98,7 @@ class _SavedSakeMasterDetailResolverState
         brewery: resolved.brewery ?? sake.brewery,
         type: resolved.type ?? sake.type,
         primaryImageUrl: resolved.primaryImageUrl ?? sake.primaryImageUrl,
+        thumbnailImageUrl: resolved.thumbnailImageUrl ?? sake.thumbnailImageUrl,
         recordCount: 0,
       );
     } catch (_) {
@@ -111,6 +112,7 @@ class _SavedSakeMasterDetailResolverState
     brewery: sake.brewery,
     type: sake.type,
     primaryImageUrl: sake.primaryImageUrl,
+    thumbnailImageUrl: sake.thumbnailImageUrl,
     recordCount: 0,
   );
 

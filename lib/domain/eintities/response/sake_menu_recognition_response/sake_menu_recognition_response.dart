@@ -66,6 +66,7 @@ class Sake with _$Sake {
     String? iconUrl,
     String? prefectureCode,
     String? primaryImageUrl,
+    String? thumbnailImageUrl,
     Map<String, dynamic>? community,
     List<Map<String, dynamic>>? sameBrandSakes,
     @Default(0) int envyCount,

@@ -499,6 +499,7 @@ mixin _$Sake {
   String? get iconUrl => throw _privateConstructorUsedError;
   String? get prefectureCode => throw _privateConstructorUsedError;
   String? get primaryImageUrl => throw _privateConstructorUsedError;
+  String? get thumbnailImageUrl => throw _privateConstructorUsedError;
   Map<String, dynamic>? get community => throw _privateConstructorUsedError;
   List<Map<String, dynamic>>? get sameBrandSakes =>
       throw _privateConstructorUsedError;
@@ -542,6 +543,7 @@ abstract class $SakeCopyWith<$Res> {
       String? iconUrl,
       String? prefectureCode,
       String? primaryImageUrl,
+      String? thumbnailImageUrl,
       Map<String, dynamic>? community,
       List<Map<String, dynamic>>? sameBrandSakes,
       int envyCount,
@@ -588,6 +590,7 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? iconUrl = freezed,
     Object? prefectureCode = freezed,
     Object? primaryImageUrl = freezed,
+    Object? thumbnailImageUrl = freezed,
     Object? community = freezed,
     Object? sameBrandSakes = freezed,
     Object? envyCount = null,
@@ -687,6 +690,10 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.primaryImageUrl
           : primaryImageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      thumbnailImageUrl: freezed == thumbnailImageUrl
+          ? _value.thumbnailImageUrl
+          : thumbnailImageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       community: freezed == community
           ? _value.community
           : community // ignore: cast_nullable_to_non_nullable
@@ -754,6 +761,7 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       String? iconUrl,
       String? prefectureCode,
       String? primaryImageUrl,
+      String? thumbnailImageUrl,
       Map<String, dynamic>? community,
       List<Map<String, dynamic>>? sameBrandSakes,
       int envyCount,
@@ -798,6 +806,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? iconUrl = freezed,
     Object? prefectureCode = freezed,
     Object? primaryImageUrl = freezed,
+    Object? thumbnailImageUrl = freezed,
     Object? community = freezed,
     Object? sameBrandSakes = freezed,
     Object? envyCount = null,
@@ -897,6 +906,10 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value.primaryImageUrl
           : primaryImageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      thumbnailImageUrl: freezed == thumbnailImageUrl
+          ? _value.thumbnailImageUrl
+          : thumbnailImageUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
       community: freezed == community
           ? _value._community
           : community // ignore: cast_nullable_to_non_nullable
@@ -948,6 +961,7 @@ class _$SakeImpl implements _Sake {
       this.iconUrl,
       this.prefectureCode,
       this.primaryImageUrl,
+      this.thumbnailImageUrl,
       final Map<String, dynamic>? community,
       final List<Map<String, dynamic>>? sameBrandSakes,
       this.envyCount = 0,
@@ -1043,6 +1057,8 @@ class _$SakeImpl implements _Sake {
   final String? prefectureCode;
   @override
   final String? primaryImageUrl;
+  @override
+  final String? thumbnailImageUrl;
   final Map<String, dynamic>? _community;
   @override
   Map<String, dynamic>? get community {
@@ -1075,7 +1091,7 @@ class _$SakeImpl implements _Sake {
 
   @override
   String toString() {
-    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
+    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -1117,6 +1133,8 @@ class _$SakeImpl implements _Sake {
                 other.prefectureCode == prefectureCode) &&
             (identical(other.primaryImageUrl, primaryImageUrl) ||
                 other.primaryImageUrl == primaryImageUrl) &&
+            (identical(other.thumbnailImageUrl, thumbnailImageUrl) ||
+                other.thumbnailImageUrl == thumbnailImageUrl) &&
             const DeepCollectionEquality()
                 .equals(other._community, _community) &&
             const DeepCollectionEquality()
@@ -1156,6 +1174,7 @@ class _$SakeImpl implements _Sake {
         iconUrl,
         prefectureCode,
         primaryImageUrl,
+        thumbnailImageUrl,
         const DeepCollectionEquality().hash(_community),
         const DeepCollectionEquality().hash(_sameBrandSakes),
         envyCount,
@@ -1202,6 +1221,7 @@ abstract class _Sake implements Sake {
       final String? iconUrl,
       final String? prefectureCode,
       final String? primaryImageUrl,
+      final String? thumbnailImageUrl,
       final Map<String, dynamic>? community,
       final List<Map<String, dynamic>>? sameBrandSakes,
       final int envyCount,
@@ -1257,6 +1277,8 @@ abstract class _Sake implements Sake {
   String? get prefectureCode;
   @override
   String? get primaryImageUrl;
+  @override
+  String? get thumbnailImageUrl;
   @override
   Map<String, dynamic>? get community;
   @override

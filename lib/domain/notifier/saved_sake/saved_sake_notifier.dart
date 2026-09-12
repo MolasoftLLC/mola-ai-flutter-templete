@@ -596,6 +596,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
           info.recommendationScore ?? existing.recommendationScore,
       prefectureCode: info.prefectureCode ?? existing.prefectureCode,
       primaryImageUrl: info.primaryImageUrl ?? existing.primaryImageUrl,
+      thumbnailImageUrl: info.thumbnailImageUrl ?? existing.thumbnailImageUrl,
       community: info.community ?? existing.community,
       sameBrandSakes: info.sameBrandSakes ?? existing.sameBrandSakes,
     );
@@ -731,6 +732,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
           : remote.userTags,
       prefectureCode: remote.prefectureCode ?? local.prefectureCode,
       primaryImageUrl: remote.primaryImageUrl ?? local.primaryImageUrl,
+      thumbnailImageUrl: remote.thumbnailImageUrl ?? local.thumbnailImageUrl,
       community: remote.community ?? local.community,
       sameBrandSakes: remote.sameBrandSakes ?? local.sameBrandSakes,
       imagePaths: mergedImagePaths,

@@ -86,6 +86,7 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       iconUrl: json['iconUrl'] as String?,
       prefectureCode: json['prefectureCode'] as String?,
       primaryImageUrl: json['primaryImageUrl'] as String?,
+      thumbnailImageUrl: json['thumbnailImageUrl'] as String?,
       community: json['community'] as Map<String, dynamic>?,
       sameBrandSakes: (json['sameBrandSakes'] as List<dynamic>?)
           ?.map((e) => e as Map<String, dynamic>)
@@ -123,6 +124,7 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'iconUrl': instance.iconUrl,
       'prefectureCode': instance.prefectureCode,
       'primaryImageUrl': instance.primaryImageUrl,
+      'thumbnailImageUrl': instance.thumbnailImageUrl,
       'community': instance.community,
       'sameBrandSakes': instance.sameBrandSakes,
       'envyCount': instance.envyCount,

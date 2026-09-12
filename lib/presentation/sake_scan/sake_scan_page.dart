@@ -337,6 +337,7 @@ class _SakeScanPageState extends State<SakeScanPage>
             type: sake.type,
             recordCount: 0,
             primaryImageUrl: sake.primaryImageUrl,
+            thumbnailImageUrl: sake.thumbnailImageUrl,
           ),
         ),
       ),
@@ -1146,7 +1147,9 @@ class _CompactSakeSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _SakeThumbnail(imageUrl: sake.primaryImageUrl),
+        _SakeThumbnail(
+          imageUrl: sake.thumbnailImageUrl ?? sake.primaryImageUrl,
+        ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
