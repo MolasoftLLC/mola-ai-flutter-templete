@@ -54,6 +54,50 @@ class ImageUtils {
     return File(compressed.path);
   }
 
+  /// 保存酒用に、表示品質を保ちつつストレージ負荷を抑えたWebPを生成します。
+  ///
+  /// 呼び出し側は、永続保存後に返却された一時ファイルを削除してください。
+  static Future<File> compressForSakeStorage(
+    File file, {
+    int longEdge = 1600,
+    int quality = 72,
+  }) async {
+    if (!await file.exists()) {
+      throw const FileSystemException('保存する画像が見つかりません');
+    }
+
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final width = frame.image.width;
+    final height = frame.image.height;
+    frame.image.dispose();
+    codec.dispose();
+
+    final scale = max(width, height) > longEdge
+        ? longEdge / max(width, height)
+        : 1.0;
+    final targetWidth = max(1, (width * scale).round());
+    final targetHeight = max(1, (height * scale).round());
+    final tempDir = await getTemporaryDirectory();
+    final targetPath =
+        '${tempDir.path}/sake_storage_${DateTime.now().microsecondsSinceEpoch}.webp';
+
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      targetPath,
+      minWidth: targetWidth,
+      minHeight: targetHeight,
+      quality: quality,
+      format: CompressFormat.webp,
+      keepExif: false,
+    );
+    if (compressed == null) {
+      throw StateError('保存用画像の圧縮に失敗しました');
+    }
+    return File(compressed.path);
+  }
+
   /// Compresses an image file and converts it to base64 string
   ///
   /// [file] The image file to compress and encode
