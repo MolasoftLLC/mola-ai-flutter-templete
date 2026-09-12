@@ -67,7 +67,8 @@ class _SakeMapPageState extends State<SakeMapPage> {
           (venue) => Marker(
             markerId: MarkerId(venue.venueId),
             position: LatLng(venue.latitude, venue.longitude),
-            icon: _markerIcons[_markerKey(venue)] ??
+            icon:
+                _markerIcons[_markerKey(venue)] ??
                 BitmapDescriptor.defaultMarker,
             anchor: _markerIcons.containsKey(_markerKey(venue))
                 ? const Offset(0.5, 0.96)
@@ -511,9 +512,9 @@ class _SakeMapPageState extends State<SakeMapPage> {
                       children: [
                         Text(
                           venue.displayName,
-                          style: Theme.of(
-                            sheetContentContext,
-                          ).textTheme.titleLarge,
+                          style: Theme.of(sheetContentContext)
+                              .textTheme
+                              .titleLarge,
                         ),
                         Text(
                           'みんなの飲酒記録 ${venue.recordCount}件・${venue.sakeCount}種類',
@@ -615,10 +616,7 @@ class _LatestSakeCard extends StatelessWidget {
                 children: [
                   const Text(
                     '最近飲まれた日本酒',
-                    style: TextStyle(
-                      color: Color(0xFF5F6B78),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Color(0xFF5F6B78), fontSize: 12),
                   ),
                   const SizedBox(height: 2),
                   Text(
