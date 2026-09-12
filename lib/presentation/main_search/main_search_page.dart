@@ -1460,16 +1460,7 @@ class _SearchShortcuts extends StatelessWidget {
               onTap: onMapTap,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _SearchShortcutCard(
-              icon: Icons.menu_book_outlined,
-              title: context.l10n.menuSearchPageTitle,
-              description: context.l10n.menuPhotoDescription,
-              onTap: onMenuSearchTap,
-            ),
-          ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: _SearchShortcutCard(
               icon: Icons.document_scanner_outlined,
@@ -1480,58 +1471,29 @@ class _SearchShortcuts extends StatelessWidget {
           ),
         ],
       ),
-      const SizedBox(height: 10),
-      _PreferenceSearchShortcut(onTap: onPreferenceSearchTap),
-    ],
-  );
-}
-
-class _PreferenceSearchShortcut extends StatelessWidget {
-  const _PreferenceSearchShortcut({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(14),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            const Icon(Icons.landscape_outlined, color: Color(0xFF143861)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.searchByRegion,
-                    style: const TextStyle(
-                      color: Color(0xFF143861),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.preferenceSearchDescription,
-                    style: const TextStyle(
-                      color: Color(0xFF606060),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.landscape_outlined,
+              title: context.l10n.searchByRegion,
+              description: context.l10n.preferenceSearchDescription,
+              onTap: onPreferenceSearchTap,
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF143861)),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SearchShortcutCard(
+              icon: Icons.menu_book_outlined,
+              title: context.l10n.menuSearchPageTitle,
+              description: context.l10n.menuPhotoDescription,
+              onTap: onMenuSearchTap,
+            ),
+          ),
+        ],
       ),
-    ),
+    ],
   );
 }
 
