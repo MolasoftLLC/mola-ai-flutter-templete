@@ -555,7 +555,11 @@ class SavedSakeSyncRepository {
     required File imageFile,
   }) async {
     try {
-      final base64 = await ImageUtils.compressAndEncodeImage(imageFile);
+      final base64 = await ImageUtils.compressAndEncodeImage(
+        imageFile,
+        quality: 72,
+        format: CompressFormat.webp,
+      );
       final payload = <String, dynamic>{
         'userId': userId,
         'imageBase64': base64,
@@ -665,7 +669,11 @@ class SavedSakeSyncRepository {
         logger.warning('同期用画像ファイルが存在しません: ${file.path}');
         return null;
       }
-      return await ImageUtils.compressAndEncodeImage(file);
+      return await ImageUtils.compressAndEncodeImage(
+        file,
+        quality: 72,
+        format: CompressFormat.webp,
+      );
     } catch (error) {
       logger.warning('画像のエンコードに失敗しました: $error');
       return null;
