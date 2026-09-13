@@ -280,10 +280,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         _isAiSearchCandidate && (_headerOverview?.sake.sakeId ?? 0) <= 0;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
-    final displayName = _preferProductName(
-      fallback: widget.venueSake.name,
-      overview: overviewSake?.name,
-    );
+    final masterName = overviewSake?.name?.trim();
+    final displayName = masterName == null || masterName.isEmpty
+        ? widget.venueSake.name.trim()
+        : masterName;
     final record = _findSavedSake(_savedSakeNotifier, detailSake);
     final profile = _headerOverview?.master.tasteProfile;
     final isProfileEnrichmentPending =
@@ -1165,17 +1165,6 @@ bool _isSameSakeIdentity(Sake candidate, Sake sake) {
 
 String _normalizedSakeName(String? name) =>
     (name ?? '').replaceAll(RegExp(r'\s+'), '');
-
-String _preferProductName({required String fallback, String? overview}) {
-  final masterName = overview?.trim();
-  final candidateName = fallback.trim();
-  if (masterName == null || masterName.isEmpty) return candidateName;
-  if (candidateName.length > masterName.length &&
-      candidateName.contains(masterName)) {
-    return candidateName;
-  }
-  return masterName;
-}
 
 Future<void> _addSakeRecord(
   BuildContext context,

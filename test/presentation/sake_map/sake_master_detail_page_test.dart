@@ -259,7 +259,7 @@ void main() {
           home: SakeMasterDetailPage(
             venueSake: VenueSake(
               searchToken: 'candidate:12',
-              name: '鍋島 純米吟醸',
+              name: '鍋島 純米吟醸 山田錦 生酒',
               brewery: '富久千代酒造',
               type: '純米吟醸',
               recordCount: 0,
@@ -271,11 +271,14 @@ void main() {
 
     await tester.pump();
     expect(find.text('詳細情報を取得中'), findsOneWidget);
+    expect(find.text('鍋島 純米吟醸 山田錦 生酒'), findsWidgets);
     expect(repository.requestedToken, 'candidate:12');
 
     repository.complete();
     await tester.pumpAndSettle();
     expect(find.text('詳細情報を取得中'), findsNothing);
+    expect(find.text('鍋島 純米吟醸'), findsWidgets);
+    expect(find.text('鍋島 純米吟醸 山田錦 生酒'), findsNothing);
     expect(find.textContaining('未検証'), findsNothing);
     await tester.scrollUntilVisible(
       find.text('AI解析済みの味わい説明'),
