@@ -511,7 +511,6 @@
   "wrongTakeBackLabel": "Not this one — scan back label",
   "wrongRetakeBackLabel": "Not this one — retake back label",
   "loadingSakeOverview": "Loading sake information…",
-  "scanAiAnalyzing": "Basic information is ready. Detailed analysis is continuing…",
   "scanCompleted": "Sake identified",
   "finishScan": "View details",
   "scanNextBottle": "Scan next",

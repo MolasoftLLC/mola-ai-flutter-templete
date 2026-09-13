@@ -289,6 +289,7 @@ void main() {
       final analysisFuture = notifier.confirmCandidate();
       await Future<void>.delayed(Duration.zero);
 
+      expect(notifier.currentState.status, SakeScanViewStatus.loadingDetails);
       expect(persistence.initialSakes, isEmpty);
       expect(analysis.lastImagePath, image.path);
 

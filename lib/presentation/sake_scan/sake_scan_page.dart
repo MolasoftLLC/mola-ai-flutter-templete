@@ -17,6 +17,7 @@ import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
+import '../my_page/saved_sake_detail_page.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
 
@@ -326,22 +327,23 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   Future<void> _confirmAndOpenDetail() async {
     final sake = await context.read<SakeScanNotifier>().confirmCandidate();
-    if (!mounted || sake == null || (sake.sakeId ?? 0) <= 0) return;
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => SakeMasterDetailPage(
-          venueSake: VenueSake(
-            sakeId: sake.sakeId,
-            name: sake.name ?? '',
-            brewery: sake.brewery,
-            type: sake.type,
-            recordCount: 0,
-            primaryImageUrl: sake.primaryImageUrl,
-            thumbnailImageUrl: sake.thumbnailImageUrl,
-          ),
-        ),
-      ),
-    );
+    if (!mounted || sake == null) return;
+    final detailPage = (sake.sakeId ?? 0) > 0
+        ? SakeMasterDetailPage(
+            venueSake: VenueSake(
+              sakeId: sake.sakeId,
+              name: sake.name ?? '',
+              brewery: sake.brewery,
+              type: sake.type,
+              recordCount: 0,
+              primaryImageUrl: sake.primaryImageUrl,
+              thumbnailImageUrl: sake.thumbnailImageUrl,
+            ),
+          )
+        : SavedSakeDetailPage.forSake(sake);
+    await Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => detailPage));
   }
 
   String _manualSearchQuery(SakeScanCandidate candidate) {
@@ -470,7 +472,9 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.identifyingFallback => _buildStatusPanel(
         '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
       ),
-      SakeScanViewStatus.aiAnalyzing ||
+      SakeScanViewStatus.loadingDetails => _buildStatusPanel(
+        context.l10n.loadingSakeOverview,
+      ),
       SakeScanViewStatus.completed => _buildResultPanel(state),
       SakeScanViewStatus.error => _buildError(state),
     };
@@ -833,7 +837,6 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildResultPanel(SakeScanState state) {
-    final isAnalyzing = state.status == SakeScanViewStatus.aiAnalyzing;
     final sake = state.savedSake ?? state.sake;
     return _BottomCard(
       child: Column(
@@ -842,16 +845,11 @@ class _SakeScanPageState extends State<SakeScanPage>
         children: [
           Row(
             children: [
-              Icon(
-                isAnalyzing ? Icons.auto_awesome : Icons.verified,
-                color: const Color(0xFF1D3567),
-              ),
+              const Icon(Icons.verified, color: Color(0xFF1D3567)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  isAnalyzing
-                      ? context.l10n.scanAiAnalyzing
-                      : context.l10n.scanCompleted,
+                  context.l10n.scanCompleted,
                   style: const TextStyle(
                     color: Color(0xFF1D3567),
                     fontWeight: FontWeight.bold,
@@ -860,10 +858,6 @@ class _SakeScanPageState extends State<SakeScanPage>
               ),
             ],
           ),
-          if (isAnalyzing) ...[
-            const SizedBox(height: 10),
-            const LinearProgressIndicator(minHeight: 3),
-          ],
           if (sake != null) ...[
             const SizedBox(height: 14),
             _CompactSakeSummary(sake: sake),

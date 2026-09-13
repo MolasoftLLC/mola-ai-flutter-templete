@@ -1553,9 +1553,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get loadingSakeOverview => '日本酒の情報を読み込んでいます…';
 
   @override
-  String get scanAiAnalyzing => '基本情報が見つかりました。詳しい解析は続いています…';
-
-  @override
   String get scanCompleted => '日本酒を特定しました';
 
   @override

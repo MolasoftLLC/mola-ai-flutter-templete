@@ -16,7 +16,7 @@ enum SakeScanViewStatus {
   searchingBack,
   loadingOverview,
   identifyingFallback,
-  aiAnalyzing,
+  loadingDetails,
   completed,
   error,
 }
@@ -426,7 +426,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         : state.backImage;
     _emit(
       state.copyWith(
-        status: SakeScanViewStatus.aiAnalyzing,
+        status: SakeScanViewStatus.loadingDetails,
         isSubmitting: true,
       ),
     );

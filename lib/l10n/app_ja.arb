@@ -511,7 +511,6 @@
   "wrongTakeBackLabel": "違います・裏ラベルを撮る",
   "wrongRetakeBackLabel": "違います・もう一度撮る",
   "loadingSakeOverview": "日本酒の情報を読み込んでいます…",
-  "scanAiAnalyzing": "基本情報が見つかりました。詳しい解析は続いています…",
   "scanCompleted": "日本酒を特定しました",
   "finishScan": "詳しく見る",
   "scanNextBottle": "次の一本",

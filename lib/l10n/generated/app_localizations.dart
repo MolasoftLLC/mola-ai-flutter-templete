@@ -3038,12 +3038,6 @@ abstract class AppLocalizations {
   /// **'日本酒の情報を読み込んでいます…'**
   String get loadingSakeOverview;
 
-  /// No description provided for @scanAiAnalyzing.
-  ///
-  /// In ja, this message translates to:
-  /// **'基本情報が見つかりました。詳しい解析は続いています…'**
-  String get scanAiAnalyzing;
-
   /// No description provided for @scanCompleted.
   ///
   /// In ja, this message translates to:

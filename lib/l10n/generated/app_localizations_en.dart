@@ -1630,10 +1630,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadingSakeOverview => 'Loading sake information…';
 
   @override
-  String get scanAiAnalyzing =>
-      'Basic information is ready. Detailed analysis is continuing…';
-
-  @override
   String get scanCompleted => 'Sake identified';
 
   @override
