@@ -734,17 +734,19 @@ class _SakeScanPageState extends State<SakeScanPage>
                               ? const Color(0xFFFFF8ED)
                               : Colors.white,
                           child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding: EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 3,
+                              vertical: selected ? 12 : 3,
                             ),
                             leading: _ScanCandidateThumbnail(
                               imageUrl: item.imageUrl,
                             ),
                             title: Text(
                               item.canonicalProductName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: selected ? null : 2,
+                              overflow: selected
+                                  ? TextOverflow.visible
+                                  : TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Color(0xFF1D3567),
                                 fontWeight: FontWeight.w700,
