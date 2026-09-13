@@ -493,16 +493,16 @@ class SavedSakeSyncRepository {
     File? imageFile,
     bool? isPublic,
   }) async {
-    final Map<String, dynamic> sakeJson = Map<String, dynamic>.from(
+    final Map<String, dynamic> rawSakeJson = Map<String, dynamic>.from(
       sake.toJson(),
     );
     final shareFlag = isPublic ?? sake.isPublic;
-    sakeJson.remove('imagePaths');
-    sakeJson.remove('syncStatus');
-    sakeJson.remove('is_public');
+    rawSakeJson.remove('imagePaths');
+    rawSakeJson.remove('syncStatus');
+    rawSakeJson.remove('is_public');
     // Place details are persisted only through the server-verified Place ID API.
-    sakeJson.remove('drinkingPlace');
-    _removeNullAndEmptyValues(sakeJson);
+    rawSakeJson.remove('drinkingPlace');
+    final sakeJson = _withoutNullAndEmptyValues(rawSakeJson);
 
     final payload = <String, dynamic>{
       'userId': userId,
@@ -681,34 +681,33 @@ class SavedSakeSyncRepository {
     }
   }
 
-  void _removeNullAndEmptyValues(Map<String, dynamic> json) {
-    final keysToRemove = <String>[];
-    json.forEach((key, value) {
-      if (value == null) {
-        keysToRemove.add(key);
-      } else if (value is String && value.isEmpty) {
-        keysToRemove.add(key);
-      } else if (value is Iterable) {
-        final cleaned = value
-            .where(
-              (element) => element != null && element.toString().isNotEmpty,
-            )
-            .toList();
-        if (cleaned.isEmpty) {
-          keysToRemove.add(key);
-        } else {
-          json[key] = cleaned;
-        }
-      } else if (value is Map<String, dynamic>) {
-        _removeNullAndEmptyValues(value);
-        if (value.isEmpty) {
-          keysToRemove.add(key);
-        }
-      }
-    });
-
-    for (final key in keysToRemove) {
-      json.remove(key);
+  Map<String, dynamic> _withoutNullAndEmptyValues(Map<String, dynamic> json) {
+    final cleaned = <String, dynamic>{};
+    for (final entry in json.entries) {
+      final value = _cleanJsonValue(entry.value);
+      if (value != null) cleaned[entry.key] = value;
     }
+    return cleaned;
+  }
+
+  Object? _cleanJsonValue(Object? value) {
+    if (value == null || value is String && value.isEmpty) return null;
+    if (value is Map) {
+      final cleaned = <String, dynamic>{};
+      for (final entry in value.entries) {
+        if (entry.key is! String) continue;
+        final nestedValue = _cleanJsonValue(entry.value);
+        if (nestedValue != null) cleaned[entry.key as String] = nestedValue;
+      }
+      return cleaned.isEmpty ? null : cleaned;
+    }
+    if (value is Iterable) {
+      final cleaned = value
+          .map(_cleanJsonValue)
+          .whereType<Object>()
+          .toList(growable: false);
+      return cleaned.isEmpty ? null : cleaned;
+    }
+    return value;
   }
 }
