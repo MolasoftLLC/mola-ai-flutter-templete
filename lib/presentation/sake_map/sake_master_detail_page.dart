@@ -372,6 +372,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     yahooPrice: snapshot.data?.master.imagePrice,
                     yahooCurrency: snapshot.data?.master.imageCurrency,
                     yahooProductUrl: snapshot.data?.master.imageProductUrl,
+                    rakutenOffer:
+                        (_headerOverview ?? snapshot.data)?.master.rakutenOffer,
                   ),
                 ),
                 if (snapshot.hasError)
@@ -2437,11 +2439,13 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
     this.yahooPrice,
     this.yahooCurrency,
     this.yahooProductUrl,
+    this.rakutenOffer,
   });
 
   final double? yahooPrice;
   final String? yahooCurrency;
   final String? yahooProductUrl;
+  final SakeShopOffer? rakutenOffer;
 
   @override
   double get minExtent => 62;
@@ -2458,13 +2462,15 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
     yahooPrice: yahooPrice,
     yahooCurrency: yahooCurrency,
     yahooProductUrl: yahooProductUrl,
+    rakutenOffer: rakutenOffer,
   );
 
   @override
   bool shouldRebuild(covariant _ShopPriceHeaderDelegate oldDelegate) =>
       yahooPrice != oldDelegate.yahooPrice ||
       yahooCurrency != oldDelegate.yahooCurrency ||
-      yahooProductUrl != oldDelegate.yahooProductUrl;
+      yahooProductUrl != oldDelegate.yahooProductUrl ||
+      rakutenOffer != oldDelegate.rakutenOffer;
 }
 
 class _ShopPriceBar extends StatelessWidget {
@@ -2472,11 +2478,13 @@ class _ShopPriceBar extends StatelessWidget {
     this.yahooPrice,
     this.yahooCurrency,
     this.yahooProductUrl,
+    this.rakutenOffer,
   });
 
   final double? yahooPrice;
   final String? yahooCurrency;
   final String? yahooProductUrl;
+  final SakeShopOffer? rakutenOffer;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -2488,8 +2496,15 @@ class _ShopPriceBar extends StatelessWidget {
           child: _ShopPrice(name: 'Amazon', price: '—'),
         ),
         const _ShopPriceDivider(),
-        const Expanded(
-          child: _ShopPrice(name: '楽天市場', price: '—'),
+        Expanded(
+          child: _ShopPrice(
+            name: '楽天市場',
+            price: _formatShopPrice(
+              rakutenOffer?.price,
+              rakutenOffer?.currency,
+            ),
+            url: rakutenOffer?.affiliateUrl,
+          ),
         ),
         const _ShopPriceDivider(),
         Expanded(

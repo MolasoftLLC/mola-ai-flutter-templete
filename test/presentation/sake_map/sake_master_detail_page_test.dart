@@ -12,6 +12,7 @@ import 'package:mola_gemini_flutter_template/infrastructure/api_client/sake_menu
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_master_detail_page.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
@@ -137,6 +138,10 @@ void main() {
   });
 
   testWidgets('sake_masterから取得した詳細を表示する', (tester) async {
+    final launcher = _FakeUrlLauncher();
+    final previousLauncher = UrlLauncherPlatform.instance;
+    UrlLauncherPlatform.instance = launcher;
+    addTearDown(() => UrlLauncherPlatform.instance = previousLauncher);
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repository = _FakeSakeScanRepository();
@@ -172,6 +177,14 @@ void main() {
     expect(find.text('¥2,300（税込）'), findsOneWidget);
     expect(find.text('¥2,150'), findsOneWidget);
     expect(find.byKey(const Key('shop-price-link-Yahoo!')), findsOneWidget);
+    expect(find.text('¥2,096'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('shop-price-link-楽天市場')));
+    await tester.pumpAndSettle();
+    expect(
+      launcher.openedUrl,
+      'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+    );
+    expect(launcher.mode, PreferredLaunchMode.externalApplication);
     expect(find.text('¥2,180'), findsNothing);
     expect(find.text('¥2,080'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -346,6 +359,19 @@ class _GuestAuthRepository implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  @override
+  get linkDelegate => null;
+  String? openedUrl;
+  PreferredLaunchMode? mode;
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    openedUrl = url;
+    mode = options.mode;
+    return true;
+  }
+}
+
 class _UnusedSakeMenuRecognitionApiClient
     implements SakeMenuRecognitionApiClient {
   @override
@@ -410,6 +436,10 @@ class _FakeSakeScanRepository implements SakeScanRepository {
         imageProductUrl: 'https://store.shopping.yahoo.co.jp/example/sake.html',
         imagePrice: 2150,
         imageCurrency: 'JPY',
+        rakutenOffer: SakeShopOffer(
+          price: 2096,
+          affiliateUrl: 'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+        ),
         category: '純米',
         polishingRatio: 50,
         sakeMeterValue: 2.5,

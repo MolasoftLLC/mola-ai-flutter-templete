@@ -7,10 +7,35 @@ import 'package:http/testing.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/sake_menu_recognition_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('楽天価格とアフィリエイトURLを一組で読み込み、不完全な情報は表示しない', () {
+    final offer = SakeShopOffer.fromJson({
+      'price': '2096',
+      'affiliateUrl': 'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+    });
+    expect(offer?.price, 2096);
+    expect(
+      offer?.affiliateUrl,
+      'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+    );
+    expect(
+      SakeShopOffer.fromJson({'price': 0, 'affiliateUrl': offer!.affiliateUrl}),
+      isNull,
+    );
+    expect(
+      SakeShopOffer.fromJson({
+        'price': 2096,
+        'affiliateUrl': 'https://item.rakuten.co.jp/shop/item/',
+      }),
+      isNull,
+    );
+    expect(SakeShopOffer.fromJson(null), isNull);
+  });
 
   for (final status in [200, 422, 502]) {
     test('候補解決APIの詳細・画像・IDを保持し、失敗を仮データにしない ($status)', () async {
