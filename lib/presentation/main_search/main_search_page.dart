@@ -766,11 +766,11 @@ class MainSearchPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 特徴
-                if (sakeInfo.taste != null)
+                if (sakeInfo.description != null)
                   _buildInfoRow(
                     context,
                     context.l10n.characteristics,
-                    sakeInfo.taste!,
+                    sakeInfo.description!,
                     Icons.description,
                   ),
 

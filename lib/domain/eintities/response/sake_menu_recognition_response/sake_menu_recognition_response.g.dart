@@ -58,7 +58,6 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       brewery: json['brewery'] as String?,
       types:
           (json['types'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      taste: json['taste'] as String?,
       sakeMeterValue: (json['sakeMeterValue'] as num?)?.toInt(),
       type: json['type'] as String?,
       price: json['price'] as String?,
@@ -106,7 +105,6 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'name': instance.name,
       'brewery': instance.brewery,
       'types': instance.types,
-      'taste': instance.taste,
       'sakeMeterValue': instance.sakeMeterValue,
       'type': instance.type,
       'price': instance.price,

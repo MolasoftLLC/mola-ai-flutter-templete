@@ -787,8 +787,7 @@ class _Details extends StatelessWidget {
               ),
             if (tasteAxes.isNotEmpty ||
                 master.tasteTags.isNotEmpty ||
-                master.aromaTags.isNotEmpty ||
-                sake?.taste != null)
+                master.aromaTags.isNotEmpty)
               _Section(
                 title: '味わいプロフィール',
                 child: Column(
@@ -806,11 +805,6 @@ class _Details extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    if (sake?.taste != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(sake!.taste!),
-                      ),
                     if (tasteAxes.isNotEmpty)
                       Center(
                         child: _SakeTasteRadarChart(

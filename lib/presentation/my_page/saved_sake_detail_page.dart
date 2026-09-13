@@ -253,11 +253,6 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     }
 
     final featureWidgets = <Widget>[];
-    if (_isValid(_currentSake.taste)) {
-      featureWidgets.add(
-        _buildBodyText(context.l10n.taste, _currentSake.taste!),
-      );
-    }
     if (_isValid(_currentSake.description)) {
       featureWidgets.add(
         _buildBodyText(context.l10n.description, _currentSake.description!),

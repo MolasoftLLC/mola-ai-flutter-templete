@@ -792,7 +792,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
         ? sake.imagePaths!.first
         : null;
     final typeText = sake.type ?? (sake.types?.join(' / '));
-    final tasteText = sake.taste?.trim();
+    final tasteText = sake.description?.trim();
     final hasTaste = tasteText != null && tasteText.isNotEmpty;
     final place = sake.place?.trim();
     final hasPlace = place != null && place.isNotEmpty;

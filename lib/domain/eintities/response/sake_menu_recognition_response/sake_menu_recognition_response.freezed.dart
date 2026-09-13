@@ -480,10 +480,10 @@ mixin _$Sake {
   String? get name => throw _privateConstructorUsedError;
   String? get brewery => throw _privateConstructorUsedError;
   List<String>? get types => throw _privateConstructorUsedError;
-  String? get taste => throw _privateConstructorUsedError;
   int? get sakeMeterValue => throw _privateConstructorUsedError;
   String? get type => throw _privateConstructorUsedError;
-  String? get price => throw _privateConstructorUsedError;
+  String? get price =>
+      throw _privateConstructorUsedError; // 商品の説明文はこのフィールドに統一する。旧tasteからの補完はしない。
   String? get description => throw _privateConstructorUsedError;
   int? get recommendationScore => throw _privateConstructorUsedError;
   String? get impression => throw _privateConstructorUsedError;
@@ -525,7 +525,6 @@ abstract class $SakeCopyWith<$Res> {
       String? name,
       String? brewery,
       List<String>? types,
-      String? taste,
       int? sakeMeterValue,
       String? type,
       String? price,
@@ -572,7 +571,6 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? name = freezed,
     Object? brewery = freezed,
     Object? types = freezed,
-    Object? taste = freezed,
     Object? sakeMeterValue = freezed,
     Object? type = freezed,
     Object? price = freezed,
@@ -618,10 +616,6 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.types
           : types // ignore: cast_nullable_to_non_nullable
               as List<String>?,
-      taste: freezed == taste
-          ? _value.taste
-          : taste // ignore: cast_nullable_to_non_nullable
-              as String?,
       sakeMeterValue: freezed == sakeMeterValue
           ? _value.sakeMeterValue
           : sakeMeterValue // ignore: cast_nullable_to_non_nullable
@@ -743,7 +737,6 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       String? name,
       String? brewery,
       List<String>? types,
-      String? taste,
       int? sakeMeterValue,
       String? type,
       String? price,
@@ -788,7 +781,6 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? name = freezed,
     Object? brewery = freezed,
     Object? types = freezed,
-    Object? taste = freezed,
     Object? sakeMeterValue = freezed,
     Object? type = freezed,
     Object? price = freezed,
@@ -834,10 +826,6 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value._types
           : types // ignore: cast_nullable_to_non_nullable
               as List<String>?,
-      taste: freezed == taste
-          ? _value.taste
-          : taste // ignore: cast_nullable_to_non_nullable
-              as String?,
       sakeMeterValue: freezed == sakeMeterValue
           ? _value.sakeMeterValue
           : sakeMeterValue // ignore: cast_nullable_to_non_nullable
@@ -943,7 +931,6 @@ class _$SakeImpl implements _Sake {
       this.name,
       this.brewery,
       final List<String>? types,
-      this.taste,
       this.sakeMeterValue,
       this.type,
       this.price,
@@ -997,13 +984,12 @@ class _$SakeImpl implements _Sake {
   }
 
   @override
-  final String? taste;
-  @override
   final int? sakeMeterValue;
   @override
   final String? type;
   @override
   final String? price;
+// 商品の説明文はこのフィールドに統一する。旧tasteからの補完はしない。
   @override
   final String? description;
   @override
@@ -1091,7 +1077,7 @@ class _$SakeImpl implements _Sake {
 
   @override
   String toString() {
-    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, taste: $taste, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
+    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -1104,7 +1090,6 @@ class _$SakeImpl implements _Sake {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.brewery, brewery) || other.brewery == brewery) &&
             const DeepCollectionEquality().equals(other._types, _types) &&
-            (identical(other.taste, taste) || other.taste == taste) &&
             (identical(other.sakeMeterValue, sakeMeterValue) ||
                 other.sakeMeterValue == sakeMeterValue) &&
             (identical(other.type, type) || other.type == type) &&
@@ -1156,7 +1141,6 @@ class _$SakeImpl implements _Sake {
         name,
         brewery,
         const DeepCollectionEquality().hash(_types),
-        taste,
         sakeMeterValue,
         type,
         price,
@@ -1203,7 +1187,6 @@ abstract class _Sake implements Sake {
       final String? name,
       final String? brewery,
       final List<String>? types,
-      final String? taste,
       final int? sakeMeterValue,
       final String? type,
       final String? price,
@@ -1242,14 +1225,12 @@ abstract class _Sake implements Sake {
   @override
   List<String>? get types;
   @override
-  String? get taste;
-  @override
   int? get sakeMeterValue;
   @override
   String? get type;
   @override
   String? get price;
-  @override
+  @override // 商品の説明文はこのフィールドに統一する。旧tasteからの補完はしない。
   String? get description;
   @override
   int? get recommendationScore;

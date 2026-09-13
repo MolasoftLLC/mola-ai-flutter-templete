@@ -587,7 +587,6 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       types: (info.types == null || info.types!.isEmpty)
           ? existing.types
           : info.types,
-      taste: info.taste ?? existing.taste,
       sakeMeterValue: info.sakeMeterValue ?? existing.sakeMeterValue,
       type: info.type ?? existing.type,
       price: info.price ?? existing.price,
@@ -717,7 +716,6 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       types: (remote.types != null && remote.types!.isNotEmpty)
           ? remote.types
           : local.types,
-      taste: remote.taste ?? local.taste,
       sakeMeterValue: remote.sakeMeterValue ?? local.sakeMeterValue,
       type: remote.type ?? local.type,
       price: remote.price ?? local.price,

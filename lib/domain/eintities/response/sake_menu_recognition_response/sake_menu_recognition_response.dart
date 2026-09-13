@@ -48,10 +48,10 @@ class Sake with _$Sake {
     String? name,
     String? brewery,
     List<String>? types,
-    String? taste,
     int? sakeMeterValue,
     String? type,
     String? price,
+    // 商品の説明文はこのフィールドに統一する。旧tasteからの補完はしない。
     String? description,
     int? recommendationScore,
     String? impression,

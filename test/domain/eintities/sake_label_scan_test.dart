@@ -2,6 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 
 void main() {
+  test('旧tasteは読み込まず保存もしない・空のdescriptionは補完しない', () {
+    for (final description in [null, '', 'このお酒の説明']) {
+      final overview = SakeOverview.fromJson({
+        'sake': {'sakeId': 278, 'description': description},
+        'analysis': {'taste': '廃止された味の説明'},
+      });
+      expect(overview.sake.description, description);
+      expect(overview.sake.toJson().containsKey('taste'), isFalse);
+    }
+  });
+
   test('英数字一文字のOCRノイズは酒名として扱わない', () {
     expect(isPlausibleRecognizedSakeName('W'), isFalse);
     expect(isPlausibleRecognizedSakeName(' Ｗ '), isFalse);
@@ -54,7 +65,10 @@ void main() {
         'name': '株式会社澄川酒造場',
         'prefectureCode': '35',
       },
-      'analysis': <String, dynamic>{'name': 'AI側の商品名', 'taste': '華やかで米の旨味がある'},
+      'analysis': <String, dynamic>{
+        'name': 'AI側の商品名',
+        'description': '華やかで米の旨味がある',
+      },
       'publicSavedSakeCount': 2,
       'recentPublicPosts': <Map<String, dynamic>>[
         <String, dynamic>{'savedId': 'saved_1'},
@@ -70,7 +84,7 @@ void main() {
     expect(overview.sake.brewery, '株式会社澄川酒造場');
     expect(overview.sake.prefectureCode, '35');
     expect(overview.sake.primaryImageUrl, 'https://example.com/toyobijin.jpg');
-    expect(overview.sake.taste, '華やかで米の旨味がある');
+    expect(overview.sake.description, '華やかで米の旨味がある');
     expect(overview.sake.community?['publicSavedSakeCount'], 2);
     expect(overview.sake.sameBrandSakes, hasLength(1));
   });

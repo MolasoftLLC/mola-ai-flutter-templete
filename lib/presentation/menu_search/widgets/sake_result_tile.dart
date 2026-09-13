@@ -214,10 +214,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             widget.detailedSake!.brewery!,
                             Icons.home_work,
                           ),
-                        if (widget.detailedSake!.taste != null)
+                        if (widget.detailedSake!.description != null)
                           widget.buildInfoRow(
-                            context.l10n.taste,
-                            widget.detailedSake!.taste!,
+                            context.l10n.description,
+                            widget.detailedSake!.description!,
                             Icons.restaurant,
                           ),
                         if (widget.detailedSake!.sakeMeterValue != null)
