@@ -276,6 +276,9 @@ class SakeMenuRecognitionRepository {
     String? preferences,
     int? sakeId,
     String? scanSessionId,
+    String? confirmedName,
+    String? confirmedType,
+    String? confirmedBrewery,
   }) async {
     try {
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
@@ -291,6 +294,15 @@ class SakeMenuRecognitionRepository {
       }
       if (scanSessionId != null && scanSessionId.isNotEmpty) {
         payload['scanSessionId'] = scanSessionId;
+      }
+      if (confirmedName != null && confirmedName.trim().isNotEmpty) {
+        payload['confirmedName'] = confirmedName.trim();
+      }
+      if (confirmedType != null && confirmedType.trim().isNotEmpty) {
+        payload['confirmedType'] = confirmedType.trim();
+      }
+      if (confirmedBrewery != null && confirmedBrewery.trim().isNotEmpty) {
+        payload['confirmedBrewery'] = confirmedBrewery.trim();
       }
       final response = await _apiClient.comprehensiveSakeBottleAnalysis(
         payload,

@@ -15,7 +15,12 @@ import '../repository/saved_sake_sync_repository.dart';
 abstract class SakeScanAnalysisService {
   Future<List<Sake>> identifyCandidates(File image, {File? secondaryImage});
 
-  Future<Sake> analyze(File image, {int? sakeId, String? scanSessionId});
+  Future<Sake> analyze(
+    File image, {
+    int? sakeId,
+    String? scanSessionId,
+    Sake? confirmedSake,
+  });
 }
 
 class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
@@ -46,7 +51,12 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
   }
 
   @override
-  Future<Sake> analyze(File image, {int? sakeId, String? scanSessionId}) async {
+  Future<Sake> analyze(
+    File image, {
+    int? sakeId,
+    String? scanSessionId,
+    Sake? confirmedSake,
+  }) async {
     final preferences = preferencesProvider()?.trim();
     final SakeBottleComprehensiveResponse? response = await _repository
         .comprehensiveSakeBottleAnalysis(
@@ -56,6 +66,9 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
               : preferences,
           sakeId: sakeId,
           scanSessionId: scanSessionId,
+          confirmedName: _confirmedSakeName(confirmedSake),
+          confirmedType: confirmedSake?.type,
+          confirmedBrewery: confirmedSake?.brewery,
         );
     if (response?.sakeInfo == null ||
         !isPlausibleRecognizedSakeName(response!.sakeInfo!.name)) {
@@ -67,6 +80,11 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
     return response.sakeInfo!.copyWith(
       sakeId: response.sakeId ?? sakeId ?? response.sakeInfo!.sakeId,
     );
+  }
+
+  String? _confirmedSakeName(Sake? sake) {
+    final name = sake?.name?.trim();
+    return isPlausibleRecognizedSakeName(name) ? name : null;
   }
 }
 

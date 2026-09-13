@@ -222,7 +222,13 @@ void main() {
           scanSessionId: 'scan_test',
         ),
       );
-      final analysis = _FakeAnalysisService(const Sake(name: 'AI特定酒'));
+      final analysis = _FakeAnalysisService(
+        const Sake(
+          name: '墨廼江 純米大吟醸 CLASSIC VERSION 901',
+          type: '純米大吟醸',
+          brewery: '墨廼江酒造',
+        ),
+      );
       final persistence = _FakePersistenceService();
       final notifier = _buildNotifier(
         repository,
@@ -238,7 +244,10 @@ void main() {
         notifier.currentState.status,
         SakeScanViewStatus.confirmingCandidate,
       );
-      expect(notifier.currentState.selectedCandidate?.name, 'AI特定酒');
+      expect(
+        notifier.currentState.selectedCandidate?.name,
+        '墨廼江 純米大吟醸 CLASSIC VERSION 901',
+      );
       expect(analysis.identifyCalls, 1);
       expect(analysis.calls, 0);
       expect(persistence.initialSakes, isEmpty);
@@ -246,10 +255,24 @@ void main() {
       await notifier.confirmCandidate();
 
       expect(notifier.currentState.status, SakeScanViewStatus.completed);
-      expect(notifier.currentState.sake?.name, 'AI特定酒');
+      expect(notifier.currentState.sake?.name, '墨廼江 純米大吟醸 CLASSIC VERSION 901');
       expect(analysis.calls, 1);
       expect(analysis.lastImagePath, image.path);
-      expect(persistence.initialSakes.single.name, 'AI特定酒');
+      expect(
+        analysis.lastConfirmedSake,
+        isA<Sake>()
+            .having(
+              (sake) => sake.name,
+              'name',
+              '墨廼江 純米大吟醸 CLASSIC VERSION 901',
+            )
+            .having((sake) => sake.type, 'type', '純米大吟醸')
+            .having((sake) => sake.brewery, 'brewery', '墨廼江酒造'),
+      );
+      expect(
+        persistence.initialSakes.single.name,
+        '墨廼江 純米大吟醸 CLASSIC VERSION 901',
+      );
     });
 
     test('DB特定不能時はAI解析成功まで仮の保存酒を作らない', () async {
@@ -453,6 +476,7 @@ class _FakeAnalysisService implements SakeScanAnalysisService {
   int calls = 0;
   int? lastSakeId;
   String? lastImagePath;
+  Sake? lastConfirmedSake;
 
   @override
   Future<List<Sake>> identifyCandidates(
@@ -464,10 +488,16 @@ class _FakeAnalysisService implements SakeScanAnalysisService {
   }
 
   @override
-  Future<Sake> analyze(File image, {int? sakeId, String? scanSessionId}) async {
+  Future<Sake> analyze(
+    File image, {
+    int? sakeId,
+    String? scanSessionId,
+    Sake? confirmedSake,
+  }) async {
     calls++;
     lastSakeId = sakeId;
     lastImagePath = image.path;
+    lastConfirmedSake = confirmedSake;
     if (completer != null) return completer!.future;
     return result;
   }

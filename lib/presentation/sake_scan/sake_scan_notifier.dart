@@ -449,6 +449,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         image,
         sakeId: hasMasterSake ? basicSake!.sakeId : null,
         scanSessionId: scanSessionId,
+        confirmedSake: hasMasterSake ? null : basicSake,
       );
       saved ??= await _persistenceService.saveInitial(
         analyzed,
