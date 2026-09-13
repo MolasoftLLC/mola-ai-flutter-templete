@@ -105,26 +105,19 @@ class SakeMenuRecognitionRepository {
     return Sake.fromJson(sakeJson);
   }
 
-  /// AI検索候補を開いた詳細画面で、名前から表示用の詳細一式を取得する。
-  Future<SakeOverview?> getSakeOverviewByName(
-    String sakeName, {
-    String? type,
-    String? preferences,
-  }) async {
-    final sakeJson = await _getSakeInfoJson(
-      sakeName,
-      type: type,
-      preferences: preferences,
-    );
-    if (sakeJson == null ||
-        !isPlausibleRecognizedSakeName(sakeJson['name']?.toString())) {
+  /// AI検索候補を永続マスターへ解決し、通常の詳細一式を取得する。
+  Future<SakeOverview?> resolveSakeCandidateOverview(String searchToken) async {
+    final response = await _apiClient.resolveSakeCandidate({
+      'searchToken': searchToken,
+      'locale': await resolveAppLocaleLanguageCode(),
+    });
+    if (!response.isSuccessful || response.body == null) return null;
+    final overview = SakeOverview.fromJson(response.body!);
+    if ((overview.sake.sakeId ?? 0) <= 0 ||
+        !isPlausibleRecognizedSakeName(overview.sake.name)) {
       return null;
     }
-    return SakeOverview.fromJson(<String, dynamic>{
-      'sake': sakeJson,
-      'analysis': <String, dynamic>{'sakeInfo': sakeJson},
-      'brewery': <String, dynamic>{'name': sakeJson['brewery']},
-    });
+    return overview;
   }
 
   Future<Map<String, dynamic>?> _getSakeInfoJson(

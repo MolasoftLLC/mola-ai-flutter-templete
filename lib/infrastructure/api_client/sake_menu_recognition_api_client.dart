@@ -25,6 +25,11 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
   @Post(path: 'menu-recognition/perplexity/sake-info')
   Future<Response> getSakeInfo(@Body() Map<String, dynamic> body);
 
+  @Post(path: 'sakes/resolve-candidate')
+  Future<Response<Map<String, dynamic>>> resolveSakeCandidate(
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'sake-bottle/recognize')
   @Multipart()
   Future<Response<Map<String, dynamic>>> recognizeSakeBottle(

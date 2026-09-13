@@ -114,7 +114,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<SakeOverview> _fetch() async {
-    final id = widget.venueSake.sakeId;
+    final id = _headerOverview?.sake.sakeId ?? widget.venueSake.sakeId;
     try {
       final SakeOverview overview;
       if (id != null && id > 0) {
@@ -123,18 +123,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           trackView: true,
         );
       } else if (_isAiSearchCandidate) {
-        final preferences = Provider.of<MyPageState?>(
-          context,
-          listen: false,
-        )?.preferences?.trim();
         final analyzed = await context
             .read<SakeMenuRecognitionRepository>()
-            .getSakeOverviewByName(
-              widget.venueSake.name,
-              type: widget.venueSake.type,
-              preferences: preferences?.isNotEmpty == true ? preferences : null,
-            );
-        if (analyzed == null) {
+            .resolveSakeCandidateOverview(widget.venueSake.searchToken!);
+        if (analyzed == null || (analyzed.sake.sakeId ?? 0) <= 0) {
           throw StateError('AI候補の詳細情報を取得できませんでした');
         }
         overview = analyzed;
@@ -165,7 +157,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     _masterEnrichmentPollTimer = Timer.periodic(const Duration(seconds: 2), (
       timer,
     ) async {
-      final sakeId = widget.venueSake.sakeId;
+      final sakeId = _headerOverview?.sake.sakeId ?? widget.venueSake.sakeId;
       if (!mounted ||
           sakeId == null ||
           sakeId <= 0 ||
@@ -284,7 +276,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isPendingAiCandidate = _isAiSearchCandidate;
+    final isPendingAiCandidate =
+        _isAiSearchCandidate && (_headerOverview?.sake.sakeId ?? 0) <= 0;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
     final displayName = _preferProductName(
@@ -325,10 +318,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       backgroundColor: Colors.white,
       bottomNavigationBar: isPendingAiCandidate
           ? null
-          : _MasterRecordCta(
-              sake: _asSake(widget.venueSake),
-              notifier: _savedSakeNotifier,
-            ),
+          : _MasterRecordCta(sake: detailSake, notifier: _savedSakeNotifier),
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: FocusManager.instance.primaryFocus?.unfocus,
@@ -352,11 +342,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   actions: [
                     if (!isPendingAiCandidate) ...[
                       _MasterSaveButton(
-                        venueSake: widget.venueSake,
+                        sake: detailSake,
                         notifier: _savedSakeNotifier,
                       ),
                       _MasterFavoriteButton(
-                        venueSake: widget.venueSake,
+                        sake: detailSake,
                         notifier: _favoriteNotifier,
                       ),
                     ],
@@ -1008,17 +998,15 @@ class _Details extends StatelessWidget {
 }
 
 class _MasterSaveButton extends StatelessWidget {
-  const _MasterSaveButton({required this.venueSake, required this.notifier});
-  final VenueSake venueSake;
+  const _MasterSaveButton({required this.sake, required this.notifier});
+  final Sake sake;
   final SavedSakeNotifier? notifier;
 
   @override
   Widget build(BuildContext context) {
     final savedNotifier = notifier;
     if (savedNotifier == null) return const SizedBox.shrink();
-    final isSaved = savedNotifier.state.savedSakeList.any(
-      (item) => item.name == venueSake.name && item.type == venueSake.type,
-    );
+    final isSaved = _findSavedSake(savedNotifier, sake) != null;
     return IconButton(
       tooltip: isSaved ? context.l10n.removeSavedSake : context.l10n.saveSake,
       icon: Icon(
@@ -1043,7 +1031,7 @@ class _MasterSaveButton extends StatelessWidget {
           return;
         }
         try {
-          await savedNotifier.toggleSavedSake(_asSake(venueSake));
+          await savedNotifier.toggleSavedSake(sake);
           if (!isSaved && context.mounted) {
             SnackBarUtils.showInfoSnackBar(
               context,
@@ -1071,11 +1059,8 @@ class _MasterSaveButton extends StatelessWidget {
 }
 
 class _MasterFavoriteButton extends StatelessWidget {
-  const _MasterFavoriteButton({
-    required this.venueSake,
-    required this.notifier,
-  });
-  final VenueSake venueSake;
+  const _MasterFavoriteButton({required this.sake, required this.notifier});
+  final Sake sake;
   final FavoriteNotifier? notifier;
 
   @override
@@ -1083,7 +1068,7 @@ class _MasterFavoriteButton extends StatelessWidget {
     final favoriteNotifier = notifier;
     if (favoriteNotifier == null) return const SizedBox.shrink();
     final isFavorite = favoriteNotifier.state.myFavoriteList.any(
-      (item) => item.name == venueSake.name && item.type == venueSake.type,
+      (item) => item.name == sake.name && item.type == sake.type,
     );
     return IconButton(
       tooltip: context.l10n.favoriteSake,
@@ -1101,7 +1086,7 @@ class _MasterFavoriteButton extends StatelessWidget {
         }
         try {
           await favoriteNotifier.addOrRemoveFavorite(
-            FavoriteSake(name: venueSake.name, type: venueSake.type),
+            FavoriteSake(name: sake.name ?? '', type: sake.type),
           );
         } on FavoriteGuestLimitReachedException {
           if (!context.mounted) return;
