@@ -11,8 +11,17 @@ import 'package:mola_gemini_flutter_template/domain/repository/sake_scan_reposit
 import 'package:mola_gemini_flutter_template/infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_master_detail_page.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
+import 'package:mola_gemini_flutter_template/common/logger.dart';
+import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 
 void main() {
+  setUpAll(loggerConfigure);
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   test('検索候補は詳細用とサムネイル用のURLを分けて保持する', () {
     final result = SakeMapSearchResult.fromJson({
       'sakeId': 26,
@@ -129,6 +138,10 @@ void main() {
   });
 
   testWidgets('sake_masterから取得した詳細を表示する', (tester) async {
+    final launcher = _FakeUrlLauncher();
+    final previousLauncher = UrlLauncherPlatform.instance;
+    UrlLauncherPlatform.instance = launcher;
+    addTearDown(() => UrlLauncherPlatform.instance = previousLauncher);
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repository = _FakeSakeScanRepository();
@@ -164,6 +177,14 @@ void main() {
     expect(find.text('¥2,300（税込）'), findsOneWidget);
     expect(find.text('¥2,150'), findsOneWidget);
     expect(find.byKey(const Key('shop-price-link-Yahoo!')), findsOneWidget);
+    expect(find.text('¥2,096'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('shop-price-link-楽天市場')));
+    await tester.pumpAndSettle();
+    expect(
+      launcher.openedUrl,
+      'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+    );
+    expect(launcher.mode, PreferredLaunchMode.externalApplication);
     expect(find.text('¥2,180'), findsNothing);
     expect(find.text('¥2,080'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -250,17 +271,105 @@ void main() {
 
     await tester.pump();
     expect(find.text('詳細情報を取得中'), findsOneWidget);
-    expect(repository.requestedName, '鍋島 純米吟醸');
-    expect(repository.requestedType, '純米吟醸');
+    expect(repository.requestedToken, 'candidate:12');
 
     repository.complete();
     await tester.pumpAndSettle();
     expect(find.text('詳細情報を取得中'), findsNothing);
     expect(find.textContaining('未検証'), findsNothing);
-    await tester.scrollUntilVisible(find.text('AI解析済みの味わい説明'), 300);
+    await tester.scrollUntilVisible(
+      find.text('AI解析済みの味わい説明'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.text('AI解析済みの味わい説明'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('AI候補の解決後は取得済みのIDと画像で保存・お気に入りを操作できる', (tester) async {
+    final repository = _FakeSakeMenuRecognitionRepository();
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    final favorite = FavoriteNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    addTearDown(favorite.dispose);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<SakeMenuRecognitionRepository>.value(value: repository),
+          Provider<SavedSakeNotifier>.value(value: saved),
+          Provider<FavoriteNotifier>.value(value: favorite),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('ja'),
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(
+              searchToken: 'candidate:12',
+              name: '鍋島',
+              type: '純米吟醸',
+              recordCount: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byIcon(Icons.bookmark_outline), findsNothing);
+    expect(find.byIcon(Icons.favorite_border), findsNothing);
+    repository.complete();
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.bookmark_outline), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.bookmark_outline));
+    await tester.pumpAndSettle();
+    expect(saved.state.savedSakeList.single.sakeId, 456);
+    expect(saved.state.savedSakeList.single.name, '鍋島 純米吟醸');
+    expect(
+      saved.state.savedSakeList.single.primaryImageUrl,
+      'https://example.com/600.jpg',
+    );
+    expect(saved.state.savedSakeList.single.description, 'AI解析済みの味わい説明');
+    await tester.tap(find.byIcon(Icons.favorite_border));
+    await tester.pumpAndSettle();
+    expect(favorite.state.myFavoriteList.single.name, '鍋島 純米吟醸');
+    await tester.tap(find.byIcon(Icons.bookmark));
+    await tester.pumpAndSettle();
+    expect(saved.state.savedSakeList, isEmpty);
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
+    expect(favorite.state.myFavoriteList, isEmpty);
+    expect(repository.calls, 1);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+}
+
+class _GuestAuthRepository implements AuthRepository {
+  @override
+  get currentUser => null;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  @override
+  get linkDelegate => null;
+  String? openedUrl;
+  PreferredLaunchMode? mode;
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    openedUrl = url;
+    mode = options.mode;
+    return true;
+  }
 }
 
 class _UnusedSakeMenuRecognitionApiClient
@@ -274,17 +383,13 @@ class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
     : super(_UnusedSakeMenuRecognitionApiClient());
 
   final _completer = Completer<SakeOverview?>();
-  String? requestedName;
-  String? requestedType;
+  String? requestedToken;
+  int calls = 0;
 
   @override
-  Future<SakeOverview?> getSakeOverviewByName(
-    String sakeName, {
-    String? type,
-    String? preferences,
-  }) {
-    requestedName = sakeName;
-    requestedType = type;
+  Future<SakeOverview?> resolveSakeCandidateOverview(String searchToken) {
+    requestedToken = searchToken;
+    calls++;
     return _completer.future;
   }
 
@@ -292,6 +397,9 @@ class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
     _completer.complete(
       const SakeOverview(
         sake: Sake(
+          sakeId: 456,
+          primaryImageUrl: 'https://example.com/600.jpg',
+          thumbnailImageUrl: 'https://example.com/146.jpg',
           name: '鍋島 純米吟醸',
           brewery: '富久千代酒造',
           type: '純米吟醸',
@@ -328,6 +436,10 @@ class _FakeSakeScanRepository implements SakeScanRepository {
         imageProductUrl: 'https://store.shopping.yahoo.co.jp/example/sake.html',
         imagePrice: 2150,
         imageCurrency: 'JPY',
+        rakutenOffer: SakeShopOffer(
+          price: 2096,
+          affiliateUrl: 'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+        ),
         category: '純米',
         polishingRatio: 50,
         sakeMeterValue: 2.5,
