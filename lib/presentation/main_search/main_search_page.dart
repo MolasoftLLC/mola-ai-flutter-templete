@@ -28,14 +28,15 @@ import '../sake_scan/sake_scan_page.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
-  MainSearchPage._()
+  MainSearchPage._({this.initialQuery})
     : _masterSakeSearchPanelKey = GlobalKey<_MasterSakeSearchPanelState>();
 
   static final ScrollController _scrollController = ScrollController();
   static final GlobalKey _resultSectionKey = GlobalKey();
   final GlobalKey<_MasterSakeSearchPanelState> _masterSakeSearchPanelKey;
+  final String? initialQuery;
 
-  static Widget wrapped() {
+  static Widget wrapped({String? initialQuery}) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<MainSearchPageNotifier, MainSearchPageState>(
@@ -45,7 +46,7 @@ class MainSearchPage extends StatelessWidget {
           ),
         ),
       ],
-      child: MainSearchPage._(),
+      child: MainSearchPage._(initialQuery: initialQuery),
     );
   }
 
@@ -158,6 +159,7 @@ class MainSearchPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: _MasterSakeSearchPanel(
                             key: _masterSakeSearchPanelKey,
+                            initialQuery: initialQuery,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -1078,7 +1080,9 @@ class _ManualSakeSearchSuggestion extends StatelessWidget {
 }
 
 class _MasterSakeSearchPanel extends StatefulWidget {
-  const _MasterSakeSearchPanel({super.key});
+  const _MasterSakeSearchPanel({super.key, this.initialQuery});
+
+  final String? initialQuery;
 
   @override
   State<_MasterSakeSearchPanel> createState() => _MasterSakeSearchPanelState();
@@ -1105,6 +1109,10 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
     super.initState();
     _focusNode.addListener(_onFocusChanged);
     unawaited(_loadRecentSearches());
+    final query = widget.initialQuery?.trim();
+    if (query != null && query.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => searchFor(query));
+    }
   }
 
   @override

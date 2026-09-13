@@ -2,6 +2,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 
 void main() {
+  test('英数字一文字のOCRノイズは酒名として扱わない', () {
+    expect(isPlausibleRecognizedSakeName('W'), isFalse);
+    expect(isPlausibleRecognizedSakeName(' Ｗ '), isFalse);
+    expect(isPlausibleRecognizedSakeName('7'), isFalse);
+    expect(isPlausibleRecognizedSakeName('作'), isTrue);
+    expect(isPlausibleRecognizedSakeName('WAKAZE'), isTrue);
+  });
+
+  test('スキャン候補からW単独だけを除外する', () {
+    final result = SakeScanResult.fromJson(<String, dynamic>{
+      'status': 'candidates',
+      'scanSessionId': 'scan_test',
+      'candidates': <Map<String, dynamic>>[
+        <String, dynamic>{'sakeId': 1, 'name': 'W'},
+        <String, dynamic>{'sakeId': 2, 'name': '作'},
+        <String, dynamic>{'sakeId': 3, 'name': 'WAKAZE'},
+      ],
+    });
+
+    expect(result.candidates.map((candidate) => candidate.name), [
+      '作',
+      'WAKAZE',
+    ]);
+  });
+
   test('裏ラベル撮影理由をAPIレスポンスから変換する', () {
     final result = SakeScanResult.fromJson(<String, dynamic>{
       'status': 'need_back_label',

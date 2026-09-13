@@ -6,6 +6,7 @@ import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../eintities/sake_label_scan.dart';
 import '../notifier/saved_sake/saved_sake_notifier.dart';
 import '../repository/auth_repository.dart';
 import '../repository/sake_menu_recognition_repository.dart';
@@ -56,13 +57,14 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
           sakeId: sakeId,
           scanSessionId: scanSessionId,
         );
-    if (response?.sakeInfo == null) {
+    if (response?.sakeInfo == null ||
+        !isPlausibleRecognizedSakeName(response!.sakeInfo!.name)) {
       throw SakeBottleRecognitionException(
         statusCode: 500,
         message: '日本酒のAI解析結果を取得できませんでした',
       );
     }
-    return response!.sakeInfo!.copyWith(
+    return response.sakeInfo!.copyWith(
       sakeId: response.sakeId ?? sakeId ?? response.sakeInfo!.sakeId,
     );
   }

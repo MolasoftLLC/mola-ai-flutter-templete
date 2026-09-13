@@ -21,6 +21,7 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
@@ -48,6 +49,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   void Function()? _removeFavoriteListener;
   Timer? _masterEnrichmentPollTimer;
   var _masterEnrichmentPollCount = 0;
+  var _isFetchingDetails = false;
 
   @override
   void didChangeDependencies() {
@@ -55,6 +57,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     _bindNotifiers();
     if (_initialized) return;
     _initialized = true;
+    _isFetchingDetails = true;
     _future = _fetch();
   }
 
@@ -106,22 +109,47 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     super.dispose();
   }
 
-  Future<SakeOverview>? _fetch() {
+  Future<SakeOverview> _fetch() async {
     final id = widget.venueSake.sakeId;
-    if (id == null || id <= 0) return null;
-    final future = context.read<SakeScanRepository>().fetchOverview(
-      id,
-      trackView: true,
-    );
-    future
-        .then((overview) {
-          if (!mounted) return;
-          setState(() => _headerOverview = overview);
-          unawaited(_syncOverviewImagesToSavedRecord(overview));
-          _scheduleMasterEnrichmentPolling(overview);
-        })
-        .catchError((_) {});
-    return future;
+    try {
+      final SakeOverview overview;
+      if (id != null && id > 0) {
+        overview = await context.read<SakeScanRepository>().fetchOverview(
+          id,
+          trackView: true,
+        );
+      } else if (widget.venueSake.searchToken?.startsWith('candidate:') ??
+          false) {
+        final preferences = Provider.of<MyPageState?>(
+          context,
+          listen: false,
+        )?.preferences?.trim();
+        final analyzed = await context
+            .read<SakeMenuRecognitionRepository>()
+            .getSakeOverviewByName(
+              widget.venueSake.name,
+              type: widget.venueSake.type,
+              preferences: preferences?.isNotEmpty == true ? preferences : null,
+            );
+        if (analyzed == null) {
+          throw StateError('AI候補の詳細情報を取得できませんでした');
+        }
+        overview = analyzed;
+      } else {
+        throw StateError('詳細取得に必要な日本酒IDがありません');
+      }
+
+      if (mounted) {
+        setState(() => _headerOverview = overview);
+      }
+      unawaited(_syncOverviewImagesToSavedRecord(overview));
+      _scheduleMasterEnrichmentPolling(overview);
+      return overview;
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingDetails = false);
+      }
+    }
   }
 
   void _scheduleMasterEnrichmentPolling(SakeOverview overview) {
@@ -186,12 +214,12 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<void> _reload() async {
-    final next = _fetch();
     setState(() {
-      _future = next;
+      _isFetchingDetails = true;
+      _future = _fetch();
     });
     try {
-      await next;
+      await _future;
     } catch (_) {
       // FutureBuilder presents the failure and retry action.
     }
@@ -343,6 +371,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     imagePaths: headerImagePaths,
                     matchPercent: matchPercent,
                     isProfileEnrichmentPending: isProfileEnrichmentPending,
+                    isFetchingDetails: _isFetchingDetails,
                   ),
                 ),
                 const SliverToBoxAdapter(child: _ShopPriceTitle()),
@@ -354,10 +383,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     yahooProductUrl: snapshot.data?.master.imageProductUrl,
                   ),
                 ),
-                if (snapshot.connectionState == ConnectionState.waiting)
-                  const SliverToBoxAdapter(
-                    child: LinearProgressIndicator(color: _orange),
-                  ),
                 if (snapshot.hasError)
                   SliverToBoxAdapter(
                     child: Padding(
@@ -404,12 +429,14 @@ class _CollapsingSakeHero extends StatefulWidget {
     required this.imagePaths,
     required this.matchPercent,
     required this.isProfileEnrichmentPending,
+    required this.isFetchingDetails,
   });
 
   final String? name;
   final List<String> imagePaths;
   final int? matchPercent;
   final bool isProfileEnrichmentPending;
+  final bool isFetchingDetails;
 
   @override
   State<_CollapsingSakeHero> createState() => _CollapsingSakeHeroState();
@@ -452,7 +479,9 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
       final imageTop = lerpDouble(
         topInset +
             kToolbarHeight +
-            (widget.matchPercent == null && !widget.isProfileEnrichmentPending
+            (widget.matchPercent == null &&
+                    !widget.isProfileEnrichmentPending &&
+                    !widget.isFetchingDetails
                 ? 18
                 : 58),
         topInset + 8,
@@ -532,7 +561,17 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
               ),
             ),
           ),
-          if (widget.matchPercent != null)
+          if (widget.isFetchingDetails)
+            Positioned(
+              left: 20,
+              right: 20,
+              top: topInset + 50,
+              child: Opacity(
+                opacity: expandedProgress,
+                child: const _ProfileAnalysisProgress(label: '詳細情報を取得中'),
+              ),
+            ),
+          if (!widget.isFetchingDetails && widget.matchPercent != null)
             Positioned(
               left: 20,
               right: 20,
@@ -542,14 +581,14 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
                 child: _PreferenceMatchSection(percent: widget.matchPercent!),
               ),
             ),
-          if (widget.isProfileEnrichmentPending)
+          if (!widget.isFetchingDetails && widget.isProfileEnrichmentPending)
             Positioned(
               left: 20,
               right: 20,
               top: topInset + 50,
               child: Opacity(
                 opacity: expandedProgress,
-                child: const _ProfileAnalysisProgress(),
+                child: const _ProfileAnalysisProgress(label: '味わいプロフィールを解析中'),
               ),
             ),
           Positioned(
@@ -557,7 +596,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
             right: 156,
             top: topInset + 15,
             child: collapsedProgress > .5
-                ? widget.matchPercent == null
+                ? widget.matchPercent == null || widget.isFetchingDetails
                       ? const SizedBox.shrink()
                       : Container(
                           alignment: Alignment.centerLeft,
@@ -740,13 +779,6 @@ class _Details extends StatelessWidget {
                     Text(
                       breweryName,
                       style: const TextStyle(color: Color(0xFF647184)),
-                    ),
-                  ],
-                  if (isPendingAiCandidate) ...[
-                    const SizedBox(height: 10),
-                    const Text(
-                      'AIが見つけた未検証の候補です。確認後に日本酒マスターへ追加されます。',
-                      style: TextStyle(color: Color(0xFF647184), height: 1.5),
                     ),
                   ],
                   if (master.styles.isNotEmpty) ...[
@@ -1501,27 +1533,29 @@ class _PreferenceMatchSection extends StatefulWidget {
 }
 
 class _ProfileAnalysisProgress extends StatelessWidget {
-  const _ProfileAnalysisProgress();
+  const _ProfileAnalysisProgress({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '味わいプロフィールを解析中',
+    label: label,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '味わいプロフィールを解析中',
-            style: TextStyle(
+            label,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 8),
-          LinearProgressIndicator(
+          const SizedBox(height: 8),
+          const LinearProgressIndicator(
             minHeight: 5,
             color: Color(0xFFFFB347),
             backgroundColor: Color(0x336D8CB0),

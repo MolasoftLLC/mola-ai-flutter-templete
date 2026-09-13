@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -5,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/place_map_repository.dart';
+import 'package:mola_gemini_flutter_template/domain/repository/sake_menu_recognition_repository.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/sake_scan_repository.dart';
+import 'package:mola_gemini_flutter_template/infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_master_detail_page.dart';
 import 'package:provider/provider.dart';
 
@@ -225,6 +228,79 @@ void main() {
     expect(find.text('マスター純米酒'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('AI検索候補は詳細ページ内で情報を取得して表示する', (tester) async {
+    final repository = _FakeSakeMenuRecognitionRepository();
+    await tester.pumpWidget(
+      Provider<SakeMenuRecognitionRepository>.value(
+        value: repository,
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(
+              searchToken: 'candidate:12',
+              name: '鍋島 純米吟醸',
+              brewery: '富久千代酒造',
+              type: '純米吟醸',
+              recordCount: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.text('詳細情報を取得中'), findsOneWidget);
+    expect(repository.requestedName, '鍋島 純米吟醸');
+    expect(repository.requestedType, '純米吟醸');
+
+    repository.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('詳細情報を取得中'), findsNothing);
+    expect(find.textContaining('未検証'), findsNothing);
+    await tester.scrollUntilVisible(find.text('AI解析済みの味わい説明'), 300);
+    expect(find.text('AI解析済みの味わい説明'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+class _UnusedSakeMenuRecognitionApiClient
+    implements SakeMenuRecognitionApiClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
+  _FakeSakeMenuRecognitionRepository()
+    : super(_UnusedSakeMenuRecognitionApiClient());
+
+  final _completer = Completer<SakeOverview?>();
+  String? requestedName;
+  String? requestedType;
+
+  @override
+  Future<SakeOverview?> getSakeOverviewByName(
+    String sakeName, {
+    String? type,
+    String? preferences,
+  }) {
+    requestedName = sakeName;
+    requestedType = type;
+    return _completer.future;
+  }
+
+  void complete() {
+    _completer.complete(
+      const SakeOverview(
+        sake: Sake(
+          name: '鍋島 純米吟醸',
+          brewery: '富久千代酒造',
+          type: '純米吟醸',
+          description: 'AI解析済みの味わい説明',
+        ),
+        analysisCompleted: true,
+      ),
+    );
+  }
 }
 
 class _FakeSakeScanRepository implements SakeScanRepository {

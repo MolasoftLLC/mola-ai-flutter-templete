@@ -226,8 +226,8 @@ class NewHomePage extends StatelessWidget {
 
 /// ヘッダーと下部ナビから共通利用する高速ラベルスキャン導線。
 Future<void> openNewHomeScanner(BuildContext context) async {
-  final result = await Navigator.of(context).push<Sake>(
-    PageRouteBuilder<Sake>(
+  final result = await Navigator.of(context).push<Object>(
+    PageRouteBuilder<Object>(
       pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
@@ -245,11 +245,19 @@ Future<void> openNewHomeScanner(BuildContext context) async {
     ),
   );
   if (result == null || !context.mounted) return;
-  await Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => SavedSakeDetailPage.forSake(result),
-    ),
-  );
+  if (result is String && result.trim().isNotEmpty) {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MainSearchPage.wrapped(initialQuery: result),
+      ),
+    );
+  } else if (result is Sake) {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SavedSakeDetailPage.forSake(result),
+      ),
+    );
+  }
 }
 
 class _HomeHeader extends StatelessWidget {

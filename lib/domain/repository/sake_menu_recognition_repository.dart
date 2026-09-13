@@ -7,6 +7,7 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
+import '../eintities/sake_label_scan.dart';
 import '../notifier/favorite/favorite_notifier.dart';
 
 class SakeMenuRecognitionRepository {
@@ -95,9 +96,43 @@ class SakeMenuRecognitionRepository {
     String? type,
     String? preferences,
   }) async {
-    if (sakeName.isEmpty) {
+    final sakeJson = await _getSakeInfoJson(
+      sakeName,
+      type: type,
+      preferences: preferences,
+    );
+    if (sakeJson == null) return null;
+    return Sake.fromJson(sakeJson);
+  }
+
+  /// AI検索候補を開いた詳細画面で、名前から表示用の詳細一式を取得する。
+  Future<SakeOverview?> getSakeOverviewByName(
+    String sakeName, {
+    String? type,
+    String? preferences,
+  }) async {
+    final sakeJson = await _getSakeInfoJson(
+      sakeName,
+      type: type,
+      preferences: preferences,
+    );
+    if (sakeJson == null ||
+        !isPlausibleRecognizedSakeName(sakeJson['name']?.toString())) {
       return null;
     }
+    return SakeOverview.fromJson(<String, dynamic>{
+      'sake': sakeJson,
+      'analysis': <String, dynamic>{'sakeInfo': sakeJson},
+      'brewery': <String, dynamic>{'name': sakeJson['brewery']},
+    });
+  }
+
+  Future<Map<String, dynamic>?> _getSakeInfoJson(
+    String sakeName, {
+    String? type,
+    String? preferences,
+  }) async {
+    if (!isPlausibleRecognizedSakeName(sakeName)) return null;
 
     final Map<String, dynamic> body = {
       'sakeName': sakeName,
@@ -129,9 +164,9 @@ class SakeMenuRecognitionRepository {
       // APIレスポンスの構造に応じて適切に変換
       Map<String, dynamic> sakeJson;
       if (responseBodyJson.containsKey('sake')) {
-        sakeJson = responseBodyJson['sake'] as Map<String, dynamic>;
+        sakeJson = Map<String, dynamic>.from(responseBodyJson['sake'] as Map);
       } else {
-        sakeJson = responseBodyJson;
+        sakeJson = Map<String, dynamic>.from(responseBodyJson);
       }
 
       // sakeMeterValueが文字列の場合は数値に変換
@@ -148,7 +183,7 @@ class SakeMenuRecognitionRepository {
         }
       }
 
-      return Sake.fromJson(sakeJson);
+      return sakeJson;
     } else {
       logger.shout(response.error);
       return null;
@@ -238,7 +273,7 @@ class SakeMenuRecognitionRepository {
             brewery: item['brewery']?.toString().trim(),
           ),
         )
-        .where((item) => item.name?.isNotEmpty ?? false)
+        .where((item) => isPlausibleRecognizedSakeName(item.name))
         .take(7)
         .toList(growable: false);
   }
@@ -281,6 +316,13 @@ class SakeMenuRecognitionRepository {
           sakeInfo = Sake.fromJson(infoJson);
         }
 
+        final recognizedName = body['sakeName']?.toString().trim();
+        if (sakeInfo != null && !isPlausibleRecognizedSakeName(sakeInfo.name)) {
+          sakeInfo = isPlausibleRecognizedSakeName(recognizedName)
+              ? sakeInfo.copyWith(name: recognizedName)
+              : null;
+        }
+
         final responseSakeId = _parseOptionalInt(body['sakeId']) ?? sakeId;
         if (sakeInfo != null && responseSakeId != null) {
           sakeInfo = sakeInfo.copyWith(sakeId: responseSakeId);
@@ -289,12 +331,13 @@ class SakeMenuRecognitionRepository {
             ?.trim();
         final manualSearchSuggested =
             body['manualSearchSuggested'] == true &&
-            manualSearchQuery != null &&
-            manualSearchQuery.isNotEmpty;
+            isPlausibleRecognizedSakeName(manualSearchQuery);
 
         return SakeBottleComprehensiveResponse(
           sakeId: responseSakeId,
-          sakeName: body['sakeName'] as String?,
+          sakeName: isPlausibleRecognizedSakeName(recognizedName)
+              ? recognizedName
+              : null,
           type: body['type'] as String?,
           sakeInfo: sakeInfo,
           manualSearchSuggested: manualSearchSuggested,

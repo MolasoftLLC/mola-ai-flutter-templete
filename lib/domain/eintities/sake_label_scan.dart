@@ -10,6 +10,19 @@ enum SakeScanApiStatus {
 
 enum SakeScanBackLabelReason { ocrUnreadable, noCatalogMatch, lowConfidence }
 
+bool isPlausibleRecognizedSakeName(String? value) {
+  final compact = value?.trim().replaceAll(
+    RegExp(r'''[\s\-_・/\\|,.:;、。'"「」『』（）()\[\]{}【】]'''),
+    '',
+  );
+  if (compact == null || compact.isEmpty) return false;
+  if (compact.runes.length >= 2) return true;
+
+  // 「貴」「作」など実在する一文字銘柄は許可し、OCRが装飾から拾った
+  // "W" や数字一文字だけを日本酒名として扱わない。
+  return RegExp(r'[\u3040-\u30ff\u3400-\u9fff]').hasMatch(compact);
+}
+
 class SakeScanCandidate {
   const SakeScanCandidate({
     required this.sakeId,
@@ -83,7 +96,10 @@ class SakeScanResult {
                 (item) =>
                     SakeScanCandidate.fromJson(Map<String, dynamic>.from(item)),
               )
-              .where((item) => item.sakeId > 0 && item.name.isNotEmpty)
+              .where(
+                (item) =>
+                    item.sakeId > 0 && isPlausibleRecognizedSakeName(item.name),
+              )
               .toList(growable: false)
         : const <SakeScanCandidate>[];
     return SakeScanResult(
