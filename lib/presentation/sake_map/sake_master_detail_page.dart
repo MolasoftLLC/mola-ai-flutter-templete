@@ -992,6 +992,11 @@ class _Details extends StatelessWidget {
                 label: 'Webサービス by Yahoo! JAPAN',
               ),
             ],
+            if (master.rakutenOffer != null)
+              const _WebLink(
+                url: 'https://developers.rakuten.com/',
+                label: 'Supported by Rakuten Developers',
+              ),
           ],
         ),
       ),
