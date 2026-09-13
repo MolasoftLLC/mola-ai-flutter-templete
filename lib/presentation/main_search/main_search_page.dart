@@ -155,7 +155,7 @@ class MainSearchPage extends StatelessWidget {
 
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _MasterSakeSearchPanel(
+                          child: MasterSakeSearchPanel(
                             key: _masterSakeSearchPanelKey,
                             initialQuery: initialQuery,
                           ),
@@ -1077,16 +1077,16 @@ class _ManualSakeSearchSuggestion extends StatelessWidget {
   }
 }
 
-class _MasterSakeSearchPanel extends StatefulWidget {
-  const _MasterSakeSearchPanel({super.key, this.initialQuery});
+class MasterSakeSearchPanel extends StatefulWidget {
+  const MasterSakeSearchPanel({super.key, this.initialQuery});
 
   final String? initialQuery;
 
   @override
-  State<_MasterSakeSearchPanel> createState() => _MasterSakeSearchPanelState();
+  State<MasterSakeSearchPanel> createState() => _MasterSakeSearchPanelState();
 }
 
-class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
+class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
   static const _recentSearchesKey = 'master_sake_search_recent_v1';
   static const _recentSearchLimit = 3;
 
@@ -1099,6 +1099,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
   bool _isAiSearching = false;
   bool _hasSearched = false;
   bool _hasError = false;
+  bool _showingAiResults = false;
   List<SakeMapSearchResult> _results = const [];
   List<SakeMapSearchResult> _recentResults = const [];
 
@@ -1212,6 +1213,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
       _isAiSearching = false;
       _hasSearched = false;
       _hasError = false;
+      _showingAiResults = false;
       _results = const [];
     });
     if (value.trim().isEmpty) {
@@ -1241,6 +1243,7 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
         _results = results;
         _isLoading = false;
         _hasSearched = true;
+        _showingAiResults = false;
       });
     } catch (_) {
       if (!mounted || requestId != _requestId) return;
@@ -1259,12 +1262,11 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
     if (query.isEmpty || _isAiSearching) return;
 
     final requestId = ++_requestId;
+    final existingResults = _results;
     setState(() {
       _isLoading = true;
       _isAiSearching = true;
-      _hasSearched = false;
       _hasError = false;
-      _results = const [];
     });
     try {
       final results = await context
@@ -1272,21 +1274,37 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
           .searchSakeMastersByAi(query);
       if (!mounted || requestId != _requestId) return;
       setState(() {
-        _results = results;
+        _results = _mergeSearchResults(existingResults, results);
         _isLoading = false;
         _isAiSearching = false;
         _hasSearched = true;
+        _showingAiResults = true;
       });
     } catch (_) {
       if (!mounted || requestId != _requestId) return;
       setState(() {
-        _results = const [];
+        _results = existingResults;
         _isLoading = false;
         _isAiSearching = false;
         _hasSearched = true;
         _hasError = true;
       });
     }
+  }
+
+  List<SakeMapSearchResult> _mergeSearchResults(
+    List<SakeMapSearchResult> current,
+    List<SakeMapSearchResult> additional,
+  ) {
+    final seen = <String>{};
+    return [...current, ...additional]
+        .where((sake) {
+          final key = sake.sakeId != null
+              ? 'master:${sake.sakeId}'
+              : [sake.name, sake.type ?? '', sake.brewery ?? ''].join('\u0000');
+          return seen.add(key);
+        })
+        .toList(growable: false);
   }
 
   void _openDetail(SakeMapSearchResult sake) {
@@ -1314,12 +1332,11 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
     final showRecentSearches =
         _focusNode.hasFocus && _controller.text.trim().isEmpty;
     final displayedResults = showRecentSearches ? _recentResults : _results;
-    final showAiAction =
-        _hasSearched &&
-        _results.isEmpty &&
-        !_hasError &&
-        _controller.text.trim().isNotEmpty &&
-        !_isAiSearching;
+    final showAiAction = _controller.text.trim().isNotEmpty;
+    final showNormalCandidates =
+        !showRecentSearches &&
+        !_showingAiResults &&
+        displayedResults.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Column(
@@ -1336,7 +1353,9 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
             decoration: InputDecoration(
               hintText: context.l10n.enterSakeName,
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: _isLoading
+              suffixIcon: _isAiSearching
+                  ? _buildAiSearchButton(isSearching: true)
+                  : _isLoading
                   ? const Padding(
                       padding: EdgeInsets.all(13),
                       child: SizedBox.square(
@@ -1345,12 +1364,9 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
                       ),
                     )
                   : showAiAction
-                  ? TextButton(
-                      key: const ValueKey('masterSakeAiSearchButton'),
-                      onPressed: _searchByAi,
-                      child: const Text('AI解析開始'),
-                    )
+                  ? _buildAiSearchButton()
                   : null,
+              suffixIconConstraints: const BoxConstraints(minWidth: 94),
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
               contentPadding: const EdgeInsets.symmetric(vertical: 15),
@@ -1374,14 +1390,21 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.redAccent),
             ),
-          ] else if (_hasSearched && _results.isEmpty) ...[
+          ] else if (_hasSearched && _results.isEmpty && !_isAiSearching) ...[
             const SizedBox(height: 14),
             Text(
               context.l10n.errorSakeNotFound,
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFFFF7A1A)),
             ),
-          ] else if (displayedResults.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            const Text(
+              'さらに右上のAI解析から追加検索が可能です',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
+          if (displayedResults.isNotEmpty) ...[
             const SizedBox(height: 12),
             if (showRecentSearches) ...[
               const Padding(
@@ -1402,64 +1425,137 @@ class _MasterSakeSearchPanelState extends State<_MasterSakeSearchPanel> {
                 ),
               ),
             ],
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 360),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFE1E5EB)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: displayedResults.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final sake = displayedResults[index];
-                      final details = [
-                        sake.brewery?.trim(),
-                        sake.type?.trim(),
-                      ].whereType<String>().where((value) => value.isNotEmpty);
-                      return ListTile(
-                        key: ValueKey(
-                          'masterSakeCandidate_${sake.searchToken ?? sake.sakeId}',
-                        ),
-                        leading: _SakeCandidateImage(
-                          imageUrl:
-                              sake.thumbnailImageUrl ?? sake.primaryImageUrl,
-                        ),
-                        title: Text(
-                          sake.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF1D3567),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        subtitle: details.isEmpty
-                            ? null
-                            : Text(
-                                details.join(' / '),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => _openDetail(sake),
-                      );
-                    },
+            if (showNormalCandidates)
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  '候補の日本酒',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(color: Color(0xFFE1E5EB)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: displayedResults.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final sake = displayedResults[index];
+                    final details = [
+                      sake.brewery?.trim(),
+                      sake.type?.trim(),
+                    ].whereType<String>().where((value) => value.isNotEmpty);
+                    return ListTile(
+                      key: ValueKey(
+                        'masterSakeCandidate_${sake.searchToken ?? sake.sakeId}',
+                      ),
+                      leading: _SakeCandidateImage(
+                        imageUrl:
+                            sake.thumbnailImageUrl ?? sake.primaryImageUrl,
+                      ),
+                      title: Text(
+                        sake.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: details.isEmpty
+                          ? null
+                          : Text(
+                              details.join(' / '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _openDetail(sake),
+                    );
+                  },
+                ),
+              ),
             ),
+            if (showNormalCandidates)
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  '候補になければ右上のAI解析！',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
           ],
         ],
       ),
     );
   }
+
+  Widget _buildAiSearchButton({bool isSearching = false}) => Padding(
+    padding: const EdgeInsets.fromLTRB(2, 6, 6, 6),
+    child: Opacity(
+      opacity: isSearching ? 0.58 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFA13C), Color(0xFFE95C5A)],
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: InkWell(
+            key: const ValueKey('masterSakeAiSearchButton'),
+            onTap: isSearching ? null : _searchByAi,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 9),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isSearching)
+                    const SizedBox.square(
+                      dimension: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isSearching ? '解析中' : 'AI解析',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _SakeCandidateImage extends StatelessWidget {
