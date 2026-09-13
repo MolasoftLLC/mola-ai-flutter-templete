@@ -162,7 +162,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         if (result.candidates.isNotEmpty) {
           _applyScanResult(result);
         } else {
-          await _identifyFallbackCandidate(result, operation);
+          await _identifyFallbackCandidates(result.scanSessionId, operation);
         }
       } else {
         _applyScanResult(result);
@@ -310,8 +310,28 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     }
   }
 
-  Future<void> _identifyFallbackCandidate(
-    SakeScanResult result,
+  Future<void> identifyFallbackCandidates() async {
+    if (state.isSubmitting) return;
+    final scanSessionId = state.scanSessionId;
+    if (scanSessionId == null || scanSessionId.isEmpty) {
+      _fail(
+        const SakeScanException(
+          kind: SakeScanErrorKind.sessionExpired,
+          message: 'スキャンセッションの有効期限が切れています',
+        ),
+      );
+      return;
+    }
+    final operation = ++_operation;
+    try {
+      await _identifyFallbackCandidates(scanSessionId, operation);
+    } catch (error, stackTrace) {
+      _handleError(error, stackTrace, operation);
+    }
+  }
+
+  Future<void> _identifyFallbackCandidates(
+    String scanSessionId,
     int operation,
   ) async {
     final image = state.frontImage ?? state.backImage;
@@ -329,6 +349,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     );
     final identified = await _analysisService.identifyCandidates(
       image,
+      scanSessionId: scanSessionId,
       secondaryImage:
           state.backImage == null || state.backImage!.path == image.path
           ? null
@@ -344,7 +365,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     _emit(
       state.copyWith(
         status: SakeScanViewStatus.confirmingCandidate,
-        scanSessionId: result.scanSessionId,
+        scanSessionId: scanSessionId,
         candidates: identified
             .map(
               (candidate) => SakeScanCandidate(

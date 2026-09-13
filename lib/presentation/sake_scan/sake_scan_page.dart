@@ -800,6 +800,31 @@ class _SakeScanPageState extends State<SakeScanPage>
               ),
             ),
             const SizedBox(height: 4),
+            if (state.backImage != null) ...[
+              OutlinedButton.icon(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => unawaited(
+                        context
+                            .read<SakeScanNotifier>()
+                            .identifyFallbackCandidates(),
+                      ),
+                icon: const Icon(Icons.auto_awesome_outlined),
+                label: Text(context.l10n.searchCandidatesWithAi),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF7A1A),
+                  side: const BorderSide(color: Color(0xFFFF7A1A)),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                context.l10n.searchCandidatesWithAiDescription,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF697386), fontSize: 12),
+              ),
+              const SizedBox(height: 2),
+            ],
             TextButton.icon(
               onPressed: state.isSubmitting
                   ? null

@@ -1550,6 +1550,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get wrongRetakeBackLabel => '違います・もう一度撮る';
 
   @override
+  String get searchCandidatesWithAi => 'AIに候補を探してもらう';
+
+  @override
+  String get searchCandidatesWithAiDescription => '撮影した表・裏ラベルをもとに追加で解析します';
+
+  @override
   String get loadingSakeOverview => '日本酒の情報を読み込んでいます…';
 
   @override

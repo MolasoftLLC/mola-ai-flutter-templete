@@ -1627,6 +1627,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wrongRetakeBackLabel => 'Not this one — retake back label';
 
   @override
+  String get searchCandidatesWithAi => 'Find more candidates with AI';
+
+  @override
+  String get searchCandidatesWithAiDescription =>
+      'Analyze the captured front and back labels for more candidates';
+
+  @override
   String get loadingSakeOverview => 'Loading sake information…';
 
   @override

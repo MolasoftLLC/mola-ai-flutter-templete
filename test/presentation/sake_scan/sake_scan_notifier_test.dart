@@ -482,6 +482,7 @@ class _FakeAnalysisService implements SakeScanAnalysisService {
   Future<List<Sake>> identifyCandidates(
     File image, {
     File? secondaryImage,
+    String? scanSessionId,
   }) async {
     identifyCalls++;
     return <Sake>[result];

@@ -510,6 +510,8 @@
   "showOtherCandidate": "ほかの候補",
   "wrongTakeBackLabel": "違います・裏ラベルを撮る",
   "wrongRetakeBackLabel": "違います・もう一度撮る",
+  "searchCandidatesWithAi": "AIに候補を探してもらう",
+  "searchCandidatesWithAiDescription": "撮影した表・裏ラベルをもとに追加で解析します",
   "loadingSakeOverview": "日本酒の情報を読み込んでいます…",
   "scanCompleted": "日本酒を特定しました",
   "finishScan": "詳しく見る",

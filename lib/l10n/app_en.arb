@@ -510,6 +510,8 @@
   "showOtherCandidate": "Other candidates",
   "wrongTakeBackLabel": "Not this one — scan back label",
   "wrongRetakeBackLabel": "Not this one — retake back label",
+  "searchCandidatesWithAi": "Find more candidates with AI",
+  "searchCandidatesWithAiDescription": "Analyze the captured front and back labels for more candidates",
   "loadingSakeOverview": "Loading sake information…",
   "scanCompleted": "Sake identified",
   "finishScan": "View details",

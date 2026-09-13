@@ -3032,6 +3032,18 @@ abstract class AppLocalizations {
   /// **'違います・もう一度撮る'**
   String get wrongRetakeBackLabel;
 
+  /// No description provided for @searchCandidatesWithAi.
+  ///
+  /// In ja, this message translates to:
+  /// **'AIに候補を探してもらう'**
+  String get searchCandidatesWithAi;
+
+  /// No description provided for @searchCandidatesWithAiDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'撮影した表・裏ラベルをもとに追加で解析します'**
+  String get searchCandidatesWithAiDescription;
+
   /// No description provided for @loadingSakeOverview.
   ///
   /// In ja, this message translates to:

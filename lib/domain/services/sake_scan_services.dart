@@ -13,7 +13,11 @@ import '../repository/sake_menu_recognition_repository.dart';
 import '../repository/saved_sake_sync_repository.dart';
 
 abstract class SakeScanAnalysisService {
-  Future<List<Sake>> identifyCandidates(File image, {File? secondaryImage});
+  Future<List<Sake>> identifyCandidates(
+    File image, {
+    File? secondaryImage,
+    String? scanSessionId,
+  });
 
   Future<Sake> analyze(
     File image, {
@@ -36,10 +40,12 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
   Future<List<Sake>> identifyCandidates(
     File image, {
     File? secondaryImage,
+    String? scanSessionId,
   }) async {
     final candidates = await _repository.recognizeSakeBottleCandidates(
       image,
       secondaryFile: secondaryImage,
+      scanSessionId: scanSessionId,
     );
     if (candidates.isEmpty) {
       throw SakeBottleRecognitionException(

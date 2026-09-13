@@ -239,6 +239,7 @@ class SakeMenuRecognitionRepository {
   Future<List<Sake>> recognizeSakeBottleCandidates(
     File file, {
     File? secondaryFile,
+    String? scanSessionId,
   }) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
     final secondaryBaseFile = secondaryFile == null
@@ -247,6 +248,7 @@ class SakeMenuRecognitionRepository {
     final response = await _apiClient.recognizeSakeBottleCandidates(
       baseFile,
       secondaryBaseFile,
+      scanSessionId,
     );
     if (!response.isSuccessful || response.body == null) {
       throw SakeBottleRecognitionException(
