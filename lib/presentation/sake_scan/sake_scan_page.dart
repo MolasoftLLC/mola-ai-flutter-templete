@@ -346,10 +346,6 @@ class _SakeScanPageState extends State<SakeScanPage>
     ).pushReplacement(MaterialPageRoute<void>(builder: (_) => detailPage));
   }
 
-  String _manualSearchQuery(SakeScanCandidate candidate) {
-    return candidate.canonicalProductName;
-  }
-
   Future<void> _submitImage(File file) async {
     final notifier = context.read<SakeScanNotifier>();
     final state = notifier.currentState;
@@ -823,7 +819,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ? null
                   : () => Navigator.of(
                       context,
-                    ).pop<String>(_manualSearchQuery(candidate)),
+                    ).pop<String>(candidate.canonicalProductName),
               icon: const Icon(Icons.search),
               label: const Text('名前から検索する'),
               style: TextButton.styleFrom(

@@ -113,8 +113,6 @@ class MainSearchPage extends StatelessWidget {
         alignment: const Alignment(0, -0.35),
         child: isAdLoading
             ? AILoading(loadingText: context.l10n.analyzingWithAd)
-            : isAnalyzingInBackground
-            ? AILoading(loadingText: context.l10n.loadingSakeInfo)
             : AILoading(loadingText: context.l10n.loadingSakeInfo),
       ),
     );

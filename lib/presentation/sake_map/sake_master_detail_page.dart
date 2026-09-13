@@ -51,6 +51,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   var _masterEnrichmentPollCount = 0;
   var _isFetchingDetails = false;
 
+  bool get _isAiSearchCandidate =>
+      widget.venueSake.sakeId == null &&
+      (widget.venueSake.searchToken?.startsWith('candidate:') ?? false);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -118,8 +122,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           id,
           trackView: true,
         );
-      } else if (widget.venueSake.searchToken?.startsWith('candidate:') ??
-          false) {
+      } else if (_isAiSearchCandidate) {
         final preferences = Provider.of<MyPageState?>(
           context,
           listen: false,
@@ -281,9 +284,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isPendingAiCandidate =
-        widget.venueSake.sakeId == null &&
-        (widget.venueSake.searchToken?.startsWith('candidate:') ?? false);
+    final isPendingAiCandidate = _isAiSearchCandidate;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
     final displayName = _preferProductName(
@@ -408,8 +409,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       overview: _headerOverview ?? snapshot.data,
                       fallback: widget.venueSake,
                       savedSakeNotifier: _savedSakeNotifier,
-                      showHeroImage: false,
-                      isPendingAiCandidate: isPendingAiCandidate,
                       preferredName: displayName,
                     ),
                   ),
@@ -656,15 +655,11 @@ class _Details extends StatelessWidget {
     required this.overview,
     required this.fallback,
     required this.savedSakeNotifier,
-    required this.showHeroImage,
-    this.isPendingAiCandidate = false,
     this.preferredName,
   });
   final SakeOverview? overview;
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
-  final bool showHeroImage;
-  final bool isPendingAiCandidate;
   final String? preferredName;
 
   @override
@@ -734,11 +729,6 @@ class _Details extends StatelessWidget {
     final description = sake?.description;
     final recommendationScore =
         sake?.recommendationScore ?? personalRecord?.recommendationScore;
-    final imagePaths = detailImagePaths(
-      personalRecord: personalRecord,
-      overviewSake: sake,
-      fallback: fallback,
-    );
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
@@ -750,17 +740,6 @@ class _Details extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (showHeroImage) ...[
-                    SizedBox(
-                      height: 250,
-                      width: double.infinity,
-                      child: _SakeImageCarousel(
-                        key: ValueKey<String>(imagePaths.join('|')),
-                        imagePaths: imagePaths,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
                   if (category != null) ...[
                     _Tags(values: [category], accent: true),
                   ],
@@ -2669,63 +2648,6 @@ class _BottleImage extends StatelessWidget {
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => placeholder(),
           );
-  }
-}
-
-class _SakeImageCarousel extends StatefulWidget {
-  const _SakeImageCarousel({super.key, required this.imagePaths});
-
-  final List<String> imagePaths;
-
-  @override
-  State<_SakeImageCarousel> createState() => _SakeImageCarouselState();
-}
-
-class _SakeImageCarouselState extends State<_SakeImageCarousel> {
-  var _currentPage = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasImages = widget.imagePaths.isNotEmpty;
-    final imageCount = widget.imagePaths.length;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (hasImages)
-            PageView.builder(
-              key: const Key('sake-image-carousel'),
-              itemCount: imageCount,
-              onPageChanged: (index) => setState(() => _currentPage = index),
-              itemBuilder: (context, index) =>
-                  _DetailSakeImage(path: widget.imagePaths[index]),
-            )
-          else
-            const _DetailSakeImage(),
-          if (imageCount > 1)
-            Positioned(
-              right: 10,
-              bottom: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  '${_currentPage + 1} / $imageCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }
 
