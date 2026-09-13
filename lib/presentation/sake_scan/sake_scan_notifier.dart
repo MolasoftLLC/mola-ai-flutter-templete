@@ -459,7 +459,11 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       );
       final completed = await _persistenceService.saveCompleted(
         saved,
-        _mergeBasicAndAnalysis(basicSake, analyzed),
+        _mergeBasicAndAnalysis(
+          basicSake,
+          analyzed,
+          preferAnalyzedIdentity: !hasMasterSake,
+        ),
         image,
         isPublic: shareToTimeline,
       );
@@ -480,16 +484,26 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     }
   }
 
-  Sake _mergeBasicAndAnalysis(Sake? basic, Sake analyzed) {
+  Sake _mergeBasicAndAnalysis(
+    Sake? basic,
+    Sake analyzed, {
+    bool preferAnalyzedIdentity = false,
+  }) {
     if (basic == null) return analyzed;
     return analyzed.copyWith(
-      // 候補画面でユーザーが確定したマスターが正とする。AI解析は味や
-      // 説明を補う処理であり、別バリエーションへ紐付けを変えてはいけない。
+      // An existing master remains authoritative. For an AI-only candidate,
+      // use the detailed Perplexity identity returned by the API.
       sakeId: basic.sakeId ?? analyzed.sakeId,
       brandId: basic.brandId ?? analyzed.brandId,
-      name: basic.name ?? analyzed.name,
-      brewery: basic.brewery ?? analyzed.brewery,
-      type: basic.type ?? analyzed.type,
+      name: preferAnalyzedIdentity
+          ? analyzed.name ?? basic.name
+          : basic.name ?? analyzed.name,
+      brewery: preferAnalyzedIdentity
+          ? analyzed.brewery ?? basic.brewery
+          : basic.brewery ?? analyzed.brewery,
+      type: preferAnalyzedIdentity
+          ? analyzed.type ?? basic.type
+          : basic.type ?? analyzed.type,
       prefectureCode: basic.prefectureCode ?? analyzed.prefectureCode,
       primaryImageUrl: basic.primaryImageUrl ?? analyzed.primaryImageUrl,
       thumbnailImageUrl: basic.thumbnailImageUrl ?? analyzed.thumbnailImageUrl,

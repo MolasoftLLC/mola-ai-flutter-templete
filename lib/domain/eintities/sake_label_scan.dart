@@ -72,7 +72,9 @@ class SakeScanCandidate {
   Sake toSake() => Sake(
     sakeId: sakeId > 0 ? sakeId : null,
     brandId: brandId,
-    name: canonicalProductName,
+    // Keep the candidate's product name and classification separate. The API
+    // resolves the final identity from Perplexity after the user selects it.
+    name: name,
     type: type,
     brewery: brewery,
     primaryImageUrl: imageUrl,
