@@ -1012,7 +1012,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String consumedAt(String place) {
-    return '飲んだ場所: $place';
+    return '飲んだ場所・買った場所: $place';
   }
 
   @override
@@ -1061,7 +1061,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get impressionHint => '味わいや香りの印象を記録しましょう';
 
   @override
-  String get placeConsumed => 'この日本酒がある店舗';
+  String get placeConsumed => '飲んだ場所・買った場所';
 
   @override
   String registeredShop(String shop) {

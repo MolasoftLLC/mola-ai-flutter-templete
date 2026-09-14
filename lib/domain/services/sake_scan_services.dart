@@ -179,11 +179,20 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     if (savedId == null || savedId.isEmpty) {
       throw StateError('保存酒IDがありません');
     }
+    final latest = _savedSakeNotifier.savedSakes.firstWhere(
+      (item) => item.savedId == savedId,
+      orElse: () => initial,
+    );
     final normalized = completed.copyWith(
       savedId: savedId,
       sakeId: completed.sakeId ?? initial.sakeId,
-      imagePaths: initial.imagePaths,
-      isPublic: isPublic,
+      imagePaths: latest.imagePaths ?? initial.imagePaths,
+      impression: latest.impression,
+      place: latest.place,
+      drinkingPlace: latest.drinkingPlace,
+      userTags: latest.userTags,
+      personalTasteRatings: latest.personalTasteRatings,
+      isPublic: latest.isPublic,
     );
     await _savedSakeNotifier.updateSavedSakeWithInfo(savedId, normalized);
     final stored = _savedSakeNotifier.savedSakes.firstWhere(
@@ -194,7 +203,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       stage: SavedSakeSyncStage.analysisComplete,
       sake: stored,
       image: image,
-      isPublic: isPublic,
+      isPublic: stored.isPublic,
     );
     return stored;
   }

@@ -109,8 +109,13 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   SakeScanState get currentState => state;
 
   void setShareToTimeline(bool value) {
-    if (_disposed || state.isSubmitting) return;
+    if (_disposed) return;
     state = state.copyWith(shareToTimeline: value);
+  }
+
+  void updateSavedRecord(Sake sake) {
+    if (_disposed || sake.savedId == null || sake.savedId!.isEmpty) return;
+    state = state.copyWith(savedSake: sake, shareToTimeline: sake.isPublic);
   }
 
   Future<void> submitFront(File image) async {
@@ -427,7 +432,13 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   Future<void> _runAiAnalysis(int operation) async {
     final basicSake = state.sake;
-    final hasMasterSake = (basicSake?.sakeId ?? 0) > 0;
+    if (basicSake == null) {
+      throw const SakeScanException(
+        kind: SakeScanErrorKind.aiAnalysis,
+        message: '選択した日本酒の情報がありません',
+      );
+    }
+    final hasMasterSake = (basicSake.sakeId ?? 0) > 0;
     // DBで特定できなかった場合、裏ラベルはOCRの補助に使い、既存の
     // 画像認識には商品を識別しやすい表ラベルを渡す。
     final image = hasMasterSake
@@ -440,7 +451,6 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       );
     }
     final scanSessionId = state.scanSessionId;
-    final shareToTimeline = state.shareToTimeline;
     final primaryImage = state.frontImage ?? image;
     final secondaryImage = state.backImage?.path == primaryImage.path
         ? null
@@ -453,12 +463,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     );
 
     Sake? saved = state.savedSake;
-    if (saved == null && hasMasterSake) {
+    if (saved == null) {
       saved = await _persistenceService.saveInitial(
-        basicSake!,
+        basicSake,
         primaryImage,
         secondaryImage: secondaryImage,
-        isPublic: shareToTimeline,
+        isPublic: state.shareToTimeline,
       );
       if (_isCurrent(operation)) {
         _emit(state.copyWith(savedSake: saved));
@@ -468,15 +478,9 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     try {
       final analyzed = await _analysisService.analyze(
         image,
-        sakeId: hasMasterSake ? basicSake!.sakeId : null,
+        sakeId: hasMasterSake ? basicSake.sakeId : null,
         scanSessionId: scanSessionId,
         confirmedSake: hasMasterSake ? null : basicSake,
-      );
-      saved ??= await _persistenceService.saveInitial(
-        analyzed,
-        primaryImage,
-        secondaryImage: secondaryImage,
-        isPublic: shareToTimeline,
       );
       final completed = await _persistenceService.saveCompleted(
         saved,
@@ -486,7 +490,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           preferAnalyzedIdentity: !hasMasterSake,
         ),
         image,
-        isPublic: shareToTimeline,
+        isPublic: state.shareToTimeline,
       );
       if (!_isCurrent(operation)) return;
       _emit(

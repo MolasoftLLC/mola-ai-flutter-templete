@@ -2003,7 +2003,7 @@ abstract class AppLocalizations {
   /// No description provided for @consumedAt.
   ///
   /// In ja, this message translates to:
-  /// **'飲んだ場所: {place}'**
+  /// **'飲んだ場所・買った場所: {place}'**
   String consumedAt(String place);
 
   /// No description provided for @noMatchingTags.
@@ -2099,7 +2099,7 @@ abstract class AppLocalizations {
   /// No description provided for @placeConsumed.
   ///
   /// In ja, this message translates to:
-  /// **'この日本酒がある店舗'**
+  /// **'飲んだ場所・買った場所'**
   String get placeConsumed;
 
   /// No description provided for @registeredShop.

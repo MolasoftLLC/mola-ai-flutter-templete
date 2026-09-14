@@ -228,7 +228,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (notifier == null || record == null) {
       SnackBarUtils.showInfoSnackBar(
         context,
-        message: 'このお酒を保存すると、飲んだ場所を登録できます。',
+        message: 'このお酒を保存すると、飲んだ場所・買った場所を登録できます。',
       );
       return;
     }
@@ -258,7 +258,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       if (result == null) {
         SnackBarUtils.showWarningSnackBar(
           context,
-          message: '飲んだ場所を地図へ登録できませんでした。',
+          message: '場所を地図へ登録できませんでした。',
         );
         return;
       }
@@ -269,7 +269,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         ),
       );
       if (mounted) {
-        SnackBarUtils.showInfoSnackBar(context, message: '飲んだ場所を地図へ登録しました。');
+        SnackBarUtils.showInfoSnackBar(context, message: '場所を地図へ登録しました。');
       }
     }
   }
@@ -352,7 +352,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     ],
                     if (_showCompactHeader)
                       IconButton(
-                        tooltip: '飲んだ場所を選ぶ',
+                        tooltip: '飲んだ場所・買った場所を選ぶ',
                         icon: const Icon(Icons.location_on_outlined),
                         onPressed: _selectHeaderPlace,
                       ),
@@ -1280,7 +1280,7 @@ class _PersonalRecordSection extends StatelessWidget {
                         Text(
                           location?.trim().isNotEmpty == true
                               ? location!
-                              : '飲んだ場所は未記録',
+                              : '飲んだ場所・買った場所は未記録',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1819,7 +1819,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             savedId: savedId,
             place: selectedPlace,
           );
-          if (result == null) throw StateError('飲んだ場所を地図へ登録できませんでした。');
+          if (result == null) throw StateError('場所を地図へ登録できませんでした。');
           updated = updated.copyWith(
             place: result.drinkingPlace.displayName,
             drinkingPlace: result.drinkingPlace,
@@ -1963,7 +1963,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         ),
       ],
       const Text(
-        '飲んだ場所',
+        '飲んだ場所・買った場所',
         style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
       ),
       const SizedBox(height: 8),

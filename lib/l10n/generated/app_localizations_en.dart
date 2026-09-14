@@ -1045,7 +1045,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String consumedAt(String place) {
-    return 'Where you had it: $place';
+    return 'Where you drank or bought it: $place';
   }
 
   @override
@@ -1099,7 +1099,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Record your impressions of the flavor and aroma';
 
   @override
-  String get placeConsumed => 'Shop carrying this sake';
+  String get placeConsumed => 'Where you drank or bought it';
 
   @override
   String registeredShop(String shop) {

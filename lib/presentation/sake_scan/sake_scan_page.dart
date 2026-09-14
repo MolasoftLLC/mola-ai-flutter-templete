@@ -7,6 +7,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/sake/master.dart' as sake_master;
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
@@ -18,6 +19,7 @@ import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
 import '../my_page/saved_sake_detail_page.dart';
+import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
 
@@ -53,6 +55,19 @@ class SakeScanPage extends StatefulWidget {
 
 class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
+  static const _recordTasteAxes = <(String, String)>[
+    ('fruity', 'フルーティ'),
+    ('sweetness', '甘み'),
+    ('acidity', '酸味'),
+    ('umami', 'コク'),
+    ('kire', 'キレ'),
+    ('spiciness', '辛さ'),
+  ];
+
+  static Map<String, double> _defaultRecordTasteRatings() => {
+    for (final axis in _recordTasteAxes) axis.$1: 3,
+  };
+
   CameraController? _cameraController;
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
@@ -64,12 +79,22 @@ class _SakeScanPageState extends State<SakeScanPage>
   double _maxZoomLevel = 1;
   double _currentZoomLevel = 1;
   double _zoomLevelAtScaleStart = 1;
-  Sake? _lastResult;
   String? _promptedBackLabelSessionId;
+  late final TextEditingController _recordImpressionController;
+  DrinkingPlace? _recordPlace;
+  Set<String> _recordTags = <String>{};
+  Map<String, double> _recordTasteRatings = _defaultRecordTasteRatings();
+  bool _recordTasteExpanded = false;
+  bool _recordIsPublic = false;
+  bool _recordDirty = false;
+  bool _recordSaved = false;
+  bool _recordSaving = false;
+  String? _recordSaveError;
 
   @override
   void initState() {
     super.initState();
+    _recordImpressionController = TextEditingController();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_initializeCamera());
   }
@@ -78,6 +103,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focusRingTimer?.cancel();
+    _recordImpressionController.dispose();
     final controller = _cameraController;
     _cameraController = null;
     if (controller != null) unawaited(controller.dispose());
@@ -314,20 +340,143 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   void _closeScan(SakeScanState state) {
-    Navigator.of(
+    Navigator.of(context).maybePop<Sake>(state.savedSake ?? state.sake);
+  }
+
+  void _resetAnalysisRecordDraft() {
+    _recordImpressionController.clear();
+    setState(() {
+      _recordPlace = null;
+      _recordTags = <String>{};
+      _recordTasteRatings = _defaultRecordTasteRatings();
+      _recordTasteExpanded = false;
+      _recordIsPublic = false;
+      _recordDirty = false;
+      _recordSaved = false;
+      _recordSaving = false;
+      _recordSaveError = null;
+    });
+  }
+
+  void _startCandidateAnalysis() {
+    _resetAnalysisRecordDraft();
+    final notifier = context.read<SakeScanNotifier>();
+    notifier.setShareToTimeline(false);
+    unawaited(notifier.confirmCandidate());
+  }
+
+  Future<void> _openRecordPlacePicker() async {
+    FocusScope.of(context).unfocus();
+    final place = await PlacePickerSheet.show(
       context,
-    ).maybePop<Sake>(state.savedSake ?? state.sake ?? _lastResult);
+      initialPlace: _recordPlace?.displayName ?? '',
+    );
+    if (!mounted || place == null || place.displayName.trim().isEmpty) return;
+    setState(() {
+      _recordPlace = place;
+      _recordDirty = true;
+      _recordSaved = false;
+      _recordSaveError = null;
+    });
   }
 
-  void _startNextScan(SakeScanState state) {
-    _lastResult = state.savedSake ?? state.sake ?? _lastResult;
-    context.read<SakeScanNotifier>().startNextScan();
-    unawaited(HapticFeedback.selectionClick());
+  void _markRecordDirty() {
+    if (_recordDirty && !_recordSaved && _recordSaveError == null) return;
+    setState(() {
+      _recordDirty = true;
+      _recordSaved = false;
+      _recordSaveError = null;
+    });
   }
 
-  Future<void> _confirmAndOpenDetail() async {
-    final sake = await context.read<SakeScanNotifier>().confirmCandidate();
-    if (!mounted || sake == null) return;
+  Future<bool> _saveAnalysisRecord(SakeScanState state) async {
+    if (_recordSaving) return false;
+    final saved = state.savedSake;
+    if (saved == null || saved.savedId == null || saved.savedId!.isEmpty) {
+      setState(() => _recordSaveError = '記録を準備しています。少し待ってから保存してください。');
+      return false;
+    }
+    setState(() {
+      _recordSaving = true;
+      _recordSaveError = null;
+    });
+    try {
+      final placeName = _recordPlace?.displayName.trim();
+      final updated = saved.copyWith(
+        impression: _recordImpressionController.text.trim().isEmpty
+            ? null
+            : _recordImpressionController.text.trim(),
+        place: placeName == null || placeName.isEmpty ? null : placeName,
+        drinkingPlace: _recordPlace,
+        userTags: _recordTags.isEmpty ? null : _recordTags.toList(),
+        personalTasteRatings: _recordTasteRatings.map(
+          (key, value) => MapEntry(key, value.round()),
+        ),
+        isPublic: _recordIsPublic,
+      );
+      await context.read<SavedSakeNotifier>().updateSavedSake(updated);
+      if (!mounted) return false;
+      context.read<SakeScanNotifier>().updateSavedRecord(updated);
+      setState(() {
+        _recordDirty = false;
+        _recordSaved = true;
+      });
+      return true;
+    } catch (_) {
+      if (mounted) setState(() => _recordSaveError = '記録を保存できませんでした。');
+      return false;
+    } finally {
+      if (mounted) setState(() => _recordSaving = false);
+    }
+  }
+
+  Future<void> _openAnalyzedDetail(SakeScanState state) async {
+    if (_recordSaving) return;
+    FocusScope.of(context).unfocus();
+    if (_recordDirty) {
+      final saved = await _saveAnalysisRecord(state);
+      if (!saved || !mounted) return;
+    }
+    var currentState = context.read<SakeScanNotifier>().currentState;
+    var sake = currentState.savedSake ?? currentState.sake;
+    if (sake == null) return;
+    final savedId = sake.savedId;
+    final place = _recordPlace;
+    final user = context.read<AuthRepository>().currentUser;
+    if (savedId != null && savedId.isNotEmpty && user != null && _recordSaved) {
+      setState(() => _recordSaving = true);
+      try {
+        final savedNotifier = context.read<SavedSakeNotifier>();
+        final latest = savedNotifier.savedSakes.firstWhere(
+          (item) => item.savedId == savedId,
+          orElse: () => sake!,
+        );
+        final synced = latest.syncStatus == SavedSakeSyncStatus.serverSynced
+            ? latest
+            : await savedNotifier.syncSavedSakeToServer(savedId, force: true);
+        if (synced != null && place?.providerPlaceId != null && mounted) {
+          final result = await context.read<PlaceMapRepository>().savePlace(
+            savedId: savedId,
+            place: place!,
+          );
+          if (result != null && mounted) {
+            final withPlace = synced.copyWith(
+              place: result.drinkingPlace.displayName,
+              drinkingPlace: result.drinkingPlace,
+            );
+            await savedNotifier.updateSavedSake(withPlace);
+            if (!mounted) return;
+            context.read<SakeScanNotifier>().updateSavedRecord(withPlace);
+          }
+        }
+      } finally {
+        if (mounted) setState(() => _recordSaving = false);
+      }
+      if (!mounted) return;
+      currentState = context.read<SakeScanNotifier>().currentState;
+      sake = currentState.savedSake ?? currentState.sake;
+      if (sake == null) return;
+    }
     final detailPage = (sake.sakeId ?? 0) > 0
         ? SakeMasterDetailPage(
             venueSake: VenueSake(
@@ -364,6 +513,12 @@ class _SakeScanPageState extends State<SakeScanPage>
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SakeScanState>();
+    final bottomPanelKey = switch (state.status) {
+      SakeScanViewStatus.loadingOverview ||
+      SakeScanViewStatus.loadingDetails ||
+      SakeScanViewStatus.completed => const ValueKey<String>('analysis-record'),
+      _ => ValueKey<SakeScanViewStatus>(state.status),
+    };
     if (state.status == SakeScanViewStatus.backScanning &&
         state.backLabelReason != null &&
         state.scanSessionId != _promptedBackLabelSessionId) {
@@ -406,7 +561,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeIn,
                 child: KeyedSubtree(
-                  key: ValueKey<SakeScanViewStatus>(state.status),
+                  key: bottomPanelKey,
                   child: _buildBottomPanel(state),
                 ),
               ),
@@ -462,16 +617,12 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.searchingFront || SakeScanViewStatus.searchingBack =>
         _buildStatusPanel(context.l10n.searchingLabel),
       SakeScanViewStatus.confirmingCandidate => _buildCandidates(state),
-      SakeScanViewStatus.loadingOverview => _buildStatusPanel(
-        context.l10n.loadingSakeOverview,
-      ),
+      SakeScanViewStatus.loadingOverview => _buildAnalysisRecordPanel(state),
       SakeScanViewStatus.identifyingFallback => _buildStatusPanel(
         '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
       ),
-      SakeScanViewStatus.loadingDetails => _buildStatusPanel(
-        context.l10n.loadingSakeOverview,
-      ),
-      SakeScanViewStatus.completed => _buildResultPanel(state),
+      SakeScanViewStatus.loadingDetails => _buildAnalysisRecordPanel(state),
+      SakeScanViewStatus.completed => _buildAnalysisRecordPanel(state),
       SakeScanViewStatus.error => _buildError(state),
     };
   }
@@ -789,7 +940,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ? null
                   : () {
                       unawaited(HapticFeedback.selectionClick());
-                      unawaited(_confirmAndOpenDetail());
+                      _startCandidateAnalysis();
                     },
               icon: const Icon(Icons.check_circle_outline),
               label: Text(context.l10n.yesThisSake),
@@ -859,63 +1010,310 @@ class _SakeScanPageState extends State<SakeScanPage>
     );
   }
 
-  Widget _buildResultPanel(SakeScanState state) {
-    final sake = state.savedSake ?? state.sake;
-    return _BottomCard(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.verified, color: Color(0xFF1D3567)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  context.l10n.scanCompleted,
-                  style: const TextStyle(
-                    color: Color(0xFF1D3567),
-                    fontWeight: FontWeight.bold,
+  Widget _buildAnalysisRecordPanel(SakeScanState state) {
+    final analysisCompleted = state.status == SakeScanViewStatus.completed;
+    final recordReady = state.savedSake != null;
+    final canSave = recordReady && _recordDirty && !_recordSaving;
+    final actionLabel = _recordSaving
+        ? '保存中…'
+        : analysisCompleted
+        ? (_recordDirty ? '記録を保存して詳細へ' : '詳細を見る')
+        : _recordSaved && !_recordDirty
+        ? '保存済み'
+        : recordReady
+        ? (_recordSaved ? '記録を更新' : '記録を保存')
+        : '記録を準備中…';
+
+    return FractionallySizedBox(
+      widthFactor: 1,
+      heightFactor: 0.86,
+      child: _BottomCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '待っている間に、あなたの記録を残せます',
+              style: TextStyle(
+                color: Color(0xFF1D3567),
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '場所や感想、味わいは後からでも追加・変更できます。',
+              style: TextStyle(color: Color(0xFF697386), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: Scrollbar(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.only(right: 4, bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        '飲んだ場所・買った場所',
+                        style: TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Material(
+                        color: const Color(0xFFF7F8FA),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: _openRecordPlacePicker,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.near_me_outlined,
+                                  color: Color(0xFFFF7A1A),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _recordPlace?.displayName
+                                                .trim()
+                                                .isNotEmpty ==
+                                            true
+                                        ? _recordPlace!.displayName.trim()
+                                        : '現在地・店舗名から選ぶ',
+                                    style: TextStyle(
+                                      color: _recordPlace == null
+                                          ? const Color(0xFF697386)
+                                          : const Color(0xFF1D3567),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: Color(0xFF697386),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'タグ',
+                        style: TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: sake_master.Sake.userMemoTags.map((tag) {
+                          final selected = _recordTags.contains(tag);
+                          return FilterChip(
+                            label: Text(tag),
+                            selected: selected,
+                            selectedColor: const Color(0xFFFFEDD8),
+                            checkmarkColor: const Color(0xFFFF7A1A),
+                            labelStyle: const TextStyle(
+                              color: Color(0xFF1D3567),
+                              fontWeight: FontWeight.w600,
+                            ),
+                            onSelected: (_) {
+                              setState(() {
+                                if (selected) {
+                                  _recordTags.remove(tag);
+                                } else {
+                                  _recordTags.add(tag);
+                                }
+                                _recordDirty = true;
+                                _recordSaved = false;
+                                _recordSaveError = null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'ひとこと・感想',
+                        style: TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _recordImpressionController,
+                        maxLength: 200,
+                        maxLines: 4,
+                        onChanged: (_) => _markRecordDirty(),
+                        style: const TextStyle(color: Color(0xFF1D3567)),
+                        decoration: InputDecoration(
+                          hintText: '香りや味、食事との相性を残す',
+                          hintStyle: const TextStyle(color: Color(0xFF8B96A6)),
+                          filled: true,
+                          fillColor: const Color(0xFFF7F8FA),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Material(
+                        color: const Color(0xFFF7F8FA),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: () => setState(
+                            () => _recordTasteExpanded = !_recordTasteExpanded,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    '感じた味わいも記録する',
+                                    style: TextStyle(
+                                      color: Color(0xFF1D3567),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  _recordTasteExpanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  color: const Color(0xFF697386),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_recordTasteExpanded) ...[
+                        const SizedBox(height: 8),
+                        for (final axis in _recordTasteAxes)
+                          _SakeScanTasteSlider(
+                            label: axis.$2,
+                            value: _recordTasteRatings[axis.$1] ?? 3,
+                            onChanged: (value) {
+                              setState(() {
+                                _recordTasteRatings[axis.$1] = value;
+                                _recordDirty = true;
+                                _recordSaved = false;
+                                _recordSaveError = null;
+                              });
+                            },
+                          ),
+                      ],
+                      const SizedBox(height: 10),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'タイムラインに表示',
+                          style: TextStyle(
+                            color: Color(0xFF1D3567),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'この記録をみんなのタイムラインに表示します。',
+                          style: TextStyle(
+                            color: Color(0xFF697386),
+                            fontSize: 12,
+                          ),
+                        ),
+                        value: _recordIsPublic,
+                        activeThumbColor: const Color(0xFFFF7A1A),
+                        onChanged: (value) {
+                          context.read<SakeScanNotifier>().setShareToTimeline(
+                            value,
+                          );
+                          setState(() {
+                            _recordIsPublic = value;
+                            _recordDirty = true;
+                            _recordSaved = false;
+                            _recordSaveError = null;
+                          });
+                        },
+                      ),
+                      if (_recordSaveError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _recordSaveError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-          if (sake != null) ...[
-            const SizedBox(height: 14),
-            _CompactSakeSummary(sake: sake),
-            const SizedBox(height: 14),
+            ),
+            const Divider(height: 20),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop<Sake>(sake),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1D3567),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(context.l10n.finishScan),
+                if (analysisCompleted)
+                  const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF2E7D32),
+                    size: 20,
+                  )
+                else
+                  const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: state.savedSake == null
-                        ? null
-                        : () => _startNextScan(state),
-                    icon: const Icon(Icons.camera_alt_outlined),
-                    label: Text(context.l10n.scanNextBottle),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD54F),
-                      foregroundColor: const Color(0xFF1D3567),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  analysisCompleted ? '解析完了' : 'AI解析中',
+                  style: const TextStyle(
+                    color: Color(0xFF1D3567),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            FilledButton(
+              onPressed: _recordSaving
+                  ? null
+                  : analysisCompleted
+                  ? () => unawaited(_openAnalyzedDetail(state))
+                  : canSave
+                  ? () => unawaited(_saveAnalysisRecord(state))
+                  : null,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: const Color(0xFFFFD54F),
+                foregroundColor: const Color(0xFF1D3567),
+                disabledBackgroundColor: const Color(0xFFE7EAF0),
+                disabledForegroundColor: const Color(0xFF697386),
+              ),
+              child: Text(
+                actionLabel,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1100,6 +1498,58 @@ class _CameraCloseUpButton extends StatelessWidget {
   }
 }
 
+class _SakeScanTasteSlider extends StatelessWidget {
+  const _SakeScanTasteSlider({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 72,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF1D3567),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Slider(
+            value: value,
+            min: 1,
+            max: 5,
+            divisions: 4,
+            activeColor: const Color(0xFFFF7A1A),
+            label: value.round().toString(),
+            onChanged: onChanged,
+          ),
+        ),
+        SizedBox(
+          width: 20,
+          child: Text(
+            value.round().toString(),
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              color: Color(0xFF1D3567),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BottomCard extends StatelessWidget {
   const _BottomCard({required this.child});
 
@@ -1153,84 +1603,4 @@ class _ScanCandidateThumbnail extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _CompactSakeSummary extends StatelessWidget {
-  const _CompactSakeSummary({required this.sake});
-
-  final Sake sake;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _SakeThumbnail(
-          imageUrl: sake.thumbnailImageUrl ?? sake.primaryImageUrl,
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                sake.name ?? context.l10n.unknownSake,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF1D3567),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (sake.type?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                Text(sake.type!),
-              ],
-              if (sake.brewery?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 4),
-                Text(
-                  sake.brewery!,
-                  style: const TextStyle(color: Colors.black54),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SakeThumbnail extends StatelessWidget {
-  const _SakeThumbnail({this.imageUrl});
-
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: ColoredBox(
-        color: const Color(0xFFF2F4F8),
-        child: SizedBox(
-          width: 76,
-          height: 88,
-          child: imageUrl?.isNotEmpty ?? false
-              ? Image.network(
-                  imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.wine_bar_outlined,
-                    color: Color(0xFF1D3567),
-                    size: 34,
-                  ),
-                )
-              : const Icon(
-                  Icons.wine_bar_outlined,
-                  color: Color(0xFF1D3567),
-                  size: 34,
-                ),
-        ),
-      ),
-    );
-  }
 }
