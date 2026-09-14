@@ -719,8 +719,6 @@ class _Details extends StatelessWidget {
     final breweryName =
         overview?.brewery.name ?? sake?.brewery ?? fallback.brewery;
     final description = sake?.description;
-    final recommendationScore =
-        sake?.recommendationScore ?? personalRecord?.recommendationScore;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
@@ -757,10 +755,6 @@ class _Details extends StatelessWidget {
                     _Tags(
                       values: master.styles.map((style) => style.name).toList(),
                     ),
-                  ],
-                  if (recommendationScore != null) ...[
-                    const SizedBox(height: 14),
-                    _RecommendationBadge(score: recommendationScore),
                   ],
                 ],
               ),
@@ -1666,50 +1660,6 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
   );
 }
 
-class _RecommendationBadge extends StatelessWidget {
-  const _RecommendationBadge({required this.score});
-
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    final isRecommended = score >= 6;
-    final label = score >= 8
-        ? 'かなりおすすめ'
-        : isRecommended
-        ? 'おすすめのお酒'
-        : 'おすすめ度 $score / 10';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isRecommended
-            ? const Color(0xFFFFF3E7)
-            : const Color(0xFFF3F6F9),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isRecommended ? Icons.recommend_rounded : Icons.star_outline,
-            color: isRecommended ? _orange : const Color(0xFF647184),
-            size: 18,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: isRecommended ? _navy : const Color(0xFF536174),
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title});
   final String title;
@@ -1754,6 +1704,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   late final TextEditingController _placeController;
   late Set<String> _tags;
   late Map<String, double> _personalTasteRatings;
+  late bool _isPublic;
   DrinkingPlace? _selectedPlace;
   bool _isSaving = false;
   String? _saveError;
@@ -1771,6 +1722,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     );
     _selectedPlace = widget.sake.drinkingPlace;
     _tags = {...(widget.sake.userTags ?? const <String>[])};
+    _isPublic = widget.sake.isPublic;
     final savedRatings = widget.sake.personalTasteRatings;
     _personalTasteRatings = {
       for (final axis in _perceivedTasteAxes)
@@ -1798,6 +1750,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         impression: _impressionController.text.trim(),
         place: place.isEmpty ? null : place,
         drinkingPlace: _selectedPlace,
+        isPublic: _isPublic,
         userTags: _tags.toList(growable: false),
         personalTasteRatings: _personalTasteRatings.map(
           (key, value) => MapEntry(key, value.round()),
@@ -1872,7 +1825,10 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       isPublic: isPublic,
     );
     if (!mounted) return;
-    setState(() => _isVisibilityUpdating = false);
+    setState(() {
+      _isVisibilityUpdating = false;
+      if (success) _isPublic = isPublic;
+    });
     if (!success) {
       SnackBarUtils.showWarningSnackBar(
         context,
@@ -2126,9 +2082,9 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             ),
           ),
           Switch.adaptive(
-            value: widget.sake.isPublic,
+            value: _isPublic,
             onChanged: _isVisibilityUpdating ? null : _updateTimelineVisibility,
-            activeColor: _orange,
+            activeThumbColor: _orange,
           ),
         ],
       ),

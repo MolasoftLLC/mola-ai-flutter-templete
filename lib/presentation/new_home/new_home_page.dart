@@ -7,18 +7,24 @@ import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/sake_scan_repository.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
 import '../my_page/my_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../sake_scan/sake_scan_page.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import '../timeline/envy_result.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'new_home_page_notifier.dart';
+import 'recent_sake_list_page.dart';
 
 const _brandColor = Color(0xFF143861);
 const _scanColor = Color(0xFFFF7A1A);
@@ -88,7 +94,14 @@ class NewHomePage extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.only(top: 34, bottom: 34),
                 children: [
-                  _SectionTitle(title: context.l10n.newHomeRecentSakes),
+                  _SectionTitle(
+                    title: context.l10n.newHomeRecentSakes,
+                    onMoreTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RecentSakeListPage(),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   if (savedSakes.isEmpty)
                     _EmptySection(message: context.l10n.savedSakeEmpty)
@@ -143,7 +156,11 @@ class NewHomePage extends StatelessWidget {
                       },
                     ),
                   const SizedBox(height: 28),
-                  _SectionTitle(title: context.l10n.newHomeTimeline),
+                  _SectionTitle(
+                    title: context.l10n.newHomeTimeline,
+                    onMoreTap: () =>
+                        context.read<AppPageNotifier>().onTabTapped(3),
+                  ),
                   const SizedBox(height: 10),
                   if (isTimelineLoading && timelineSakes.isEmpty)
                     const SizedBox(
@@ -373,9 +390,10 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+  const _SectionTitle({required this.title, this.onMoreTap});
 
   final String title;
+  final VoidCallback? onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -383,16 +401,32 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(width: 4, height: 14, color: const Color(0xFF494949)),
-          const SizedBox(width: 7),
-          Text(
-            title,
-            style: const TextStyle(
-              color: _bodyTextColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+          Container(width: 5, height: 17, color: const Color(0xFF494949)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: _bodyTextColor,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
+          if (onMoreTap != null)
+            TextButton(
+              onPressed: onMoreTap,
+              style: TextButton.styleFrom(
+                foregroundColor: _brandColor,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                minimumSize: const Size(60, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'もっとみる',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ),
         ],
       ),
     );
@@ -471,6 +505,12 @@ class _SakeCard extends StatelessWidget {
                   height: 203,
                   child: _SakeImage(sake: sake),
                 ),
+                if (sake.sakeId != null)
+                  Positioned(
+                    left: 6,
+                    top: 6,
+                    child: _SakeMatchBadge(sakeId: sake.sakeId!),
+                  ),
                 Positioned(right: 2, bottom: 4, child: action),
               ],
             ),
@@ -555,6 +595,94 @@ class _SakeImage extends StatelessWidget {
     );
   }
 }
+
+class _SakeMatchBadge extends StatefulWidget {
+  const _SakeMatchBadge({required this.sakeId});
+
+  final int sakeId;
+
+  @override
+  State<_SakeMatchBadge> createState() => _SakeMatchBadgeState();
+}
+
+class _SakeMatchBadgeState extends State<_SakeMatchBadge> {
+  Future<SakeOverview>? _overviewFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _overviewFuture ??= context.read<SakeScanRepository>().fetchOverview(
+      widget.sakeId,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _SakeMatchBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sakeId != widget.sakeId) {
+      _overviewFuture = context.read<SakeScanRepository>().fetchOverview(
+        widget.sakeId,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
+    if (preference == null) return const SizedBox.shrink();
+    return FutureBuilder<SakeOverview>(
+      future: _overviewFuture,
+      builder: (context, snapshot) {
+        final profile = snapshot.data?.master.tasteProfile;
+        if (profile == null) return const SizedBox.shrink();
+        final percent = _matchPercent(profile, preference);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+            ),
+            borderRadius: BorderRadius.circular(99),
+            boxShadow: const [
+              BoxShadow(color: Color(0x33000000), blurRadius: 5),
+            ],
+          ),
+          child: Text(
+            '$percent%',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              height: 1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+int _matchPercent(
+  SakeTasteProfileDetails profile,
+  TastePreferenceProfile preference,
+) => calculateTastePreferenceMatchPercent(
+  sakeValues: [
+    profile.fruity,
+    profile.sweetness,
+    profile.acidity,
+    profile.body ?? profile.umami,
+    profile.kire,
+    profile.dryness,
+  ],
+  preferenceValues: [
+    preference.fruity,
+    preference.sweetness,
+    preference.acidity,
+    preference.umami,
+    preference.kire,
+    preference.spiciness,
+  ],
+);
 
 /// 一覧カードはユーザー写真、マスターのサムネイル、詳細画像の順で表示する。
 String? preferredSakeCardImagePath(Sake sake) {
