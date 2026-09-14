@@ -19,7 +19,7 @@ import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
 import '../my_page/my_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
-import '../sake_scan/sake_scan_page.dart';
+import '../sake_scan/sake_scan_entry.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import '../timeline/envy_result.dart';
 import '../timeline/timeline_page_notifier.dart';
@@ -243,24 +243,7 @@ class NewHomePage extends StatelessWidget {
 
 /// ヘッダーと下部ナビから共通利用する高速ラベルスキャン導線。
 Future<void> openNewHomeScanner(BuildContext context) async {
-  final result = await Navigator.of(context).push<Object>(
-    PageRouteBuilder<Object>(
-      pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
-      transitionsBuilder: (_, animation, __, child) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-            .animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-                reverseCurve: Curves.easeInCubic,
-              ),
-            ),
-        child: child,
-      ),
-      transitionDuration: const Duration(milliseconds: 300),
-      reverseTransitionDuration: const Duration(milliseconds: 240),
-    ),
-  );
+  final result = await openSakeLabelScanner(context);
   if (result == null || !context.mounted) return;
   if (result is String && result.trim().isNotEmpty) {
     await Navigator.of(context).push(

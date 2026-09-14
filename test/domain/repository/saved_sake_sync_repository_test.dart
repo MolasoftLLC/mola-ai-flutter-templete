@@ -51,4 +51,34 @@ void main() {
     expect(sentSake?['personalTasteRatings'], {'sweetness': 4, 'acidity': 3});
     expect(sentSake?['community'], {'envyCount': 0});
   });
+
+  test('ラベル撮影の初回同期には同意バージョンを付け、タイムラインは非公開にする', () async {
+    Map<String, dynamic>? sentBody;
+    final api = ApiClient.create();
+    final client = ChopperClient(
+      baseUrl: Uri.parse('https://example.com'),
+      services: [api],
+      converter: const JsonConverter(),
+      client: MockClient((request) async {
+        sentBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response('', 200);
+      }),
+    );
+    addTearDown(client.dispose);
+
+    final result = await SavedSakeSyncRepository(api).syncSavedSake(
+      stage: SavedSakeSyncStage.analysisStart,
+      userId: 'test-user',
+      sake: const Sake(savedId: 'saved_scan', sakeId: 50, name: '来福'),
+      isPublic: false,
+      publicLabelContribution: true,
+    );
+
+    expect(result, isTrue);
+    expect(sentBody?['isPublic'], isFalse);
+    expect(sentBody?['sakeId'], 50);
+    expect(sentBody?['publicLabelContribution'], <String, dynamic>{
+      'consentVersion': 'vision-product-search-v1',
+    });
+  });
 }

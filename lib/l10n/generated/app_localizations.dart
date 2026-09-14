@@ -1094,30 +1094,6 @@ abstract class AppLocalizations {
   /// **'うらやましい日本酒は気軽に👍ボタンしてあげよう。'**
   String get timelineIntroEnvyHint;
 
-  /// No description provided for @timelinePublishingTitle.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインへの掲載について'**
-  String get timelinePublishingTitle;
-
-  /// No description provided for @timelinePublishingDescription.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。'**
-  String get timelinePublishingDescription;
-
-  /// No description provided for @continueAnalysis.
-  ///
-  /// In ja, this message translates to:
-  /// **'このまま解析'**
-  String get continueAnalysis;
-
-  /// No description provided for @removeCheck.
-  ///
-  /// In ja, this message translates to:
-  /// **'チェックを外す'**
-  String get removeCheck;
-
   /// No description provided for @loginToToggleAutoPost.
   ///
   /// In ja, this message translates to:
@@ -1682,18 +1658,6 @@ abstract class AppLocalizations {
   /// **'カメラで撮影'**
   String get takePhoto;
 
-  /// No description provided for @shareToTimeline.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインにも表示する'**
-  String get shareToTimeline;
-
-  /// No description provided for @onlyFirstImageShared.
-  ///
-  /// In ja, this message translates to:
-  /// **'画像は1枚目だけ共有されます。'**
-  String get onlyFirstImageShared;
-
   /// No description provided for @autoPostToX.
   ///
   /// In ja, this message translates to:
@@ -2029,30 +1993,6 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'名前を手動で検索可能です'**
   String get manualNameSearchHint;
-
-  /// No description provided for @syncToChangeVisibility.
-  ///
-  /// In ja, this message translates to:
-  /// **'サーバーに同期するとタイムライン公開を切り替えられます。'**
-  String get syncToChangeVisibility;
-
-  /// No description provided for @loginToChangeVisibility.
-  ///
-  /// In ja, this message translates to:
-  /// **'ログインすると公開設定を変更できます。'**
-  String get loginToChangeVisibility;
-
-  /// No description provided for @visibilityChangeHint.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインへの公開／非公開をいつでも切り替えられます。'**
-  String get visibilityChangeHint;
-
-  /// No description provided for @showOnTimeline.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインに表示する'**
-  String get showOnTimeline;
 
   /// No description provided for @reanalyze.
   ///
@@ -2390,29 +2330,11 @@ abstract class AppLocalizations {
   /// **'保存IDが未設定のため再解析は利用できません'**
   String get missingSavedIdReanalyze;
 
-  /// No description provided for @syncBeforeVisibility.
-  ///
-  /// In ja, this message translates to:
-  /// **'サーバーに同期するとタイムライン公開を設定できます'**
-  String get syncBeforeVisibility;
-
   /// No description provided for @errorVisibilityUpdate.
   ///
   /// In ja, this message translates to:
   /// **'公開設定の更新に失敗しました。通信環境をご確認ください。'**
   String get errorVisibilityUpdate;
-
-  /// No description provided for @publishedToTimeline.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインに公開しました'**
-  String get publishedToTimeline;
-
-  /// No description provided for @hiddenFromTimeline.
-  ///
-  /// In ja, this message translates to:
-  /// **'タイムラインでの表示をオフにしました'**
-  String get hiddenFromTimeline;
 
   /// No description provided for @missingSavedIdServerSave.
   ///

@@ -21,8 +21,10 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/repository/sake_community_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
 
@@ -220,6 +222,172 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     }
   }
 
+  Future<void> _handleCommunityImage(SakeCommunityImage image) async {
+    if (!image.isOwner && context.read<AuthRepository>().currentUser == null) {
+      await GuestLimitDialog.show(
+        context,
+        title: '報告にはログインが必要です',
+        message: '同じ画像への重複報告を防ぐため、ログインしてください。',
+      );
+      return;
+    }
+    final repository = context.read<SakeCommunityRepository>();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                image.isOwner ? Icons.delete_outline : Icons.flag_outlined,
+              ),
+              title: Text(image.isOwner ? 'この画像を削除' : 'この画像を報告'),
+              onTap: () => Navigator.pop(
+                sheetContext,
+                image.isOwner ? 'delete' : 'report',
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('キャンセル'),
+              onTap: () => Navigator.pop(sheetContext),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(action == 'delete' ? '画像を削除しますか？' : '画像を報告しますか？'),
+        content: Text(
+          action == 'delete'
+              ? '詳細画面とラベル照合用の参照画像から削除されます。'
+              : '不適切な画像として運営に報告します。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(action == 'delete' ? '削除' : '報告'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      if (action == 'delete') {
+        await repository.deleteImage(image.imageId);
+      } else {
+        await repository.reportImage(image.imageId, reason: '不適切な画像');
+      }
+      await _reload();
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(
+          context,
+          message: action == 'delete' ? '画像を削除しました。' : '画像を報告しました。',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(context, message: '操作を完了できませんでした。');
+      }
+    }
+  }
+
+  Future<void> _openReviewEditor(
+    Sake sake,
+    SakeCommunityReview? current,
+  ) async {
+    if (context.read<AuthRepository>().currentUser == null) {
+      await GuestLimitDialog.show(
+        context,
+        title: '評価にはログインが必要です',
+        message: '表示名とアイコン付きで、みんなの評価に投稿されます。',
+      );
+      return;
+    }
+    final draft = await showModalBottomSheet<_CommunityReviewDraft>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _CommunityReviewEditor(initial: current),
+    );
+    final sakeId = sake.sakeId;
+    if (draft == null || sakeId == null || !mounted) return;
+    try {
+      if (draft.delete) {
+        await context.read<SakeCommunityRepository>().deleteReview(sakeId);
+      } else {
+        await context.read<SakeCommunityRepository>().saveReview(
+          sakeId: sakeId,
+          overallRating: draft.overallRating,
+          tasteRatings: draft.tasteRatings,
+          comment: draft.comment,
+          savedId: _findSavedSake(_savedSakeNotifier, sake)?.savedId,
+        );
+      }
+      await _reload();
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(
+          context,
+          message: draft.delete ? '公開評価を削除しました。' : 'みんなの評価に投稿しました。',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(context, message: '評価を保存できませんでした。');
+      }
+    }
+  }
+
+  Future<void> _reportCommunityReview(int reviewId) async {
+    if (context.read<AuthRepository>().currentUser == null) {
+      await GuestLimitDialog.show(
+        context,
+        title: '報告にはログインが必要です',
+        message: '同じ評価への重複報告を防ぐため、ログインしてください。',
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('この評価を報告しますか？'),
+        content: const Text('不適切な投稿として運営に報告します。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('報告'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await context.read<SakeCommunityRepository>().reportReview(
+        reviewId,
+        reason: '不適切な投稿',
+      );
+      await _reload();
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(context, message: '評価を報告しました。');
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(context, message: '評価を報告できませんでした。');
+      }
+    }
+  }
+
   Future<void> _selectHeaderPlace() async {
     final notifier = _savedSakeNotifier;
     final overviewSake = _headerOverview?.sake;
@@ -309,11 +477,18 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               preference.spiciness,
             ],
           );
+    final community =
+        _headerOverview?.community ?? const SakeCommunitySummary();
     final headerImagePaths = detailImagePaths(
       personalRecord: record,
       overviewSake: overviewSake,
       fallback: widget.venueSake,
     );
+    for (final image in community.images) {
+      if (!headerImagePaths.contains(image.imageUrl)) {
+        headerImagePaths.add(image.imageUrl);
+      }
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: isPendingAiCandidate
@@ -324,89 +499,102 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         onTap: FocusManager.instance.primaryFocus?.unfocus,
         child: FutureBuilder<SakeOverview>(
           future: _future,
-          builder: (context, snapshot) => RefreshIndicator(
-            onRefresh: _reload,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  stretch: true,
-                  collapsedHeight: 98,
-                  expandedHeight: 370,
-                  backgroundColor: _navy,
-                  elevation: 0,
-                  iconTheme: const IconThemeData(color: Colors.white),
-                  actions: [
-                    if (!isPendingAiCandidate) ...[
-                      _MasterSaveButton(
-                        sake: detailSake,
-                        notifier: _savedSakeNotifier,
-                      ),
-                      _MasterFavoriteButton(
-                        sake: detailSake,
-                        notifier: _favoriteNotifier,
-                      ),
-                    ],
-                    if (_showCompactHeader)
-                      IconButton(
-                        tooltip: '飲んだ場所・買った場所を選ぶ',
-                        icon: const Icon(Icons.location_on_outlined),
-                        onPressed: _selectHeaderPlace,
-                      ),
-                  ],
-                  flexibleSpace: _CollapsingSakeHero(
-                    name: displayName,
-                    imagePaths: headerImagePaths,
-                    matchPercent: matchPercent,
-                    isProfileEnrichmentPending: isProfileEnrichmentPending,
-                    isFetchingDetails: _isFetchingDetails,
-                  ),
-                ),
-                const SliverToBoxAdapter(child: _ShopPriceTitle()),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _ShopPriceHeaderDelegate(
-                    yahooPrice: snapshot.data?.master.imagePrice,
-                    yahooCurrency: snapshot.data?.master.imageCurrency,
-                    yahooProductUrl: snapshot.data?.master.imageProductUrl,
-                    rakutenOffer:
-                        (_headerOverview ?? snapshot.data)?.master.rakutenOffer,
-                  ),
-                ),
-                if (snapshot.hasError)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      child: Row(
-                        children: [
-                          const Expanded(child: Text('詳細情報を取得できませんでした。')),
-                          TextButton(
-                            onPressed: _reload,
-                            child: const Text('再試行'),
+          builder: (context, snapshot) => Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: _reload,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
+                    SliverAppBar(
+                      pinned: true,
+                      stretch: true,
+                      collapsedHeight: 98,
+                      expandedHeight: 370,
+                      backgroundColor: _navy,
+                      elevation: 0,
+                      iconTheme: const IconThemeData(color: Colors.white),
+                      actions: [
+                        if (!isPendingAiCandidate) ...[
+                          _MasterSaveButton(
+                            sake: detailSake,
+                            notifier: _savedSakeNotifier,
+                          ),
+                          _MasterFavoriteButton(
+                            sake: detailSake,
+                            notifier: _favoriteNotifier,
                           ),
                         ],
+                        if (_showCompactHeader)
+                          IconButton(
+                            tooltip: '飲んだ場所・買った場所を選ぶ',
+                            icon: const Icon(Icons.location_on_outlined),
+                            onPressed: _selectHeaderPlace,
+                          ),
+                      ],
+                      flexibleSpace: _CollapsingSakeHero(
+                        name: displayName,
+                        imagePaths: headerImagePaths,
+                        matchPercent: matchPercent,
+                        community: community,
+                        onImageAction: _handleCommunityImage,
+                        isProfileEnrichmentPending: isProfileEnrichmentPending,
+                        isFetchingDetails: _isFetchingDetails,
                       ),
                     ),
-                  ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-                  sliver: SliverToBoxAdapter(
-                    child: _Details(
-                      overview: _headerOverview ?? snapshot.data,
-                      fallback: widget.venueSake,
-                      savedSakeNotifier: _savedSakeNotifier,
-                      preferredName: displayName,
+                    if (snapshot.hasError)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          child: const Text('詳細情報を取得できませんでした。'),
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: _ShopPriceTitle()),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _ShopPriceHeaderDelegate(
+                        yahooPrice: snapshot.data?.master.imagePrice,
+                        yahooCurrency: snapshot.data?.master.imageCurrency,
+                        yahooProductUrl: snapshot.data?.master.imageProductUrl,
+                        rakutenOffer: (_headerOverview ?? snapshot.data)
+                            ?.master
+                            .rakutenOffer,
+                      ),
                     ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                      sliver: SliverToBoxAdapter(
+                        child: _Details(
+                          overview: _headerOverview ?? snapshot.data,
+                          fallback: widget.venueSake,
+                          savedSakeNotifier: _savedSakeNotifier,
+                          preferredName: displayName,
+                          onReview: (current) =>
+                              _openReviewEditor(detailSake, current),
+                          onReportReview: _reportCommunityReview,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (snapshot.hasError)
+                Positioned(
+                  right: 20,
+                  bottom: 20,
+                  child: FilledButton.icon(
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('再試行'),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -419,6 +607,8 @@ class _CollapsingSakeHero extends StatefulWidget {
     required this.name,
     required this.imagePaths,
     required this.matchPercent,
+    required this.community,
+    required this.onImageAction,
     required this.isProfileEnrichmentPending,
     required this.isFetchingDetails,
   });
@@ -426,6 +616,8 @@ class _CollapsingSakeHero extends StatefulWidget {
   final String? name;
   final List<String> imagePaths;
   final int? matchPercent;
+  final SakeCommunitySummary community;
+  final ValueChanged<SakeCommunityImage> onImageAction;
   final bool isProfileEnrichmentPending;
   final bool isFetchingDetails;
 
@@ -471,6 +663,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
         topInset +
             kToolbarHeight +
             (widget.matchPercent == null &&
+                    widget.community.averageRating == null &&
                     !widget.isProfileEnrichmentPending &&
                     !widget.isFetchingDetails
                 ? 18
@@ -531,6 +724,46 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
                         ),
                       ),
                     ),
+                  if (expandedProgress > .5 && widget.imagePaths.isNotEmpty)
+                    Builder(
+                      builder: (context) {
+                        final currentPath =
+                            widget.imagePaths[_currentPage.clamp(
+                              0,
+                              widget.imagePaths.length - 1,
+                            )];
+                        SakeCommunityImage? image;
+                        for (final candidate in widget.community.images) {
+                          if (candidate.imageUrl == currentPath) {
+                            image = candidate;
+                            break;
+                          }
+                        }
+                        if (image == null) return const SizedBox.shrink();
+                        final selectedImage = image;
+                        return Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              tooltip: selectedImage.isOwner
+                                  ? '画像を削除'
+                                  : '画像を報告',
+                              onPressed: () =>
+                                  widget.onImageAction(selectedImage),
+                              icon: Icon(
+                                selectedImage.isOwner
+                                    ? Icons.delete_outline
+                                    : Icons.flag_outlined,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -562,14 +795,20 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
                 child: const _ProfileAnalysisProgress(label: '詳細情報を取得中'),
               ),
             ),
-          if (!widget.isFetchingDetails && widget.matchPercent != null)
+          if (!widget.isFetchingDetails &&
+              (widget.matchPercent != null ||
+                  widget.community.averageRating != null))
             Positioned(
               left: 20,
               right: 20,
               top: topInset + 50,
               child: Opacity(
                 opacity: expandedProgress,
-                child: _PreferenceMatchSection(percent: widget.matchPercent!),
+                child: _SakeScoreSummary(
+                  matchPercent: widget.matchPercent,
+                  averageRating: widget.community.averageRating,
+                  reviewCount: widget.community.reviewCount,
+                ),
               ),
             ),
           if (!widget.isFetchingDetails && widget.isProfileEnrichmentPending)
@@ -648,11 +887,15 @@ class _Details extends StatelessWidget {
     required this.fallback,
     required this.savedSakeNotifier,
     this.preferredName,
+    required this.onReview,
+    required this.onReportReview,
   });
   final SakeOverview? overview;
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
   final String? preferredName;
+  final ValueChanged<SakeCommunityReview?> onReview;
+  final ValueChanged<int> onReportReview;
 
   @override
   Widget build(BuildContext context) {
@@ -764,6 +1007,16 @@ class _Details extends StatelessWidget {
                 child: _PersonalRecordSection(
                   sake: detailSake,
                   notifier: savedSakeNotifier,
+                ),
+              ),
+            if ((detailSake.sakeId ?? 0) > 0)
+              _Section(
+                title: 'みんなの評価',
+                child: _CommunityReviewsSection(
+                  community:
+                      overview?.community ?? const SakeCommunitySummary(),
+                  onReview: onReview,
+                  onReportReview: onReportReview,
                 ),
               ),
             if (preferenceAxes == null && !isLoggedIn)
@@ -1217,18 +1470,6 @@ class _PersonalRecordSection extends StatelessWidget {
     final location = record.drinkingPlace?.displayName ?? record.place;
     final photoCount = (record.imagePaths ?? const <String>[]).length;
     final hasImpression = record.impression?.trim().isNotEmpty == true;
-    const tasteAxes = <(String, String)>[
-      ('fruity', 'フルーティ'),
-      ('sweetness', '甘み'),
-      ('acidity', '酸味'),
-      ('umami', 'コク'),
-      ('kire', 'キレ'),
-      ('spiciness', '辛さ'),
-    ];
-    final selectedTastes = tasteAxes
-        .map((axis) => (axis.$2, record.personalTasteRatings?[axis.$1]))
-        .where((taste) => taste.$2 != null && taste.$2 != 3)
-        .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1301,34 +1542,6 @@ class _PersonalRecordSection extends StatelessWidget {
                               fontSize: 12,
                               height: 1.35,
                             ),
-                          ),
-                        ],
-                        if (selectedTastes.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              for (final taste in selectedTastes)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF3E7),
-                                    borderRadius: BorderRadius.circular(99),
-                                  ),
-                                  child: Text(
-                                    '${taste.$1} ${taste.$2}/5',
-                                    style: const TextStyle(
-                                      color: _navy,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                            ],
                           ),
                         ],
                       ],
@@ -1468,6 +1681,77 @@ int calculateTastePreferenceMatchPercent({
       sakeValues.length;
   final similarity = 1 - difference;
   return (30 + math.pow(similarity, 3.5) * 70).round().clamp(30, 100).toInt();
+}
+
+class _SakeScoreSummary extends StatelessWidget {
+  const _SakeScoreSummary({
+    required this.matchPercent,
+    required this.averageRating,
+    required this.reviewCount,
+  });
+
+  final int? matchPercent;
+  final double? averageRating;
+  final int reviewCount;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      if (matchPercent != null)
+        Expanded(child: _PreferenceMatchSection(percent: matchPercent!)),
+      if (matchPercent != null && averageRating != null)
+        const SizedBox(width: 8),
+      if (averageRating != null)
+        Expanded(
+          child: Semantics(
+            label: 'みんなの評価 ${averageRating!.toStringAsFixed(1)}、$reviewCount件',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'みんなの評価',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFFFC247),
+                        size: 22,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        averageRating!.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '($reviewCount件)',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
 }
 
 class _PreferenceMatchSection extends StatefulWidget {
@@ -1691,24 +1975,12 @@ class _InlineRecordEditor extends StatefulWidget {
 }
 
 class _InlineRecordEditorState extends State<_InlineRecordEditor> {
-  static const _perceivedTasteAxes = <(String, String)>[
-    ('fruity', 'フルーティ'),
-    ('sweetness', '甘み'),
-    ('acidity', '酸味'),
-    ('umami', 'コク'),
-    ('kire', 'キレ'),
-    ('spiciness', '辛さ'),
-  ];
-
   late final TextEditingController _impressionController;
   late final TextEditingController _placeController;
   late Set<String> _tags;
-  late Map<String, double> _personalTasteRatings;
-  late bool _isPublic;
   DrinkingPlace? _selectedPlace;
   bool _isSaving = false;
   String? _saveError;
-  bool _isVisibilityUpdating = false;
   bool _isAddingImage = false;
 
   @override
@@ -1722,12 +1994,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     );
     _selectedPlace = widget.sake.drinkingPlace;
     _tags = {...(widget.sake.userTags ?? const <String>[])};
-    _isPublic = widget.sake.isPublic;
-    final savedRatings = widget.sake.personalTasteRatings;
-    _personalTasteRatings = {
-      for (final axis in _perceivedTasteAxes)
-        axis.$1: (savedRatings?[axis.$1] ?? 3).clamp(1, 5).toDouble(),
-    };
   }
 
   @override
@@ -1750,11 +2016,8 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         impression: _impressionController.text.trim(),
         place: place.isEmpty ? null : place,
         drinkingPlace: _selectedPlace,
-        isPublic: _isPublic,
+        isPublic: false,
         userTags: _tags.toList(growable: false),
-        personalTasteRatings: _personalTasteRatings.map(
-          (key, value) => MapEntry(key, value.round()),
-        ),
       );
       await widget.notifier.updateSavedSake(updated);
       final savedId = updated.savedId;
@@ -1806,35 +2069,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       _selectedPlace = place;
       _placeController.text = place.displayName.trim();
     });
-  }
-
-  Future<void> _updateTimelineVisibility(bool isPublic) async {
-    final savedId = widget.sake.savedId;
-    if (savedId == null ||
-        savedId.isEmpty ||
-        widget.sake.syncStatus != SavedSakeSyncStatus.serverSynced) {
-      SnackBarUtils.showWarningSnackBar(
-        context,
-        message: '記録の同期後にタイムライン表示を設定できます。',
-      );
-      return;
-    }
-    setState(() => _isVisibilityUpdating = true);
-    final success = await widget.notifier.updateTimelineVisibility(
-      savedId: savedId,
-      isPublic: isPublic,
-    );
-    if (!mounted) return;
-    setState(() {
-      _isVisibilityUpdating = false;
-      if (success) _isPublic = isPublic;
-    });
-    if (!success) {
-      SnackBarUtils.showWarningSnackBar(
-        context,
-        message: 'タイムライン表示を更新できませんでした。ログイン状態を確認してください。',
-      );
-    }
   }
 
   Future<void> _showImageSourceSheet() async {
@@ -1975,25 +2209,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             )
             .toList(growable: false),
       ),
-      const SizedBox(height: 20),
-      const Text(
-        'あなたが感じた味わい',
-        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 4),
-      const Text(
-        '各項目を5段階で記録できます。',
-        style: TextStyle(color: Color(0xFF647184), fontSize: 12),
-      ),
-      const SizedBox(height: 8),
-      _PerceivedTasteSliders(
-        axes: _perceivedTasteAxes,
-        values: _personalTasteRatings,
-        onChanged: (key, value) => setState(() {
-          _personalTasteRatings[key] = value;
-        }),
-      ),
-      const SizedBox(height: 20),
       const Text(
         '思い出をのこそう',
         style: TextStyle(
@@ -2048,8 +2263,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
         ),
       ),
       const SizedBox(height: 20),
-      _timelineVisibility(),
-      const SizedBox(height: 20),
       FilledButton(
         onPressed: _isSaving ? null : _save,
         style: FilledButton.styleFrom(
@@ -2060,112 +2273,6 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       ),
     ],
   );
-
-  Widget _timelineVisibility() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'タイムラインに表示',
-        style: TextStyle(color: _navy, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 4),
-      Row(
-        children: [
-          const Expanded(
-            child: Text(
-              'みんなのタイムラインにこの記録を表示します。',
-              style: TextStyle(
-                color: Color(0xFF647184),
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: _isPublic,
-            onChanged: _isVisibilityUpdating ? null : _updateTimelineVisibility,
-            activeThumbColor: _orange,
-          ),
-        ],
-      ),
-      if (widget.sake.syncStatus != SavedSakeSyncStatus.serverSynced)
-        const Padding(
-          padding: EdgeInsets.only(top: 2),
-          child: Text(
-            '同期が完了すると公開設定を変更できます。',
-            style: TextStyle(color: Color(0xFF8B96A6), fontSize: 12),
-          ),
-        ),
-    ],
-  );
-}
-
-class _PerceivedTasteSliders extends StatelessWidget {
-  const _PerceivedTasteSliders({
-    required this.axes,
-    required this.values,
-    required this.onChanged,
-  });
-
-  final List<(String, String)> axes;
-  final Map<String, double> values;
-  final void Function(String key, double value) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final axis in axes)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 72,
-                  child: Text(
-                    axis.$2,
-                    style: const TextStyle(color: _navy, fontSize: 13),
-                  ),
-                ),
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: _orange,
-                      inactiveTrackColor: const Color(0xFFE6EBF1),
-                      thumbColor: _orange,
-                      overlayColor: _orange.withOpacity(.12),
-                      trackHeight: 5,
-                    ),
-                    child: Slider(
-                      value: values[axis.$1] ?? 3,
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: '${(values[axis.$1] ?? 3).round()}',
-                      semanticFormatterCallback: (value) =>
-                          '${axis.$2} ${value.round()}段階',
-                      onChanged: (value) => onChanged(axis.$1, value),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 30,
-                  child: Text(
-                    '${(values[axis.$1] ?? 3).round()}/5',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Color(0xFF647184),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 class _MemoryPhotoTile extends StatelessWidget {
@@ -2276,6 +2383,362 @@ class _MemoryImageError extends StatelessWidget {
     color: const Color(0xFFF0F2F5),
     alignment: Alignment.center,
     child: const Icon(Icons.broken_image_outlined, color: Color(0xFF8B96A6)),
+  );
+}
+
+class _CommunityReviewsSection extends StatelessWidget {
+  const _CommunityReviewsSection({
+    required this.community,
+    required this.onReview,
+    required this.onReportReview,
+  });
+
+  final SakeCommunitySummary community;
+  final ValueChanged<SakeCommunityReview?> onReview;
+  final ValueChanged<int> onReportReview;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          const Icon(Icons.star_rounded, color: Color(0xFFFFB02E)),
+          const SizedBox(width: 5),
+          Text(
+            community.averageRating == null
+                ? 'まだ評価はありません'
+                : '${community.averageRating!.toStringAsFixed(1)} (${community.reviewCount}件)',
+            style: const TextStyle(color: _navy, fontWeight: FontWeight.w800),
+          ),
+          const Spacer(),
+          FilledButton.icon(
+            key: const Key('sake-community-review-button'),
+            onPressed: () => onReview(community.myReview),
+            icon: Icon(
+              community.myReview == null ? Icons.add : Icons.edit_outlined,
+              size: 18,
+            ),
+            label: Text(community.myReview == null ? 'このお酒を評価' : '自分の評価を編集'),
+            style: FilledButton.styleFrom(backgroundColor: _orange),
+          ),
+        ],
+      ),
+      if (community.reviews.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 270,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: community.reviews.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final review = community.reviews[index];
+              return Container(
+                width: 280,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F8FA),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE6EAF0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (review.imageUrl != null)
+                      SizedBox(
+                        height: 92,
+                        width: double.infinity,
+                        child: _DetailSakeImage(path: review.imageUrl),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 13,
+                                backgroundColor: const Color(0xFFDDE6F0),
+                                backgroundImage: review.iconUrl == null
+                                    ? null
+                                    : NetworkImage(review.iconUrl!),
+                                child: review.iconUrl == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 15,
+                                        color: _navy,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 7),
+                              Expanded(
+                                child: Text(
+                                  review.username,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 17,
+                                color: Color(0xFFFFB02E),
+                              ),
+                              Text(
+                                review.overallRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if (!review.isOwner)
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  tooltip: 'この評価を報告',
+                                  onPressed: () =>
+                                      onReportReview(review.reviewId),
+                                  icon: const Icon(
+                                    Icons.flag_outlined,
+                                    size: 18,
+                                    color: Color(0xFF697386),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (review.comment != null) ...[
+                            const SizedBox(height: 7),
+                            Text(
+                              review.comment!,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF404A56),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                          if (review.tasteRatings.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 5,
+                              runSpacing: 5,
+                              children: review.tasteRatings.entries
+                                  .map((entry) {
+                                    const labels = <String, String>{
+                                      'fruity': 'フルーティ',
+                                      'sweetness': '甘み',
+                                      'acidity': '酸味',
+                                      'umami': 'コク',
+                                      'kire': 'キレ',
+                                      'spiciness': '辛さ',
+                                    };
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFEEE0),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                      child: Text(
+                                        '${labels[entry.key] ?? entry.key} ${entry.value.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          color: _navy,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    );
+                                  })
+                                  .toList(growable: false),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+class _CommunityReviewDraft {
+  const _CommunityReviewDraft({
+    required this.overallRating,
+    required this.tasteRatings,
+    this.comment,
+    this.delete = false,
+  });
+  final int overallRating;
+  final Map<String, int> tasteRatings;
+  final String? comment;
+  final bool delete;
+}
+
+class _CommunityReviewEditor extends StatefulWidget {
+  const _CommunityReviewEditor({this.initial});
+  final SakeCommunityReview? initial;
+
+  @override
+  State<_CommunityReviewEditor> createState() => _CommunityReviewEditorState();
+}
+
+class _CommunityReviewEditorState extends State<_CommunityReviewEditor> {
+  static const axes = <(String, String)>[
+    ('fruity', 'フルーティ'),
+    ('sweetness', '甘み'),
+    ('acidity', '酸味'),
+    ('umami', 'コク'),
+    ('kire', 'キレ'),
+    ('spiciness', '辛さ'),
+  ];
+  late int overall;
+  late Map<String, int> tastes;
+  late final TextEditingController comment;
+
+  @override
+  void initState() {
+    super.initState();
+    overall = widget.initial?.overallRating.round() ?? 3;
+    tastes = {
+      for (final axis in axes)
+        axis.$1: widget.initial?.tasteRatings[axis.$1]?.round() ?? 3,
+    };
+    comment = TextEditingController(text: widget.initial?.comment ?? '');
+  }
+
+  @override
+  void dispose() {
+    comment.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      20,
+      20,
+      20,
+      MediaQuery.viewInsetsOf(context).bottom + 20,
+    ),
+    child: SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'このお酒を評価',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: _navy,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '評価・味わい・コメントは表示名とアイコン付きで公開されます。',
+              style: TextStyle(color: Color(0xFF697386), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                5,
+                (index) => IconButton(
+                  onPressed: () => setState(() => overall = index + 1),
+                  icon: Icon(
+                    index < overall
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: const Color(0xFFFFB02E),
+                    size: 34,
+                  ),
+                ),
+              ),
+            ),
+            for (final axis in axes)
+              Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      axis.$2,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: tastes[axis.$1]!.toDouble(),
+                      min: 1,
+                      max: 5,
+                      divisions: 4,
+                      label: '${tastes[axis.$1]}',
+                      activeColor: _orange,
+                      onChanged: (value) =>
+                          setState(() => tastes[axis.$1] = value.round()),
+                    ),
+                  ),
+                  SizedBox(width: 16, child: Text('${tastes[axis.$1]}')),
+                ],
+              ),
+            TextField(
+              controller: comment,
+              maxLength: 200,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'みんなに公開する感想（任意）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _orange,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => Navigator.pop(
+                context,
+                _CommunityReviewDraft(
+                  overallRating: overall,
+                  tasteRatings: Map<String, int>.from(tastes),
+                  comment: comment.text.trim().isEmpty
+                      ? null
+                      : comment.text.trim(),
+                ),
+              ),
+              child: const Text('公開して保存'),
+            ),
+            if (widget.initial != null) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(
+                  context,
+                  const _CommunityReviewDraft(
+                    overallRating: 1,
+                    tasteRatings: <String, int>{},
+                    delete: true,
+                  ),
+                ),
+                child: const Text(
+                  '公開評価を削除',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
   );
 }
 

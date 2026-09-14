@@ -19,12 +19,7 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   @override
   Future<Response<dynamic>> recognizeMenu(String file) {
     final Uri $url = Uri.parse('/api/menu-recognition/recognize');
-    final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'file',
-        file,
-      )
-    ];
+    final List<PartValue> $parts = <PartValue>[PartValue<String>('file', file)];
     final Request $request = Request(
       'POST',
       $url,
@@ -38,12 +33,7 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   @override
   Future<Response<dynamic>> extractSakeInfo(String file) {
     final Uri $url = Uri.parse('/api/menu-recognition/extract');
-    final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'file',
-        file,
-      )
-    ];
+    final List<PartValue> $parts = <PartValue>[PartValue<String>('file', file)];
     final Request $request = Request(
       'POST',
       $url,
@@ -58,26 +48,17 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   Future<Response<dynamic>> extractSakeInfoJson(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/api/menu-recognition/extract');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<dynamic, dynamic>($request);
   }
 
   @override
   Future<Response<dynamic>> getSakeInfoBatch(Map<String, dynamic> body) {
-    final Uri $url =
-        Uri.parse('/api/menu-recognition/perplexity/sake-info-batch');
-    final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
+    final Uri $url = Uri.parse(
+      '/api/menu-recognition/perplexity/sake-info-batch',
     );
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<dynamic, dynamic>($request);
   }
 
@@ -85,26 +66,17 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   Future<Response<dynamic>> getSakeInfo(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/api/menu-recognition/perplexity/sake-info');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<dynamic, dynamic>($request);
   }
 
   @override
   Future<Response<Map<String, dynamic>>> resolveSakeCandidate(
-      Map<String, dynamic> body) {
+    Map<String, dynamic> body,
+  ) {
     final Uri $url = Uri.parse('/api/sakes/resolve-candidate');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
   }
 
@@ -115,14 +87,8 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   ) {
     final Uri $url = Uri.parse('/api/sake-bottle/recognize');
     final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'file',
-        file,
-      ),
-      PartValue<String?>(
-        'secondaryFile',
-        secondaryFile,
-      ),
+      PartValue<String>('file', file),
+      PartValue<String?>('secondaryFile', secondaryFile),
     ];
     final Request $request = Request(
       'POST',
@@ -142,18 +108,9 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   ) {
     final Uri $url = Uri.parse('/api/sake-bottle/scan/ai-candidates');
     final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'file',
-        file,
-      ),
-      PartValue<String?>(
-        'secondaryFile',
-        secondaryFile,
-      ),
-      PartValue<String?>(
-        'scanSessionId',
-        scanSessionId,
-      ),
+      PartValue<String>('file', file),
+      PartValue<String?>('secondaryFile', secondaryFile),
+      PartValue<String?>('scanSessionId', scanSessionId),
     ];
     final Request $request = Request(
       'POST',
@@ -167,15 +124,11 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
 
   @override
   Future<Response<Map<String, dynamic>>> comprehensiveSakeBottleAnalysis(
-      Map<String, dynamic> body) {
+    Map<String, dynamic> body,
+  ) {
     final Uri $url = Uri.parse('/api/sake-bottle/comprehensive-analysis');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
   }
 
@@ -186,14 +139,8 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   ) {
     final Uri $url = Uri.parse('/api/sake-bottle/scan/front');
     final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'locale',
-        locale,
-      ),
-      PartValueFile<MultipartFile>(
-        'image',
-        image,
-      ),
+      PartValue<String>('locale', locale),
+      PartValueFile<MultipartFile>('image', image),
     ];
     final Request $request = Request(
       'POST',
@@ -213,14 +160,8 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   ) {
     final Uri $url = Uri.parse('/api/sake-bottle/scan/${scanSessionId}/back');
     final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'locale',
-        locale,
-      ),
-      PartValueFile<MultipartFile>(
-        'image',
-        image,
-      ),
+      PartValue<String>('locale', locale),
+      PartValueFile<MultipartFile>('image', image),
     ];
     final Request $request = Request(
       'POST',
@@ -237,15 +178,11 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
     String scanSessionId,
     Map<String, dynamic> body,
   ) {
-    final Uri $url =
-        Uri.parse('/api/sake-bottle/scan/${scanSessionId}/confirm');
-    final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
+    final Uri $url = Uri.parse(
+      '/api/sake-bottle/scan/${scanSessionId}/confirm',
     );
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
   }
 
@@ -256,12 +193,7 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   ) {
     final Uri $url = Uri.parse('/api/sake-bottle/scan/${scanSessionId}/reject');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<dynamic, dynamic>($request);
   }
 
@@ -286,15 +218,76 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   }
 
   @override
+  Future<Response<Map<String, dynamic>>> fetchSakeLabelConsent() {
+    final Uri $url = Uri.parse('/api/sakes/label-consent');
+    final Request $request = Request('GET', $url, client.baseUrl);
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
+  Future<Response<Map<String, dynamic>>> acceptSakeLabelConsent(
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/api/sakes/label-consent');
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
+  Future<Response<Map<String, dynamic>>> saveSakeReview(
+    int sakeId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/api/sakes/${sakeId}/review');
+    final $body = body;
+    final Request $request = Request('PUT', $url, client.baseUrl, body: $body);
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> deleteSakeReview(int sakeId) {
+    final Uri $url = Uri.parse('/api/sakes/${sakeId}/review');
+    final Request $request = Request('DELETE', $url, client.baseUrl);
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<Map<String, dynamic>>> reportSakeCommunityImage(
+    int imageId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/api/sakes/community/images/${imageId}/report');
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> deleteSakeCommunityImage(int imageId) {
+    final Uri $url = Uri.parse('/api/sakes/community/images/${imageId}');
+    final Request $request = Request('DELETE', $url, client.baseUrl);
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<Map<String, dynamic>>> reportSakeCommunityReview(
+    int reviewId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse(
+      '/api/sakes/community/reviews/${reviewId}/report',
+    );
+    final $body = body;
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
   Future<Response<dynamic>> analyzeSakePreference(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/api/sake-preference/analyze');
     final $body = body;
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      body: $body,
-    );
+    final Request $request = Request('POST', $url, client.baseUrl, body: $body);
     return client.send<dynamic, dynamic>($request);
   }
 }

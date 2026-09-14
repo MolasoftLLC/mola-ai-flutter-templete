@@ -143,6 +143,7 @@ class SakeOverview {
     this.brewery = const SakeBreweryDetails(),
     this.publicSavedSakeCount = 0,
     this.relatedProducts = const <RelatedSakeProduct>[],
+    this.community = const SakeCommunitySummary(),
   });
 
   factory SakeOverview.fromJson(Map<String, dynamic> json) {
@@ -202,6 +203,7 @@ class SakeOverview {
       brewery: SakeBreweryDetails.fromJson(breweryJson),
       publicSavedSakeCount: _asInt(json['publicSavedSakeCount']) ?? 0,
       relatedProducts: relatedProducts,
+      community: SakeCommunitySummary.fromJson(_asStringMap(json['community'])),
     );
   }
 
@@ -214,6 +216,134 @@ class SakeOverview {
   final SakeBreweryDetails brewery;
   final int publicSavedSakeCount;
   final List<RelatedSakeProduct> relatedProducts;
+  final SakeCommunitySummary community;
+}
+
+class SakeCommunitySummary {
+  const SakeCommunitySummary({
+    this.averageRating,
+    this.reviewCount = 0,
+    this.averageTasteRatings = const <String, double>{},
+    this.images = const <SakeCommunityImage>[],
+    this.reviews = const <SakeCommunityReview>[],
+    this.myReview,
+  });
+
+  factory SakeCommunitySummary.fromJson(Map<String, dynamic> json) {
+    final ratings = _asStringMap(
+      json['averageTasteRatings'],
+    ).map((key, value) => MapEntry(key, _asDouble(value) ?? 0));
+    return SakeCommunitySummary(
+      averageRating: _asDouble(json['averageRating']),
+      reviewCount: _asInt(json['reviewCount']) ?? 0,
+      averageTasteRatings: ratings,
+      images: _parseCommunityList(json['images'], SakeCommunityImage.fromJson),
+      reviews: _parseCommunityList(
+        json['reviews'],
+        SakeCommunityReview.fromJson,
+      ),
+      myReview: json['myReview'] is Map
+          ? SakeCommunityReview.fromJson(_asStringMap(json['myReview']))
+          : null,
+    );
+  }
+
+  final double? averageRating;
+  final int reviewCount;
+  final Map<String, double> averageTasteRatings;
+  final List<SakeCommunityImage> images;
+  final List<SakeCommunityReview> reviews;
+  final SakeCommunityReview? myReview;
+}
+
+class SakeCommunityImage {
+  const SakeCommunityImage({
+    required this.imageId,
+    required this.imageUrl,
+    required this.username,
+    required this.createdAt,
+    this.iconUrl,
+    this.reviewId,
+    this.isOwner = false,
+  });
+
+  factory SakeCommunityImage.fromJson(Map<String, dynamic> json) =>
+      SakeCommunityImage(
+        imageId: _asInt(json['imageId']) ?? 0,
+        imageUrl: json['imageUrl']?.toString() ?? '',
+        username: _asNonEmptyString(json['username']) ?? 'ユーザー',
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+        iconUrl: _asNonEmptyString(json['iconUrl']),
+        reviewId: _asInt(json['reviewId']),
+        isOwner: json['isOwner'] == true,
+      );
+
+  final int imageId;
+  final String imageUrl;
+  final String username;
+  final DateTime? createdAt;
+  final String? iconUrl;
+  final int? reviewId;
+  final bool isOwner;
+}
+
+class SakeCommunityReview {
+  const SakeCommunityReview({
+    required this.reviewId,
+    required this.sakeId,
+    required this.overallRating,
+    required this.username,
+    required this.createdAt,
+    required this.updatedAt,
+    this.tasteRatings = const <String, double>{},
+    this.comment,
+    this.imageId,
+    this.imageUrl,
+    this.iconUrl,
+    this.isOwner = false,
+  });
+
+  factory SakeCommunityReview.fromJson(Map<String, dynamic> json) =>
+      SakeCommunityReview(
+        reviewId: _asInt(json['reviewId']) ?? 0,
+        sakeId: _asInt(json['sakeId']) ?? 0,
+        overallRating: _asDouble(json['overallRating']) ?? 0,
+        tasteRatings: _asStringMap(
+          json['tasteRatings'],
+        ).map((key, value) => MapEntry(key, _asDouble(value) ?? 0)),
+        comment: _asNonEmptyString(json['comment']),
+        imageId: _asInt(json['imageId']),
+        imageUrl: _asNonEmptyString(json['imageUrl']),
+        username: _asNonEmptyString(json['username']) ?? 'ユーザー',
+        iconUrl: _asNonEmptyString(json['iconUrl']),
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+        updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? ''),
+        isOwner: json['isOwner'] == true,
+      );
+
+  final int reviewId;
+  final int sakeId;
+  final double overallRating;
+  final Map<String, double> tasteRatings;
+  final String? comment;
+  final int? imageId;
+  final String? imageUrl;
+  final String username;
+  final String? iconUrl;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final bool isOwner;
+}
+
+List<T> _parseCommunityList<T>(
+  dynamic value,
+  T Function(Map<String, dynamic>) parse,
+) {
+  if (value is! List) return <T>[];
+  return value
+      .whereType<Map>()
+      .map((item) => parse(Map<String, dynamic>.from(item)))
+      .toList(growable: false);
 }
 
 class SakeShopOffer {

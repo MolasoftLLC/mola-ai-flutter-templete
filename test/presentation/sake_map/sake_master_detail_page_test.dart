@@ -190,6 +190,51 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('みんなの平均評価と横スライドの評価カードを表示する', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = _FakeSakeScanRepository(
+      overview: SakeOverview(
+        sake: const Sake(sakeId: 123, name: '来福'),
+        analysisCompleted: true,
+        community: SakeCommunitySummary(
+          averageRating: 4.2,
+          reviewCount: 12,
+          reviews: <SakeCommunityReview>[
+            SakeCommunityReview(
+              reviewId: 9,
+              sakeId: 123,
+              overallRating: 5,
+              username: '酒好き',
+              comment: '華やかでおいしい',
+              createdAt: DateTime(2026, 9, 14),
+              updatedAt: DateTime(2026, 9, 14),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      Provider<SakeScanRepository>.value(
+        value: repository,
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('4.2'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('4.2 (12件)'), findsOneWidget);
+    expect(find.text('華やかでおいしい'), findsOneWidget);
+    expect(find.text('このお酒を評価'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test('詳細APIの文字列数値と分類・スタイルを保持する', () {
     final overview = SakeOverview.fromJson({
       'sake': {
@@ -415,6 +460,9 @@ class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
 }
 
 class _FakeSakeScanRepository implements SakeScanRepository {
+  _FakeSakeScanRepository({this.overview});
+
+  final SakeOverview? overview;
   bool fail = false;
   bool? lastTrackView;
 
@@ -425,47 +473,49 @@ class _FakeSakeScanRepository implements SakeScanRepository {
   }) async {
     lastTrackView = trackView;
     if (fail) throw Exception('test failure');
-    return const SakeOverview(
-      sake: Sake(
-        sakeId: 123,
-        name: 'マスター純米酒',
-        brewery: 'サンプル酒造',
-        type: '純米酒',
-        description: 'やわらかな香りとすっきりした後味。',
-      ),
-      analysisCompleted: true,
-      master: SakeMasterDetails(
-        imageSource: 'yahoo_shopping',
-        imageProductUrl: 'https://store.shopping.yahoo.co.jp/example/sake.html',
-        imagePrice: 2150,
-        imageCurrency: 'JPY',
-        rakutenOffer: SakeShopOffer(
-          price: 2096,
-          affiliateUrl: 'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
-        ),
-        category: '純米',
-        polishingRatio: 50,
-        sakeMeterValue: 2.5,
-        tasteProfile: SakeTasteProfileDetails(
-          fruity: .72,
-          sweetness: .54,
-          acidity: .48,
-          umami: .7,
-          kire: .64,
-          dryness: .52,
-          aroma: .72,
-          body: .66,
-        ),
-        variants: [
-          SakeProductVariant(
-            volumeMl: 720,
-            suggestedPrice: 2300,
-            taxIncluded: true,
-            currency: 'JPY',
+    return overview ??
+        const SakeOverview(
+          sake: Sake(
+            sakeId: 123,
+            name: 'マスター純米酒',
+            brewery: 'サンプル酒造',
+            type: '純米酒',
+            description: 'やわらかな香りとすっきりした後味。',
           ),
-        ],
-      ),
-    );
+          analysisCompleted: true,
+          master: SakeMasterDetails(
+            imageSource: 'yahoo_shopping',
+            imageProductUrl:
+                'https://store.shopping.yahoo.co.jp/example/sake.html',
+            imagePrice: 2150,
+            imageCurrency: 'JPY',
+            rakutenOffer: SakeShopOffer(
+              price: 2096,
+              affiliateUrl: 'https://hb.afl.rakuten.co.jp/hgc/test/?pc=item',
+            ),
+            category: '純米',
+            polishingRatio: 50,
+            sakeMeterValue: 2.5,
+            tasteProfile: SakeTasteProfileDetails(
+              fruity: .72,
+              sweetness: .54,
+              acidity: .48,
+              umami: .7,
+              kire: .64,
+              dryness: .52,
+              aroma: .72,
+              body: .66,
+            ),
+            variants: [
+              SakeProductVariant(
+                volumeMl: 720,
+                suggestedPrice: 2300,
+                taxIncluded: true,
+                currency: 'JPY',
+              ),
+            ],
+          ),
+        );
   }
 
   @override
