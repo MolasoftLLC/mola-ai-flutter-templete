@@ -1208,6 +1208,12 @@ abstract class AppLocalizations {
   /// **'利用規約'**
   String get termsOfUse;
 
+  /// No description provided for @licenseInformation.
+  ///
+  /// In ja, this message translates to:
+  /// **'ライセンス情報'**
+  String get licenseInformation;
+
   /// No description provided for @developer.
   ///
   /// In ja, this message translates to:

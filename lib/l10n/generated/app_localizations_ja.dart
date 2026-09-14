@@ -599,6 +599,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get termsOfUse => '利用規約';
 
   @override
+  String get licenseInformation => 'ライセンス情報';
+
+  @override
   String get developer => '開発会社';
 
   @override

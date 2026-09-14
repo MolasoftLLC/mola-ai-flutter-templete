@@ -624,6 +624,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termsOfUse => 'Terms of Use';
 
   @override
+  String get licenseInformation => 'Licenses';
+
+  @override
   String get developer => 'Developer';
 
   @override

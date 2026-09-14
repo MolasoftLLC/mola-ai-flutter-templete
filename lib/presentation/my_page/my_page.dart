@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 // import 'package:in_app_review/in_app_review.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -1188,6 +1189,7 @@ class MyPage extends StatelessWidget {
 
   // 設定メニューを表示するメソッド
   void _showSettingsMenu(BuildContext context) {
+    final pageContext = context;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -1232,6 +1234,17 @@ class MyPage extends StatelessWidget {
                 },
               ),
               ListTile(
+                leading: const Icon(
+                  Icons.article_outlined,
+                  color: Color(0xFF1D3567),
+                ),
+                title: Text(context.l10n.licenseInformation),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _showLicenseInformation(pageContext);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.business, color: Color(0xFF1D3567)),
                 title: Text(context.l10n.developer),
                 onTap: () async {
@@ -1253,6 +1266,25 @@ class MyPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showLicenseInformation(BuildContext context) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!context.mounted) return;
+    showLicensePage(
+      context: context,
+      applicationName: context.l10n.appTitle,
+      applicationVersion: packageInfo.version,
+      applicationIcon: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Image.asset(
+          'assets/images/sake_logo.png',
+          width: 72,
+          height: 72,
+          fit: BoxFit.contain,
+        ),
+      ),
     );
   }
 
