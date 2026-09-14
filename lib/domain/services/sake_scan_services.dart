@@ -150,7 +150,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     }
     final draft = sake.copyWith(
       imagePaths: savedPaths,
-      isPublic: isPublic,
+      isPublic: false,
       syncStatus: SavedSakeSyncStatus.localOnly,
     );
     final savedId = await _savedSakeNotifier.addSavedSake(draft);
@@ -163,7 +163,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
           .skip(1)
           .map(File.new)
           .toList(growable: false),
-      isPublic: isPublic,
+      isPublic: false,
     );
     return saved;
   }
@@ -259,6 +259,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       sake: sake,
       imageFile: image,
       isPublic: isPublic,
+      publicLabelContribution: stage == SavedSakeSyncStage.analysisStart,
     );
     if (!synced) return;
 

@@ -104,4 +104,43 @@ void main() {
     expect(overview.analysisPayload, isNull);
     expect(overview.sake.name, '東洋美人');
   });
+
+  test('みんなの評価と公開ラベル画像を酒概要から変換する', () {
+    final overview = SakeOverview.fromJson(<String, dynamic>{
+      'sake': <String, dynamic>{'sakeId': 50, 'name': '来福'},
+      'community': <String, dynamic>{
+        'averageRating': 4.2,
+        'reviewCount': 12,
+        'averageTasteRatings': <String, dynamic>{'fruity': 3.5},
+        'images': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'imageId': 8,
+            'imageUrl': 'https://example.com/user-label.jpg',
+            'username': '酒好き',
+            'isOwner': true,
+            'createdAt': '2026-09-14T00:00:00.000Z',
+          },
+        ],
+        'reviews': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'reviewId': 9,
+            'sakeId': 50,
+            'overallRating': 5,
+            'tasteRatings': <String, dynamic>{'sweetness': 4},
+            'comment': '華やかでおいしい',
+            'username': '酒好き',
+            'createdAt': '2026-09-14T00:00:00.000Z',
+            'updatedAt': '2026-09-14T00:00:00.000Z',
+          },
+        ],
+      },
+    });
+
+    expect(overview.community.averageRating, 4.2);
+    expect(overview.community.reviewCount, 12);
+    expect(overview.community.images.single.imageId, 8);
+    expect(overview.community.images.single.isOwner, isTrue);
+    expect(overview.community.reviews.single.comment, '華やかでおいしい');
+    expect(overview.community.averageTasteRatings['fruity'], 3.5);
+  });
 }

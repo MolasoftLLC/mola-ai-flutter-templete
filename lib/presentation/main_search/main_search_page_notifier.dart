@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
@@ -54,7 +53,6 @@ abstract class MainSearchPageState with _$MainSearchPageState {
     @Default(SearchMode.bottle) SearchMode searchMode,
     @Default([]) List<String> pendingSavedSakeIds,
     String? analyzingImagePath,
-    @Default(true) bool shareToTimeline,
     @Default(false) bool isLoggedIn,
     bool? autoTweetEnabled,
     DateTime? autoTweetConsentAt,
@@ -84,8 +82,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   SakeUserRepository get sakeUserRepository => read<SakeUserRepository>();
 
   final Map<String, bool> _savedIdPublicFlags = <String, bool>{};
-  static const String _timelineSharePreferenceKey =
-      'timeline_share_checkbox_preference';
   late final RemoveListener _removeAuthListener;
   String? _observedAuthUserId;
   int _autoTweetLoadGeneration = 0;
@@ -94,7 +90,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   @override
   void initState() {
     super.initState();
-    unawaited(_restoreTimelineSharePreference());
     _removeAuthListener = authNotifier.addListener(_handleAuthStateChanged);
   }
 
@@ -381,48 +376,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     );
   }
 
-  Future<void> onTimelineShareToggle(bool newValue) async {
-    if (newValue) {
-      state = state.copyWith(shareToTimeline: true);
-      await _persistTimelineSharePreference(true);
-      return;
-    }
-
-    final shouldDisable = await _showTimelineOptOutDialog();
-    final updatedValue = !shouldDisable;
-    state = state.copyWith(shareToTimeline: updatedValue);
-    await _persistTimelineSharePreference(updatedValue);
-  }
-
-  Future<void> _restoreTimelineSharePreference() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final storedValue = prefs.getBool(_timelineSharePreferenceKey);
-      final effectiveValue = storedValue ?? true;
-
-      if (storedValue == null) {
-        await prefs.setBool(_timelineSharePreferenceKey, true);
-      }
-
-      if (state.shareToTimeline != effectiveValue) {
-        state = state.copyWith(shareToTimeline: effectiveValue);
-      }
-    } catch (error, stackTrace) {
-      logger.warning('タイムライン共有設定の復元に失敗しました: $error');
-      logger.info(stackTrace.toString());
-    }
-  }
-
-  Future<void> _persistTimelineSharePreference(bool value) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_timelineSharePreferenceKey, value);
-    } catch (error, stackTrace) {
-      logger.warning('タイムライン共有設定の保存に失敗しました: $error');
-      logger.info(stackTrace.toString());
-    }
-  }
-
   void _handleAuthStateChanged(AuthState authState) {
     final userId = authState.user?.uid;
     if (_observedAuthUserId == userId) {
@@ -468,30 +421,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       logger.warning('自動ツイート設定の取得に失敗しました: $error');
       logger.info(stackTrace.toString());
     }
-  }
-
-  Future<bool> _showTimelineOptOutDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(context.l10n.timelinePublishingTitle),
-          content: Text(context.l10n.timelinePublishingDescription),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(context.l10n.continueAnalysis),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(context.l10n.removeCheck),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
   }
 
   Future<void> onAutoTweetToggle(bool newValue) async {
@@ -617,7 +546,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       );
       return false;
     }
-    final shouldShareTimeline = state.shareToTimeline;
+    const shouldShareTimeline = false;
 
     final placeholder = Sake(
       savedId: null,

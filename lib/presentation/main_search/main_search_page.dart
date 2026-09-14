@@ -24,7 +24,7 @@ import '../favorite_search/favorite_search_page.dart';
 import '../menu_search/menu_search_page.dart';
 import '../sake_map/sake_map_page.dart';
 import '../sake_map/sake_master_detail_page.dart';
-import '../sake_scan/sake_scan_page.dart';
+import '../sake_scan/sake_scan_entry.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
@@ -84,9 +84,6 @@ class MainSearchPage extends StatelessWidget {
     );
     final sakeImage = context.select(
       (MainSearchPageState state) => state.sakeImage,
-    );
-    final shareToTimeline = context.select(
-      (MainSearchPageState state) => state.shareToTimeline,
     );
     final isLoggedIn = context.select(
       (MainSearchPageState state) => state.isLoggedIn,
@@ -182,7 +179,6 @@ class MainSearchPage extends StatelessWidget {
                             notifier,
                             sakeImage,
                             isAnalyzingInBackground,
-                            shareToTimeline,
                             isLoggedIn,
                             autoTweetEnabled,
                             isAutoTweetUpdating,
@@ -277,24 +273,7 @@ class MainSearchPage extends StatelessWidget {
     BuildContext context,
     MainSearchPageNotifier notifier,
   ) async {
-    final result = await Navigator.of(context).push<Object>(
-      PageRouteBuilder<Object>(
-        pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
-        transitionsBuilder: (_, animation, __, child) => SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                  reverseCurve: Curves.easeInCubic,
-                ),
-              ),
-          child: child,
-        ),
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
-      ),
-    );
+    final result = await openSakeLabelScanner(context);
     if (result is String && result.trim().isNotEmpty && context.mounted) {
       _openManualNameSearch(notifier, result);
     } else if (result is Sake && context.mounted) {
@@ -308,7 +287,6 @@ class MainSearchPage extends StatelessWidget {
     MainSearchPageNotifier notifier,
     File? sakeImage,
     bool isAnalyzingInBackground,
-    bool shareToTimeline,
     bool isLoggedIn,
     bool? autoTweetEnabled,
     bool isAutoTweetUpdating,
@@ -424,22 +402,6 @@ class MainSearchPage extends StatelessWidget {
                 ),
               ),
             ),
-          const SizedBox(height: 8),
-          CheckboxListTile(
-            value: shareToTimeline,
-            onChanged: (value) {
-              if (value == null) return;
-              notifier.onTimelineShareToggle(value);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: const Color(0xFF1D3567),
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              context.l10n.shareToTimeline,
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(context.l10n.onlyFirstImageShared),
-          ),
           CheckboxListTile(
             value: autoTweetEnabled ?? true,
             onChanged: (value) {

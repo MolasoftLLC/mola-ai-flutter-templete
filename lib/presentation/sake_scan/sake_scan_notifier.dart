@@ -34,7 +34,6 @@ class SakeScanState {
     this.error,
     this.backLabelReason,
     this.isSubmitting = false,
-    this.shareToTimeline = false,
   });
 
   final SakeScanViewStatus status;
@@ -48,7 +47,6 @@ class SakeScanState {
   final SakeScanException? error;
   final SakeScanBackLabelReason? backLabelReason;
   final bool isSubmitting;
-  final bool shareToTimeline;
 
   SakeScanCandidate? get selectedCandidate => candidates.isEmpty
       ? null
@@ -68,7 +66,6 @@ class SakeScanState {
     bool clearError = false,
     bool clearBackLabelReason = false,
     bool? isSubmitting,
-    bool? shareToTimeline,
   }) {
     return SakeScanState(
       status: status ?? this.status,
@@ -85,7 +82,6 @@ class SakeScanState {
           ? null
           : backLabelReason ?? this.backLabelReason,
       isSubmitting: isSubmitting ?? this.isSubmitting,
-      shareToTimeline: shareToTimeline ?? this.shareToTimeline,
     );
   }
 }
@@ -108,14 +104,9 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   SakeScanState get currentState => state;
 
-  void setShareToTimeline(bool value) {
-    if (_disposed) return;
-    state = state.copyWith(shareToTimeline: value);
-  }
-
   void updateSavedRecord(Sake sake) {
     if (_disposed || sake.savedId == null || sake.savedId!.isEmpty) return;
-    state = state.copyWith(savedSake: sake, shareToTimeline: sake.isPublic);
+    state = state.copyWith(savedSake: sake);
   }
 
   Future<void> submitFront(File image) async {
@@ -224,7 +215,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   void startNextScan() {
     if (_disposed || state.savedSake == null) return;
     ++_operation;
-    state = SakeScanState(shareToTimeline: state.shareToTimeline);
+    state = const SakeScanState();
   }
 
   Future<Sake?> confirmCandidate() async {
@@ -272,7 +263,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         confirmedSake,
         primaryImage,
         secondaryImage: secondaryImage,
-        isPublic: state.shareToTimeline,
+        isPublic: false,
       );
       if (!_isCurrent(operation)) return null;
       _emit(state.copyWith(sake: confirmedSake, savedSake: saved));
@@ -285,7 +276,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           saved,
           confirmedSake,
           primaryImage,
-          isPublic: state.shareToTimeline,
+          isPublic: false,
         );
         if (!_isCurrent(operation)) return null;
         _emit(
@@ -390,7 +381,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   void retry() {
     if (state.isSubmitting) return;
     ++_operation;
-    state = SakeScanState(shareToTimeline: state.shareToTimeline);
+    state = const SakeScanState();
   }
 
   void reportCameraError(SakeScanException exception) {
@@ -463,12 +454,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     );
 
     Sake? saved = state.savedSake;
-    if (saved == null) {
+    if (saved == null && hasMasterSake) {
       saved = await _persistenceService.saveInitial(
         basicSake,
         primaryImage,
         secondaryImage: secondaryImage,
-        isPublic: state.shareToTimeline,
+        isPublic: false,
       );
       if (_isCurrent(operation)) {
         _emit(state.copyWith(savedSake: saved));
@@ -482,15 +473,22 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         scanSessionId: scanSessionId,
         confirmedSake: hasMasterSake ? null : basicSake,
       );
+      final completedSake = _mergeBasicAndAnalysis(
+        basicSake,
+        analyzed,
+        preferAnalyzedIdentity: !hasMasterSake,
+      );
+      saved ??= await _persistenceService.saveInitial(
+        completedSake,
+        primaryImage,
+        secondaryImage: secondaryImage,
+        isPublic: false,
+      );
       final completed = await _persistenceService.saveCompleted(
         saved,
-        _mergeBasicAndAnalysis(
-          basicSake,
-          analyzed,
-          preferAnalyzedIdentity: !hasMasterSake,
-        ),
+        completedSake,
         image,
-        isPublic: state.shareToTimeline,
+        isPublic: false,
       );
       if (!_isCurrent(operation)) return;
       _emit(

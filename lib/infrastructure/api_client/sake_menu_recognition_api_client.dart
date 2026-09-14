@@ -84,6 +84,38 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
     @Query('trackView') bool trackView,
   );
 
+  @Get(path: 'sakes/label-consent')
+  Future<Response<Map<String, dynamic>>> fetchSakeLabelConsent();
+
+  @Post(path: 'sakes/label-consent')
+  Future<Response<Map<String, dynamic>>> acceptSakeLabelConsent(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Put(path: 'sakes/{sakeId}/review')
+  Future<Response<Map<String, dynamic>>> saveSakeReview(
+    @Path('sakeId') int sakeId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Delete(path: 'sakes/{sakeId}/review')
+  Future<Response> deleteSakeReview(@Path('sakeId') int sakeId);
+
+  @Post(path: 'sakes/community/images/{imageId}/report')
+  Future<Response<Map<String, dynamic>>> reportSakeCommunityImage(
+    @Path('imageId') int imageId,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @Delete(path: 'sakes/community/images/{imageId}')
+  Future<Response> deleteSakeCommunityImage(@Path('imageId') int imageId);
+
+  @Post(path: 'sakes/community/reviews/{reviewId}/report')
+  Future<Response<Map<String, dynamic>>> reportSakeCommunityReview(
+    @Path('reviewId') int reviewId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'sake-preference/analyze')
   Future<Response> analyzeSakePreference(@Body() Map<String, dynamic> body);
 }

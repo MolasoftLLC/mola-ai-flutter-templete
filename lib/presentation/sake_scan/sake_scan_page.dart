@@ -55,19 +55,6 @@ class SakeScanPage extends StatefulWidget {
 
 class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
-  static const _recordTasteAxes = <(String, String)>[
-    ('fruity', 'フルーティ'),
-    ('sweetness', '甘み'),
-    ('acidity', '酸味'),
-    ('umami', 'コク'),
-    ('kire', 'キレ'),
-    ('spiciness', '辛さ'),
-  ];
-
-  static Map<String, double> _defaultRecordTasteRatings() => {
-    for (final axis in _recordTasteAxes) axis.$1: 3,
-  };
-
   CameraController? _cameraController;
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
@@ -83,9 +70,6 @@ class _SakeScanPageState extends State<SakeScanPage>
   late final TextEditingController _recordImpressionController;
   DrinkingPlace? _recordPlace;
   Set<String> _recordTags = <String>{};
-  Map<String, double> _recordTasteRatings = _defaultRecordTasteRatings();
-  bool _recordTasteExpanded = false;
-  bool _recordIsPublic = false;
   bool _recordDirty = false;
   bool _recordSaved = false;
   bool _recordSaving = false;
@@ -348,9 +332,6 @@ class _SakeScanPageState extends State<SakeScanPage>
     setState(() {
       _recordPlace = null;
       _recordTags = <String>{};
-      _recordTasteRatings = _defaultRecordTasteRatings();
-      _recordTasteExpanded = false;
-      _recordIsPublic = false;
       _recordDirty = false;
       _recordSaved = false;
       _recordSaving = false;
@@ -360,9 +341,7 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   void _startCandidateAnalysis() {
     _resetAnalysisRecordDraft();
-    final notifier = context.read<SakeScanNotifier>();
-    notifier.setShareToTimeline(false);
-    unawaited(notifier.confirmCandidate());
+    unawaited(context.read<SakeScanNotifier>().confirmCandidate());
   }
 
   Future<void> _openRecordPlacePicker() async {
@@ -409,10 +388,7 @@ class _SakeScanPageState extends State<SakeScanPage>
         place: placeName == null || placeName.isEmpty ? null : placeName,
         drinkingPlace: _recordPlace,
         userTags: _recordTags.isEmpty ? null : _recordTags.toList(),
-        personalTasteRatings: _recordTasteRatings.map(
-          (key, value) => MapEntry(key, value.round()),
-        ),
-        isPublic: _recordIsPublic,
+        isPublic: false,
       );
       await context.read<SavedSakeNotifier>().updateSavedSake(updated);
       if (!mounted) return false;
@@ -1169,89 +1145,6 @@ class _SakeScanPageState extends State<SakeScanPage>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Material(
-                        color: const Color(0xFFF7F8FA),
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () => setState(
-                            () => _recordTasteExpanded = !_recordTasteExpanded,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    '感じた味わいも記録する',
-                                    style: TextStyle(
-                                      color: Color(0xFF1D3567),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  _recordTasteExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  color: const Color(0xFF697386),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (_recordTasteExpanded) ...[
-                        const SizedBox(height: 8),
-                        for (final axis in _recordTasteAxes)
-                          _SakeScanTasteSlider(
-                            label: axis.$2,
-                            value: _recordTasteRatings[axis.$1] ?? 3,
-                            onChanged: (value) {
-                              setState(() {
-                                _recordTasteRatings[axis.$1] = value;
-                                _recordDirty = true;
-                                _recordSaved = false;
-                                _recordSaveError = null;
-                              });
-                            },
-                          ),
-                      ],
-                      const SizedBox(height: 10),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'タイムラインに表示',
-                          style: TextStyle(
-                            color: Color(0xFF1D3567),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        subtitle: const Text(
-                          'この記録をみんなのタイムラインに表示します。',
-                          style: TextStyle(
-                            color: Color(0xFF697386),
-                            fontSize: 12,
-                          ),
-                        ),
-                        value: _recordIsPublic,
-                        activeThumbColor: const Color(0xFFFF7A1A),
-                        onChanged: (value) {
-                          context.read<SakeScanNotifier>().setShareToTimeline(
-                            value,
-                          );
-                          setState(() {
-                            _recordIsPublic = value;
-                            _recordDirty = true;
-                            _recordSaved = false;
-                            _recordSaveError = null;
-                          });
-                        },
-                      ),
                       if (_recordSaveError != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -1494,58 +1387,6 @@ class _CameraCloseUpButton extends StatelessWidget {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         ),
       ),
-    );
-  }
-}
-
-class _SakeScanTasteSlider extends StatelessWidget {
-  const _SakeScanTasteSlider({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final double value;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 72,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF1D3567),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Slider(
-            value: value,
-            min: 1,
-            max: 5,
-            divisions: 4,
-            activeColor: const Color(0xFFFF7A1A),
-            label: value.round().toString(),
-            onChanged: onChanged,
-          ),
-        ),
-        SizedBox(
-          width: 20,
-          child: Text(
-            value.round().toString(),
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              color: Color(0xFF1D3567),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

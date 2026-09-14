@@ -562,19 +562,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap 👍 when you see a sake worth envying.';
 
   @override
-  String get timelinePublishingTitle => 'About timeline publishing';
-
-  @override
-  String get timelinePublishingDescription =>
-      'Only the sake information and first photo appear on the timeline. Your impressions and private notes are not shown. Help others discover more sake by sharing.';
-
-  @override
-  String get continueAnalysis => 'Continue analysis';
-
-  @override
-  String get removeCheck => 'Turn sharing off';
-
-  @override
   String get loginToToggleAutoPost => 'Sign in to change automatic posting.';
 
   @override
@@ -876,12 +863,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get takePhoto => 'Take a photo';
 
   @override
-  String get shareToTimeline => 'Share on timeline';
-
-  @override
-  String get onlyFirstImageShared => 'Only the first image will be shared.';
-
-  @override
   String get autoPostToX => 'Automatically post to X';
 
   @override
@@ -1060,20 +1041,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get manualNameSearchHint =>
       'You can search by entering the name manually';
-
-  @override
-  String get syncToChangeVisibility =>
-      'Sync to the server to change timeline visibility.';
-
-  @override
-  String get loginToChangeVisibility => 'Sign in to change visibility.';
-
-  @override
-  String get visibilityChangeHint =>
-      'You can show or hide this entry on the timeline at any time.';
-
-  @override
-  String get showOnTimeline => 'Show on timeline';
 
   @override
   String get reanalyze => 'Analyze again';
@@ -1259,18 +1226,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Analysis is unavailable because the saved ID is missing';
 
   @override
-  String get syncBeforeVisibility =>
-      'Sync to the server before changing timeline visibility';
-
-  @override
   String get errorVisibilityUpdate =>
       'Could not update visibility. Check your connection.';
-
-  @override
-  String get publishedToTimeline => 'Published to the timeline';
-
-  @override
-  String get hiddenFromTimeline => 'Hidden from the timeline';
 
   @override
   String get missingSavedIdServerSave =>

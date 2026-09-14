@@ -15,6 +15,7 @@ import '../domain/repository/mola_api_repository.dart';
 import '../domain/repository/sake_bottle_image_repository.dart';
 import '../domain/repository/sake_menu_recognition_repository.dart';
 import '../domain/repository/sake_scan_repository.dart';
+import '../domain/repository/sake_community_repository.dart';
 import '../domain/repository/place_map_repository.dart';
 import '../domain/repository/saved_sake_sync_repository.dart';
 import '../domain/repository/user_preference_repository.dart';
@@ -69,6 +70,11 @@ List<SingleChildWidget> get _repositoryProviders {
     Provider<SakeScanRepository>(
       create: (context) =>
           SakeScanApiRepository(context.read<SakeMenuRecognitionApiClient>()),
+    ),
+    Provider<SakeCommunityRepository>(
+      create: (context) => SakeCommunityApiRepository(
+        context.read<SakeMenuRecognitionApiClient>(),
+      ),
     ),
     Provider<SakeBottleImageRepository>(
       create: (_) => SakeBottleImageRepository(),

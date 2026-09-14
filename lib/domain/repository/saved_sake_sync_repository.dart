@@ -11,6 +11,7 @@ import '../../common/localization/app_locale_resolver.dart';
 import '../../common/utils/image_utils.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../infrastructure/api_client/api_client.dart';
+import '../constants/sake_community.dart';
 
 class SavedSakeTimelineUnauthorizedException implements Exception {
   const SavedSakeTimelineUnauthorizedException();
@@ -65,6 +66,7 @@ class SavedSakeSyncRepository {
     required Sake sake,
     File? imageFile,
     bool? isPublic,
+    bool publicLabelContribution = false,
   }) async {
     if (sake.savedId == null || sake.savedId!.isEmpty) {
       logger.warning('サーバー同期をスキップしました: savedIdが未設定です');
@@ -78,6 +80,7 @@ class SavedSakeSyncRepository {
         sake: sake,
         imageFile: imageFile,
         isPublic: isPublic,
+        publicLabelContribution: publicLabelContribution,
       );
 
       Response<dynamic> response;
@@ -492,6 +495,7 @@ class SavedSakeSyncRepository {
     required Sake sake,
     File? imageFile,
     bool? isPublic,
+    bool publicLabelContribution = false,
   }) async {
     final Map<String, dynamic> rawSakeJson = Map<String, dynamic>.from(
       sake.toJson(),
@@ -518,6 +522,12 @@ class SavedSakeSyncRepository {
     }
 
     payload['isPublic'] = shareFlag;
+
+    if (stage == SavedSakeSyncStage.analysisStart && publicLabelContribution) {
+      payload['publicLabelContribution'] = <String, dynamic>{
+        'consentVersion': sakeLabelConsentVersion,
+      };
+    }
 
     if (stage == SavedSakeSyncStage.analysisStart) {
       final File? effectiveImage = imageFile ?? _resolveImageFile(sake);

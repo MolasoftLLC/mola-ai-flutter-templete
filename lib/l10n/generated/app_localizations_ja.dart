@@ -538,19 +538,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timelineIntroEnvyHint => 'うらやましい日本酒は気軽に👍ボタンしてあげよう。';
 
   @override
-  String get timelinePublishingTitle => 'タイムラインへの掲載について';
-
-  @override
-  String get timelinePublishingDescription =>
-      'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。';
-
-  @override
-  String get continueAnalysis => 'このまま解析';
-
-  @override
-  String get removeCheck => 'チェックを外す';
-
-  @override
   String get loginToToggleAutoPost => 'ログインすると自動投稿を切り替えられます。';
 
   @override
@@ -846,12 +833,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get takePhoto => 'カメラで撮影';
 
   @override
-  String get shareToTimeline => 'タイムラインにも表示する';
-
-  @override
-  String get onlyFirstImageShared => '画像は1枚目だけ共有されます。';
-
-  @override
   String get autoPostToX => 'Xに自動投稿';
 
   @override
@@ -1028,18 +1009,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get manualNameSearchHint => '名前を手動で検索可能です';
 
   @override
-  String get syncToChangeVisibility => 'サーバーに同期するとタイムライン公開を切り替えられます。';
-
-  @override
-  String get loginToChangeVisibility => 'ログインすると公開設定を変更できます。';
-
-  @override
-  String get visibilityChangeHint => 'タイムラインへの公開／非公開をいつでも切り替えられます。';
-
-  @override
-  String get showOnTimeline => 'タイムラインに表示する';
-
-  @override
   String get reanalyze => '再解析';
 
   @override
@@ -1212,16 +1181,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get missingSavedIdReanalyze => '保存IDが未設定のため再解析は利用できません';
 
   @override
-  String get syncBeforeVisibility => 'サーバーに同期するとタイムライン公開を設定できます';
-
-  @override
   String get errorVisibilityUpdate => '公開設定の更新に失敗しました。通信環境をご確認ください。';
-
-  @override
-  String get publishedToTimeline => 'タイムラインに公開しました';
-
-  @override
-  String get hiddenFromTimeline => 'タイムラインでの表示をオフにしました';
 
   @override
   String get missingSavedIdServerSave => '保存IDが未設定のためサーバー保存はできません';
