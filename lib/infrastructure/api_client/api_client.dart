@@ -40,7 +40,13 @@ abstract class ApiClient extends ChopperService {
   Future<Response> promptWithFavorite(@Body() FavoriteBody body);
 
   @Get(path: 'get_latest_version')
-  Future<Response> getLatestVersion();
+  Future<Response> getLatestVersion(@Query('platform') String platform);
+
+  @Get(path: 'app-content')
+  Future<Response> fetchAppContent(@Query('platform') String platform);
+
+  @Get(path: 'sakes/recommendations')
+  Future<Response> fetchHomeSakeRecommendations(@Query('limit') int limit);
 
   @Post(path: 'saved-sakes/analysis-start')
   Future<Response> uploadSavedSakeAnalysisStart(

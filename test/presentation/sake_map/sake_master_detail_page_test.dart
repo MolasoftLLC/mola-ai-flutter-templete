@@ -164,6 +164,7 @@ void main() {
     expect(find.text('マスター純米酒'), findsWidgets);
     expect(find.text('サンプル酒造'), findsWidgets);
     expect(find.text('やわらかな香りとすっきりした後味。'), findsOneWidget);
+    expect(find.text('近くで飲める場所を探す'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
     expect(find.byKey(const Key('compact-sake-header')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);

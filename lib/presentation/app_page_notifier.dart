@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -12,11 +12,17 @@ import 'package:version/version.dart';
 import '../common/logger.dart';
 import '../common/localization/localization_extensions.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
+import '../domain/eintities/app_content.dart';
 import '../domain/repository/mola_api_repository.dart';
 import 'common/dialogs/sake_preferences_dialog.dart';
 import 'common/help/help_guide_dialog.dart';
 
 part 'app_page_notifier.freezed.dart';
+
+bool isVersionBelowMinimum({
+  required String currentVersion,
+  required String minimumVersion,
+}) => Version.parse(minimumVersion) > Version.parse(currentVersion);
 
 @freezed
 abstract class AppPageState with _$AppPageState {
@@ -25,6 +31,9 @@ abstract class AppPageState with _$AppPageState {
     @Default(false) bool needUpDate,
     @Default(false) bool hasShownPreferencesDialog,
     @Default(false) bool hasReadTimelineIntro,
+    AppReleaseSetting? releaseSetting,
+    @Default(<AppPromotion>[]) List<AppPromotion> startupPromotions,
+    @Default(<AppPromotion>[]) List<AppPromotion> homeBanners,
   }) = _AppPageState;
 }
 
@@ -46,6 +55,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   final Set<HelpGuideType> _pendingHelpTypes = {};
   bool _hasAttemptedTimelineIntro = false;
   bool _isTimelineIntroDialogOpen = false;
+  bool _isStartupPromotionOpen = false;
 
   GlobalKey first = GlobalKey();
   GlobalKey keyBottomNavigation1 = GlobalKey();
@@ -58,14 +68,41 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   @override
   Future<void> initState() async {
     super.initState();
-    final needUpDate = await isUpdateRequired();
-    state = state.copyWith(needUpDate: needUpDate);
+    AppContent? content;
+    try {
+      content = await molaApiRepository.fetchAppContent(
+        platform: Platform.isAndroid ? 'android' : 'ios',
+      );
+    } catch (error, stackTrace) {
+      logger.warning('アプリコンテンツの取得に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+    AppReleaseSetting? release = content?.release;
+    if (release == null) {
+      try {
+        release = await _fetchLegacyRelease();
+      } catch (error, stackTrace) {
+        logger.warning('旧アップデート情報の取得にも失敗しました: $error');
+        logger.info(stackTrace.toString());
+      }
+    }
+    final needUpDate = await isUpdateRequired(release);
+    state = state.copyWith(
+      needUpDate: needUpDate,
+      releaseSetting: release,
+      startupPromotions: content?.startupPromotions ?? const [],
+      homeBanners: content?.homeBanners ?? const [],
+    );
+
+    if (needUpDate) return;
+
+    await _maybeShowStartupPromotion();
 
     unawaited(_maybeShowHelpGuide(state.currentIndex));
     unawaited(_restoreTimelineIntroStatus());
 
     // アプリ起動時に好みの設定をチェック
-    _checkAndShowPreferencesDialog();
+    unawaited(_checkAndShowPreferencesDialog());
   }
 
   @override
@@ -76,8 +113,15 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   }
 
   Future<Map<String, dynamic>?> getLatestVersion() async {
-    final latestVersion = await molaApiRepository.getLatestVersion();
+    final latestVersion = await molaApiRepository.getLatestVersion(
+      platform: Platform.isAndroid ? 'android' : 'ios',
+    );
     return latestVersion;
+  }
+
+  Future<AppReleaseSetting?> _fetchLegacyRelease() async {
+    final value = await getLatestVersion();
+    return value == null ? null : AppReleaseSetting.fromJson(value);
   }
 
   Future<String> getCurrentVersion() async {
@@ -85,25 +129,27 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     return packageInfo.version;
   }
 
-  Future<bool> isUpdateRequired() async {
-    final latestVersion = await getLatestVersion();
+  Future<bool> isUpdateRequired([AppReleaseSetting? release]) async {
     final currentVersion = await getCurrentVersion();
     logger.shout(currentVersion);
-    logger.shout(latestVersion);
+    logger.shout(release);
 
-    if (latestVersion == null) {
+    if (release == null) {
       logger.info('最新バージョン情報が取得できなかったためアップデート判定をスキップします');
       return false;
     }
 
-    final latestVersionValue = latestVersion['version'];
-    if (latestVersionValue is! String || latestVersionValue.isEmpty) {
-      logger.warning('最新バージョン情報にversionキーが含まれていません: $latestVersion');
+    final latestVersionValue = release.minimumVersion;
+    if (latestVersionValue.isEmpty) {
+      logger.warning('最低バージョンが空です');
       return false;
     }
 
     try {
-      return Version.parse(latestVersionValue) > Version.parse(currentVersion);
+      return isVersionBelowMinimum(
+        currentVersion: currentVersion,
+        minimumVersion: latestVersionValue,
+      );
     } catch (error, stackTrace) {
       logger.warning('バージョン番号の解析に失敗したためアップデート判定をスキップします: $error');
       logger.info(stackTrace.toString());
@@ -131,6 +177,116 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     if (!await launchUrl(uri)) {
       throw Exception('Could not launch $url');
     }
+  }
+
+  Future<void> openPromotion(AppPromotion promotion) async {
+    final target = promotion.linkTarget;
+    if (target == null) return;
+    if (promotion.linkType == 'internal') {
+      final index = switch (target) {
+        'home' => 0,
+        'map' => 1,
+        'recommendations' => 2,
+        'timeline' => 3,
+        _ => null,
+      };
+      if (index != null) onTabTapped(index);
+      return;
+    }
+    final uri = Uri.tryParse(target);
+    if (uri == null) return;
+    await launchUrl(
+      uri,
+      mode: promotion.linkType == 'webview'
+          ? LaunchMode.inAppBrowserView
+          : LaunchMode.externalApplication,
+    );
+  }
+
+  Future<void> _maybeShowStartupPromotion() async {
+    if (_isStartupPromotionOpen || state.startupPromotions.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    AppPromotion? promotion;
+    for (final candidate in state.startupPromotions) {
+      if (!(prefs.getBool('startup_promotion_read_${candidate.id}') ?? false)) {
+        promotion = candidate;
+        break;
+      }
+    }
+    if (promotion == null || !context.mounted) return;
+    _isStartupPromotionOpen = true;
+    final selected = promotion;
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'お知らせ',
+      pageBuilder: (dialogContext, _, __) => Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  tooltip: '閉じる',
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                  child: Column(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1,
+                        child: Image.network(
+                          selected.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const ColoredBox(
+                            color: Color(0xFFF2F2F2),
+                            child: Icon(Icons.campaign_outlined, size: 72),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        selected.title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (selected.body != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          selected.body!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 15, height: 1.6),
+                        ),
+                      ],
+                      if (selected.linkTarget != null) ...[
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: () async {
+                            Navigator.of(dialogContext).pop();
+                            await openPromotion(selected);
+                          },
+                          child: const Text('詳しく見る'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await prefs.setBool('startup_promotion_read_${selected.id}', true);
+    _isStartupPromotionOpen = false;
   }
 
   HelpGuideType? _mapIndexToHelpType(int index) {
