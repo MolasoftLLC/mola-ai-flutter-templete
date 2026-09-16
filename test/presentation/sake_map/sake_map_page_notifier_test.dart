@@ -70,6 +70,7 @@ void main() {
 
     expect(nearest?.venueId, 'nearer_venue');
     expect(source.venueCalls, 2);
+    expect(source.requestedSakeIds, everyElement(1));
     expect(notifier.state.selectedSake, sake);
     expect(notifier.state.isLoading, isFalse);
     notifier.dispose();
@@ -127,6 +128,7 @@ class _FakeMapDataSource implements SakeMapDataSource {
 
 class _NearestMapDataSource implements SakeMapDataSource {
   var venueCalls = 0;
+  final requestedSakeIds = <int?>[];
 
   @override
   Future<List<MapVenue>> fetchVenues({
@@ -140,6 +142,7 @@ class _NearestMapDataSource implements SakeMapDataSource {
     int? sinceDays,
   }) async {
     venueCalls += 1;
+    requestedSakeIds.add(sakeId);
     if (venueCalls == 1) {
       return const [
         MapVenue(

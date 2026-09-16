@@ -145,12 +145,44 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
-  Future<Response<dynamic>> getLatestVersion() {
+  Future<Response<dynamic>> getLatestVersion(String platform) {
     final Uri $url = Uri.parse('/get_latest_version');
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'platform': platform
+    };
     final Request $request = Request(
       'GET',
       $url,
       client.baseUrl,
+      parameters: $params,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> fetchAppContent(String platform) {
+    final Uri $url = Uri.parse('/app-content');
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'platform': platform
+    };
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      parameters: $params,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
+  Future<Response<dynamic>> fetchHomeSakeRecommendations(int limit) {
+    final Uri $url = Uri.parse('/sakes/recommendations');
+    final Map<String, dynamic> $params = <String, dynamic>{'limit': limit};
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      parameters: $params,
     );
     return client.send<dynamic, dynamic>($request);
   }

@@ -18,13 +18,15 @@ import 'sake_map_page_notifier.dart';
 import 'sake_master_detail_page.dart';
 
 class SakeMapPage extends StatefulWidget {
-  const SakeMapPage._();
+  const SakeMapPage._({this.initialSake});
 
-  static Widget wrapped() =>
+  final SakeMapSearchResult? initialSake;
+
+  static Widget wrapped({SakeMapSearchResult? initialSake}) =>
       StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
         create: (context) =>
             SakeMapPageNotifier(context.read<PlaceMapRepository>()),
-        child: const SakeMapPage._(),
+        child: SakeMapPage._(initialSake: initialSake),
       );
 
   @override
@@ -48,6 +50,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
   GoogleMapController? _mapController;
   LatLng? _lastKnownLocation;
   double _zoom = _initialCamera.zoom;
+  bool _didApplyInitialSake = false;
 
   @override
   void dispose() {
@@ -93,8 +96,14 @@ class _SakeMapPageState extends State<SakeMapPage> {
             zoomControlsEnabled: false,
             onMapCreated: (controller) async {
               _mapController = controller;
-              unawaited(_moveToCurrentLocationIfAvailable());
-              await _loadVisibleBounds(notifier);
+              await _moveToCurrentLocationIfAvailable();
+              final initialSake = widget.initialSake;
+              if (initialSake != null && !_didApplyInitialSake) {
+                _didApplyInitialSake = true;
+                await _selectSakeAndMoveToNearest(notifier, initialSake);
+              } else {
+                await _loadVisibleBounds(notifier);
+              }
             },
             onCameraMove: (position) => _zoom = position.zoom,
             onCameraIdle: () => _loadVisibleBounds(notifier),

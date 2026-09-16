@@ -10,6 +10,7 @@ import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page
 import 'package:provider/provider.dart';
 
 import '../common/localization/localization_extensions.dart';
+import '../domain/eintities/app_content.dart';
 import 'app_page_notifier.dart';
 
 class AppPage extends StatelessWidget {
@@ -33,9 +34,12 @@ class AppPage extends StatelessWidget {
       (AppPageState state) => state.currentIndex,
     );
     final needUpDate = context.select((AppPageState state) => state.needUpDate);
+    final release = context.select(
+      (AppPageState state) => state.releaseSetting,
+    );
 
     if (needUpDate) {
-      return requireUpdate(context, notifier);
+      return requireUpdate(context, notifier, release);
     }
 
     return Scaffold(
@@ -194,7 +198,13 @@ class _NavigationItem extends StatelessWidget {
   }
 }
 
-Widget requireUpdate(BuildContext context, AppPageNotifier notifier) {
+Widget requireUpdate(
+  BuildContext context,
+  AppPageNotifier notifier,
+  AppReleaseSetting? release,
+) {
+  final storeUrl =
+      release?.storeUrl ?? (Platform.isIOS ? APP_STORE_URL : PLAY_STORE_URL);
   return Scaffold(
     body: Center(
       child: Padding(
@@ -202,17 +212,31 @@ Widget requireUpdate(BuildContext context, AppPageNotifier notifier) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(context.l10n.updateRequiredMessage),
+            Text(
+              context.l10n.updateRequiredMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            if (release?.message != null) ...[
+              const SizedBox(height: 16),
+              Text(release!.message!, textAlign: TextAlign.center),
+              if (release.messageUrl != null)
+                TextButton(
+                  onPressed: () => notifier.launchURL(release.messageUrl!),
+                  child: const Text('詳しく見る'),
+                ),
+            ],
+            const SizedBox(height: 12),
             Platform.isIOS
                 ? TextButton(
                     onPressed: () async {
-                      await notifier.launchURL(APP_STORE_URL);
+                      await notifier.launchURL(storeUrl);
                     },
                     child: Text(context.l10n.openAppStore),
                   )
                 : TextButton(
                     onPressed: () async {
-                      await notifier.launchURL(PLAY_STORE_URL);
+                      await notifier.launchURL(storeUrl);
                     },
                     child: Text(context.l10n.openPlayStore),
                   ),

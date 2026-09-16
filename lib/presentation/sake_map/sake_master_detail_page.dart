@@ -27,6 +27,7 @@ import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/sake_community_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
+import 'sake_map_page.dart';
 
 const _navy = Color(0xFF143861);
 const _orange = Color(0xFFFF7A1A);
@@ -1024,6 +1025,13 @@ class _Details extends StatelessWidget {
                 title: 'あなたの好みマッチ度',
                 child: _LoginRecommendationPrompt(),
               ),
+            if (overview != null && detailSake.sakeId != null)
+              _Section(
+                child: _NearbyVenueButton(
+                  sake: detailSake,
+                  displayName: preferredName ?? sake?.name ?? fallback.name,
+                ),
+              ),
             if (tasteAxes.isNotEmpty ||
                 master.tasteTags.isNotEmpty ||
                 master.aromaTags.isNotEmpty)
@@ -1249,6 +1257,43 @@ class _Details extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NearbyVenueButton extends StatelessWidget {
+  const _NearbyVenueButton({required this.sake, required this.displayName});
+
+  final Sake sake;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    style: OutlinedButton.styleFrom(
+      foregroundColor: _navy,
+      side: const BorderSide(color: _navy),
+      minimumSize: const Size.fromHeight(52),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+    icon: const Icon(Icons.location_on_outlined),
+    label: const Text(
+      '近くで飲める場所を探す',
+      style: TextStyle(fontWeight: FontWeight.w800),
+    ),
+    onPressed: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SakeMapPage.wrapped(
+          initialSake: SakeMapSearchResult(
+            sakeId: sake.sakeId,
+            name: displayName,
+            brewery: sake.brewery,
+            type: sake.type,
+            primaryImageUrl: sake.primaryImageUrl,
+            thumbnailImageUrl: sake.thumbnailImageUrl,
+            isMaster: true,
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _MasterSaveButton extends StatelessWidget {

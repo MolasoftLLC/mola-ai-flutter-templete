@@ -9,6 +9,7 @@ import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/request/favorite_body.dart';
+import '../eintities/app_content.dart';
 
 class MolaApiRepository {
   MolaApiRepository(this._apiClient);
@@ -144,8 +145,10 @@ class MolaApiRepository {
     }
   }
 
-  Future<Map<String, dynamic>?> getLatestVersion() async {
-    final response = await _apiClient.getLatestVersion();
+  Future<Map<String, dynamic>?> getLatestVersion({
+    required String platform,
+  }) async {
+    final response = await _apiClient.getLatestVersion(platform);
     if (response.isSuccessful) {
       logger.shout(response.body);
       final responseBodyJson = response.body as Map<String, dynamic>;
@@ -154,5 +157,31 @@ class MolaApiRepository {
       logger.shout(response.error);
     }
     return null;
+  }
+
+  Future<AppContent?> fetchAppContent({required String platform}) async {
+    final response = await _apiClient.fetchAppContent(platform);
+    if (!response.isSuccessful || response.body is! Map) {
+      logger.warning('アプリコンテンツを取得できませんでした: ${response.error}');
+      return null;
+    }
+    return AppContent.fromJson(Map<String, dynamic>.from(response.body as Map));
+  }
+
+  Future<List<HomeSakeRecommendation>> fetchHomeSakeRecommendations({
+    int limit = 7,
+  }) async {
+    final response = await _apiClient.fetchHomeSakeRecommendations(limit);
+    if (!response.isSuccessful || response.body is! Map) return const [];
+    final body = Map<String, dynamic>.from(response.body as Map);
+    final items = body['recommendations'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map(
+          (item) =>
+              HomeSakeRecommendation.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
   }
 }

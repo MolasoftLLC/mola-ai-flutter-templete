@@ -8,11 +8,14 @@ import 'package:provider/provider.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
+import '../../domain/eintities/app_content.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/mola_api_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
@@ -94,6 +97,7 @@ class NewHomePage extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.only(top: 34, bottom: 34),
                 children: [
+                  const _HomePromotionBanners(),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
                     onMoreTap: () => Navigator.of(context).push(
@@ -155,6 +159,8 @@ class NewHomePage extends StatelessWidget {
                         }
                       },
                     ),
+                  const SizedBox(height: 28),
+                  const _HomeRecommendations(),
                   const SizedBox(height: 28),
                   _SectionTitle(
                     title: context.l10n.newHomeTimeline,
@@ -239,6 +245,198 @@ class NewHomePage extends StatelessWidget {
       );
     }
   }
+}
+
+class _HomePromotionBanners extends StatefulWidget {
+  const _HomePromotionBanners();
+
+  @override
+  State<_HomePromotionBanners> createState() => _HomePromotionBannersState();
+}
+
+class _HomePromotionBannersState extends State<_HomePromotionBanners> {
+  int _page = 0;
+  final _controller = PageController(viewportFraction: 0.9);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final banners = context.select((AppPageState state) => state.homeBanners);
+    if (banners.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 126,
+            child: PageView.builder(
+              controller: _controller,
+              onPageChanged: (value) => setState(() => _page = value),
+              itemCount: banners.length,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: _PromotionBanner(banner: banners[index]),
+              ),
+            ),
+          ),
+          if (banners.length > 1) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                banners.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: index == _page ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: index == _page
+                        ? _brandColor
+                        : const Color(0xFFD0D5DB),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PromotionBanner extends StatelessWidget {
+  const _PromotionBanner({required this.banner});
+
+  final AppPromotion banner;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: const Color(0xFFF2F2F2),
+    borderRadius: BorderRadius.circular(14),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: banner.linkTarget == null
+          ? null
+          : () => context.read<AppPageNotifier>().openPromotion(banner),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            banner.imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                const Center(child: Icon(Icons.campaign_outlined, size: 44)),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 18, 12, 8),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xCC000000)],
+                ),
+              ),
+              child: Text(
+                banner.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _HomeRecommendations extends StatefulWidget {
+  const _HomeRecommendations();
+
+  @override
+  State<_HomeRecommendations> createState() => _HomeRecommendationsState();
+}
+
+class _HomeRecommendationsState extends State<_HomeRecommendations> {
+  Future<List<HomeSakeRecommendation>>? _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future ??= context.read<MolaApiRepository>().fetchHomeSakeRecommendations(
+      limit: 7,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FutureBuilder<List<HomeSakeRecommendation>>(
+        future: _future,
+        builder: (context, snapshot) {
+          final recommendations = snapshot.data ?? const [];
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const SizedBox(
+              height: 110,
+              child: Center(
+                child: CircularProgressIndicator(color: _brandColor),
+              ),
+            );
+          }
+          if (recommendations.isEmpty) return const SizedBox.shrink();
+          final sakes = recommendations
+              .map(
+                (item) => Sake(
+                  sakeId: item.sakeId,
+                  name: item.name,
+                  brewery: item.brewery,
+                  type: item.type,
+                  primaryImageUrl: item.imageUrl,
+                  recommendationScore: item.score,
+                ),
+              )
+              .toList(growable: false);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionTitle(title: 'あなたが好きそうな日本酒'),
+              const SizedBox(height: 10),
+              _SakeCardRail(
+                sakes: sakes,
+                subtitleBuilder: (sake) => sake.brewery,
+                actionBuilder: (_) => const SizedBox.shrink(),
+                onTap: (sake) => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SakeMasterDetailPage(
+                      venueSake: VenueSake(
+                        sakeId: sake.sakeId,
+                        name: sake.name ?? '',
+                        brewery: sake.brewery,
+                        type: sake.type,
+                        recordCount: 0,
+                        primaryImageUrl: sake.primaryImageUrl,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
 }
 
 /// ヘッダーと下部ナビから共通利用する高速ラベルスキャン導線。
@@ -488,7 +686,15 @@ class _SakeCard extends StatelessWidget {
                   height: 203,
                   child: _SakeImage(sake: sake),
                 ),
-                if (sake.sakeId != null)
+                if (sake.recommendationScore != null)
+                  Positioned(
+                    left: 6,
+                    top: 6,
+                    child: _MatchPercentBadge(
+                      percent: sake.recommendationScore!,
+                    ),
+                  )
+                else if (sake.sakeId != null)
                   Positioned(
                     left: 6,
                     top: 6,
@@ -619,30 +825,37 @@ class _SakeMatchBadgeState extends State<_SakeMatchBadge> {
         final profile = snapshot.data?.master.tasteProfile;
         if (profile == null) return const SizedBox.shrink();
         final percent = _matchPercent(profile, preference);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
-            ),
-            borderRadius: BorderRadius.circular(99),
-            boxShadow: const [
-              BoxShadow(color: Color(0x33000000), blurRadius: 5),
-            ],
-          ),
-          child: Text(
-            '$percent%',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              height: 1,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        );
+        return _MatchPercentBadge(percent: percent);
       },
     );
   }
+}
+
+class _MatchPercentBadge extends StatelessWidget {
+  const _MatchPercentBadge({required this.percent});
+
+  final int percent;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
+      ),
+      borderRadius: BorderRadius.circular(99),
+      boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 5)],
+    ),
+    child: Text(
+      '$percent%',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 11,
+        height: 1,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+  );
 }
 
 int _matchPercent(
