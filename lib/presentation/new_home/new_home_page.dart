@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
-import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/app_content.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
@@ -34,7 +33,19 @@ const _scanColor = Color(0xFFFF7A1A);
 const _bodyTextColor = Color(0xFF404040);
 const _sakeCardRailHeight = 275.0;
 
-class NewHomePage extends StatelessWidget {
+/// ホーム上の複数レールで同じ日本酒を描き直しても詳細を再取得しない。
+class SakeMatchOverviewCache {
+  final Map<int, Future<SakeOverview>> _futures = {};
+
+  Future<SakeOverview> fetch(
+    int sakeId,
+    Future<SakeOverview> Function(int) loader,
+  ) => _futures.putIfAbsent(sakeId, () => loader(sakeId));
+
+  void clear() => _futures.clear();
+}
+
+class NewHomePage extends StatefulWidget {
   const NewHomePage._();
 
   static Widget wrapped() {
@@ -43,6 +54,18 @@ class NewHomePage extends StatelessWidget {
       child: const NewHomePage._(),
     );
   }
+
+  @override
+  State<NewHomePage> createState() => _NewHomePageState();
+}
+
+class _NewHomePageState extends State<NewHomePage> {
+  final SakeMatchOverviewCache _overviewCache = SakeMatchOverviewCache();
+
+  Future<SakeOverview> _overviewFor(int sakeId) => _overviewCache.fetch(
+    sakeId,
+    (id) => context.read<SakeScanRepository>().fetchOverview(id),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +109,7 @@ class NewHomePage extends StatelessWidget {
             child: RefreshIndicator(
               color: _brandColor,
               onRefresh: () async {
+                _overviewCache.clear();
                 await Future.wait([
                   notifier.refresh(),
                   savedNotifier.reloadLocal(),
@@ -112,6 +136,7 @@ class NewHomePage extends StatelessWidget {
                   else
                     _SakeCardRail(
                       sakes: savedSakes.take(10).toList(),
+                      overviewFor: _overviewFor,
                       actionBuilder: (sake) {
                         final name = _displayName(context, sake);
                         final isFavorite = favorites.any(
@@ -160,7 +185,7 @@ class NewHomePage extends StatelessWidget {
                       },
                     ),
                   const SizedBox(height: 28),
-                  const _HomeRecommendations(),
+                  _HomeRecommendations(overviewFor: _overviewFor),
                   const SizedBox(height: 28),
                   _SectionTitle(
                     title: context.l10n.newHomeTimeline,
@@ -185,6 +210,7 @@ class NewHomePage extends StatelessWidget {
                   else
                     _SakeCardRail(
                       sakes: timelineSakes.take(10).toList(),
+                      overviewFor: _overviewFor,
                       actionBuilder: (sake) {
                         final key = TimelinePageNotifier.envyKey(sake);
                         final isEnvied = enviedIds.contains(key);
@@ -365,7 +391,9 @@ class _PromotionBanner extends StatelessWidget {
 }
 
 class _HomeRecommendations extends StatefulWidget {
-  const _HomeRecommendations();
+  const _HomeRecommendations({required this.overviewFor});
+
+  final Future<SakeOverview> Function(int) overviewFor;
 
   @override
   State<_HomeRecommendations> createState() => _HomeRecommendationsState();
@@ -405,7 +433,6 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                   brewery: item.brewery,
                   type: item.type,
                   primaryImageUrl: item.imageUrl,
-                  recommendationScore: item.score,
                 ),
               )
               .toList(growable: false);
@@ -416,6 +443,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
               const SizedBox(height: 10),
               _SakeCardRail(
                 sakes: sakes,
+                overviewFor: widget.overviewFor,
                 subtitleBuilder: (sake) => sake.brewery,
                 actionBuilder: (_) => const SizedBox.shrink(),
                 onTap: (sake) => Navigator.of(context).push(
@@ -617,6 +645,7 @@ class _SectionTitle extends StatelessWidget {
 class _SakeCardRail extends StatelessWidget {
   const _SakeCardRail({
     required this.sakes,
+    required this.overviewFor,
     required this.subtitleBuilder,
     required this.actionBuilder,
     required this.onTap,
@@ -624,6 +653,7 @@ class _SakeCardRail extends StatelessWidget {
   });
 
   final List<Sake> sakes;
+  final Future<SakeOverview> Function(int) overviewFor;
   final String? Function(Sake sake) subtitleBuilder;
   final String? Function(Sake sake)? footerBuilder;
   final Widget Function(Sake sake) actionBuilder;
@@ -643,6 +673,9 @@ class _SakeCardRail extends StatelessWidget {
           final sake = sakes[index];
           return _SakeCard(
             sake: sake,
+            overviewFuture: sake.sakeId == null
+                ? null
+                : overviewFor(sake.sakeId!),
             subtitle: subtitleBuilder(sake),
             footer: footerBuilder?.call(sake),
             action: actionBuilder(sake),
@@ -657,6 +690,7 @@ class _SakeCardRail extends StatelessWidget {
 class _SakeCard extends StatelessWidget {
   const _SakeCard({
     required this.sake,
+    required this.overviewFuture,
     required this.subtitle,
     required this.action,
     required this.onTap,
@@ -664,6 +698,7 @@ class _SakeCard extends StatelessWidget {
   });
 
   final Sake sake;
+  final Future<SakeOverview>? overviewFuture;
   final String? subtitle;
   final String? footer;
   final Widget action;
@@ -686,19 +721,11 @@ class _SakeCard extends StatelessWidget {
                   height: 203,
                   child: _SakeImage(sake: sake),
                 ),
-                if (sake.recommendationScore != null)
+                if (overviewFuture != null)
                   Positioned(
                     left: 6,
                     top: 6,
-                    child: _MatchPercentBadge(
-                      percent: sake.recommendationScore!,
-                    ),
-                  )
-                else if (sake.sakeId != null)
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: _SakeMatchBadge(sakeId: sake.sakeId!),
+                    child: _SakeMatchBadge(overviewFuture: overviewFuture!),
                   ),
                 Positioned(right: 2, bottom: 4, child: action),
               ],
@@ -785,46 +812,24 @@ class _SakeImage extends StatelessWidget {
   }
 }
 
-class _SakeMatchBadge extends StatefulWidget {
-  const _SakeMatchBadge({required this.sakeId});
+class _SakeMatchBadge extends StatelessWidget {
+  const _SakeMatchBadge({required this.overviewFuture});
 
-  final int sakeId;
-
-  @override
-  State<_SakeMatchBadge> createState() => _SakeMatchBadgeState();
-}
-
-class _SakeMatchBadgeState extends State<_SakeMatchBadge> {
-  Future<SakeOverview>? _overviewFuture;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _overviewFuture ??= context.read<SakeScanRepository>().fetchOverview(
-      widget.sakeId,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _SakeMatchBadge oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.sakeId != widget.sakeId) {
-      _overviewFuture = context.read<SakeScanRepository>().fetchOverview(
-        widget.sakeId,
-      );
-    }
-  }
+  final Future<SakeOverview> overviewFuture;
 
   @override
   Widget build(BuildContext context) {
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
     if (preference == null) return const SizedBox.shrink();
     return FutureBuilder<SakeOverview>(
-      future: _overviewFuture,
+      future: overviewFuture,
       builder: (context, snapshot) {
         final profile = snapshot.data?.master.tasteProfile;
         if (profile == null) return const SizedBox.shrink();
-        final percent = _matchPercent(profile, preference);
+        final percent = calculateSakeTastePreferenceMatchPercent(
+          profile: profile,
+          preference: preference,
+        );
         return _MatchPercentBadge(percent: percent);
       },
     );
@@ -857,28 +862,6 @@ class _MatchPercentBadge extends StatelessWidget {
     ),
   );
 }
-
-int _matchPercent(
-  SakeTasteProfileDetails profile,
-  TastePreferenceProfile preference,
-) => calculateTastePreferenceMatchPercent(
-  sakeValues: [
-    profile.fruity,
-    profile.sweetness,
-    profile.acidity,
-    profile.body ?? profile.umami,
-    profile.kire,
-    profile.dryness,
-  ],
-  preferenceValues: [
-    preference.fruity,
-    preference.sweetness,
-    preference.acidity,
-    preference.umami,
-    preference.kire,
-    preference.spiciness,
-  ],
-);
 
 /// 一覧カードはユーザー写真、マスターのサムネイル、詳細画像の順で表示する。
 String? preferredSakeCardImagePath(Sake sake) {

@@ -117,6 +117,32 @@ void main() {
     );
   });
 
+  test('一覧と詳細で共通の味わいマッチ度を使用する', () {
+    const profile = SakeTasteProfileDetails(
+      fruity: .7,
+      sweetness: .5,
+      acidity: .4,
+      umami: .6,
+      kire: .8,
+      dryness: .3,
+    );
+    const preference = TastePreferenceProfile(
+      fruity: .7,
+      sweetness: .5,
+      acidity: .4,
+      umami: .6,
+      kire: .8,
+      spiciness: .3,
+    );
+    expect(
+      calculateSakeTastePreferenceMatchPercent(
+        profile: profile,
+        preference: preference,
+      ),
+      100,
+    );
+  });
+
   test('あなたが感じた味わいの5段階評価を保存用JSONに保持する', () {
     const sake = Sake(
       personalTasteRatings: {
@@ -173,6 +199,12 @@ void main() {
     expect(find.byKey(const Key('sake-taste-radar-chart')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('この食事に合うかも！'), 300);
     expect(find.text('ぶり大根・煮付け'), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('pairing-assets/images/pairings/simmered_fish.jpg'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('50%'), findsOneWidget);
     expect(find.text('+2.5'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('容量と参考価格'), 300);
@@ -336,6 +368,42 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('あなたの記録の編集中に余白をタップするとフォーカスが外れる', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    await saved.addSavedSake(const Sake(sakeId: 123, name: 'マスター純米酒'));
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<SakeScanRepository>.value(value: _FakeSakeScanRepository()),
+          Provider<SavedSakeNotifier>.value(value: saved),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('ja'),
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: 'マスター純米酒', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('編集'), 300);
+    await tester.tap(find.text('編集'));
+    await tester.pumpAndSettle();
+    final memo = find.byType(TextField).first;
+    await tester.tap(memo);
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+    await tester.tap(find.text('あなたの記録を編集'));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
   });
 
   test('詳細APIの文字列数値と分類・スタイルを保持する', () {

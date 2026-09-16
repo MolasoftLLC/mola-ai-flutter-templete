@@ -309,7 +309,10 @@ class _ProfilePreview extends StatelessWidget {
         if (profile == null) return const _ProfileUnavailable();
         final match = preference == null
             ? null
-            : _matchPercent(profile: profile, preference: preference!);
+            : calculateSakeTastePreferenceMatchPercent(
+                profile: profile,
+                preference: preference!,
+              );
         return Row(
           children: [
             Expanded(
@@ -689,14 +692,6 @@ List<double> _preferenceValues(TastePreferenceProfile preference) => [
   preference.kire,
   preference.spiciness,
 ];
-
-int _matchPercent({
-  required SakeTasteProfileDetails profile,
-  required TastePreferenceProfile preference,
-}) => calculateTastePreferenceMatchPercent(
-  sakeValues: _profileValues(profile),
-  preferenceValues: _preferenceValues(preference),
-);
 
 String _name(Sake sake) {
   final name = sake.name?.trim();
