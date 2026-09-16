@@ -480,6 +480,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           );
     final community =
         _headerOverview?.community ?? const SakeCommunitySummary();
+    final hasScoreSummary =
+        !_isFetchingDetails &&
+        (matchPercent != null || community.averageRating != null);
+    final heroExpandedHeight = hasScoreSummary ? 440.0 : 370.0;
     final headerImagePaths = detailImagePaths(
       personalRecord: record,
       overviewSake: overviewSake,
@@ -514,7 +518,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       pinned: true,
                       stretch: true,
                       collapsedHeight: 98,
-                      expandedHeight: 370,
+                      expandedHeight: heroExpandedHeight,
                       backgroundColor: _navy,
                       elevation: 0,
                       iconTheme: const IconThemeData(color: Colors.white),
@@ -544,6 +548,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                         onImageAction: _handleCommunityImage,
                         isProfileEnrichmentPending: isProfileEnrichmentPending,
                         isFetchingDetails: _isFetchingDetails,
+                        expandedHeight: heroExpandedHeight,
                       ),
                     ),
                     if (snapshot.hasError)
@@ -612,6 +617,7 @@ class _CollapsingSakeHero extends StatefulWidget {
     required this.onImageAction,
     required this.isProfileEnrichmentPending,
     required this.isFetchingDetails,
+    required this.expandedHeight,
   });
 
   final String? name;
@@ -621,6 +627,7 @@ class _CollapsingSakeHero extends StatefulWidget {
   final ValueChanged<SakeCommunityImage> onImageAction;
   final bool isProfileEnrichmentPending;
   final bool isFetchingDetails;
+  final double expandedHeight;
 
   @override
   State<_CollapsingSakeHero> createState() => _CollapsingSakeHeroState();
@@ -647,7 +654,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
     builder: (context, constraints) {
       final topInset = MediaQuery.paddingOf(context).top;
       final collapsedHeight = topInset + 98;
-      final expandedHeight = topInset + 370;
+      final expandedHeight = topInset + widget.expandedHeight;
       final expandedProgress =
           ((constraints.maxHeight - collapsedHeight) /
                   (expandedHeight - collapsedHeight))
@@ -660,15 +667,19 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
       )!;
       final imageHeight = lerpDouble(240, 40, collapsedProgress)!;
       final imageLeft = lerpDouble(20, 64, collapsedProgress)!;
+      final hasScoreSummary =
+          !widget.isFetchingDetails &&
+          (widget.matchPercent != null ||
+              widget.community.averageRating != null);
+      // Leave room for both three-line scores above the photo, even at 320dp.
       final imageTop = lerpDouble(
         topInset +
             kToolbarHeight +
-            (widget.matchPercent == null &&
-                    widget.community.averageRating == null &&
-                    !widget.isProfileEnrichmentPending &&
-                    !widget.isFetchingDetails
-                ? 18
-                : 58),
+            (hasScoreSummary
+                ? 114
+                : widget.isProfileEnrichmentPending || widget.isFetchingDetails
+                ? 58
+                : 18),
         topInset + 8,
         collapsedProgress,
       )!;
@@ -682,6 +693,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
             width: imageWidth,
             height: imageHeight,
             child: ClipRRect(
+              key: const Key('sake-hero-image'),
               borderRadius: BorderRadius.circular(
                 lerpDouble(16, 9, collapsedProgress)!,
               ),
@@ -806,6 +818,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
               child: Opacity(
                 opacity: expandedProgress,
                 child: _SakeScoreSummary(
+                  key: const Key('sake-score-summary'),
                   matchPercent: widget.matchPercent,
                   averageRating: widget.community.averageRating,
                   reviewCount: widget.community.reviewCount,
@@ -1266,14 +1279,15 @@ class _NearbyVenueButton extends StatelessWidget {
   final String displayName;
 
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-    style: OutlinedButton.styleFrom(
-      foregroundColor: _navy,
-      side: const BorderSide(color: _navy),
-      minimumSize: const Size.fromHeight(52),
+  Widget build(BuildContext context) => FilledButton.icon(
+    style: FilledButton.styleFrom(
+      backgroundColor: _navy,
+      foregroundColor: Colors.white,
+      minimumSize: const Size.fromHeight(56),
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
-    icon: const Icon(Icons.location_on_outlined),
+    icon: const Icon(Icons.location_on, size: 22),
     label: const Text(
       '近くで飲める場所を探す',
       style: TextStyle(fontWeight: FontWeight.w800),
@@ -1730,6 +1744,7 @@ int calculateTastePreferenceMatchPercent({
 
 class _SakeScoreSummary extends StatelessWidget {
   const _SakeScoreSummary({
+    super.key,
     required this.matchPercent,
     required this.averageRating,
     required this.reviewCount,
@@ -1753,10 +1768,11 @@ class _SakeScoreSummary extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Text(
                     'みんなの評価',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -1765,6 +1781,8 @@ class _SakeScoreSummary extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Row(
+                    key: const Key('sake-community-rating-line'),
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
                         Icons.star_rounded,
@@ -1780,15 +1798,12 @@ class _SakeScoreSummary extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '($reviewCount件)',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
                     ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '($reviewCount件)',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
@@ -1933,34 +1948,31 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'あなたの好みマッチ度',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '$shownPercent%',
-                    style: const TextStyle(
-                      color: Color(0xFFFFB347),
-                      fontSize: 20,
-                      height: 1,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+              const Text(
+                'あなたの好みマッチ度',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 5),
+              Text(
+                '$shownPercent%',
+                style: const TextStyle(
+                  color: Color(0xFFFFB347),
+                  fontSize: 20,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 9),
               LayoutBuilder(
                 builder: (context, constraints) => Container(
+                  key: const Key('sake-match-gauge'),
                   height: 8,
                   decoration: BoxDecoration(
                     color: Colors.white24,
@@ -2450,13 +2462,23 @@ class _CommunityReviewsSection extends StatelessWidget {
         children: [
           const Icon(Icons.star_rounded, color: Color(0xFFFFB02E)),
           const SizedBox(width: 5),
-          Text(
-            community.averageRating == null
-                ? 'まだ評価はありません'
-                : '${community.averageRating!.toStringAsFixed(1)} (${community.reviewCount}件)',
-            style: const TextStyle(color: _navy, fontWeight: FontWeight.w800),
+          Expanded(
+            child: Text(
+              community.averageRating == null
+                  ? 'まだ評価はありません'
+                  : '${community.averageRating!.toStringAsFixed(1)} (${community.reviewCount}件)',
+              style: TextStyle(
+                color: community.averageRating == null
+                    ? const Color(0xFF647184)
+                    : _navy,
+                fontSize: community.averageRating == null ? 12 : 14,
+                fontWeight: community.averageRating == null
+                    ? FontWeight.w600
+                    : FontWeight.w800,
+              ),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 16),
           FilledButton.icon(
             key: const Key('sake-community-review-button'),
             onPressed: () => onReview(community.myReview),

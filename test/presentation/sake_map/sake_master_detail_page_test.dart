@@ -15,6 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/my_page/my_page_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/preferences/taste_preference_profile.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
@@ -233,6 +235,106 @@ void main() {
     expect(find.text('4.2 (12件)'), findsOneWidget);
     expect(find.text('華やかでおいしい'), findsOneWidget);
     expect(find.text('このお酒を評価'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('マッチ度とみんなの評価を中央に揃え、画像との間隔を確保する', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = _FakeSakeScanRepository(
+      overview: const SakeOverview(
+        sake: Sake(sakeId: 123, name: '来福'),
+        analysisCompleted: true,
+        master: SakeMasterDetails(
+          tasteProfile: SakeTasteProfileDetails(
+            fruity: .7,
+            sweetness: .5,
+            acidity: .4,
+            umami: .6,
+            kire: .8,
+            dryness: .3,
+          ),
+        ),
+        community: SakeCommunitySummary(averageRating: 4.2, reviewCount: 12),
+      ),
+    );
+    await tester.pumpWidget(
+      Provider<MyPageState?>.value(
+        value: const MyPageState(
+          tasteProfile: TastePreferenceProfile(
+            fruity: .7,
+            sweetness: .5,
+            acidity: .4,
+            umami: .6,
+            kire: .8,
+            spiciness: .3,
+          ),
+        ),
+        child: Provider<SakeScanRepository>.value(
+          value: repository,
+          child: const MaterialApp(
+            home: SakeMasterDetailPage(
+              venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final summary = tester.getRect(find.byKey(const Key('sake-score-summary')));
+    final image = tester.getRect(find.byKey(const Key('sake-hero-image')));
+    expect(image.top - summary.bottom, greaterThanOrEqualTo(16));
+    final title = tester.getCenter(find.text('あなたの好みマッチ度'));
+    final percent = tester.getCenter(find.text('100%'));
+    final gauge = tester.getCenter(find.byKey(const Key('sake-match-gauge')));
+    expect((title.dx - percent.dx).abs(), lessThan(2));
+    expect((title.dx - gauge.dx).abs(), lessThan(2));
+    final ratingTitle = tester.getCenter(find.text('みんなの評価').first);
+    final ratingLine = tester.getCenter(
+      find.byKey(const Key('sake-community-rating-line')),
+    );
+    expect((ratingTitle.dx - ratingLine.dx).abs(), lessThan(2));
+    await tester.binding.setSurfaceSize(const Size(320, 844));
+    await tester.pumpAndSettle();
+    final narrowSummary = tester.getRect(
+      find.byKey(const Key('sake-score-summary')),
+    );
+    final narrowImage = tester.getRect(
+      find.byKey(const Key('sake-hero-image')),
+    );
+    expect(narrowImage.top - narrowSummary.bottom, greaterThanOrEqualTo(16));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('評価がない場合の余白と近くで飲める場所のCTAを表示する', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      Provider<SakeScanRepository>.value(
+        value: _FakeSakeScanRepository(),
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('まだ評価はありません'), 300);
+    final emptyText = tester.widget<Text>(find.text('まだ評価はありません'));
+    expect(emptyText.style?.fontSize, 12);
+    final emptyRect = tester.getRect(find.text('まだ評価はありません'));
+    final reviewRect = tester.getRect(find.text('このお酒を評価'));
+    expect(reviewRect.left - emptyRect.right, greaterThanOrEqualTo(12));
+    await tester.scrollUntilVisible(find.text('近くで飲める場所を探す'), 300);
+    expect(
+      find.ancestor(
+        of: find.text('近くで飲める場所を探す'),
+        matching: find.byType(FilledButton),
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
