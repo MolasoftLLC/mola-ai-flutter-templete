@@ -200,9 +200,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('この食事に合うかも！'), 300);
     expect(find.text('ぶり大根・煮付け'), findsOneWidget);
     expect(
-      find.byKey(
-        const Key('pairing-assets/images/pairings/simmered_fish.jpg'),
-      ),
+      find.byKey(const Key('pairing-assets/images/pairings/simmered_fish.jpg')),
       findsOneWidget,
     );
     expect(find.text('50%'), findsOneWidget);
@@ -241,7 +239,25 @@ void main() {
               sakeId: 123,
               overallRating: 5,
               username: '酒好き',
+              imageUrl: 'https://example.com/review.jpg',
               comment: '華やかでおいしい',
+              tasteRatings: const {
+                'fruity': 5,
+                'sweetness': 4,
+                'acidity': 3,
+                'umami': 4,
+                'kire': 5,
+                'spiciness': 2,
+              },
+              createdAt: DateTime(2026, 9, 14),
+              updatedAt: DateTime(2026, 9, 14),
+            ),
+            SakeCommunityReview(
+              reviewId: 10,
+              sakeId: 123,
+              overallRating: 3,
+              username: '辛口好き',
+              tasteRatings: const {'acidity': 3},
               createdAt: DateTime(2026, 9, 14),
               updatedAt: DateTime(2026, 9, 14),
             ),
@@ -266,7 +282,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('4.2 (12件)'), findsOneWidget);
     expect(find.text('華やかでおいしい'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('review-photo-9'))).height,
+      greaterThanOrEqualTo(190),
+    );
+    expect(find.byKey(const Key('review-taste-radar-9')), findsOneWidget);
     expect(find.text('このお酒を評価'), findsOneWidget);
+    await tester.drag(
+      find.byKey(const Key('community-review-carousel')),
+      const Offset(-300, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('酸味 3'), findsOneWidget);
+    expect(find.byKey(const Key('review-taste-radar-10')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('みんなの評価がないとき、マッチ度は左側に配置する', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      Provider<MyPageState?>.value(
+        value: const MyPageState(
+          tasteProfile: TastePreferenceProfile(
+            fruity: .7,
+            sweetness: .5,
+            acidity: .4,
+            umami: .6,
+            kire: .8,
+            spiciness: .3,
+          ),
+        ),
+        child: Provider<SakeScanRepository>.value(
+          value: _FakeSakeScanRepository(
+            overview: const SakeOverview(
+              sake: Sake(sakeId: 123, name: '来福'),
+              analysisCompleted: true,
+              master: SakeMasterDetails(
+                tasteProfile: SakeTasteProfileDetails(
+                  fruity: .7,
+                  sweetness: .5,
+                  acidity: .4,
+                  umami: .6,
+                  kire: .8,
+                  dryness: .3,
+                ),
+              ),
+            ),
+          ),
+          child: const MaterialApp(
+            home: SakeMasterDetailPage(
+              venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final summary = tester.getRect(find.byKey(const Key('sake-score-summary')));
+    final title = tester.getCenter(find.text('あなたの好みマッチ度'));
+    final gauge = tester.getCenter(find.byKey(const Key('sake-match-gauge')));
+    expect(title.dx, lessThan(summary.center.dx));
+    expect((title.dx - gauge.dx).abs(), lessThan(2));
     expect(tester.takeException(), isNull);
   });
 
