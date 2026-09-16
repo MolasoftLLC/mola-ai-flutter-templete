@@ -15,6 +15,7 @@ import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
+import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
@@ -460,26 +461,16 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
     final matchPercent = profile == null || preference == null
         ? null
-        : calculateTastePreferenceMatchPercent(
-            sakeValues: [
-              profile.fruity,
-              profile.sweetness,
-              profile.acidity,
-              profile.body ?? profile.umami,
-              profile.kire,
-              profile.dryness,
-            ],
-            preferenceValues: [
-              preference.fruity,
-              preference.sweetness,
-              preference.acidity,
-              preference.umami,
-              preference.kire,
-              preference.spiciness,
-            ],
+        : calculateSakeTastePreferenceMatchPercent(
+            profile: profile,
+            preference: preference,
           );
     final community =
         _headerOverview?.community ?? const SakeCommunitySummary();
+    final hasScoreSummary =
+        !_isFetchingDetails &&
+        (matchPercent != null || community.averageRating != null);
+    final heroExpandedHeight = hasScoreSummary ? 440.0 : 370.0;
     final headerImagePaths = detailImagePaths(
       personalRecord: record,
       overviewSake: overviewSake,
@@ -514,7 +505,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       pinned: true,
                       stretch: true,
                       collapsedHeight: 98,
-                      expandedHeight: 370,
+                      expandedHeight: heroExpandedHeight,
                       backgroundColor: _navy,
                       elevation: 0,
                       iconTheme: const IconThemeData(color: Colors.white),
@@ -544,6 +535,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                         onImageAction: _handleCommunityImage,
                         isProfileEnrichmentPending: isProfileEnrichmentPending,
                         isFetchingDetails: _isFetchingDetails,
+                        expandedHeight: heroExpandedHeight,
                       ),
                     ),
                     if (snapshot.hasError)
@@ -612,6 +604,7 @@ class _CollapsingSakeHero extends StatefulWidget {
     required this.onImageAction,
     required this.isProfileEnrichmentPending,
     required this.isFetchingDetails,
+    required this.expandedHeight,
   });
 
   final String? name;
@@ -621,6 +614,7 @@ class _CollapsingSakeHero extends StatefulWidget {
   final ValueChanged<SakeCommunityImage> onImageAction;
   final bool isProfileEnrichmentPending;
   final bool isFetchingDetails;
+  final double expandedHeight;
 
   @override
   State<_CollapsingSakeHero> createState() => _CollapsingSakeHeroState();
@@ -647,7 +641,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
     builder: (context, constraints) {
       final topInset = MediaQuery.paddingOf(context).top;
       final collapsedHeight = topInset + 98;
-      final expandedHeight = topInset + 370;
+      final expandedHeight = topInset + widget.expandedHeight;
       final expandedProgress =
           ((constraints.maxHeight - collapsedHeight) /
                   (expandedHeight - collapsedHeight))
@@ -660,15 +654,19 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
       )!;
       final imageHeight = lerpDouble(240, 40, collapsedProgress)!;
       final imageLeft = lerpDouble(20, 64, collapsedProgress)!;
+      final hasScoreSummary =
+          !widget.isFetchingDetails &&
+          (widget.matchPercent != null ||
+              widget.community.averageRating != null);
+      // Leave room for both three-line scores above the photo, even at 320dp.
       final imageTop = lerpDouble(
         topInset +
             kToolbarHeight +
-            (widget.matchPercent == null &&
-                    widget.community.averageRating == null &&
-                    !widget.isProfileEnrichmentPending &&
-                    !widget.isFetchingDetails
-                ? 18
-                : 58),
+            (hasScoreSummary
+                ? 114
+                : widget.isProfileEnrichmentPending || widget.isFetchingDetails
+                ? 58
+                : 18),
         topInset + 8,
         collapsedProgress,
       )!;
@@ -682,6 +680,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
             width: imageWidth,
             height: imageHeight,
             child: ClipRRect(
+              key: const Key('sake-hero-image'),
               borderRadius: BorderRadius.circular(
                 lerpDouble(16, 9, collapsedProgress)!,
               ),
@@ -806,6 +805,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
               child: Opacity(
                 opacity: expandedProgress,
                 child: _SakeScoreSummary(
+                  key: const Key('sake-score-summary'),
                   matchPercent: widget.matchPercent,
                   averageRating: widget.community.averageRating,
                   reviewCount: widget.community.reviewCount,
@@ -1266,14 +1266,15 @@ class _NearbyVenueButton extends StatelessWidget {
   final String displayName;
 
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
-    style: OutlinedButton.styleFrom(
-      foregroundColor: _navy,
-      side: const BorderSide(color: _navy),
-      minimumSize: const Size.fromHeight(52),
+  Widget build(BuildContext context) => FilledButton.icon(
+    style: FilledButton.styleFrom(
+      backgroundColor: _navy,
+      foregroundColor: Colors.white,
+      minimumSize: const Size.fromHeight(56),
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
-    icon: const Icon(Icons.location_on_outlined),
+    icon: const Icon(Icons.location_on, size: 22),
     label: const Text(
       '近くで飲める場所を探す',
       style: TextStyle(fontWeight: FontWeight.w800),
@@ -1615,55 +1616,59 @@ Future<void> _showRecordEditorSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
-    builder: (sheetContext) => DraggableScrollableSheet(
-      initialChildSize: .86,
-      minChildSize: .55,
-      maxChildSize: .96,
-      expand: false,
-      builder: (context, scrollController) => SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD3DAE4),
-                borderRadius: BorderRadius.circular(99),
+    builder: (sheetContext) => GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusScope.of(sheetContext).unfocus(),
+      child: DraggableScrollableSheet(
+        initialChildSize: .86,
+        minChildSize: .55,
+        maxChildSize: .96,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD3DAE4),
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'あなたの記録を編集',
-                      style: TextStyle(
-                        color: _navy,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'あなたの記録を編集',
+                        style: TextStyle(
+                          color: _navy,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    tooltip: '閉じる',
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                  ),
-                ],
+                    IconButton(
+                      tooltip: '閉じる',
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1, color: Color(0xFFE5EAF0)),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                child: _InlineRecordEditor(notifier: notifier, sake: sake),
+              const Divider(height: 1, color: Color(0xFFE5EAF0)),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                  child: _InlineRecordEditor(notifier: notifier, sake: sake),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
@@ -1705,6 +1710,29 @@ List<String> detailImagePaths({
 }
 
 /// 味わいプロフィールの近さを、表示用の30〜100%に換算する。
+int calculateSakeTastePreferenceMatchPercent({
+  required SakeTasteProfileDetails profile,
+  required TastePreferenceProfile preference,
+}) => calculateTastePreferenceMatchPercent(
+  sakeValues: [
+    profile.fruity,
+    profile.sweetness,
+    profile.acidity,
+    profile.body ?? profile.umami,
+    profile.kire,
+    profile.dryness,
+  ],
+  preferenceValues: [
+    preference.fruity,
+    preference.sweetness,
+    preference.acidity,
+    preference.umami,
+    preference.kire,
+    preference.spiciness,
+  ],
+);
+
+/// 味わいプロフィールの近さを、表示用の30〜100%に換算する。
 ///
 /// 線形換算では各軸が少し近いだけで90%台に集中するため、
 /// わずかな差もマッチ度に反映するカーブを適用する。
@@ -1730,6 +1758,7 @@ int calculateTastePreferenceMatchPercent({
 
 class _SakeScoreSummary extends StatelessWidget {
   const _SakeScoreSummary({
+    super.key,
     required this.matchPercent,
     required this.averageRating,
     required this.reviewCount,
@@ -1753,10 +1782,11 @@ class _SakeScoreSummary extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Text(
                     'みんなの評価',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -1765,6 +1795,8 @@ class _SakeScoreSummary extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Row(
+                    key: const Key('sake-community-rating-line'),
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
                         Icons.star_rounded,
@@ -1780,15 +1812,12 @@ class _SakeScoreSummary extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '($reviewCount件)',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
                     ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '($reviewCount件)',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
@@ -1933,34 +1962,31 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'あなたの好みマッチ度',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '$shownPercent%',
-                    style: const TextStyle(
-                      color: Color(0xFFFFB347),
-                      fontSize: 20,
-                      height: 1,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+              const Text(
+                'あなたの好みマッチ度',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 5),
+              Text(
+                '$shownPercent%',
+                style: const TextStyle(
+                  color: Color(0xFFFFB347),
+                  fontSize: 20,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 9),
               LayoutBuilder(
                 builder: (context, constraints) => Container(
+                  key: const Key('sake-match-gauge'),
                   height: 8,
                   decoration: BoxDecoration(
                     color: Colors.white24,
@@ -2450,13 +2476,23 @@ class _CommunityReviewsSection extends StatelessWidget {
         children: [
           const Icon(Icons.star_rounded, color: Color(0xFFFFB02E)),
           const SizedBox(width: 5),
-          Text(
-            community.averageRating == null
-                ? 'まだ評価はありません'
-                : '${community.averageRating!.toStringAsFixed(1)} (${community.reviewCount}件)',
-            style: const TextStyle(color: _navy, fontWeight: FontWeight.w800),
+          Expanded(
+            child: Text(
+              community.averageRating == null
+                  ? 'まだ評価はありません'
+                  : '${community.averageRating!.toStringAsFixed(1)} (${community.reviewCount}件)',
+              style: TextStyle(
+                color: community.averageRating == null
+                    ? const Color(0xFF647184)
+                    : _navy,
+                fontSize: community.averageRating == null ? 12 : 14,
+                fontWeight: community.averageRating == null
+                    ? FontWeight.w600
+                    : FontWeight.w800,
+              ),
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 16),
           FilledButton.icon(
             key: const Key('sake-community-review-button'),
             onPressed: () => onReview(community.myReview),
@@ -3456,12 +3492,12 @@ class _SakeTasteRadarPainter extends CustomPainter {
 
 class _Pairing {
   const _Pairing({
-    required this.icon,
+    required this.imagePath,
     required this.title,
     required this.reason,
   });
 
-  final IconData icon;
+  final String imagePath;
   final String title;
   final String reason;
 }
@@ -3472,30 +3508,49 @@ class _PairingRow extends StatelessWidget {
   final _Pairing pairing;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(top: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF8FAFD),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: const Color(0xFFE8EDF3)),
+    ),
+    clipBehavior: Clip.antiAlias,
     child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(pairing.icon, color: _orange, size: 22),
-        const SizedBox(width: 12),
+        Image.asset(
+          pairing.imagePath,
+          key: Key('pairing-${pairing.imagePath}'),
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+          cacheWidth: 288,
+        ),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                pairing.title,
-                style: const TextStyle(
-                  color: _navy,
-                  fontWeight: FontWeight.w800,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pairing.title,
+                  style: const TextStyle(
+                    color: _navy,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                pairing.reason,
-                style: const TextStyle(color: Color(0xFF647184), height: 1.45),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  pairing.reason,
+                  style: const TextStyle(
+                    color: Color(0xFF647184),
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -3521,14 +3576,14 @@ List<_Pairing> _pairingsFor({
   if (profile.kire >= .62 || profile.dryness >= .62) {
     add(
       const _Pairing(
-        icon: Icons.set_meal_outlined,
+        imagePath: 'assets/images/pairings/sashimi.jpg',
         title: 'お刺身・白身魚の塩焼き',
         reason: 'すっきりしたキレが、魚の繊細な旨みを引き立てます。',
       ),
     );
     add(
       const _Pairing(
-        icon: Icons.outdoor_grill_outlined,
+        imagePath: 'assets/images/pairings/yakitori.jpg',
         title: '焼き鳥（塩）',
         reason: '香ばしさを受け止めながら、後味を軽やかに整えます。',
       ),
@@ -3537,14 +3592,14 @@ List<_Pairing> _pairingsFor({
   if (profile.umami >= .62 || (profile.body ?? 0) >= .62) {
     add(
       const _Pairing(
-        icon: Icons.restaurant_outlined,
+        imagePath: 'assets/images/pairings/simmered_fish.jpg',
         title: 'ぶり大根・煮付け',
         reason: 'ふくらみのある旨みが、だしの効いた味付けによく合います。',
       ),
     );
     add(
       const _Pairing(
-        icon: Icons.rice_bowl_outlined,
+        imagePath: 'assets/images/pairings/mushroom_rice.jpg',
         title: 'きのこの炊き込みご飯',
         reason: '米由来のコクを、きのこの香りと一緒に楽しめます。',
       ),
@@ -3553,7 +3608,7 @@ List<_Pairing> _pairingsFor({
   if (profile.fruity >= .62 || (profile.aroma ?? 0) >= .62) {
     add(
       const _Pairing(
-        icon: Icons.spa_outlined,
+        imagePath: 'assets/images/pairings/prosciutto_cheese.jpg',
         title: '生ハムとクリームチーズ',
         reason: '華やかな香りに、ほどよい塩味とミルキーなコクが寄り添います。',
       ),
@@ -3562,7 +3617,7 @@ List<_Pairing> _pairingsFor({
   if (profile.sweetness >= .62) {
     add(
       const _Pairing(
-        icon: Icons.lunch_dining_outlined,
+        imagePath: 'assets/images/pairings/teriyaki_chicken.jpg',
         title: '鶏の照り焼き',
         reason: '甘辛いタレと重なり、やわらかな余韻を楽しめます。',
       ),
@@ -3571,7 +3626,7 @@ List<_Pairing> _pairingsFor({
   if (profile.acidity >= .62 || styleText.contains('生')) {
     add(
       const _Pairing(
-        icon: Icons.local_fire_department_outlined,
+        imagePath: 'assets/images/pairings/tempura.jpg',
         title: '天ぷら',
         reason: '爽やかな酸味が、揚げ物の香ばしさを軽快にまとめます。',
       ),
@@ -3580,7 +3635,7 @@ List<_Pairing> _pairingsFor({
   if (pairings.isEmpty) {
     add(
       _Pairing(
-        icon: Icons.rice_bowl_outlined,
+        imagePath: 'assets/images/pairings/washoku.jpg',
         title: category == null ? '和食の定食' : '$categoryのやさしい和食',
         reason: '主張しすぎない味わいなので、季節の小鉢やご飯と気軽にどうぞ。',
       ),
