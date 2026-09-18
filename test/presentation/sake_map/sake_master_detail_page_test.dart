@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -282,14 +283,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('4.2 (12件)'), findsOneWidget);
     expect(find.text('華やかでおいしい'), findsOneWidget);
-    expect(
-      tester.getSize(find.byKey(const Key('review-photo-9'))).height,
-      greaterThanOrEqualTo(190),
-    );
+    final photo = tester.getRect(find.byKey(const Key('review-photo-9')));
+    final chart = tester.getRect(find.byKey(const Key('review-taste-radar-9')));
+    final comment = tester.getRect(find.text('華やかでおいしい'));
+    expect(photo.height, greaterThanOrEqualTo(180));
+    expect(photo.right, lessThan(chart.left));
+    expect(comment.top, greaterThan(photo.bottom));
+    expect(comment.top, greaterThan(chart.bottom));
     expect(find.byKey(const Key('review-taste-radar-9')), findsOneWidget);
     expect(find.text('このお酒を評価'), findsOneWidget);
     await tester.drag(
-      find.byKey(const Key('community-review-carousel')),
+      find.byKey(const Key('community-review-carousel')).first,
       const Offset(-300, 0),
     );
     await tester.pumpAndSettle();
@@ -298,7 +302,72 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('みんなの評価がないとき、マッチ度は左側に配置する', (tester) async {
+  testWidgets('評価カードは写真だけ・チャートだけならメディア領域を全幅で使う', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      Provider<SakeScanRepository>.value(
+        value: _FakeSakeScanRepository(
+          overview: SakeOverview(
+            sake: const Sake(sakeId: 123, name: '来福'),
+            analysisCompleted: true,
+            community: SakeCommunitySummary(
+              reviews: <SakeCommunityReview>[
+                SakeCommunityReview(
+                  reviewId: 11,
+                  sakeId: 123,
+                  overallRating: 5,
+                  username: '写真だけ',
+                  imageUrl: 'https://example.com/photo.jpg',
+                  createdAt: DateTime(2026, 9, 14),
+                  updatedAt: DateTime(2026, 9, 14),
+                ),
+                SakeCommunityReview(
+                  reviewId: 12,
+                  sakeId: 123,
+                  overallRating: 4,
+                  username: 'チャートだけ',
+                  tasteRatings: const {
+                    'fruity': 5,
+                    'sweetness': 4,
+                    'acidity': 3,
+                    'umami': 4,
+                    'kire': 5,
+                    'spiciness': 2,
+                  },
+                  createdAt: DateTime(2026, 9, 14),
+                  updatedAt: DateTime(2026, 9, 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    final photo = tester.getRect(find.byKey(const Key('review-photo-11')));
+    expect(photo.width, greaterThan(250));
+    await tester.drag(
+      find.byKey(const Key('community-review-carousel')).first,
+      const Offset(-300, 0),
+    );
+    await tester.pumpAndSettle();
+    final chartPanel = tester.getRect(
+      find.byKey(const Key('review-chart-panel-12')),
+    );
+    expect(chartPanel.width, greaterThan(250));
+    expect(find.byKey(const Key('review-photo-12')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('みんなの評価がないとき、マッチ度は全幅で左揃えにする', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -341,10 +410,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final summary = tester.getRect(find.byKey(const Key('sake-score-summary')));
-    final title = tester.getCenter(find.text('あなたの好みマッチ度'));
-    final gauge = tester.getCenter(find.byKey(const Key('sake-match-gauge')));
-    expect(title.dx, lessThan(summary.center.dx));
-    expect((title.dx - gauge.dx).abs(), lessThan(2));
+    final title = tester.getRect(find.text('あなたの好みマッチ度'));
+    final percent = tester.getRect(find.text('100%'));
+    final gauge = tester.getRect(find.byKey(const Key('sake-match-gauge')));
+    expect((title.left - percent.left).abs(), lessThan(2));
+    expect((title.left - gauge.left).abs(), lessThan(2));
+    expect(gauge.width, greaterThan(summary.width * .8));
     expect(tester.takeException(), isNull);
   });
 
@@ -480,6 +551,36 @@ void main() {
     await tester.pump();
     expect(tester.testTextInput.isVisible, isTrue);
     await tester.tap(find.text('あなたの記録を編集'));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+  });
+
+  testWidgets('公開評価の感想入力中に別の項目をタップするとキーボードを閉じる', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<AuthRepository>.value(value: _SignedInAuthRepository()),
+          Provider<SakeScanRepository>.value(value: _FakeSakeScanRepository()),
+        ],
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('このお酒を評価'), 300);
+    await tester.tap(find.byKey(const Key('sake-community-review-button')));
+    await tester.pumpAndSettle();
+    final comment = find.byType(TextField);
+    await tester.ensureVisible(comment);
+    await tester.tap(comment);
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+    await tester.tap(find.text('辛さ').last);
     await tester.pump();
     expect(tester.testTextInput.isVisible, isFalse);
   });
@@ -652,6 +753,18 @@ void main() {
 class _GuestAuthRepository implements AuthRepository {
   @override
   get currentUser => null;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _SignedInAuthRepository implements AuthRepository {
+  @override
+  User? get currentUser => _FakeUser();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeUser implements User {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -122,6 +122,7 @@ class _NewHomePageState extends State<NewHomePage> {
                 padding: const EdgeInsets.only(top: 34, bottom: 34),
                 children: [
                   const _HomePromotionBanners(),
+                  const _ObiDivider(),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
                     onMoreTap: () => Navigator.of(context).push(
@@ -187,6 +188,7 @@ class _NewHomePageState extends State<NewHomePage> {
                   const SizedBox(height: 28),
                   _HomeRecommendations(overviewFor: _overviewFor),
                   const SizedBox(height: 28),
+                  const _ObiDivider(),
                   _SectionTitle(
                     title: context.l10n.newHomeTimeline,
                     onMoreTap: () =>
@@ -439,6 +441,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _ObiDivider(),
               const _SectionTitle(title: 'あなたが好きそうな日本酒'),
               const SizedBox(height: 10),
               _SakeCardRail(
@@ -596,6 +599,26 @@ class _HomeHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ObiDivider extends StatelessWidget {
+  const _ObiDivider();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+    child: SizedBox(
+      key: const Key('home-obi-divider'),
+      height: 42,
+      width: double.infinity,
+      child: Image.asset(
+        'assets/images/obi.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        excludeFromSemantics: true,
+      ),
+    ),
+  );
 }
 
 class _SectionTitle extends StatelessWidget {

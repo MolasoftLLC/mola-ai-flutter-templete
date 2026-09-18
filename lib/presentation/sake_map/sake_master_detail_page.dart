@@ -1772,8 +1772,12 @@ class _SakeScoreSummary extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [
       if (matchPercent != null)
-        Expanded(child: _PreferenceMatchSection(percent: matchPercent!)),
-      if (matchPercent != null && averageRating == null) const Spacer(),
+        Expanded(
+          child: _PreferenceMatchSection(
+            percent: matchPercent!,
+            fullWidth: averageRating == null,
+          ),
+        ),
       if (matchPercent != null && averageRating != null)
         const SizedBox(width: 8),
       if (averageRating != null)
@@ -1830,9 +1834,13 @@ class _SakeScoreSummary extends StatelessWidget {
 }
 
 class _PreferenceMatchSection extends StatefulWidget {
-  const _PreferenceMatchSection({required this.percent});
+  const _PreferenceMatchSection({
+    required this.percent,
+    required this.fullWidth,
+  });
 
   final int percent;
+  final bool fullWidth;
 
   @override
   State<_PreferenceMatchSection> createState() =>
@@ -1963,12 +1971,14 @@ class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: widget.fullWidth
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'あなたの好みマッチ度',
-                textAlign: TextAlign.center,
-                style: TextStyle(
+                textAlign: widget.fullWidth ? TextAlign.left : TextAlign.center,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -2518,7 +2528,7 @@ class _CommunityReviewsSection extends StatelessWidget {
       if (community.reviews.isNotEmpty) ...[
         const SizedBox(height: 14),
         SizedBox(
-          height: 550,
+          height: 390,
           child: ListView.separated(
             key: const Key('community-review-carousel'),
             scrollDirection: Axis.horizontal,
@@ -2529,118 +2539,147 @@ class _CommunityReviewsSection extends StatelessWidget {
               final hasCompleteTaste = _tasteLabels.keys.every(
                 review.tasteRatings.containsKey,
               );
+              final hasPhoto = review.imageUrl != null;
+              final hasMedia = hasPhoto || hasCompleteTaste;
               return Align(
                 alignment: Alignment.topLeft,
                 child: Container(
                   width: 300,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F8FA),
+                    color: _navy,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE6EAF0)),
+                    border: Border.all(color: const Color(0xFF2D4968)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (review.imageUrl != null)
-                        SizedBox(
-                          key: Key('review-photo-${review.reviewId}'),
-                          height: 190,
-                          width: double.infinity,
-                          child: ColoredBox(
-                            color: const Color(0xFFE9EDF2),
-                            child: _DetailSakeImage(path: review.imageUrl),
-                          ),
-                        ),
                       Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        padding: const EdgeInsets.fromLTRB(12, 8, 8, 7),
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 13,
-                                  backgroundColor: const Color(0xFFDDE6F0),
-                                  backgroundImage: review.iconUrl == null
-                                      ? null
-                                      : NetworkImage(review.iconUrl!),
-                                  child: review.iconUrl == null
-                                      ? const Icon(
-                                          Icons.person,
-                                          size: 15,
-                                          color: _navy,
-                                        )
-                                      : null,
+                            CircleAvatar(
+                              radius: 13,
+                              backgroundColor: const Color(0xFF47627D),
+                              backgroundImage: review.iconUrl == null
+                                  ? null
+                                  : NetworkImage(review.iconUrl!),
+                              child: review.iconUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 15,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                review.username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                const SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    review.username,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 17,
+                              color: Color(0xFFFFB02E),
+                            ),
+                            Text(
+                              review.overallRating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (!review.isOwner)
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: 'この評価を報告',
+                                onPressed: () =>
+                                    onReportReview(review.reviewId),
+                                icon: const Icon(
+                                  Icons.flag_outlined,
+                                  size: 18,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (hasMedia)
+                        SizedBox(
+                          height: 184,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Row(
+                              children: [
+                                if (hasPhoto)
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: SizedBox(
+                                        key: Key(
+                                          'review-photo-${review.reviewId}',
+                                        ),
+                                        height: double.infinity,
+                                        child: ColoredBox(
+                                          color: const Color(0xFFF3F5F8),
+                                          child: _DetailSakeImage(
+                                            path: review.imageUrl,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.star_rounded,
-                                  size: 17,
-                                  color: Color(0xFFFFB02E),
-                                ),
-                                Text(
-                                  review.overallRating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                if (!review.isOwner)
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    tooltip: 'この評価を報告',
-                                    onPressed: () =>
-                                        onReportReview(review.reviewId),
-                                    icon: const Icon(
-                                      Icons.flag_outlined,
-                                      size: 18,
-                                      color: Color(0xFF697386),
+                                if (hasPhoto && hasCompleteTaste)
+                                  const SizedBox(width: 8),
+                                if (hasCompleteTaste)
+                                  Expanded(
+                                    child: ClipRRect(
+                                      key: Key(
+                                        'review-chart-panel-${review.reviewId}',
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: ColoredBox(
+                                        color: const Color(0xFFF8FAFD),
+                                        child: Center(
+                                          child: _SakeTasteRadarChart(
+                                            key: Key(
+                                              'review-taste-radar-${review.reviewId}',
+                                            ),
+                                            maxSize: hasPhoto ? 138 : 180,
+                                            axes: [
+                                              for (final entry
+                                                  in _tasteLabels.entries)
+                                                _TasteAxis(
+                                                  entry.value,
+                                                  (review.tasteRatings[entry
+                                                              .key]! /
+                                                          5)
+                                                      .clamp(0.0, 1.0),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                               ],
                             ),
-                            if (review.comment != null) ...[
-                              const SizedBox(height: 7),
-                              Text(
-                                review.comment!,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF404A56),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                            if (hasCompleteTaste) ...[
-                              const SizedBox(height: 8),
-                              Center(
-                                child: _SakeTasteRadarChart(
-                                  key: Key(
-                                    'review-taste-radar-${review.reviewId}',
-                                  ),
-                                  maxSize: 190,
-                                  axes: [
-                                    for (final entry in _tasteLabels.entries)
-                                      _TasteAxis(
-                                        entry.value,
-                                        (review.tasteRatings[entry.key]! / 5)
-                                            .clamp(0.0, 1.0),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ] else if (review.tasteRatings.isNotEmpty) ...[
-                              const SizedBox(height: 8),
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!hasCompleteTaste &&
+                                review.tasteRatings.isNotEmpty) ...[
                               Wrap(
                                 spacing: 5,
                                 runSpacing: 5,
@@ -2652,7 +2691,7 @@ class _CommunityReviewsSection extends StatelessWidget {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFFFEEE0),
+                                          color: const Color(0xFF34516D),
                                           borderRadius: BorderRadius.circular(
                                             99,
                                           ),
@@ -2660,7 +2699,7 @@ class _CommunityReviewsSection extends StatelessWidget {
                                         child: Text(
                                           '${_tasteLabels[entry.key] ?? entry.key} ${entry.value.toStringAsFixed(0)}',
                                           style: const TextStyle(
-                                            color: _navy,
+                                            color: Colors.white,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -2668,6 +2707,28 @@ class _CommunityReviewsSection extends StatelessWidget {
                                       );
                                     })
                                     .toList(growable: false),
+                              ),
+                            ],
+                            if (review.comment?.trim().isNotEmpty == true) ...[
+                              if (review.tasteRatings.isNotEmpty &&
+                                  !hasCompleteTaste)
+                                const SizedBox(height: 10),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(11),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF294562),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  review.comment!,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    height: 1.4,
+                                  ),
+                                ),
                               ),
                             ],
                           ],
@@ -2807,6 +2868,7 @@ class _CommunityReviewEditorState extends State<_CommunityReviewEditor> {
               ),
             TextField(
               controller: comment,
+              onTapOutside: (_) => FocusScope.of(context).unfocus(),
               maxLength: 200,
               maxLines: 3,
               decoration: const InputDecoration(
