@@ -403,13 +403,53 @@ class _HomeRecommendations extends StatefulWidget {
 
 class _HomeRecommendationsState extends State<_HomeRecommendations> {
   Future<List<HomeSakeRecommendation>>? _future;
+  bool _isRefreshing = false;
+  Object? _lastTasteProfile;
+  bool _initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _future ??= context.read<MolaApiRepository>().fetchHomeSakeRecommendations(
-      limit: 7,
-    );
+    final tasteProfile = Provider.of<MyPageState?>(context)?.tasteProfile;
+    if (!_initialized || tasteProfile != _lastTasteProfile) {
+      _initialized = true;
+      _lastTasteProfile = tasteProfile;
+      _future = context.read<MolaApiRepository>().fetchHomeSakeRecommendations(
+        limit: 10,
+      );
+    }
+  }
+
+  Future<void> _refresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    try {
+      final recommendations = await context
+          .read<MolaApiRepository>()
+          .refreshHomeSakeRecommendations();
+      if (!mounted) return;
+      setState(() => _future = Future.value(recommendations));
+    } on MonthlyRecommendationLimitException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('今月の再選定は済んでいます。次回は来月お試しください。')),
+        );
+      }
+    } on MissingTasteProfileException {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('先に「好きなお酒の傾向」を登録してください。')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('おすすめの再選定に失敗しました。')));
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
   }
 
   @override
@@ -441,11 +481,15 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _ObiDivider(),
-              const _SectionTitle(title: 'あなたが好きそうな日本酒'),
+              _SectionTitle(
+                title: 'あなたが好きそうな日本酒',
+                onMoreTap: sakes.isEmpty ? null : _refresh,
+                actionLabel: _isRefreshing ? '更新中…' : '再選定',
+              ),
               const Padding(
                 padding: EdgeInsets.fromLTRB(29, 4, 20, 0),
                 child: Text(
-                  '「好きなお酒の傾向」を登録すると、あなたに合いそうな日本酒が表示されます。',
+                  '「好きなお酒の傾向」を登録すると表示されます。おすすめは月1回入れ替えられます。',
                   style: TextStyle(color: Color(0xFF777777), fontSize: 13),
                 ),
               ),
@@ -630,10 +674,15 @@ class _ObiDivider extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, this.onMoreTap});
+  const _SectionTitle({
+    required this.title,
+    this.onMoreTap,
+    this.actionLabel = 'もっとみる',
+  });
 
   final String title;
   final VoidCallback? onMoreTap;
+  final String actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -662,9 +711,12 @@ class _SectionTitle extends StatelessWidget {
                 minimumSize: const Size(60, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text(
-                'もっとみる',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
         ],

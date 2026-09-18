@@ -2,6 +2,10 @@ import 'package:mola_gemini_flutter_template/common/logger.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/preferences/taste_preference_profile.dart';
 
+class MonthlyTasteAnalysisLimitException implements Exception {
+  const MonthlyTasteAnalysisLimitException();
+}
+
 class UserPreferenceRepository {
   UserPreferenceRepository(this._apiClient);
 
@@ -97,6 +101,9 @@ class UserPreferenceRepository {
       };
 
       final response = await _apiClient.analyzeTasteProfile(payload);
+      if (response.statusCode == 429) {
+        throw const MonthlyTasteAnalysisLimitException();
+      }
       if (!response.isSuccessful) {
         logger.warning(
           '味覚プロファイル解析に失敗しました: status=${response.statusCode}, error=${response.error}',
@@ -116,6 +123,8 @@ class UserPreferenceRepository {
 
       logger.warning('味覚プロファイル解析のレスポンス形式が想定と異なります');
       return null;
+    } on MonthlyTasteAnalysisLimitException {
+      rethrow;
     } catch (error, stackTrace) {
       logger.warning('味覚プロファイル解析処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());

@@ -48,6 +48,9 @@ abstract class ApiClient extends ChopperService {
   @Get(path: 'sakes/recommendations')
   Future<Response> fetchHomeSakeRecommendations(@Query('limit') int limit);
 
+  @Post(path: 'sakes/recommendations/refresh', optionalBody: true)
+  Future<Response> refreshHomeSakeRecommendations();
+
   @Post(path: 'saved-sakes/analysis-start')
   Future<Response> uploadSavedSakeAnalysisStart(
     @Body() Map<String, dynamic> body,

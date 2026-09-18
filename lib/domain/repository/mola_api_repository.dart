@@ -11,6 +11,10 @@ import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/request/favorite_body.dart';
 import '../eintities/app_content.dart';
 
+class MonthlyRecommendationLimitException implements Exception {
+  const MonthlyRecommendationLimitException();
+}
+
 class MolaApiRepository {
   MolaApiRepository(this._apiClient);
 
@@ -172,6 +176,24 @@ class MolaApiRepository {
     int limit = 7,
   }) async {
     final response = await _apiClient.fetchHomeSakeRecommendations(limit);
+    return _parseHomeRecommendations(response);
+  }
+
+  Future<List<HomeSakeRecommendation>> refreshHomeSakeRecommendations() async {
+    final response = await _apiClient.refreshHomeSakeRecommendations();
+    if (response.statusCode == 429) {
+      throw const MonthlyRecommendationLimitException();
+    }
+    if (response.statusCode == 409) {
+      throw const MissingTasteProfileException();
+    }
+    if (!response.isSuccessful) {
+      throw StateError('おすすめの再選定に失敗しました。');
+    }
+    return _parseHomeRecommendations(response);
+  }
+
+  List<HomeSakeRecommendation> _parseHomeRecommendations(Response response) {
     if (!response.isSuccessful || response.body is! Map) return const [];
     final body = Map<String, dynamic>.from(response.body as Map);
     final items = body['recommendations'];
@@ -184,4 +206,8 @@ class MolaApiRepository {
         )
         .toList(growable: false);
   }
+}
+
+class MissingTasteProfileException implements Exception {
+  const MissingTasteProfileException();
 }

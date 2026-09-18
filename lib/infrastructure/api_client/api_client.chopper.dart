@@ -188,6 +188,17 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> refreshHomeSakeRecommendations() {
+    final Uri $url = Uri.parse('/sakes/recommendations/refresh');
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> uploadSavedSakeAnalysisStart(
       Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/saved-sakes/analysis-start');

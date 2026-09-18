@@ -82,6 +82,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   }
 
   bool get hasAnalysisQuota {
+    if (!_isGuest) return true;
     _resetAnalysisCounterIfNeeded();
     return _analysisCountToday < _maxDailyAnalyses;
   }
@@ -214,12 +215,12 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return;
     }
 
-    if (!_consumeAnalysisQuota()) {
+    if (_isGuest && !_consumeAnalysisQuota()) {
       logger.info('味覚プロファイル解析の本日実行回数が上限に達しました');
       return;
     }
 
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, sakePreferenceAnalysis: null);
     try {
       TastePreferenceProfile? profile;
       final user = _authRepository.currentUser;
@@ -275,6 +276,11 @@ class MyPageNotifier extends StateNotifier<MyPageState>
         sakePreferenceAnalysis: preference?.trim().isNotEmpty == true
             ? preference!.trim()
             : null,
+      );
+    } on MonthlyTasteAnalysisLimitException {
+      state = state.copyWith(
+        isLoading: false,
+        sakePreferenceAnalysis: '今月の好み再解析は済んでいます。次回は来月お試しください。',
       );
     } catch (error, stackTrace) {
       logger.warning('味覚プロファイル解析で例外が発生しました: $error');
