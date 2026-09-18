@@ -20,6 +20,7 @@ abstract class SakeScanRepository {
   Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds);
 
   Future<SakeOverview> fetchOverview(int sakeId, {bool trackView = false});
+  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(List<int> sakeIds);
 }
 
 class SakeDetailViewMemory {
@@ -101,6 +102,34 @@ class SakeScanApiRepository implements SakeScanRepository {
         .timeout(requestTimeout);
     if (response.isSuccessful) return;
     _requireBody(response);
+  }
+
+  @override
+  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(
+    List<int> sakeIds,
+  ) async {
+    final ids = sakeIds.where((id) => id > 0).toSet().toList(growable: false);
+    if (ids.isEmpty) return <int, SakeTasteProfileDetails>{};
+
+    final response = await _apiClient
+        .fetchSakeTasteProfiles(<String, dynamic>{'sakeIds': ids})
+        .timeout(requestTimeout);
+    final body = _requireBody(response);
+    final rawProfiles = body['profiles'];
+    if (rawProfiles is! List) return <int, SakeTasteProfileDetails>{};
+
+    final result = <int, SakeTasteProfileDetails>{};
+    for (final item in rawProfiles.whereType<Map>()) {
+      final json = Map<String, dynamic>.from(item);
+      final sakeId = json['sakeId'];
+      final profile = json['tasteProfile'];
+      if (sakeId is num && profile is Map) {
+        result[sakeId.toInt()] = SakeTasteProfileDetails.fromJson(
+          Map<String, dynamic>.from(profile),
+        );
+      }
+    }
+    return result;
   }
 
   @override
