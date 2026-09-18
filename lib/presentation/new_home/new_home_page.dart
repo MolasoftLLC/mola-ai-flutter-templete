@@ -426,7 +426,6 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
               ),
             );
           }
-          if (recommendations.isEmpty) return const SizedBox.shrink();
           final sakes = recommendations
               .map(
                 (item) => Sake(
@@ -443,27 +442,36 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
             children: [
               const _ObiDivider(),
               const _SectionTitle(title: 'あなたが好きそうな日本酒'),
-              const SizedBox(height: 10),
-              _SakeCardRail(
-                sakes: sakes,
-                overviewFor: widget.overviewFor,
-                subtitleBuilder: (sake) => sake.brewery,
-                actionBuilder: (_) => const SizedBox.shrink(),
-                onTap: (sake) => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SakeMasterDetailPage(
-                      venueSake: VenueSake(
-                        sakeId: sake.sakeId,
-                        name: sake.name ?? '',
-                        brewery: sake.brewery,
-                        type: sake.type,
-                        recordCount: 0,
-                        primaryImageUrl: sake.primaryImageUrl,
+              const Padding(
+                padding: EdgeInsets.fromLTRB(29, 4, 20, 0),
+                child: Text(
+                  '「好きなお酒の傾向」を登録すると、あなたに合いそうな日本酒が表示されます。',
+                  style: TextStyle(color: Color(0xFF777777), fontSize: 13),
+                ),
+              ),
+              if (sakes.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                _SakeCardRail(
+                  sakes: sakes,
+                  overviewFor: widget.overviewFor,
+                  subtitleBuilder: (sake) => sake.brewery,
+                  actionBuilder: (_) => const SizedBox.shrink(),
+                  onTap: (sake) => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SakeMasterDetailPage(
+                        venueSake: VenueSake(
+                          sakeId: sake.sakeId,
+                          name: sake.name ?? '',
+                          brewery: sake.brewery,
+                          type: sake.type,
+                          recordCount: 0,
+                          primaryImageUrl: sake.primaryImageUrl,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           );
         },
