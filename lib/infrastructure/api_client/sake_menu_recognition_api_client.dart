@@ -84,6 +84,11 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
     @Query('trackView') bool trackView,
   );
 
+  @Post(path: 'sakes/taste-profiles')
+  Future<Response<Map<String, dynamic>>> fetchSakeTasteProfiles(
+    @Body() Map<String, dynamic> body,
+  );
+
   @Get(path: 'sakes/label-consent')
   Future<Response<Map<String, dynamic>>> fetchSakeLabelConsent();
 

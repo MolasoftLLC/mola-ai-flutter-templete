@@ -29,7 +29,7 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
   static const _pageSize = 20;
 
   final _scrollController = ScrollController();
-  final Map<int, Future<SakeOverview>> _overviewCache = {};
+  final Map<String, Future<Map<int, SakeTasteProfileDetails>>> _profileCache = {};
   final Set<String> _expandedRecordKeys = {};
   var _visibleCount = _pageSize;
 
@@ -59,17 +59,14 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
     });
   }
 
-  Future<SakeOverview>? _overviewFor(Sake sake) {
-    final sakeId = sake.sakeId;
-    if (sakeId == null) return null;
-    return _overviewCache.putIfAbsent(
-      sakeId,
-      () => context.read<SakeScanRepository>().fetchOverview(sakeId),
-    );
+  Future<Map<int, SakeTasteProfileDetails>> _profilesFor(List<Sake> sakes) {
+    final ids = sakes.map((sake) => sake.sakeId ?? 0).where((id) => id > 0).toSet().toList()..sort();
+    if (ids.isEmpty) return Future.value(<int, SakeTasteProfileDetails>{});
+    return _profileCache.putIfAbsent(ids.join(','), () => context.read<SakeScanRepository>().fetchTasteProfiles(ids));
   }
 
   Future<void> _refresh() async {
-    _overviewCache.clear();
+    _profileCache.clear();
     if (mounted) setState(() => _visibleCount = _pageSize);
     await context.read<SavedSakeNotifier>().refreshFromServer();
   }
@@ -131,9 +128,10 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
                   final sake = visibleSakes[index];
                   final recordKey =
                       sake.savedId ?? 'sake:${sake.sakeId ?? index}';
+                  final profilesFuture = _profilesFor(visibleSakes);
                   return _RecentSakeCard(
                     sake: sake,
-                    overviewFuture: _overviewFor(sake),
+                    profileFuture: sake.sakeId == null ? null : profilesFuture.then((profiles) => profiles[sake.sakeId!]),
                     preference: preference,
                     isExpanded: _expandedRecordKeys.contains(recordKey),
                     onOpen: () => _openDetail(sake),
@@ -153,7 +151,7 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
 class _RecentSakeCard extends StatelessWidget {
   const _RecentSakeCard({
     required this.sake,
-    required this.overviewFuture,
+    required this.profileFuture,
     required this.preference,
     required this.isExpanded,
     required this.onOpen,
@@ -161,7 +159,7 @@ class _RecentSakeCard extends StatelessWidget {
   });
 
   final Sake sake;
-  final Future<SakeOverview>? overviewFuture;
+  final Future<SakeTasteProfileDetails?>? profileFuture;
   final TastePreferenceProfile? preference;
   final bool isExpanded;
   final VoidCallback onOpen;
@@ -217,7 +215,7 @@ class _RecentSakeCard extends StatelessWidget {
                         ],
                         const SizedBox(height: 8),
                         _ProfilePreview(
-                          overviewFuture: overviewFuture,
+                          profileFuture: profileFuture,
                           preference: preference,
                         ),
                       ],
@@ -277,18 +275,18 @@ class _RecentSakeCard extends StatelessWidget {
 
 class _ProfilePreview extends StatelessWidget {
   const _ProfilePreview({
-    required this.overviewFuture,
+    required this.profileFuture,
     required this.preference,
   });
 
-  final Future<SakeOverview>? overviewFuture;
+  final Future<SakeTasteProfileDetails?>? profileFuture;
   final TastePreferenceProfile? preference;
 
   @override
   Widget build(BuildContext context) {
-    final future = overviewFuture;
+    final future = profileFuture;
     if (future == null) return const _ProfileUnavailable();
-    return FutureBuilder<SakeOverview>(
+    return FutureBuilder<SakeTasteProfileDetails?>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -305,7 +303,7 @@ class _ProfilePreview extends StatelessWidget {
             ),
           );
         }
-        final profile = snapshot.data?.master.tasteProfile;
+        final profile = snapshot.data;
         if (profile == null) return const _ProfileUnavailable();
         final match = preference == null
             ? null
