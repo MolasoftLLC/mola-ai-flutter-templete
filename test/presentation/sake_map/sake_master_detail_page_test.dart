@@ -187,6 +187,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.lastTrackView, isTrue);
+    expect(find.byKey(const Key('detail-obi-divider')), findsWidgets);
+    expect(find.byType(Divider), findsNothing);
     expect(find.text('ログインすると、あなたにおすすめかどうかが分かります！'), findsOneWidget);
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
     await tester.pumpAndSettle();
@@ -285,9 +287,13 @@ void main() {
     expect(find.text('華やかでおいしい'), findsOneWidget);
     final photo = tester.getRect(find.byKey(const Key('review-photo-9')));
     final chart = tester.getRect(find.byKey(const Key('review-taste-radar-9')));
+    final chartPanel = tester.getRect(
+      find.byKey(const Key('review-chart-panel-9')),
+    );
     final comment = tester.getRect(find.text('華やかでおいしい'));
     expect(photo.height, greaterThanOrEqualTo(180));
     expect(photo.right, lessThan(chart.left));
+    expect(chart.top - chartPanel.top, greaterThanOrEqualTo(30));
     expect(comment.top, greaterThan(photo.bottom));
     expect(comment.top, greaterThan(chart.bottom));
     expect(find.byKey(const Key('review-taste-radar-9')), findsOneWidget);
@@ -305,6 +311,7 @@ void main() {
   testWidgets('評価カードは写真だけ・チャートだけならメディア領域を全幅で使う', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    final longComment = List.filled(8, '華やかな香りと余韻を楽しめる一本です。').join();
     await tester.pumpWidget(
       Provider<SakeScanRepository>.value(
         value: _FakeSakeScanRepository(
@@ -319,6 +326,7 @@ void main() {
                   overallRating: 5,
                   username: '写真だけ',
                   imageUrl: 'https://example.com/photo.jpg',
+                  comment: longComment,
                   createdAt: DateTime(2026, 9, 14),
                   updatedAt: DateTime(2026, 9, 14),
                 ),
@@ -354,6 +362,12 @@ void main() {
     await tester.pumpAndSettle();
     final photo = tester.getRect(find.byKey(const Key('review-photo-11')));
     expect(photo.width, greaterThan(250));
+    final commentScroll = find.byKey(const Key('review-comment-scroll-11'));
+    expect(tester.getSize(commentScroll).height, lessThanOrEqualTo(59));
+    final commentTop = tester.getTopLeft(find.text(longComment)).dy;
+    await tester.drag(commentScroll, const Offset(0, -70));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.text(longComment)).dy, lessThan(commentTop));
     await tester.drag(
       find.byKey(const Key('community-review-carousel')).first,
       const Offset(-300, 0),
@@ -576,6 +590,7 @@ void main() {
     await tester.tap(find.byKey(const Key('sake-community-review-button')));
     await tester.pumpAndSettle();
     final comment = find.byType(TextField);
+    expect(tester.widget<TextField>(comment).maxLines, 3);
     await tester.ensureVisible(comment);
     await tester.tap(comment);
     await tester.pump();

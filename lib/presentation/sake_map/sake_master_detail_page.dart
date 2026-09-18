@@ -1005,6 +1005,7 @@ class _Details extends StatelessWidget {
             ),
             if (personalRecord != null)
               _Section(
+                showObi: true,
                 child: _PersonalRecordSection(
                   sake: detailSake,
                   notifier: savedSakeNotifier,
@@ -1659,7 +1660,6 @@ Future<void> _showRecordEditorSheet(
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFE5EAF0)),
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
@@ -2613,7 +2613,7 @@ class _CommunityReviewsSection extends StatelessWidget {
                       ),
                       if (hasMedia)
                         SizedBox(
-                          height: 184,
+                          height: 196,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: Row(
@@ -2647,23 +2647,28 @@ class _CommunityReviewsSection extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(10),
                                       child: ColoredBox(
                                         color: const Color(0xFFF8FAFD),
-                                        child: Center(
-                                          child: _SakeTasteRadarChart(
-                                            key: Key(
-                                              'review-taste-radar-${review.reviewId}',
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 12,
+                                          ),
+                                          child: Center(
+                                            child: _SakeTasteRadarChart(
+                                              key: Key(
+                                                'review-taste-radar-${review.reviewId}',
+                                              ),
+                                              maxSize: hasPhoto ? 138 : 180,
+                                              axes: [
+                                                for (final entry
+                                                    in _tasteLabels.entries)
+                                                  _TasteAxis(
+                                                    entry.value,
+                                                    (review.tasteRatings[entry
+                                                                .key]! /
+                                                            5)
+                                                        .clamp(0.0, 1.0),
+                                                  ),
+                                              ],
                                             ),
-                                            maxSize: hasPhoto ? 138 : 180,
-                                            axes: [
-                                              for (final entry
-                                                  in _tasteLabels.entries)
-                                                _TasteAxis(
-                                                  entry.value,
-                                                  (review.tasteRatings[entry
-                                                              .key]! /
-                                                          5)
-                                                      .clamp(0.0, 1.0),
-                                                ),
-                                            ],
                                           ),
                                         ),
                                       ),
@@ -2720,13 +2725,22 @@ class _CommunityReviewsSection extends StatelessWidget {
                                   color: const Color(0xFF294562),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Text(
-                                  review.comment!,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    height: 1.4,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 59,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    key: Key(
+                                      'review-comment-scroll-${review.reviewId}',
+                                    ),
+                                    child: Text(
+                                      review.comment!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        height: 1.4,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -2918,10 +2932,33 @@ class _CommunityReviewEditorState extends State<_CommunityReviewEditor> {
   );
 }
 
+class _DetailObiDivider extends StatelessWidget {
+  const _DetailObiDivider();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    key: const Key('detail-obi-divider'),
+    height: 42,
+    width: double.infinity,
+    child: Image.asset(
+      'assets/images/obi.png',
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      excludeFromSemantics: true,
+    ),
+  );
+}
+
 class _Section extends StatelessWidget {
-  const _Section({required this.child, this.title, this.topPadding = 24});
+  const _Section({
+    required this.child,
+    this.title,
+    this.showObi = false,
+    this.topPadding = 24,
+  });
   final Widget child;
   final String? title;
+  final bool showObi;
   final double topPadding;
   @override
   Widget build(BuildContext context) => Padding(
@@ -2929,6 +2966,10 @@ class _Section extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (title != null || showObi) ...[
+          const _DetailObiDivider(),
+          const SizedBox(height: 10),
+        ],
         if (title != null) ...[
           Row(
             children: [
@@ -2947,10 +2988,6 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 18),
         ],
         child,
-        const Padding(
-          padding: EdgeInsets.only(top: 24),
-          child: Divider(height: 1, color: Color(0xFFE5EAF0)),
-        ),
       ],
     ),
   );
@@ -2963,37 +3000,32 @@ class _DetailRow extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 96,
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF647184)),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                value,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  color: _navy,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 96,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF647184)),
+          ),
         ),
-      ),
-      const Divider(height: 1, color: Color(0xFFE5EAF0)),
-    ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: _navy,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -3084,7 +3116,6 @@ class _ShopPriceBar extends StatelessWidget {
         const Expanded(
           child: _ShopPrice(name: 'Amazon', price: '—'),
         ),
-        const _ShopPriceDivider(),
         Expanded(
           child: _ShopPrice(
             name: '楽天市場',
@@ -3095,7 +3126,6 @@ class _ShopPriceBar extends StatelessWidget {
             url: rakutenOffer?.affiliateUrl,
           ),
         ),
-        const _ShopPriceDivider(),
         Expanded(
           child: _ShopPrice(
             name: 'Yahoo!',
@@ -3172,14 +3202,6 @@ class _ShopPrice extends StatelessWidget {
       child: content,
     );
   }
-}
-
-class _ShopPriceDivider extends StatelessWidget {
-  const _ShopPriceDivider();
-
-  @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 34, color: const Color(0xFF30363D));
 }
 
 class _Tags extends StatelessWidget {
