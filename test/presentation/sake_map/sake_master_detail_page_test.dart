@@ -844,6 +844,11 @@ class _FakeSakeScanRepository implements SakeScanRepository {
   bool? lastTrackView;
 
   @override
+  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(
+    List<int> sakeIds,
+  ) async => <int, SakeTasteProfileDetails>{};
+
+  @override
   Future<SakeOverview> fetchOverview(
     int sakeId, {
     bool trackView = false,

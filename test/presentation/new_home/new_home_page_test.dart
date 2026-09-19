@@ -4,21 +4,31 @@ import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.da
 import 'package:mola_gemini_flutter_template/presentation/new_home/new_home_page.dart';
 
 void main() {
-  test('同じお酒のマッチ度詳細は画面外へ出ても再取得しない', () async {
-    final cache = SakeMatchOverviewCache();
+  test('同じお酒の味覚プロファイルは画面外へ出ても再取得しない', () async {
+    final cache = SakeMatchProfileCache();
     var calls = 0;
-    Future<SakeOverview> load(int id) async {
+    Future<Map<int, SakeTasteProfileDetails>> load(List<int> ids) async {
       calls++;
-      return SakeOverview(sake: Sake(sakeId: id), analysisCompleted: true);
+      return {
+        for (final id in ids)
+          id: const SakeTasteProfileDetails(
+            fruity: .5,
+            sweetness: .5,
+            acidity: .5,
+            umami: .5,
+            kire: .5,
+            dryness: .5,
+          ),
+      };
     }
 
-    final first = cache.fetch(123, load);
-    final second = cache.fetch(123, load);
+    final first = cache.fetch([123], load);
+    final second = cache.fetch([123], load);
     expect(identical(first, second), isTrue);
-    expect((await second).sake.sakeId, 123);
+    expect((await second).keys, [123]);
     expect(calls, 1);
     cache.clear();
-    await cache.fetch(123, load);
+    await cache.fetch([123], load);
     expect(calls, 2);
   });
 
