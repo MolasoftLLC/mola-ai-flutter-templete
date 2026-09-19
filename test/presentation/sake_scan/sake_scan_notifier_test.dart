@@ -432,6 +432,11 @@ class _FakeScanRepository implements SakeScanRepository {
   List<int>? rejectedSakeIds;
 
   @override
+  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(
+    List<int> sakeIds,
+  ) async => <int, SakeTasteProfileDetails>{};
+
+  @override
   Future<SakeScanResult> scanFront(File image) async {
     frontCalls++;
     if (frontError != null) throw frontError!;
