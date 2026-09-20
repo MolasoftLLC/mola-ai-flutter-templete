@@ -4,12 +4,21 @@ import '../../common/localization/app_locale_resolver.dart';
 import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
-import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recognition_response.dart';
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../eintities/sake_label_scan.dart';
 import '../notifier/favorite/favorite_notifier.dart';
 import '../eintities/menu_sake_resolution.dart';
+import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
+
+class SakeCandidateResolutionException implements Exception {
+  const SakeCandidateResolutionException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
@@ -137,7 +146,18 @@ class SakeMenuRecognitionRepository {
       'searchToken': searchToken,
       'locale': await resolveAppLocaleLanguageCode(),
     });
-    if (!response.isSuccessful || response.body == null) return null;
+    if (!response.isSuccessful || response.body == null) {
+      if (response.statusCode == 409) {
+        final error = response.error;
+        final message = error is Map && error['error'] is String
+            ? (error['error'] as String).trim()
+            : '';
+        throw SakeCandidateResolutionException(
+          message.isEmpty ? '選択した商品と取得情報が一致しません。元の候補から選び直してください。' : message,
+        );
+      }
+      return null;
+    }
     final overview = SakeOverview.fromJson(response.body!);
     if ((overview.sake.sakeId ?? 0) <= 0 ||
         !isPlausibleRecognizedSakeName(overview.sake.name)) {

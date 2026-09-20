@@ -226,6 +226,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     }
   }
 
+  String _detailErrorMessage(Object? error) {
+    if (error is SakeCandidateResolutionException) return error.message;
+    return '詳細情報を取得できませんでした。';
+  }
+
   Future<void> _handleCommunityImage(SakeCommunityImage image) async {
     if (!image.isOwner && context.read<AuthRepository>().currentUser == null) {
       await GuestLimitDialog.show(
@@ -543,7 +548,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                             horizontal: 20,
                             vertical: 16,
                           ),
-                          child: const Text('詳細情報を取得できませんでした。'),
+                          child: Text(_detailErrorMessage(snapshot.error)),
                         ),
                       ),
                     const SliverToBoxAdapter(child: _ShopPriceTitle()),
@@ -579,10 +584,24 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                 Positioned(
                   right: 20,
                   bottom: 20,
-                  child: FilledButton.icon(
-                    onPressed: _reload,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('再試行'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (snapshot.error is SakeCandidateResolutionException)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => Navigator.maybePop(context),
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text('候補を選び直す'),
+                          ),
+                        ),
+                      FilledButton.icon(
+                        onPressed: _reload,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('再試行'),
+                      ),
+                    ],
                   ),
                 ),
             ],

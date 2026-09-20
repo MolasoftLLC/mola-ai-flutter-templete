@@ -744,6 +744,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('AI候補と詳細が不一致なら元の商品名を保ち選び直しを案内する', (tester) async {
+    final repository = _FakeSakeMenuRecognitionRepository();
+    await tester.pumpWidget(
+      Provider<SakeMenuRecognitionRepository>.value(
+        value: repository,
+        child: const MaterialApp(
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(
+              searchToken: 'candidate:12',
+              name: '鍋島 純米吟醸 雄町 生酒',
+              brewery: '富久千代酒造',
+              type: '純米吟醸',
+              recordCount: 0,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    repository.failIdentity();
+    await tester.pumpAndSettle();
+    expect(find.text('鍋島 純米吟醸 雄町 生酒'), findsWidgets);
+    expect(find.textContaining('選択した商品と取得情報が一致しません'), findsOneWidget);
+    expect(find.text('候補を選び直す'), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_outline), findsNothing);
+    expect(find.byIcon(Icons.favorite_border), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('AI候補の解決後は取得済みのIDと画像で保存・お気に入りを操作できる', (tester) async {
     final repository = _FakeSakeMenuRecognitionRepository();
     final saved = SavedSakeNotifier()
@@ -871,6 +900,14 @@ class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
           description: 'AI解析済みの味わい説明',
         ),
         analysisCompleted: true,
+      ),
+    );
+  }
+
+  void failIdentity() {
+    _completer.completeError(
+      const SakeCandidateResolutionException(
+        '選択した商品と取得情報が一致しません。元の候補を保持したまま再検索してください。',
       ),
     );
   }

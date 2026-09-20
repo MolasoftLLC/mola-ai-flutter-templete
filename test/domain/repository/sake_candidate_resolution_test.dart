@@ -91,4 +91,33 @@ void main() {
       expect(overview.master.tasteProfile!.fruity, .7);
     });
   }
+
+  test('候補との不一致409は画面へ理由を渡し、別商品を仮表示しない', () async {
+    final api = SakeMenuRecognitionApiClient.create();
+    final client = ChopperClient(
+      baseUrl: Uri.parse('https://example.com'),
+      services: [api],
+      converter: const JsonConverter(),
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({'error': '選択した商品と取得情報が一致しません。元の候補を保持したまま再検索してください。'}),
+          409,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      ),
+    );
+    addTearDown(client.dispose);
+    await expectLater(
+      SakeMenuRecognitionRepository(
+        api,
+      ).resolveSakeCandidateOverview('candidate:39'),
+      throwsA(
+        isA<SakeCandidateResolutionException>().having(
+          (error) => error.message,
+          'message',
+          contains('選択した商品と取得情報が一致しません'),
+        ),
+      ),
+    );
+  });
 }
