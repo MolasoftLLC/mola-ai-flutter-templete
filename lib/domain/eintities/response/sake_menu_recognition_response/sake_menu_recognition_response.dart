@@ -55,6 +55,7 @@ class Sake with _$Sake {
     String? description,
     int? recommendationScore,
     String? impression,
+    String? timelineComment,
     String? place,
     DrinkingPlace? drinkingPlace,
     List<String>? userTags,

@@ -794,15 +794,8 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     final typeText = sake.type ?? (sake.types?.join(' / '));
     final tasteText = sake.description?.trim();
     final hasTaste = tasteText != null && tasteText.isNotEmpty;
-    final place = sake.place?.trim();
-    final hasPlace = place != null && place.isNotEmpty;
-    final tags =
-        sake.userTags
-            ?.map((tag) => tag.trim())
-            .where((tag) => tag.isNotEmpty)
-            .toList() ??
-        const <String>[];
-    final hasTags = tags.isNotEmpty;
+    final timelineComment = sake.timelineComment?.trim();
+    final hasTimelineComment = timelineComment?.isNotEmpty == true;
     const bodyStyle = TextStyle(color: Colors.white, fontSize: 13, height: 1.4);
     final displayedEnvyCount = widget.envyCount < 0 ? 0 : widget.envyCount;
     final isEnvied = widget.isEnvied;
@@ -1000,21 +993,17 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                 style: const TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
-          if (hasPlace)
+          if (hasTimelineComment)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.place, size: 14, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      place!,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                timelineComment!,
+                key: const Key('timeline-public-comment'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
             ),
           if (hasTaste)
@@ -1077,38 +1066,6 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                     ],
                   );
                 },
-              ),
-            ),
-          if (hasTags)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: tags
-                    .map(
-                      (tag) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: Text(
-                          tag,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
               ),
             ),
         ],

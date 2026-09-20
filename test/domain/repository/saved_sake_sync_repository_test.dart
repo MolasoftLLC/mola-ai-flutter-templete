@@ -81,4 +81,37 @@ void main() {
       'consentVersion': 'vision-product-search-v1',
     });
   });
+
+  test('タイムライン公開設定は公開専用コメントだけを送る', () async {
+    Map<String, dynamic>? sentBody;
+    final api = ApiClient.create();
+    final client = ChopperClient(
+      baseUrl: Uri.parse('https://example.com'),
+      services: [api],
+      converter: const JsonConverter(),
+      client: MockClient((request) async {
+        expect(request.url.path, '/saved-sakes/saved_72/visibility');
+        sentBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response('{"status":"ok"}', 200);
+      }),
+    );
+    addTearDown(client.dispose);
+
+    final result = await SavedSakeSyncRepository(api).updateSavedSakeVisibility(
+      userId: 'test-user',
+      savedId: 'saved_72',
+      isPublic: true,
+      timelineComment: ' 公開用コメント ',
+    );
+
+    expect(result, isTrue);
+    expect(sentBody, {
+      'userId': 'test-user',
+      'isPublic': true,
+      'timelineComment': '公開用コメント',
+    });
+    expect(sentBody?.containsKey('impression'), isFalse);
+    expect(sentBody?.containsKey('userTags'), isFalse);
+    expect(sentBody?.containsKey('place'), isFalse);
+  });
 }

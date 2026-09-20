@@ -315,9 +315,13 @@ class SavedSakeSyncRepository {
     required String userId,
     required String savedId,
     required bool isPublic,
+    String? timelineComment,
   }) async {
     try {
       final payload = <String, dynamic>{'userId': userId, 'isPublic': isPublic};
+      if (timelineComment != null) {
+        payload['timelineComment'] = timelineComment.trim();
+      }
       final response = await _apiClient.updateSavedSakeVisibility(
         savedId,
         payload,

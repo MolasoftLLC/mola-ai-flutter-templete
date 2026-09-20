@@ -487,6 +487,7 @@ mixin _$Sake {
   String? get description => throw _privateConstructorUsedError;
   int? get recommendationScore => throw _privateConstructorUsedError;
   String? get impression => throw _privateConstructorUsedError;
+  String? get timelineComment => throw _privateConstructorUsedError;
   String? get place => throw _privateConstructorUsedError;
   DrinkingPlace? get drinkingPlace => throw _privateConstructorUsedError;
   List<String>? get userTags => throw _privateConstructorUsedError;
@@ -531,6 +532,7 @@ abstract class $SakeCopyWith<$Res> {
       String? description,
       int? recommendationScore,
       String? impression,
+      String? timelineComment,
       String? place,
       DrinkingPlace? drinkingPlace,
       List<String>? userTags,
@@ -577,6 +579,7 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? description = freezed,
     Object? recommendationScore = freezed,
     Object? impression = freezed,
+    Object? timelineComment = freezed,
     Object? place = freezed,
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
@@ -639,6 +642,10 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
       impression: freezed == impression
           ? _value.impression
           : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      timelineComment: freezed == timelineComment
+          ? _value.timelineComment
+          : timelineComment // ignore: cast_nullable_to_non_nullable
               as String?,
       place: freezed == place
           ? _value.place
@@ -743,6 +750,7 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       String? description,
       int? recommendationScore,
       String? impression,
+      String? timelineComment,
       String? place,
       DrinkingPlace? drinkingPlace,
       List<String>? userTags,
@@ -787,6 +795,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? description = freezed,
     Object? recommendationScore = freezed,
     Object? impression = freezed,
+    Object? timelineComment = freezed,
     Object? place = freezed,
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
@@ -849,6 +858,10 @@ class __$$SakeImplCopyWithImpl<$Res>
       impression: freezed == impression
           ? _value.impression
           : impression // ignore: cast_nullable_to_non_nullable
+              as String?,
+      timelineComment: freezed == timelineComment
+          ? _value.timelineComment
+          : timelineComment // ignore: cast_nullable_to_non_nullable
               as String?,
       place: freezed == place
           ? _value.place
@@ -937,6 +950,7 @@ class _$SakeImpl implements _Sake {
       this.description,
       this.recommendationScore,
       this.impression,
+      this.timelineComment,
       this.place,
       this.drinkingPlace,
       final List<String>? userTags,
@@ -996,6 +1010,8 @@ class _$SakeImpl implements _Sake {
   final int? recommendationScore;
   @override
   final String? impression;
+  @override
+  final String? timelineComment;
   @override
   final String? place;
   @override
@@ -1077,7 +1093,7 @@ class _$SakeImpl implements _Sake {
 
   @override
   String toString() {
-    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
+    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, timelineComment: $timelineComment, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -1100,6 +1116,8 @@ class _$SakeImpl implements _Sake {
                 other.recommendationScore == recommendationScore) &&
             (identical(other.impression, impression) ||
                 other.impression == impression) &&
+            (identical(other.timelineComment, timelineComment) ||
+                other.timelineComment == timelineComment) &&
             (identical(other.place, place) || other.place == place) &&
             (identical(other.drinkingPlace, drinkingPlace) ||
                 other.drinkingPlace == drinkingPlace) &&
@@ -1147,6 +1165,7 @@ class _$SakeImpl implements _Sake {
         description,
         recommendationScore,
         impression,
+        timelineComment,
         place,
         drinkingPlace,
         const DeepCollectionEquality().hash(_userTags),
@@ -1193,6 +1212,7 @@ abstract class _Sake implements Sake {
       final String? description,
       final int? recommendationScore,
       final String? impression,
+      final String? timelineComment,
       final String? place,
       final DrinkingPlace? drinkingPlace,
       final List<String>? userTags,
@@ -1236,6 +1256,8 @@ abstract class _Sake implements Sake {
   int? get recommendationScore;
   @override
   String? get impression;
+  @override
+  String? get timelineComment;
   @override
   String? get place;
   @override

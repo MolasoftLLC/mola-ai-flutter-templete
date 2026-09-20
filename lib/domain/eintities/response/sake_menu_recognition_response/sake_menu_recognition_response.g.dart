@@ -64,6 +64,7 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
       description: json['description'] as String?,
       recommendationScore: (json['recommendationScore'] as num?)?.toInt(),
       impression: json['impression'] as String?,
+      timelineComment: json['timelineComment'] as String?,
       place: json['place'] as String?,
       drinkingPlace: json['drinkingPlace'] == null
           ? null
@@ -111,6 +112,7 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'description': instance.description,
       'recommendationScore': instance.recommendationScore,
       'impression': instance.impression,
+      'timelineComment': instance.timelineComment,
       'place': instance.place,
       'drinkingPlace': instance.drinkingPlace,
       'userTags': instance.userTags,

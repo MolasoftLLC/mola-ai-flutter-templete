@@ -19,6 +19,8 @@ import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_n
 import 'package:mola_gemini_flutter_template/domain/notifier/my_page/my_page_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/preferences/taste_preference_profile.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
+import 'package:mola_gemini_flutter_template/domain/repository/saved_sake_sync_repository.dart';
+import 'package:mola_gemini_flutter_template/infrastructure/api_client/api_client.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 import 'package:mola_gemini_flutter_template/common/utils/sake_image_utils.dart';
@@ -832,6 +834,107 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('未ログインでは詳細からのタイムライン共有を開始しない', (tester) async {
+    final auth = _GuestAuthRepository();
+    final saved = SavedSakeNotifier()..read = (<T>() => auth as T);
+    addTearDown(saved.dispose);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<AuthRepository>.value(value: auth),
+          Provider<SavedSakeNotifier>.value(value: saved),
+          Provider<SakeScanRepository>.value(value: _FakeSakeScanRepository()),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('ja'),
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sake-timeline-share-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('共有にはログインが必要です'), findsOneWidget);
+    expect(saved.state.savedSakeList, isEmpty);
+  });
+
+  testWidgets('未保存酒を同期して確認後に公開し、編集・停止・失敗を重複なしで扱う', (tester) async {
+    final auth = _SignedInAuthRepository();
+    final sync = _FakeSavedSakeSyncRepository();
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() {
+        if (T == AuthRepository) return auth as T;
+        if (T == SavedSakeSyncRepository) return sync as T;
+        throw StateError('unexpected dependency $T');
+      });
+    addTearDown(saved.dispose);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<AuthRepository>.value(value: auth),
+          Provider<SavedSakeNotifier>.value(value: saved),
+          Provider<SakeScanRepository>.value(value: _FakeSakeScanRepository()),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('ja'),
+          home: SakeMasterDetailPage(
+            venueSake: VenueSake(sakeId: 123, name: '来福', recordCount: 0),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sake-timeline-share-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(sync.syncCalls, 2);
+    expect(sync.visibilityCalls, isEmpty);
+    expect(find.text('公開内容を確認'), findsOneWidget);
+    expect(find.text('公開名: テストユーザー'), findsOneWidget);
+    expect(find.textContaining('感想メモ、個人タグ'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('timeline-share-comment')),
+      '公開用コメント',
+    );
+    final confirmButton = find.byKey(const Key('timeline-share-confirm'));
+    await tester.ensureVisible(confirmButton);
+    await tester.pump();
+    await tester.tap(confirmButton);
+    await tester.pumpAndSettle();
+    expect(sync.visibilityCalls, [(isPublic: true, comment: '公開用コメント')]);
+    expect(saved.state.savedSakeList.single.isPublic, isTrue);
+    expect(saved.state.savedSakeList.single.timelineComment, '公開用コメント');
+
+    await tester.tap(find.byKey(const Key('sake-timeline-share-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('タイムライン投稿を編集'), findsOneWidget);
+    final stopButton = find.byKey(const Key('timeline-share-stop'));
+    await tester.ensureVisible(stopButton);
+    await tester.pump();
+    await tester.tap(stopButton);
+    await tester.pumpAndSettle();
+    expect(saved.state.savedSakeList.single.isPublic, isFalse);
+
+    sync.visibilitySuccess = false;
+    await tester.tap(find.byKey(const Key('sake-timeline-share-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.ensureVisible(confirmButton);
+    await tester.pump();
+    await tester.tap(confirmButton);
+    await tester.pumpAndSettle();
+    expect(saved.state.savedSakeList.single.isPublic, isFalse);
+    expect(saved.state.savedSakeList, hasLength(1));
+  });
 }
 
 class _GuestAuthRepository implements AuthRepository {
@@ -850,7 +953,51 @@ class _SignedInAuthRepository implements AuthRepository {
 
 class _FakeUser implements User {
   @override
+  String get uid => 'user-72';
+  @override
+  String? get displayName => 'テストユーザー';
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _UnusedApiClient implements ApiClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeSavedSakeSyncRepository extends SavedSakeSyncRepository {
+  _FakeSavedSakeSyncRepository() : super(_UnusedApiClient());
+
+  int syncCalls = 0;
+  bool visibilitySuccess = true;
+  final List<({bool isPublic, String? comment})> visibilityCalls = [];
+
+  @override
+  Future<bool> syncSavedSake({
+    required SavedSakeSyncStage stage,
+    required String userId,
+    required Sake sake,
+    File? imageFile,
+    bool? isPublic,
+    bool publicLabelContribution = false,
+  }) async {
+    syncCalls++;
+    return true;
+  }
+
+  @override
+  Future<List<Sake>> fetchSavedSakes(String userId) async => const [];
+
+  @override
+  Future<bool> updateSavedSakeVisibility({
+    required String userId,
+    required String savedId,
+    required bool isPublic,
+    String? timelineComment,
+  }) async {
+    visibilityCalls.add((isPublic: isPublic, comment: timelineComment));
+    return visibilitySuccess;
+  }
 }
 
 class _FakeUrlLauncher extends UrlLauncherPlatform {

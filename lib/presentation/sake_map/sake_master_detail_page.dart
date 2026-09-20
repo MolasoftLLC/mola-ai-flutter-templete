@@ -30,6 +30,7 @@ import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/sake_community_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
+import '../timeline/timeline_page_notifier.dart';
 import 'sake_map_page.dart';
 
 const _navy = Color(0xFF143861);
@@ -56,6 +57,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Timer? _masterEnrichmentPollTimer;
   var _masterEnrichmentPollCount = 0;
   var _isFetchingDetails = false;
+  var _isSharingTimeline = false;
 
   bool get _isAiSearchCandidate =>
       widget.venueSake.sakeId == null &&
@@ -451,6 +453,95 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     }
   }
 
+  Future<void> _openTimelineShare(Sake sake) async {
+    if (_isSharingTimeline) return;
+    final currentUser = context.read<AuthRepository>().currentUser;
+    if (currentUser == null) {
+      await GuestLimitDialog.show(
+        context,
+        title: '共有にはログインが必要です',
+        message: 'ログインすると、公開内容を確認してタイムラインへ投稿できます。',
+      );
+      return;
+    }
+    final notifier = _savedSakeNotifier;
+    if (notifier == null) return;
+    setState(() => _isSharingTimeline = true);
+    try {
+      var record = _findSavedSake(notifier, sake);
+      if (record == null) {
+        final savedId = await notifier.addSavedSake(
+          sake.copyWith(isPublic: false),
+        );
+        record = await notifier.syncSavedSakeToServer(savedId, force: true);
+      } else if (record.syncStatus != SavedSakeSyncStatus.serverSynced) {
+        record = await notifier.syncSavedSakeToServer(
+          record.savedId!,
+          force: true,
+        );
+      }
+      if (!mounted) return;
+      final savedId = record?.savedId;
+      if (record == null || savedId == null || savedId.isEmpty) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '共有に必要な保存データを同期できませんでした。',
+        );
+        return;
+      }
+      final draft = await showModalBottomSheet<_TimelineShareDraft>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => _TimelineShareSheet(
+          sake: record!,
+          displayName: record.displayName?.trim().isNotEmpty == true
+              ? record.displayName!.trim()
+              : record.username?.trim().isNotEmpty == true
+              ? record.username!.trim()
+              : currentUser.displayName?.trim().isNotEmpty == true
+              ? currentUser.displayName!.trim()
+              : 'ユーザー',
+        ),
+      );
+      if (draft == null || !mounted) return;
+      final success = await notifier.updateTimelineVisibility(
+        savedId: savedId,
+        isPublic: draft.action != _TimelineShareAction.stop,
+        timelineComment: draft.comment,
+      );
+      if (!mounted) return;
+      if (!success) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: 'タイムラインの公開設定を更新できませんでした。',
+        );
+        return;
+      }
+      unawaited(
+        Provider.of<TimelinePageNotifier?>(context, listen: false)?.refresh(),
+      );
+      SnackBarUtils.showInfoSnackBar(
+        context,
+        message: draft.action == _TimelineShareAction.stop
+            ? 'タイムラインでの公開を停止しました。'
+            : record.isPublic
+            ? 'タイムライン投稿を更新しました。'
+            : 'タイムラインへ投稿しました。',
+      );
+    } on SavedSakeMemberLimitReachedException {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: context.l10n.savedSakeLimit(
+            SavedSakeNotifier.memberSavedLimit,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingTimeline = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isPendingAiCandidate =
@@ -521,6 +612,28 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                           _MasterFavoriteButton(
                             sake: detailSake,
                             notifier: _favoriteNotifier,
+                          ),
+                          IconButton(
+                            key: const Key('sake-timeline-share-button'),
+                            tooltip: record?.isPublic == true
+                                ? 'タイムライン投稿を編集'
+                                : 'タイムラインで共有',
+                            onPressed: _isSharingTimeline
+                                ? null
+                                : () => _openTimelineShare(detailSake),
+                            icon: _isSharingTimeline
+                                ? const SizedBox.square(
+                                    dimension: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Icon(
+                                    record?.isPublic == true
+                                        ? Icons.ios_share
+                                        : Icons.ios_share_outlined,
+                                  ),
                           ),
                         ],
                         if (_showCompactHeader)
@@ -1426,6 +1539,222 @@ Sake _asSake(VenueSake venueSake) => Sake(
   primaryImageUrl: venueSake.primaryImageUrl,
   thumbnailImageUrl: venueSake.thumbnailImageUrl,
 );
+
+enum _TimelineShareAction { publish, stop }
+
+class _TimelineShareDraft {
+  const _TimelineShareDraft({required this.action, required this.comment});
+
+  final _TimelineShareAction action;
+  final String comment;
+}
+
+class _TimelineShareSheet extends StatefulWidget {
+  const _TimelineShareSheet({required this.sake, required this.displayName});
+
+  final Sake sake;
+  final String displayName;
+
+  @override
+  State<_TimelineShareSheet> createState() => _TimelineShareSheetState();
+}
+
+class _TimelineShareSheetState extends State<_TimelineShareSheet> {
+  late final TextEditingController _commentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentController = TextEditingController(
+      text: widget.sake.timelineComment ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final imagePath = (widget.sake.imagePaths ?? const <String>[])
+        .where((path) => path.trim().isNotEmpty)
+        .firstOrNull;
+    final previewPath = imagePath ?? widget.sake.primaryImageUrl;
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.9,
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            20 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.sake.isPublic ? 'タイムライン投稿を編集' : '公開内容を確認',
+                  style: const TextStyle(
+                    color: _navy,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F8FA),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TimelineSharePreview(path: previewPath),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.sake.name ?? '名前未設定',
+                              style: const TextStyle(
+                                color: _navy,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (widget.sake.type?.trim().isNotEmpty == true)
+                              Text(
+                                widget.sake.type!,
+                                style: const TextStyle(
+                                  color: Color(0xFF647184),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '公開名: ${widget.displayName}',
+                              style: const TextStyle(
+                                color: Color(0xFF647184),
+                                fontSize: 11,
+                              ),
+                            ),
+                            const Text(
+                              '正面画像を公開します',
+                              style: TextStyle(
+                                color: Color(0xFF647184),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  key: const Key('timeline-share-comment'),
+                  controller: _commentController,
+                  maxLength: 500,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: '公開コメント（任意）',
+                    hintText: 'みんなに伝えたいことを書く',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const Text(
+                  '感想メモ、個人タグ、飲んだ／買った場所、裏ラベル画像は公開されません。\n「このお酒を評価」は別の公開機能です。',
+                  style: TextStyle(
+                    color: Color(0xFF647184),
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  key: const Key('timeline-share-confirm'),
+                  onPressed: () => Navigator.pop(
+                    context,
+                    _TimelineShareDraft(
+                      action: _TimelineShareAction.publish,
+                      comment: _commentController.text.trim(),
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: _orange,
+                  ),
+                  icon: const Icon(Icons.ios_share),
+                  label: Text(widget.sake.isPublic ? '投稿を更新' : 'タイムラインへ投稿'),
+                ),
+                if (widget.sake.isPublic) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    key: const Key('timeline-share-stop'),
+                    onPressed: () => Navigator.pop(
+                      context,
+                      _TimelineShareDraft(
+                        action: _TimelineShareAction.stop,
+                        comment: _commentController.text.trim(),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46),
+                      foregroundColor: const Color(0xFFB42318),
+                    ),
+                    child: const Text('公開を停止'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineSharePreview extends StatelessWidget {
+  const _TimelineSharePreview({required this.path});
+
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = path?.trim();
+    if (value == null || value.isEmpty) {
+      return const SizedBox.square(
+        dimension: 72,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: Color(0xFFE7EBEF)),
+          child: Icon(Icons.local_bar_outlined, color: Color(0xFF647184)),
+        ),
+      );
+    }
+    final image = value.startsWith('http://') || value.startsWith('https://')
+        ? Image.network(value, fit: BoxFit.cover)
+        : Image.file(File(value), fit: BoxFit.cover);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox.square(dimension: 72, child: image),
+    );
+  }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull {
+    final iterator = this.iterator;
+    return iterator.moveNext() ? iterator.current : null;
+  }
+}
 
 class _MasterRecordCta extends StatelessWidget {
   const _MasterRecordCta({required this.sake, required this.notifier});

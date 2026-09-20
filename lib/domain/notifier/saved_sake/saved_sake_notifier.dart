@@ -586,6 +586,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   Future<bool> updateTimelineVisibility({
     required String savedId,
     required bool isPublic,
+    String? timelineComment,
   }) async {
     final index = state.savedSakeList.indexWhere(
       (item) => item.savedId != null && item.savedId == savedId,
@@ -605,13 +606,17 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       userId: user.uid,
       savedId: savedId,
       isPublic: isPublic,
+      timelineComment: timelineComment,
     );
     if (!success) {
       return false;
     }
 
     final updatedList = [...state.savedSakeList];
-    updatedList[index] = updatedList[index].copyWith(isPublic: isPublic);
+    updatedList[index] = updatedList[index].copyWith(
+      isPublic: isPublic,
+      timelineComment: timelineComment?.trim(),
+    );
     state = state.copyWith(savedSakeList: updatedList);
     await _persistSavedSakes();
     logger.info('公開設定を更新しました: id=$savedId isPublic=$isPublic');
