@@ -211,6 +211,38 @@ void main() {
       expect(analysis.calls, 0);
     });
 
+    test('裏ラベル後に登録済み候補を該当なしにすると同じ画像でAI補完へ進む', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.needBackLabel,
+          scanSessionId: 'scan_test',
+        ),
+        backResult: const SakeScanResult(
+          status: SakeScanApiStatus.candidates,
+          scanSessionId: 'scan_test',
+          candidates: <SakeScanCandidate>[
+            SakeScanCandidate(sakeId: 202, name: '天吹 登録済み候補'),
+          ],
+        ),
+      );
+      final analysis = _FakeAnalysisService(
+        const Sake(name: 'AI追加候補', brewery: '天吹酒造'),
+      );
+      final notifier = _buildNotifier(repository, analysis: analysis);
+
+      await notifier.submitFront(File('/tmp/front_label.jpg'));
+      await notifier.submitBack(File('/tmp/back_label.jpg'));
+      await notifier.rejectCandidates();
+
+      expect(repository.rejectedSakeIds, [202]);
+      expect(analysis.identifyCalls, 1);
+      expect(
+        notifier.currentState.status,
+        SakeScanViewStatus.confirmingCandidate,
+      );
+      expect(notifier.currentState.selectedCandidate?.name, 'AI追加候補');
+    });
+
     test('裏ラベルでDB特定不能ならAI候補を表示し確定後に詳細解析する', () async {
       final repository = _FakeScanRepository(
         frontResult: const SakeScanResult(
@@ -273,6 +305,56 @@ void main() {
         persistence.initialSakes.single.name,
         '墨廼江 純米大吟醸 CLASSIC VERSION 901',
       );
+    });
+
+    test('AI候補が登録済みマスターへ解決済みなら商品IDを保持して通常確定する', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.needBackLabel,
+          scanSessionId: 'scan_test',
+        ),
+        backResult: const SakeScanResult(
+          status: SakeScanApiStatus.aiRequired,
+          scanSessionId: 'scan_test',
+        ),
+        overview: const SakeOverview(
+          sake: Sake(
+            sakeId: 202,
+            brandId: 20,
+            name: '天吹 純米吟醸 雄町',
+            type: '純米吟醸',
+            brewery: '天吹酒造',
+          ),
+          analysisCompleted: true,
+        ),
+      );
+      final analysis = _FakeAnalysisService(
+        const Sake(
+          sakeId: 202,
+          brandId: 20,
+          name: '天吹 純米吟醸 雄町',
+          type: '純米吟醸',
+          brewery: '天吹酒造',
+          primaryImageUrl: 'https://example.com/amabuki.jpg',
+        ),
+      );
+      final notifier = _buildNotifier(repository, analysis: analysis);
+
+      await notifier.submitFront(image);
+      await notifier.submitBack(image);
+
+      expect(notifier.currentState.selectedCandidate?.sakeId, 202);
+      expect(notifier.currentState.selectedCandidate?.brandId, 20);
+      expect(
+        notifier.currentState.selectedCandidate?.imageUrl,
+        'https://example.com/amabuki.jpg',
+      );
+
+      await notifier.confirmCandidate();
+
+      expect(notifier.currentState.status, SakeScanViewStatus.completed);
+      expect(notifier.currentState.sake?.sakeId, 202);
+      expect(analysis.calls, 0);
     });
 
     test('DB特定不能時はAI解析成功まで仮の保存酒を作らない', () async {

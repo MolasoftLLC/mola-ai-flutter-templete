@@ -197,6 +197,18 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     try {
       await _scanRepository.rejectCandidates(sessionId, candidateIds);
       if (!_isCurrent(operation)) return;
+      if (state.backImage != null) {
+        _emit(
+          state.copyWith(
+            candidates: const <SakeScanCandidate>[],
+            selectedCandidateIndex: 0,
+            isSubmitting: false,
+            clearError: true,
+          ),
+        );
+        await _identifyFallbackCandidates(sessionId, operation);
+        return;
+      }
       _emit(
         state.copyWith(
           status: SakeScanViewStatus.backScanning,
@@ -365,10 +377,13 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         candidates: identified
             .map(
               (candidate) => SakeScanCandidate(
-                sakeId: 0,
+                sakeId: candidate.sakeId ?? 0,
+                brandId: candidate.brandId,
                 name: candidate.name ?? '',
                 type: candidate.type,
                 brewery: candidate.brewery,
+                imageUrl:
+                    candidate.thumbnailImageUrl ?? candidate.primaryImageUrl,
               ),
             )
             .toList(growable: false),

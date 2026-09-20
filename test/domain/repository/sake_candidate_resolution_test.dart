@@ -37,6 +37,22 @@ void main() {
     expect(SakeShopOffer.fromJson(null), isNull);
   });
 
+  test('画像AI候補でDB解決済みの商品ID・銘柄ID・画像を保持する', () {
+    final candidate = parseRecognizedSakeBottleCandidate({
+      'sakeId': 202,
+      'brandId': 20,
+      'sakeName': '天吹 純米吟醸 雄町',
+      'type': '純米吟醸',
+      'brewery': '天吹酒造',
+      'imageUrl': 'https://example.com/amabuki.jpg',
+    });
+
+    expect(candidate.sakeId, 202);
+    expect(candidate.brandId, 20);
+    expect(candidate.name, '天吹 純米吟醸 雄町');
+    expect(candidate.primaryImageUrl, 'https://example.com/amabuki.jpg');
+  });
+
   for (final status in [200, 422, 502]) {
     test('候補解決APIの詳細・画像・IDを保持し、失敗を仮データにしない ($status)', () async {
       final api = SakeMenuRecognitionApiClient.create();

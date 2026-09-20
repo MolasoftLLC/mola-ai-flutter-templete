@@ -20,6 +20,21 @@ class SakeCandidateResolutionException implements Exception {
   String toString() => message;
 }
 
+int? _parseCandidateInt(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '');
+}
+
+Sake parseRecognizedSakeBottleCandidate(Map<String, dynamic> item) => Sake(
+  sakeId: _parseCandidateInt(item['sakeId']),
+  brandId: _parseCandidateInt(item['brandId']),
+  name: item['sakeName']?.toString().trim() ?? '',
+  type: item['type']?.toString().trim(),
+  brewery: item['brewery']?.toString().trim(),
+  primaryImageUrl: item['imageUrl']?.toString().trim(),
+);
+
 class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
 
@@ -307,13 +322,7 @@ class SakeMenuRecognitionRepository {
     return rawCandidates
         .whereType<Map>()
         .map((item) => Map<String, dynamic>.from(item))
-        .map(
-          (item) => Sake(
-            name: item['sakeName']?.toString().trim() ?? '',
-            type: item['type']?.toString().trim(),
-            brewery: item['brewery']?.toString().trim(),
-          ),
-        )
+        .map(parseRecognizedSakeBottleCandidate)
         .where((item) => isPlausibleRecognizedSakeName(item.name))
         .take(7)
         .toList(growable: false);
