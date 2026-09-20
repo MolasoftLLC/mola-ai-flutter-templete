@@ -143,9 +143,16 @@ class SakeMapSearchResult {
   const SakeMapSearchResult({
     this.sakeId,
     this.searchToken,
+    this.identityKey,
+    this.identityBasis,
+    this.sourceSakeIds = const [],
+    this.sourceCandidateIds = const [],
     required this.name,
     this.brewery,
     this.type,
+    this.seriesName,
+    this.riceVariety,
+    this.pasteurizationType,
     this.primaryImageUrl,
     this.thumbnailImageUrl,
     required this.isMaster,
@@ -155,9 +162,16 @@ class SakeMapSearchResult {
       SakeMapSearchResult(
         sakeId: (json['sakeId'] as num?)?.toInt(),
         searchToken: json['searchToken'] as String?,
+        identityKey: _nonEmptyString(json['identityKey']),
+        identityBasis: _nonEmptyString(json['identityBasis']),
+        sourceSakeIds: _intList(json['sourceSakeIds']),
+        sourceCandidateIds: _intList(json['sourceCandidateIds']),
         name: json['name'] as String? ?? '',
         brewery: json['brewery'] as String?,
         type: json['type'] as String?,
+        seriesName: _nonEmptyString(json['seriesName']),
+        riceVariety: _nonEmptyString(json['riceVariety']),
+        pasteurizationType: _nonEmptyString(json['pasteurizationType']),
         primaryImageUrl:
             _nonEmptyString(json['primaryImageUrl']) ??
             _nonEmptyString(json['imageUrl']),
@@ -167,9 +181,16 @@ class SakeMapSearchResult {
       );
   final int? sakeId;
   final String? searchToken;
+  final String? identityKey;
+  final String? identityBasis;
+  final List<int> sourceSakeIds;
+  final List<int> sourceCandidateIds;
   final String name;
   final String? brewery;
   final String? type;
+  final String? seriesName;
+  final String? riceVariety;
+  final String? pasteurizationType;
   final String? primaryImageUrl;
   final bool isMaster;
   final String? thumbnailImageUrl;
@@ -180,6 +201,15 @@ String? _nonEmptyString(dynamic value) {
   final text = value?.toString().trim();
   return text == null || text.isEmpty ? null : text;
 }
+
+List<int> _intList(dynamic value) => value is List
+    ? value
+          .whereType<num>()
+          .map((item) => item.toInt())
+          .where((item) => item > 0)
+          .toSet()
+          .toList(growable: false)
+    : const [];
 
 abstract interface class SakeMapDataSource {
   Future<List<MapVenue>> fetchVenues({

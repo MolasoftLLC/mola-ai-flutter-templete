@@ -1118,12 +1118,25 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
       return SakeMapSearchResult(
         sakeId: (json['sakeId'] as num?)?.toInt(),
         searchToken: json['searchToken'] as String?,
+        identityKey: json['identityKey'] as String?,
+        identityBasis: json['identityBasis'] as String?,
+        sourceSakeIds:
+            (json['sourceSakeIds'] as List?)?.whereType<int>().toList() ??
+            const [],
+        sourceCandidateIds:
+            (json['sourceCandidateIds'] as List?)?.whereType<int>().toList() ??
+            const [],
         name: name,
         brewery: json['brewery'] as String?,
         type: json['type'] as String?,
+        seriesName: json['seriesName'] as String?,
+        riceVariety: json['riceVariety'] as String?,
+        pasteurizationType: json['pasteurizationType'] as String?,
         primaryImageUrl: json['primaryImageUrl'] as String?,
         thumbnailImageUrl: json['thumbnailImageUrl'] as String?,
-        isMaster: true,
+        isMaster:
+            json['isMaster'] as bool? ??
+            ((json['sakeId'] as num?)?.toInt() ?? 0) > 0,
       );
     } catch (_) {
       return null;
@@ -1131,11 +1144,16 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
   }
 
   Future<void> _saveRecentSearch(SakeMapSearchResult sake) async {
+    final selectedIdentity = _verifiedIdentityKey(sake);
     final next = [
       sake,
-      ..._recentResults.where(
-        (recent) => recent.sakeId != sake.sakeId && recent.name != sake.name,
-      ),
+      ..._recentResults.where((recent) {
+        final recentIdentity = _verifiedIdentityKey(recent);
+        if (selectedIdentity != null && recentIdentity != null) {
+          return selectedIdentity != recentIdentity;
+        }
+        return !identical(recent, sake);
+      }),
     ].take(_recentSearchLimit).toList(growable: false);
     setState(() => _recentResults = next);
     try {
@@ -1147,9 +1165,17 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
               (item) => jsonEncode({
                 'sakeId': item.sakeId,
                 'searchToken': item.searchToken,
+                'identityKey': item.identityKey,
+                'identityBasis': item.identityBasis,
+                'sourceSakeIds': item.sourceSakeIds,
+                'sourceCandidateIds': item.sourceCandidateIds,
                 'name': item.name,
                 'brewery': item.brewery,
                 'type': item.type,
+                'seriesName': item.seriesName,
+                'riceVariety': item.riceVariety,
+                'pasteurizationType': item.pasteurizationType,
+                'isMaster': item.isMaster,
                 'primaryImageUrl': item.primaryImageUrl,
                 'thumbnailImageUrl': item.thumbnailImageUrl,
               }),
@@ -1266,12 +1292,28 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     final seen = <String>{};
     return [...current, ...additional]
         .where((sake) {
-          final key = sake.sakeId != null
-              ? 'master:${sake.sakeId}'
-              : [sake.name, sake.type ?? '', sake.brewery ?? ''].join('\u0000');
-          return seen.add(key);
+          final key = _verifiedIdentityKey(sake);
+          // 欠損属性や似た表示名は同一商品とみなさない。安定IDがない
+          // 未確認候補はそれぞれ残し、ユーザーが比較できるようにする。
+          return key == null || seen.add(key);
         })
         .toList(growable: false);
+  }
+
+  String? _verifiedIdentityKey(SakeMapSearchResult sake) {
+    final serverIdentity = sake.identityKey?.trim();
+    if (serverIdentity != null && serverIdentity.isNotEmpty) {
+      return serverIdentity;
+    }
+    if (sake.sakeId != null && sake.sakeId! > 0) {
+      return 'master:${sake.sakeId}';
+    }
+    final candidateToken = sake.searchToken?.trim();
+    if (candidateToken != null &&
+        RegExp(r'^candidate:[1-9]\d*$').hasMatch(candidateToken)) {
+      return candidateToken;
+    }
+    return null;
   }
 
   void _openDetail(SakeMapSearchResult sake) {
@@ -1412,13 +1454,21 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final sake = displayedResults[index];
-                    final details = [
-                      sake.brewery?.trim(),
-                      sake.type?.trim(),
-                    ].whereType<String>().where((value) => value.isNotEmpty);
+                    final details =
+                        <String?>[
+                              sake.brewery?.trim(),
+                              sake.type?.trim(),
+                              sake.seriesName?.trim(),
+                              sake.riceVariety?.trim(),
+                              sake.pasteurizationType?.trim(),
+                              if (!sake.isMaster) '仕様未確認',
+                            ]
+                            .whereType<String>()
+                            .where((value) => value.isNotEmpty)
+                            .toSet();
                     return ListTile(
                       key: ValueKey(
-                        'masterSakeCandidate_${sake.searchToken ?? sake.sakeId}',
+                        'masterSakeCandidate_${sake.identityKey ?? sake.searchToken ?? sake.sakeId ?? index}',
                       ),
                       leading: _SakeCandidateImage(
                         imageUrl: preferredSakeImagePath(

@@ -200,6 +200,89 @@ void main() {
 
     expect(find.text('神蔵 純米大吟醸'), findsOneWidget);
     expect(find.text('神蔵 純米吟醸 ひやおろし'), findsOneWidget);
+    expect(find.textContaining('仕様未確認'), findsOneWidget);
+  });
+
+  testWidgets('同名でも別ID・別酒米を残し、同じ候補IDだけをまとめる', (tester) async {
+    final repository = _FakePlaceMapRepository(
+      normalResults: const [
+        SakeMapSearchResult(
+          sakeId: 41,
+          identityKey: 'master:41',
+          name: '天吹 純米大吟醸',
+          brewery: '天吹酒造',
+          type: '純米大吟醸',
+          riceVariety: '雄町',
+          pasteurizationType: '火入れ',
+          isMaster: true,
+        ),
+        SakeMapSearchResult(
+          sakeId: 42,
+          identityKey: 'master:42',
+          name: '天吹 純米大吟醸',
+          brewery: '天吹酒造',
+          type: '純米大吟醸',
+          riceVariety: '愛山',
+          pasteurizationType: '生酒',
+          isMaster: true,
+        ),
+      ],
+    );
+    await tester.pumpWidget(_app(repository));
+    await tester.enterText(
+      find.byKey(const ValueKey('masterSakeNameSearchField')),
+      '天吹 純米大吟醸',
+    );
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('masterSakeAiSearchButton')));
+    repository.aiCompleter.complete(const [
+      SakeMapSearchResult(
+        sakeId: 41,
+        identityKey: 'master:41',
+        searchToken: 'candidate:10',
+        name: '天吹 純米大吟醸',
+        brewery: '天吹酒造',
+        type: '純米大吟醸',
+        riceVariety: '雄町',
+        isMaster: true,
+      ),
+      SakeMapSearchResult(
+        searchToken: 'candidate:11',
+        identityKey: 'candidate:11',
+        name: '天吹 純米大吟醸',
+        brewery: '天吹酒造',
+        type: '純米大吟醸',
+        isMaster: false,
+      ),
+      SakeMapSearchResult(
+        searchToken: 'candidate:11',
+        identityKey: 'candidate:11',
+        name: '天吹 純米大吟醸',
+        brewery: '天吹酒造',
+        type: '純米大吟醸',
+        isMaster: false,
+      ),
+    ]);
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('masterSakeCandidate_master:41')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('masterSakeCandidate_master:42')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('masterSakeCandidate_candidate:11')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('雄町'), findsOneWidget);
+    expect(find.textContaining('愛山'), findsOneWidget);
+    expect(find.textContaining('仕様未確認'), findsOneWidget);
   });
 
   testWidgets('候補0件時に右上のAI解析を案内する', (tester) async {
