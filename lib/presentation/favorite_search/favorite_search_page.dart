@@ -6,6 +6,7 @@ import '../../common/localization/localization_extensions.dart';
 import '../../common/localization/sake_filter_localizations.dart';
 import '../../common/prefecture.dart';
 import '../../common/sake/master.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
@@ -268,8 +269,12 @@ class _SearchResults extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        ...results.map(
-          (result) => Padding(
+        ...results.map((result) {
+          final imagePath = preferredSakeImagePath(
+            thumbnailImageUrl: result.thumbnailImageUrl,
+            primaryImageUrl: result.primaryImageUrl,
+          );
+          return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
               borderRadius: BorderRadius.circular(12),
@@ -290,12 +295,12 @@ class _SearchResults extends StatelessWidget {
                           ),
                         ),
                       ),
-                leading: result.primaryImageUrl == null
+                leading: imagePath == null
                     ? const CircleAvatar(child: Icon(Icons.local_bar_outlined))
                     : ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          result.primaryImageUrl!,
+                          imagePath,
                           width: 44,
                           height: 44,
                           fit: BoxFit.cover,
@@ -314,8 +319,8 @@ class _SearchResults extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ],
     );
   }

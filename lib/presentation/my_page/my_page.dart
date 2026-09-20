@@ -19,6 +19,7 @@ import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../common/assets.dart';
 import '../../common/localization/app_locale_controller.dart';
 import '../../common/localization/localization_extensions.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
@@ -2809,9 +2810,11 @@ class _SavedSakeGrid extends StatelessWidget {
       itemCount: savedSakeList.length,
       itemBuilder: (context, index) {
         final sake = savedSakeList[index];
-        final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
-            ? sake.imagePaths!.first
-            : sake.thumbnailImageUrl ?? sake.primaryImageUrl;
+        final imagePath = preferredSakeImagePath(
+          personalImagePaths: sake.imagePaths,
+          thumbnailImageUrl: sake.thumbnailImageUrl,
+          primaryImageUrl: sake.primaryImageUrl,
+        );
         final isLocalOnly = sake.syncStatus == SavedSakeSyncStatus.localOnly;
         Widget preview = Container(
           color: Colors.white.withOpacity(0.1),

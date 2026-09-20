@@ -10,6 +10,7 @@ import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page
 import 'package:provider/provider.dart';
 
 import '../common/localization/localization_extensions.dart';
+import '../common/utils/snack_bar_utils.dart';
 import '../domain/eintities/app_content.dart';
 import 'app_page_notifier.dart';
 
@@ -27,6 +28,8 @@ class AppPage extends StatelessWidget {
     );
   }
 
+  static const double snackBarBottomObstacleHeight = 43;
+
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<AppPageNotifier>();
@@ -43,14 +46,19 @@ class AppPage extends StatelessWidget {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: [
-          NewHomePage.wrapped(),
-          SakeMapPage.wrapped(),
-          FavoriteSearchPage.wrapped(),
-          TimelinePage.wrapped(),
-        ],
+      body: SnackBarAvoidanceScope(
+        // Scaffoldがナビ本体とSafe Areaを避けるため、本文側へ張り出す
+        // 中央撮影ボタンの高さだけを追加で退避する。
+        bottomObstacleHeight: snackBarBottomObstacleHeight,
+        child: IndexedStack(
+          index: currentIndex,
+          children: [
+            NewHomePage.wrapped(),
+            SakeMapPage.wrapped(),
+            FavoriteSearchPage.wrapped(),
+            TimelinePage.wrapped(),
+          ],
+        ),
       ),
       bottomNavigationBar: _NewHomeBottomNavigation(
         currentPageIndex: currentIndex,

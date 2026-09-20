@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../common/assets.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
@@ -1420,8 +1421,10 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
                         'masterSakeCandidate_${sake.searchToken ?? sake.sakeId}',
                       ),
                       leading: _SakeCandidateImage(
-                        imageUrl:
-                            sake.thumbnailImageUrl ?? sake.primaryImageUrl,
+                        imageUrl: preferredSakeImagePath(
+                          thumbnailImageUrl: sake.thumbnailImageUrl,
+                          primaryImageUrl: sake.primaryImageUrl,
+                        ),
                       ),
                       title: Text(
                         sake.name,

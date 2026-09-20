@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
 
+class SnackBarAvoidanceScope extends InheritedWidget {
+  const SnackBarAvoidanceScope({
+    super.key,
+    required this.bottomObstacleHeight,
+    required super.child,
+  });
+
+  final double bottomObstacleHeight;
+
+  static double bottomObstacleHeightOf(BuildContext context) =>
+      context
+          .getInheritedWidgetOfExactType<SnackBarAvoidanceScope>()
+          ?.bottomObstacleHeight ??
+      0;
+
+  @override
+  bool updateShouldNotify(SnackBarAvoidanceScope oldWidget) =>
+      bottomObstacleHeight != oldWidget.bottomObstacleHeight;
+}
+
 /// SnackBarを表示するためのユーティリティクラス
 class SnackBarUtils {
   /// 画面下部にSnackBarを表示する
@@ -29,6 +49,9 @@ class SnackBarUtils {
             ],
           );
 
+    final bottomObstacleHeight = SnackBarAvoidanceScope.bottomObstacleHeightOf(
+      context,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: content,
@@ -36,7 +59,7 @@ class SnackBarUtils {
         backgroundColor: backgroundColor,
         action: action,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        margin: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomObstacleHeight),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

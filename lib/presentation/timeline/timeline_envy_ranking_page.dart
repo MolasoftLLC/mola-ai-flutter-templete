@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
@@ -297,9 +298,11 @@ class _RankingTile extends StatelessWidget {
         : rank == 3
         ? const Color(0xFFCD7F32)
         : Colors.white54;
-    final imagePath = (sake.imagePaths?.isNotEmpty ?? false)
-        ? sake.imagePaths!.first
-        : sake.thumbnailImageUrl ?? sake.primaryImageUrl;
+    final imagePath = preferredSakeImagePath(
+      personalImagePaths: sake.imagePaths,
+      thumbnailImageUrl: sake.thumbnailImageUrl,
+      primaryImageUrl: sake.primaryImageUrl,
+    );
 
     Widget? buildPreview() {
       if (!showImage) {

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/app_content.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -37,11 +38,15 @@ const _sakeCardRailHeight = 275.0;
 /// 詳細APIを使わないため、AI・EC検索・コミュニティ取得は発生しない。
 class SakeMatchProfileCache {
   final Map<String, Future<Map<int, SakeTasteProfileDetails>>> _futures = {};
-  Future<Map<int, SakeTasteProfileDetails>> fetch(Iterable<int> sakeIds, Future<Map<int, SakeTasteProfileDetails>> Function(List<int>) loader) {
+  Future<Map<int, SakeTasteProfileDetails>> fetch(
+    Iterable<int> sakeIds,
+    Future<Map<int, SakeTasteProfileDetails>> Function(List<int>) loader,
+  ) {
     final ids = sakeIds.where((id) => id > 0).toSet().toList()..sort();
     if (ids.isEmpty) return Future.value(<int, SakeTasteProfileDetails>{});
     return _futures.putIfAbsent(ids.join(','), () => loader(ids));
   }
+
   void clear() => _futures.clear();
 }
 
@@ -138,7 +143,9 @@ class _NewHomePageState extends State<NewHomePage> {
                   else
                     _SakeCardRail(
                       sakes: savedSakes.take(10).toList(),
-                      profilesFuture: _profilesFor(savedSakes.take(10).toList()),
+                      profilesFuture: _profilesFor(
+                        savedSakes.take(10).toList(),
+                      ),
                       actionBuilder: (sake) {
                         final name = _displayName(context, sake);
                         final isFavorite = favorites.any(
@@ -213,7 +220,9 @@ class _NewHomePageState extends State<NewHomePage> {
                   else
                     _SakeCardRail(
                       sakes: timelineSakes.take(10).toList(),
-                      profilesFuture: _profilesFor(timelineSakes.take(10).toList()),
+                      profilesFuture: _profilesFor(
+                        timelineSakes.take(10).toList(),
+                      ),
                       actionBuilder: (sake) {
                         final key = TimelinePageNotifier.envyKey(sake);
                         final isEnvied = enviedIds.contains(key);
@@ -401,7 +410,8 @@ class _PromotionBanner extends StatelessWidget {
 class _HomeRecommendations extends StatefulWidget {
   const _HomeRecommendations({required this.profilesFor});
 
-  final Future<Map<int, SakeTasteProfileDetails>> Function(List<Sake>) profilesFor;
+  final Future<Map<int, SakeTasteProfileDetails>> Function(List<Sake>)
+  profilesFor;
 
   @override
   State<_HomeRecommendations> createState() => _HomeRecommendationsState();
@@ -437,21 +447,21 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
       setState(() => _future = Future.value(recommendations));
     } on MonthlyRecommendationLimitException {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('今月の再選定は済んでいます。次回は来月お試しください。')),
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '今月の再選定は済んでいます。次回は来月お試しください。',
         );
       }
     } on MissingTasteProfileException {
       if (mounted) {
-        ScaffoldMessenger.of(
+        SnackBarUtils.showWarningSnackBar(
           context,
-        ).showSnackBar(const SnackBar(content: Text('先に「好きなお酒の傾向」を登録してください。')));
+          message: '先に「好きなお酒の傾向」を登録してください。',
+        );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('おすすめの再選定に失敗しました。')));
+        SnackBarUtils.showWarningSnackBar(context, message: 'おすすめの再選定に失敗しました。');
       }
     } finally {
       if (mounted) setState(() => _isRefreshing = false);
@@ -958,11 +968,11 @@ class _MatchPercentBadge extends StatelessWidget {
 
 /// 一覧カードはユーザー写真、マスターのサムネイル、詳細画像の順で表示する。
 String? preferredSakeCardImagePath(Sake sake) {
-  if (sake.imagePaths?.isNotEmpty ?? false) return sake.imagePaths!.first;
-  final thumbnail = sake.thumbnailImageUrl?.trim();
-  if (thumbnail?.isNotEmpty == true) return thumbnail;
-  final primary = sake.primaryImageUrl?.trim();
-  return primary?.isNotEmpty == true ? primary : null;
+  return preferredSakeImagePath(
+    personalImagePaths: sake.imagePaths,
+    thumbnailImageUrl: sake.thumbnailImageUrl,
+    primaryImageUrl: sake.primaryImageUrl,
+  );
 }
 
 class _RoundCardAction extends StatelessWidget {

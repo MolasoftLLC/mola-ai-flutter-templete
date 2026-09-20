@@ -13,6 +13,7 @@ import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
@@ -475,12 +476,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       personalRecord: record,
       overviewSake: overviewSake,
       fallback: widget.venueSake,
+      communityImagePaths: community.images.map((image) => image.imageUrl),
     );
-    for (final image in community.images) {
-      if (!headerImagePaths.contains(image.imageUrl)) {
-        headerImagePaths.add(image.imageUrl);
-      }
-    }
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: isPendingAiCandidate
@@ -1691,6 +1688,7 @@ List<String> detailImagePaths({
   required Sake? personalRecord,
   required Sake? overviewSake,
   required VenueSake fallback,
+  Iterable<String> communityImagePaths = const <String>[],
 }) {
   final paths = <String>[];
   void add(String? value) {
@@ -1703,8 +1701,19 @@ List<String> detailImagePaths({
     add(path);
   }
   if (paths.isEmpty) {
-    add(overviewSake?.primaryImageUrl);
-    if (paths.isEmpty) add(fallback.primaryImageUrl);
+    final overviewImage = overviewSake?.primaryImageUrl;
+    final fallbackImage = fallback.primaryImageUrl;
+    if (!isSakePlaceholderImagePath(overviewImage)) add(overviewImage);
+    if (paths.isEmpty && !isSakePlaceholderImagePath(fallbackImage)) {
+      add(fallbackImage);
+    }
+    for (final path in communityImagePaths) {
+      add(path);
+    }
+    if (paths.isEmpty) {
+      add(overviewImage);
+      if (paths.isEmpty) add(fallbackImage);
+    }
   }
   return paths;
 }

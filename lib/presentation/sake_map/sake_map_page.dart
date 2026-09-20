@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'sake_map_marker_icon.dart';
@@ -538,9 +539,10 @@ class _SakeMapPageState extends State<SakeMapPage> {
                               final sake = sakes[index];
                               return ListTile(
                                 leading: _SakeThumbnail(
-                                  imageUrl:
-                                      sake.thumbnailImageUrl ??
-                                      sake.primaryImageUrl,
+                                  imageUrl: preferredSakeImagePath(
+                                    thumbnailImageUrl: sake.thumbnailImageUrl,
+                                    primaryImageUrl: sake.primaryImageUrl,
+                                  ),
                                 ),
                                 title: Text(sake.name),
                                 subtitle: Text(

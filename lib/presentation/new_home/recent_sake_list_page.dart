@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
@@ -29,7 +30,8 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
   static const _pageSize = 20;
 
   final _scrollController = ScrollController();
-  final Map<String, Future<Map<int, SakeTasteProfileDetails>>> _profileCache = {};
+  final Map<String, Future<Map<int, SakeTasteProfileDetails>>> _profileCache =
+      {};
   final Set<String> _expandedRecordKeys = {};
   var _visibleCount = _pageSize;
 
@@ -60,9 +62,18 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
   }
 
   Future<Map<int, SakeTasteProfileDetails>> _profilesFor(List<Sake> sakes) {
-    final ids = sakes.map((sake) => sake.sakeId ?? 0).where((id) => id > 0).toSet().toList()..sort();
+    final ids =
+        sakes
+            .map((sake) => sake.sakeId ?? 0)
+            .where((id) => id > 0)
+            .toSet()
+            .toList()
+          ..sort();
     if (ids.isEmpty) return Future.value(<int, SakeTasteProfileDetails>{});
-    return _profileCache.putIfAbsent(ids.join(','), () => context.read<SakeScanRepository>().fetchTasteProfiles(ids));
+    return _profileCache.putIfAbsent(
+      ids.join(','),
+      () => context.read<SakeScanRepository>().fetchTasteProfiles(ids),
+    );
   }
 
   Future<void> _refresh() async {
@@ -131,7 +142,11 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
                   final profilesFuture = _profilesFor(visibleSakes);
                   return _RecentSakeCard(
                     sake: sake,
-                    profileFuture: sake.sakeId == null ? null : profilesFuture.then((profiles) => profiles[sake.sakeId!]),
+                    profileFuture: sake.sakeId == null
+                        ? null
+                        : profilesFuture.then(
+                            (profiles) => profiles[sake.sakeId!],
+                          ),
                     preference: preference,
                     isExpanded: _expandedRecordKeys.contains(recordKey),
                     onOpen: () => _openDetail(sake),
@@ -697,11 +712,11 @@ String _name(Sake sake) {
 }
 
 String? _preferredImagePath(Sake sake) {
-  if (sake.imagePaths?.isNotEmpty == true) return sake.imagePaths!.first;
-  final thumbnail = sake.thumbnailImageUrl?.trim();
-  if (thumbnail?.isNotEmpty == true) return thumbnail;
-  final primary = sake.primaryImageUrl?.trim();
-  return primary?.isNotEmpty == true ? primary : null;
+  return preferredSakeImagePath(
+    personalImagePaths: sake.imagePaths,
+    thumbnailImageUrl: sake.thumbnailImageUrl,
+    primaryImageUrl: sake.primaryImageUrl,
+  );
 }
 
 String _ratingSummary(Map<String, int> ratings) {

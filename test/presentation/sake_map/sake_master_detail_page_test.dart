@@ -21,6 +21,7 @@ import 'package:mola_gemini_flutter_template/domain/eintities/preferences/taste_
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
+import 'package:mola_gemini_flutter_template/common/utils/sake_image_utils.dart';
 
 void main() {
   setUpAll(loggerConfigure);
@@ -85,6 +86,45 @@ void main() {
     );
 
     expect(paths, ['https://images.example/yahoo-600.jpg']);
+  });
+
+  test('NoImageは除外し公開ユーザー画像を詳細の先頭にする', () {
+    const fallback = VenueSake(
+      sakeId: 123,
+      name: '冩樂 純米吟醸',
+      recordCount: 0,
+      primaryImageUrl: sakeNoImageUrl,
+    );
+    final paths = detailImagePaths(
+      personalRecord: null,
+      overviewSake: const Sake(primaryImageUrl: sakeNoImageUrl),
+      fallback: fallback,
+      communityImagePaths: const ['https://images.example/community.jpg'],
+    );
+
+    expect(paths, ['https://images.example/community.jpg']);
+  });
+
+  test('実在するマスター画像は公開ユーザー画像より先にする', () {
+    const fallback = VenueSake(
+      sakeId: 123,
+      name: '冩樂 純米吟醸',
+      recordCount: 0,
+      primaryImageUrl: sakeNoImageUrl,
+    );
+    final paths = detailImagePaths(
+      personalRecord: null,
+      overviewSake: const Sake(
+        primaryImageUrl: 'https://images.example/master.jpg',
+      ),
+      fallback: fallback,
+      communityImagePaths: const ['https://images.example/community.jpg'],
+    );
+
+    expect(paths, [
+      'https://images.example/master.jpg',
+      'https://images.example/community.jpg',
+    ]);
   });
 
   test('味わいプロフィールの一致度は30〜100%で算出する', () {
