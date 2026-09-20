@@ -244,9 +244,14 @@ class _NewHomePageState extends State<NewHomePage> {
   }
 
   Future<void> _openSearch(BuildContext context) {
-    return Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => MainSearchPage.wrapped()));
+    final appPageNotifier = context.read<AppPageNotifier>();
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MainSearchPage.wrapped(
+          onPreferenceSearchTap: () => appPageNotifier.onTabTapped(2),
+        ),
+      ),
+    );
   }
 
   Future<void> _sendEnvy(
@@ -528,9 +533,13 @@ Future<void> openNewHomeScanner(BuildContext context) async {
   final result = await openSakeLabelScanner(context);
   if (result == null || !context.mounted) return;
   if (result is String && result.trim().isNotEmpty) {
+    final appPageNotifier = context.read<AppPageNotifier>();
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => MainSearchPage.wrapped(initialQuery: result),
+        builder: (_) => MainSearchPage.wrapped(
+          initialQuery: result,
+          onPreferenceSearchTap: () => appPageNotifier.onTabTapped(2),
+        ),
       ),
     );
   } else if (result is Sake) {

@@ -11,22 +11,28 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakePlaceMapRepository extends PlaceMapRepository {
-  _FakePlaceMapRepository({required this.normalResults})
+  _FakePlaceMapRepository({required this.normalResults, this.normalCompleter})
     : super(ApiClient.create());
 
   final List<SakeMapSearchResult> normalResults;
+  final Completer<List<SakeMapSearchResult>>? normalCompleter;
   final aiCompleter = Completer<List<SakeMapSearchResult>>();
   String? aiQuery;
+  int normalSearchCount = 0;
+  int aiSearchCount = 0;
 
   @override
-  Future<List<SakeMapSearchResult>> searchSakeMasters(String query) async =>
-      normalResults;
+  Future<List<SakeMapSearchResult>> searchSakeMasters(String query) {
+    normalSearchCount++;
+    return normalCompleter?.future ?? Future.value(normalResults);
+  }
 
   @override
   Future<List<SakeMapSearchResult>> searchSakeMastersByAi(
     String query, {
     int limit = 7,
   }) {
+    aiSearchCount++;
     aiQuery = query;
     return aiCompleter.future;
   }
@@ -57,6 +63,74 @@ Widget _app(_FakePlaceMapRepository repository) =>
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  testWidgets('空欄ではAI解析ボタンを灰色の無効状態で常時表示する', (tester) async {
+    final repository = _FakePlaceMapRepository(normalResults: const []);
+    await tester.pumpWidget(_app(repository));
+
+    final button = find.byKey(const ValueKey('masterSakeAiSearchButton'));
+    expect(button, findsOneWidget);
+    expect(tester.widget<InkWell>(button).onTap, isNull);
+    final ink = tester.widget<Ink>(
+      find.ancestor(of: button, matching: find.byType(Ink)),
+    );
+    final decoration = ink.decoration! as BoxDecoration;
+    expect(decoration.gradient, isNull);
+    expect(decoration.color, const Color(0xFFD5D8DC));
+    final tooltip = tester.widget<Tooltip>(
+      find.ancestor(of: button, matching: find.byType(Tooltip)),
+    );
+    expect(tooltip.message, '日本酒名を入力するとAI解析を利用できます');
+    final semantics = tester.widget<Semantics>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == '日本酒名を入力するとAI解析を利用できます',
+      ),
+    );
+    expect(semantics.properties.button, isTrue);
+    expect(semantics.properties.enabled, isFalse);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('masterSakeNameSearchField')),
+      '   ',
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(button);
+    expect(repository.normalSearchCount, 0);
+    expect(repository.aiSearchCount, 0);
+  });
+
+  testWidgets('通常検索中はAI解析ボタンの位置を維持して無効化する', (tester) async {
+    final normalCompleter = Completer<List<SakeMapSearchResult>>();
+    final repository = _FakePlaceMapRepository(
+      normalResults: const [],
+      normalCompleter: normalCompleter,
+    );
+    await tester.pumpWidget(_app(repository));
+    final button = find.byKey(const ValueKey('masterSakeAiSearchButton'));
+    final initialSize = tester.getSize(button);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('masterSakeNameSearchField')),
+      '神蔵',
+    );
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(button, findsOneWidget);
+    expect(tester.getSize(button), initialSize);
+    expect(tester.widget<InkWell>(button).onTap, isNull);
+    final tooltip = tester.widget<Tooltip>(
+      find.ancestor(of: button, matching: find.byType(Tooltip)),
+    );
+    expect(tooltip.message, '通常検索中のためAI解析は利用できません');
+    await tester.tap(button);
+    expect(repository.aiSearchCount, 0);
+
+    normalCompleter.complete(const []);
+    await tester.pump();
+    expect(tester.widget<InkWell>(button).onTap, isNotNull);
+  });
+
   testWidgets('通常候補があってもAI解析でき、候補を保持して追加結果を表示する', (tester) async {
     final repository = _FakePlaceMapRepository(
       normalResults: const [
@@ -81,6 +155,9 @@ void main() {
     expect(find.text('候補の日本酒'), findsOneWidget);
     expect(find.text('候補になければ右上のAI解析！'), findsOneWidget);
     expect(find.text('AI解析'), findsOneWidget);
+    final buttonSize = tester.getSize(
+      find.byKey(const ValueKey('masterSakeAiSearchButton')),
+    );
 
     final ink = tester.widget<Ink>(
       find.ancestor(
@@ -98,6 +175,16 @@ void main() {
     await tester.pump();
     expect(find.text('解析中'), findsOneWidget);
     expect(repository.aiQuery, '神蔵');
+    expect(repository.aiSearchCount, 1);
+    final searchingButton = find.byKey(
+      const ValueKey('masterSakeAiSearchButton'),
+    );
+    expect(tester.widget<InkWell>(searchingButton).onTap, isNull);
+    expect(tester.getSize(searchingButton), buttonSize);
+    final searchingTooltip = tester.widget<Tooltip>(
+      find.ancestor(of: searchingButton, matching: find.byType(Tooltip)),
+    );
+    expect(searchingTooltip.message, 'AIで追加候補を解析中');
 
     repository.aiCompleter.complete(const [
       SakeMapSearchResult(

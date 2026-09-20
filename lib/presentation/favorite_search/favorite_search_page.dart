@@ -12,7 +12,7 @@ import '../sake_map/sake_master_detail_page.dart';
 import 'favorite_search_page_notifier.dart';
 
 class FavoriteSearchPage extends StatefulWidget {
-  const FavoriteSearchPage._({super.key});
+  const FavoriteSearchPage._();
 
   static Widget wrapped() => MultiProvider(
     providers: [
@@ -77,11 +77,6 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
       appBar: PrimaryAppBar(
         title: context.l10n.searchByRegion,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back),
-        ),
       ),
       body: ColoredBox(
         color: const Color(0xFF1D3567),

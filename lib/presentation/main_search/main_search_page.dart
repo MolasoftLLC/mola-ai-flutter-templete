@@ -20,7 +20,6 @@ import '../../domain/repository/place_map_repository.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
-import '../favorite_search/favorite_search_page.dart';
 import '../menu_search/menu_search_page.dart';
 import '../sake_map/sake_map_page.dart';
 import '../sake_map/sake_master_detail_page.dart';
@@ -28,15 +27,19 @@ import '../sake_scan/sake_scan_entry.dart';
 import 'main_search_page_notifier.dart';
 
 class MainSearchPage extends StatelessWidget {
-  MainSearchPage._({this.initialQuery})
+  MainSearchPage._({this.initialQuery, required this.onPreferenceSearchTap})
     : _masterSakeSearchPanelKey = GlobalKey<_MasterSakeSearchPanelState>();
 
   static final ScrollController _scrollController = ScrollController();
   static final GlobalKey _resultSectionKey = GlobalKey();
   final GlobalKey<_MasterSakeSearchPanelState> _masterSakeSearchPanelKey;
   final String? initialQuery;
+  final VoidCallback onPreferenceSearchTap;
 
-  static Widget wrapped({String? initialQuery}) {
+  static Widget wrapped({
+    String? initialQuery,
+    required VoidCallback onPreferenceSearchTap,
+  }) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<MainSearchPageNotifier, MainSearchPageState>(
@@ -46,7 +49,10 @@ class MainSearchPage extends StatelessWidget {
           ),
         ),
       ],
-      child: MainSearchPage._(initialQuery: initialQuery),
+      child: MainSearchPage._(
+        initialQuery: initialQuery,
+        onPreferenceSearchTap: onPreferenceSearchTap,
+      ),
     );
   }
 
@@ -257,10 +263,8 @@ class MainSearchPage extends StatelessWidget {
     ).push(MaterialPageRoute<void>(builder: (_) => SakeMapPage.wrapped()));
   }
 
-  Future<void> _openPreferenceSearch(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => FavoriteSearchPage.wrapped()),
-    );
+  void _openPreferenceSearch(BuildContext context) {
+    openPreferenceSearchTab(context, onTabSelected: onPreferenceSearchTap);
   }
 
   Future<void> _openMenuSearch(BuildContext context) {
@@ -1221,7 +1225,7 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
   Future<void> _searchByAi() async {
     _debounce?.cancel();
     final query = _controller.text.trim();
-    if (query.isEmpty || _isAiSearching) return;
+    if (query.isEmpty || _isLoading || _isAiSearching) return;
 
     final requestId = ++_requestId;
     final existingResults = _results;
@@ -1294,7 +1298,8 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     final showRecentSearches =
         _focusNode.hasFocus && _controller.text.trim().isEmpty;
     final displayedResults = showRecentSearches ? _recentResults : _results;
-    final showAiAction = _controller.text.trim().isNotEmpty;
+    final canSearchByAi =
+        _controller.text.trim().isNotEmpty && !_isLoading && !_isAiSearching;
     final showNormalCandidates =
         !showRecentSearches &&
         !_showingAiResults &&
@@ -1315,19 +1320,10 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
             decoration: InputDecoration(
               hintText: context.l10n.enterSakeName,
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: _isAiSearching
-                  ? _buildAiSearchButton(isSearching: true)
-                  : _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(13),
-                      child: SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : showAiAction
-                  ? _buildAiSearchButton()
-                  : null,
+              suffixIcon: _buildAiSearchButton(
+                enabled: canSearchByAi,
+                isSearching: _isAiSearching,
+              ),
               suffixIconConstraints: const BoxConstraints(minWidth: 94),
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
@@ -1465,59 +1461,89 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     );
   }
 
-  Widget _buildAiSearchButton({bool isSearching = false}) => Padding(
-    padding: const EdgeInsets.fromLTRB(2, 6, 6, 6),
-    child: Opacity(
-      opacity: isSearching ? 0.58 : 1,
-      child: Material(
-        color: Colors.transparent,
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFA13C), Color(0xFFE95C5A)],
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: InkWell(
-            key: const ValueKey('masterSakeAiSearchButton'),
-            onTap: isSearching ? null : _searchByAi,
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 9),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isSearching)
-                    const SizedBox.square(
-                      dimension: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+  Widget _buildAiSearchButton({
+    required bool enabled,
+    required bool isSearching,
+  }) {
+    final foregroundColor = enabled ? Colors.white : const Color(0xFF61666B);
+    final statusLabel = isSearching
+        ? 'AIで追加候補を解析中'
+        : enabled
+        ? 'AIで追加候補を検索する'
+        : _controller.text.trim().isEmpty
+        ? '日本酒名を入力するとAI解析を利用できます'
+        : '通常検索中のためAI解析は利用できません';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 6, 6, 6),
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: statusLabel,
+        excludeSemantics: true,
+        child: Tooltip(
+          message: statusLabel,
+          child: Material(
+            color: Colors.transparent,
+            child: Ink(
+              decoration: BoxDecoration(
+                color: enabled ? null : const Color(0xFFD5D8DC),
+                gradient: enabled
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFFA13C), Color(0xFFE95C5A)],
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: InkWell(
+                key: const ValueKey('masterSakeAiSearchButton'),
+                onTap: enabled ? _searchByAi : null,
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 82,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (isSearching)
+                        SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: foregroundColor,
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 16,
+                          color: foregroundColor,
+                        ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isSearching ? '解析中' : 'AI解析',
+                        style: TextStyle(
+                          color: foregroundColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    )
-                  else
-                    const Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  const SizedBox(width: 4),
-                  Text(
-                    isSearching ? '解析中' : 'AI解析',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+void openPreferenceSearchTab(
+  BuildContext context, {
+  required VoidCallback onTabSelected,
+}) {
+  onTabSelected();
+  Navigator.of(context).popUntil((route) => route.isFirst);
 }
 
 class _SakeCandidateImage extends StatelessWidget {
