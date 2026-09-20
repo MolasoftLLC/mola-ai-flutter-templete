@@ -9,6 +9,7 @@ import '../eintities/response/sake_bottle_recognition_response/sake_bottle_recog
 import '../eintities/response/sake_bottle_recognition_response/sake_bottle_comprehensive_response.dart';
 import '../eintities/sake_label_scan.dart';
 import '../notifier/favorite/favorite_notifier.dart';
+import '../eintities/menu_sake_resolution.dart';
 
 class SakeMenuRecognitionRepository {
   SakeMenuRecognitionRepository(this._apiClient);
@@ -88,6 +89,31 @@ class SakeMenuRecognitionRepository {
       logger.shout(response.error);
       return null;
     }
+  }
+
+  Future<List<MenuSakeResolution>> resolveMenuSakes(List<Sake> sakes) async {
+    final response = await _apiClient.resolveMenuSakes({
+      'sakes': sakes
+          .where((sake) => isPlausibleRecognizedSakeName(sake.name))
+          .map(
+            (sake) => {
+              'name': sake.name,
+              if (sake.type?.trim().isNotEmpty == true) 'type': sake.type,
+            },
+          )
+          .toList(growable: false),
+      'locale': await resolveAppLocaleLanguageCode(),
+    });
+    if (!response.isSuccessful || response.body == null) return const [];
+    final rawResults = response.body!['results'];
+    if (rawResults is! List) return const [];
+    return rawResults
+        .whereType<Map>()
+        .map(
+          (item) =>
+              MenuSakeResolution.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
   }
 
   /// 日本酒名から詳細情報を取得する

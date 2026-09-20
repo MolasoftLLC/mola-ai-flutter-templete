@@ -44,18 +44,38 @@ class SavedSake {
   final String name;
   final String? type;
   final bool isRecommended;
+  final int? sakeId;
+  final int? matchPercent;
+  final String? recommendationBasis;
 
-  SavedSake({required this.name, this.type, this.isRecommended = false});
+  SavedSake({
+    required this.name,
+    this.type,
+    this.isRecommended = false,
+    this.sakeId,
+    this.matchPercent,
+    this.recommendationBasis,
+  });
 
   factory SavedSake.fromJson(Map<String, dynamic> json) {
     return SavedSake(
       name: json['name'] as String,
       type: json['type'] as String?,
       isRecommended: json['isRecommended'] as bool? ?? false,
+      sakeId: (json['sakeId'] as num?)?.toInt(),
+      matchPercent: (json['matchPercent'] as num?)?.toInt(),
+      recommendationBasis: json['recommendationBasis'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'name': name, 'type': type, 'isRecommended': isRecommended};
+    return {
+      'name': name,
+      'type': type,
+      'isRecommended': isRecommended,
+      'sakeId': sakeId,
+      'matchPercent': matchPercent,
+      'recommendationBasis': recommendationBasis,
+    };
   }
 }

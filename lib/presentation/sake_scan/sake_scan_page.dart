@@ -16,7 +16,6 @@ import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
-import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
@@ -39,8 +38,6 @@ class SakeScanPage extends StatefulWidget {
             ),
             persistenceService: DefaultSakeScanPersistenceService(
               savedSakeNotifier: context.read<SavedSakeNotifier>(),
-              syncRepository: context.read<SavedSakeSyncRepository>(),
-              authRepository: context.read<AuthRepository>(),
             ),
           ),
           child: const SakeScanPage._(),

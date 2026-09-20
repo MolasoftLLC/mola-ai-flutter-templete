@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import '../../common/logger.dart';
@@ -8,9 +7,7 @@ import '../eintities/response/sake_bottle_recognition_response/sake_bottle_compr
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../eintities/sake_label_scan.dart';
 import '../notifier/saved_sake/saved_sake_notifier.dart';
-import '../repository/auth_repository.dart';
 import '../repository/sake_menu_recognition_repository.dart';
-import '../repository/saved_sake_sync_repository.dart';
 
 abstract class SakeScanAnalysisService {
   Future<List<Sake>> identifyCandidates(
@@ -113,15 +110,9 @@ abstract class SakeScanPersistenceService {
 class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
   DefaultSakeScanPersistenceService({
     required SavedSakeNotifier savedSakeNotifier,
-    required SavedSakeSyncRepository syncRepository,
-    required AuthRepository authRepository,
-  }) : _savedSakeNotifier = savedSakeNotifier,
-       _syncRepository = syncRepository,
-       _authRepository = authRepository;
+  }) : _savedSakeNotifier = savedSakeNotifier;
 
   final SavedSakeNotifier _savedSakeNotifier;
-  final SavedSakeSyncRepository _syncRepository;
-  final AuthRepository _authRepository;
 
   @override
   Future<Sake> saveInitial(
@@ -155,16 +146,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     );
     final savedId = await _savedSakeNotifier.addSavedSake(draft);
     final saved = draft.copyWith(savedId: savedId);
-    _sync(
-      stage: SavedSakeSyncStage.analysisStart,
-      sake: saved,
-      image: File(savedPath),
-      additionalImages: savedPaths
-          .skip(1)
-          .map(File.new)
-          .toList(growable: false),
-      isPublic: false,
-    );
+    await _savedSakeNotifier.syncSavedSakeToServer(savedId, startOnly: true);
     return saved;
   }
 
@@ -199,13 +181,11 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       (item) => item.savedId == savedId,
       orElse: () => normalized,
     );
-    _sync(
-      stage: SavedSakeSyncStage.analysisComplete,
-      sake: stored,
-      image: image,
-      isPublic: stored.isPublic,
+    final synced = await _savedSakeNotifier.syncSavedSakeToServer(
+      savedId,
+      force: true,
     );
-    return stored;
+    return synced ?? stored;
   }
 
   Future<String?> _saveCompressedImagePermanently(
@@ -221,62 +201,6 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       } catch (error) {
         logger.info('保存用一時画像を削除できませんでした: $error');
       }
-    }
-  }
-
-  void _sync({
-    required SavedSakeSyncStage stage,
-    required Sake sake,
-    required File image,
-    List<File> additionalImages = const <File>[],
-    required bool isPublic,
-  }) {
-    final user = _authRepository.currentUser;
-    if (user == null) return;
-    unawaited(
-      _syncWithImages(
-        stage: stage,
-        userId: user.uid,
-        sake: sake,
-        image: image,
-        additionalImages: additionalImages,
-        isPublic: isPublic,
-      ),
-    );
-  }
-
-  Future<void> _syncWithImages({
-    required SavedSakeSyncStage stage,
-    required String userId,
-    required Sake sake,
-    required File image,
-    required List<File> additionalImages,
-    required bool isPublic,
-  }) async {
-    final synced = await _syncRepository.syncSavedSake(
-      stage: stage,
-      userId: userId,
-      sake: sake,
-      imageFile: image,
-      isPublic: isPublic,
-      publicLabelContribution: stage == SavedSakeSyncStage.analysisStart,
-    );
-    if (!synced) return;
-
-    if (stage != SavedSakeSyncStage.analysisStart) {
-      final savedId = sake.savedId;
-      if (savedId != null && savedId.isNotEmpty) {
-        await _savedSakeNotifier.markSavedSakeServerSynced(savedId);
-      }
-      return;
-    }
-
-    for (final additionalImage in additionalImages) {
-      await _syncRepository.uploadSavedSakeImage(
-        userId: userId,
-        savedId: sake.savedId!,
-        imageFile: additionalImage,
-      );
     }
   }
 }

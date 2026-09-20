@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/menu_sake_resolution.dart';
 
 import '../../../common/utils/snack_bar_utils.dart';
 import '../../../common/localization/localization_extensions.dart';
@@ -18,7 +19,11 @@ class SakeResultTile extends StatefulWidget {
     required this.isFavorited,
     required this.isSaved,
     required this.isLoading,
-    required this.recommendationScore,
+    required this.matchPercent,
+    required this.isUnverified,
+    required this.candidates,
+    required this.onCandidateSelected,
+    required this.onOpenDetails,
     required this.onToggleFavorite,
     required this.onSave,
     required this.buildInfoRow,
@@ -33,7 +38,11 @@ class SakeResultTile extends StatefulWidget {
   final bool isFavorited;
   final bool isSaved;
   final bool isLoading;
-  final num? recommendationScore;
+  final int? matchPercent;
+  final bool isUnverified;
+  final List<MenuSakeCandidate> candidates;
+  final ValueChanged<MenuSakeCandidate> onCandidateSelected;
+  final VoidCallback? onOpenDetails;
   final Future<void> Function() onToggleFavorite;
 
   /// 保存ボタンタップ時に呼び出されるコールバック。成功した場合は`true`を返す。
@@ -57,7 +66,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
   @override
   Widget build(BuildContext context) {
     final bool isRecommended =
-        widget.recommendationScore != null && widget.recommendationScore! >= 7;
+        widget.matchPercent != null && widget.matchPercent! >= 70;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, top: 0),
@@ -116,7 +125,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            (widget.recommendationScore ?? 0) >= 8
+                            (widget.matchPercent ?? 0) >= 80
                                 ? context.l10n.highlyRecommended
                                 : context.l10n.recommended,
                             style: TextStyle(
@@ -126,6 +135,26 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  if (widget.matchPercent != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '好みとの一致度 ${widget.matchPercent}%',
+                        style: const TextStyle(
+                          color: Color(0xFF1D3567),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  if (widget.isUnverified)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'AI補完（未確認）',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
                       ),
                     ),
                 ],
@@ -138,6 +167,11 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        IconButton(
+                          tooltip: '商品詳細を開く',
+                          icon: const Icon(Icons.open_in_new, size: 21),
+                          onPressed: widget.onOpenDetails,
+                        ),
                         IconButton(
                           tooltip: widget.isSaved
                               ? context.l10n.removeSavedSake
@@ -181,6 +215,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           },
                         ),
                       ],
+                    )
+                  : widget.candidates.isNotEmpty
+                  ? IconButton(
+                      tooltip: '候補を選択',
+                      icon: const Icon(Icons.rule, color: Color(0xFF1D3567)),
+                      onPressed: () => _showCandidatePicker(context),
                     )
                   : !widget.hasFailed
                   ? const SizedBox(
@@ -241,8 +281,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         Icon(
                           widget.isItemLoading
                               ? Icons.hourglass_top
+                              : widget.candidates.isNotEmpty
+                              ? Icons.rule
                               : Icons.error_outline,
                           color: widget.isItemLoading
+                              ? const Color(0xFF1D3567)
+                              : widget.candidates.isNotEmpty
                               ? const Color(0xFF1D3567)
                               : Colors.red.shade700,
                         ),
@@ -251,9 +295,13 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           child: Text(
                             widget.isItemLoading
                                 ? context.l10n.loadingDetails
+                                : widget.candidates.isNotEmpty
+                                ? '候補が複数あります。商品を選択してください。'
                                 : context.l10n.detailsUnavailable,
                             style: TextStyle(
                               color: widget.isItemLoading
+                                  ? const Color(0xFF1D3567)
+                                  : widget.candidates.isNotEmpty
                                   ? const Color(0xFF1D3567)
                                   : Colors.red.shade700,
                               fontStyle: widget.isItemLoading
@@ -305,5 +353,34 @@ class _SakeResultTileState extends State<SakeResultTile> {
         ],
       ),
     );
+  }
+
+  Future<void> _showCandidatePicker(BuildContext context) async {
+    final selected = await showModalBottomSheet<MenuSakeCandidate>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text('該当する商品を選択'),
+              subtitle: Text('米・製法・生酒などを確認して選んでください'),
+            ),
+            for (final candidate in widget.candidates)
+              ListTile(
+                title: Text(candidate.sake.name ?? '名称不明'),
+                subtitle: Text(
+                  [candidate.sake.brewery, candidate.sake.type]
+                      .whereType<String>()
+                      .where((value) => value.isNotEmpty)
+                      .join(' / '),
+                ),
+                onTap: () => Navigator.of(context).pop(candidate),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) widget.onCandidateSelected(selected);
   }
 }

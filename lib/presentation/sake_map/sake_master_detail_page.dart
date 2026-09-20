@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
+import '../../common/sake/taste_match.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/sake_image_utils.dart';
@@ -1722,23 +1723,9 @@ List<String> detailImagePaths({
 int calculateSakeTastePreferenceMatchPercent({
   required SakeTasteProfileDetails profile,
   required TastePreferenceProfile preference,
-}) => calculateTastePreferenceMatchPercent(
-  sakeValues: [
-    profile.fruity,
-    profile.sweetness,
-    profile.acidity,
-    profile.body ?? profile.umami,
-    profile.kire,
-    profile.dryness,
-  ],
-  preferenceValues: [
-    preference.fruity,
-    preference.sweetness,
-    preference.acidity,
-    preference.umami,
-    preference.kire,
-    preference.spiciness,
-  ],
+}) => calculateSharedSakeTasteMatchPercent(
+  profile: profile,
+  preference: preference,
 );
 
 /// 味わいプロフィールの近さを、表示用の30〜100%に換算する。
@@ -1748,22 +1735,10 @@ int calculateSakeTastePreferenceMatchPercent({
 int calculateTastePreferenceMatchPercent({
   required List<double> sakeValues,
   required List<double> preferenceValues,
-}) {
-  if (sakeValues.isEmpty || sakeValues.length != preferenceValues.length) {
-    return 30;
-  }
-  final difference =
-      List<double>.generate(
-        sakeValues.length,
-        (index) =>
-            (sakeValues[index].clamp(0, 1).toDouble() -
-                    preferenceValues[index].clamp(0, 1).toDouble())
-                .abs(),
-      ).reduce((sum, value) => sum + value) /
-      sakeValues.length;
-  final similarity = 1 - difference;
-  return (30 + math.pow(similarity, 3.5) * 70).round().clamp(30, 100).toInt();
-}
+}) => calculateSharedTasteMatchPercent(
+  sakeValues: sakeValues,
+  preferenceValues: preferenceValues,
+);
 
 class _SakeScoreSummary extends StatelessWidget {
   const _SakeScoreSummary({

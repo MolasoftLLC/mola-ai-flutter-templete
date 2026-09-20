@@ -7,10 +7,13 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sa
 import 'package:provider/provider.dart';
 
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/place_map_repository.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
@@ -62,9 +65,6 @@ class MenuSearchPage extends StatelessWidget {
     final errorMessage = context.select(
       (MenuSearchPageState state) => state.errorMessage,
     );
-    // 詳細情報が取得された日本酒の名前リスト
-    final detailedSakeNames = sakes?.map((sake) => sake.name).toList() ?? [];
-
     // 各日本酒の読み込み状態
     final sakeLoadingStatus = context.select(
       (MenuSearchPageState state) => state.sakeLoadingStatus,
@@ -73,6 +73,15 @@ class MenuSearchPage extends StatelessWidget {
     // 名前のマッピング（元の名前 -> 取得した詳細情報の名前）
     final nameMapping = context.select(
       (MenuSearchPageState state) => state.nameMapping,
+    );
+    final resolutionCandidates = context.select(
+      (MenuSearchPageState state) => state.resolutionCandidates,
+    );
+    final matchPercents = context.select(
+      (MenuSearchPageState state) => state.matchPercents,
+    );
+    final unverifiedNames = context.select(
+      (MenuSearchPageState state) => state.unverifiedNames,
     );
 
     String loadingText = context.l10n.loadingSakeInfo;
@@ -361,15 +370,15 @@ class MenuSearchPage extends StatelessWidget {
                                       sakes != null &&
                                       sakes.any((s) => s.name == mappedName);
 
-                                  // 詳細情報の取得に失敗したかどうか
+                                  final matchPercent = matchPercents[sake.name];
+                                  final candidates =
+                                      resolutionCandidates[sake.name] ??
+                                      const <MenuSakeCandidate>[];
                                   final hasFailed =
                                       !isItemLoading &&
                                       !hasDetails &&
+                                      candidates.isEmpty &&
                                       sakeLoadingStatus.containsKey(sake.name);
-
-                                  // 推薦スコア
-                                  final recommendationScore =
-                                      detailedSake?.recommendationScore;
 
                                   final isFavorited = myFavoriteList.any(
                                     (favorite) =>
@@ -403,7 +412,44 @@ class MenuSearchPage extends StatelessWidget {
                                     hasFailed: hasFailed,
                                     isFavorited: isFavorited,
                                     isLoading: isLoading,
-                                    recommendationScore: recommendationScore,
+                                    matchPercent: matchPercent,
+                                    isUnverified: unverifiedNames.contains(
+                                      sake.name,
+                                    ),
+                                    candidates: candidates,
+                                    onCandidateSelected: (candidate) =>
+                                        notifier.selectMenuCandidate(
+                                          sake.name ?? '',
+                                          candidate,
+                                        ),
+                                    onOpenDetails:
+                                        (detailedSake?.sakeId ?? 0) > 0
+                                        ? () => Navigator.of(context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  SakeMasterDetailPage(
+                                                    venueSake: VenueSake(
+                                                      sakeId:
+                                                          detailedSake!.sakeId,
+                                                      name:
+                                                          detailedSake.name ??
+                                                          sake.name ??
+                                                          '名称不明',
+                                                      brewery:
+                                                          detailedSake.brewery,
+                                                      type: detailedSake.type,
+                                                      recordCount: 0,
+                                                      primaryImageUrl:
+                                                          detailedSake
+                                                              .primaryImageUrl,
+                                                      thumbnailImageUrl:
+                                                          detailedSake
+                                                              .thumbnailImageUrl,
+                                                    ),
+                                                  ),
+                                            ),
+                                          )
+                                        : null,
                                     onToggleFavorite: () async {
                                       final favoriteSake = FavoriteSake(
                                         name: detailedSake!.name ?? 'Unknown',

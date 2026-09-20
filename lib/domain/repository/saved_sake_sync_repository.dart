@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:chopper/chopper.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -40,6 +41,27 @@ bool _isRemotePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
 
 enum SavedSakeSyncStage { analysisStart, analysisComplete }
+
+class SavedSakeImageUploadIdentity {
+  const SavedSakeImageUploadIdentity({
+    required this.clientImageId,
+    required this.contentHash,
+  });
+
+  final String clientImageId;
+  final String contentHash;
+}
+
+SavedSakeImageUploadIdentity buildSavedSakeImageUploadIdentity(
+  String encodedImage, {
+  required String imageRole,
+}) {
+  final contentHash = sha256.convert(base64Decode(encodedImage)).toString();
+  return SavedSakeImageUploadIdentity(
+    clientImageId: '$imageRole:$contentHash',
+    contentHash: contentHash,
+  );
+}
 
 extension SavedSakeSyncStageValue on SavedSakeSyncStage {
   String get apiValue {
@@ -564,6 +586,7 @@ class SavedSakeSyncRepository {
     required String userId,
     required String savedId,
     required File imageFile,
+    String imageRole = 'additional',
   }) async {
     try {
       final base64 = await ImageUtils.compressAndEncodeImage(
@@ -571,10 +594,17 @@ class SavedSakeSyncRepository {
         quality: 72,
         format: CompressFormat.webp,
       );
+      final identity = buildSavedSakeImageUploadIdentity(
+        base64,
+        imageRole: imageRole,
+      );
       final payload = <String, dynamic>{
         'userId': userId,
         'imageBase64': base64,
         'timestamp': DateTime.now().toIso8601String(),
+        'clientImageId': identity.clientImageId,
+        'contentHash': identity.contentHash,
+        'imageRole': imageRole,
       };
 
       final response = await _apiClient.uploadSavedSakeImage(savedId, payload);

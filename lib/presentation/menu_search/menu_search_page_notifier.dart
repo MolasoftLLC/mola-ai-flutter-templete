@@ -29,6 +29,8 @@ import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
+import '../../common/sake/taste_match.dart';
+import '../../domain/eintities/menu_sake_resolution.dart';
 
 part 'menu_search_page_notifier.freezed.dart';
 
@@ -51,6 +53,9 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     @Default({}) Map<String, bool> sakeLoadingStatus,
     // 元の名前と取得した詳細情報の名前のマッピング
     @Default({}) Map<String, String> nameMapping,
+    @Default({}) Map<String, List<MenuSakeCandidate>> resolutionCandidates,
+    @Default({}) Map<String, int> matchPercents,
+    @Default(<String>[]) List<String> unverifiedNames,
     // ユーザーの好み
     String? preferences,
     // 日本酒リストが表示された後にスクロールしたかどうか
@@ -402,84 +407,74 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     if (extractedSakes.isEmpty) return;
 
     try {
-      // 詳細情報の取得を開始
-      state = state.copyWith(isGettingDetails: true);
+      final loading = <String, bool>{
+        for (final sake in extractedSakes)
+          if (sake.name?.isNotEmpty == true) sake.name!: true,
+      };
+      state = state.copyWith(
+        isGettingDetails: true,
+        sakeLoadingStatus: loading,
+        resolutionCandidates: const {},
+        matchPercents: const {},
+        unverifiedNames: const [],
+      );
 
-      for (final extractedSake in extractedSakes) {
-        try {
-          final sakeName = extractedSake.name;
-          final sakeType = extractedSake.type;
+      final resolutions = await sakeMenuRecognitionRepository.resolveMenuSakes(
+        extractedSakes,
+      );
+      final nameMapping = <String, String>{};
+      final candidates = <String, List<MenuSakeCandidate>>{};
+      final matchPercents = <String, int>{};
+      final unverifiedNames = <String>[];
+      final resolvedSakes = <Sake>[];
+      final preference = read<MyPageNotifier>().state.tasteProfile;
 
-          if (sakeName != null && sakeName.isNotEmpty) {
-            // この日本酒の読み込み状態を「読み込み中」に設定
-            final updatedLoadingStatus = Map<String, bool>.from(
-              state.sakeLoadingStatus,
-            );
-            updatedLoadingStatus[sakeName] = true; // true = 読み込み中
-            state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
+      for (final resolution in resolutions) {
+        MenuSakeCandidate? selected;
+        if (resolution.status == MenuSakeResolutionStatus.resolved &&
+            resolution.candidates.length == 1) {
+          selected = resolution.candidates.single;
+        } else if (resolution.status == MenuSakeResolutionStatus.multiple) {
+          candidates[resolution.inputName] = resolution.candidates;
+        }
 
-            logger.info('日本酒情報を取得中: $sakeName');
-            final sakeInfo = await sakeMenuRecognitionRepository.getSakeInfo(
-              sakeName,
-              type: sakeType,
-              preferences: state.preferences ?? '甘口でフルーティ',
-            );
-
-            // 読み込み状態を更新（成功または失敗）
-            final newLoadingStatus = Map<String, bool>.from(
-              state.sakeLoadingStatus,
-            );
-            newLoadingStatus[sakeName] = false; // 読み込み完了
-
-            if (sakeInfo != null) {
-              // 名前のマッピングを更新（元の名前 -> 取得した詳細情報の名前）
-              final newNameMapping = Map<String, String>.from(
-                state.nameMapping,
-              );
-              newNameMapping[sakeName] = sakeInfo.name ?? sakeName;
-
-              // 現在のsakesリストに新しい情報を追加（重複チェック）
-              final List<Sake> currentSakes = state.sakes ?? [];
-
-              // 既に同じ名前の日本酒が存在するかチェック
-              bool isDuplicate = currentSakes.any(
-                (existingSake) => existingSake.name == sakeInfo.name,
-              );
-
-              // 重複していない場合のみ追加
-              final List<Sake> updatedSakes = isDuplicate
-                  ? currentSakes
-                  : [...currentSakes, sakeInfo];
-
-              state = state.copyWith(
-                sakes: updatedSakes,
-                sakeLoadingStatus: newLoadingStatus,
-                nameMapping: newNameMapping,
-              );
-            } else {
-              // 詳細情報の取得に失敗した場合も状態を更新
-              state = state.copyWith(sakeLoadingStatus: newLoadingStatus);
-            }
+        if (selected != null) {
+          final sake = selected.sake;
+          nameMapping[resolution.inputName] = sake.name ?? resolution.inputName;
+          resolvedSakes.add(sake);
+          final matchPercent = calculateOptionalSakeTasteMatchPercent(
+            profile: selected.tasteProfile,
+            preference: preference,
+          );
+          if (matchPercent != null) {
+            matchPercents[resolution.inputName] = matchPercent;
           }
-        } catch (e) {
-          // 個別の日本酒情報取得に失敗しても続行
-          final sakeName = extractedSake.name;
-          if (sakeName != null) {
-            final updatedLoadingStatus = Map<String, bool>.from(
-              state.sakeLoadingStatus,
-            );
-            updatedLoadingStatus[sakeName] = false; // 読み込み完了（エラー）
-            state = state.copyWith(sakeLoadingStatus: updatedLoadingStatus);
-          }
-          logger.shout('日本酒情報の取得に失敗: ${extractedSake.name}, エラー: $e');
+        } else if (resolution.fallback != null) {
+          final fallback = resolution.fallback!;
+          nameMapping[resolution.inputName] =
+              fallback.name ?? resolution.inputName;
+          resolvedSakes.add(fallback.copyWith(recommendationScore: null));
+          unverifiedNames.add(resolution.inputName);
         }
       }
 
-      // すべての詳細情報の取得が完了
-      state = state.copyWith(isGettingDetails: false);
+      state = state.copyWith(
+        isGettingDetails: false,
+        sakes: resolvedSakes,
+        sakeLoadingStatus: {
+          for (final sake in extractedSakes)
+            if (sake.name?.isNotEmpty == true) sake.name!: false,
+        },
+        nameMapping: nameMapping,
+        resolutionCandidates: candidates,
+        matchPercents: matchPercents,
+        unverifiedNames: unverifiedNames,
+      );
 
       // 詳細情報の取得が完了したら、メニュー解析履歴に追加
-      if (state.sakes != null && state.sakes!.isNotEmpty) {
+      if (state.sakes != null &&
+          state.sakes!.isNotEmpty &&
+          state.resolutionCandidates.isEmpty) {
         await addCurrentAnalysisToHistory();
       }
     } catch (e) {
@@ -488,6 +483,41 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isGettingDetails: false,
         errorMessage: context.l10n.errorSakeDetailFetch,
       );
+    }
+  }
+
+  void selectMenuCandidate(String inputName, MenuSakeCandidate candidate) {
+    final mapped = Map<String, String>.from(state.nameMapping);
+    final previousName = mapped[inputName];
+    mapped[inputName] = candidate.sake.name ?? inputName;
+    final sakes = [
+      ...(state.sakes ?? const <Sake>[]),
+    ]..removeWhere((sake) => previousName != null && sake.name == previousName);
+    if (!sakes.any((sake) => sake.sakeId == candidate.sake.sakeId)) {
+      sakes.add(candidate.sake);
+    }
+    final scores = Map<String, int>.from(state.matchPercents);
+    final preference = read<MyPageNotifier>().state.tasteProfile;
+    final matchPercent = calculateOptionalSakeTasteMatchPercent(
+      profile: candidate.tasteProfile,
+      preference: preference,
+    );
+    if (matchPercent != null) {
+      scores[inputName] = matchPercent;
+    } else {
+      scores.remove(inputName);
+    }
+    final choices = Map<String, List<MenuSakeCandidate>>.from(
+      state.resolutionCandidates,
+    )..remove(inputName);
+    state = state.copyWith(
+      sakes: sakes,
+      nameMapping: mapped,
+      matchPercents: scores,
+      resolutionCandidates: choices,
+    );
+    if (choices.isEmpty) {
+      unawaited(addCurrentAnalysisToHistory());
     }
   }
 
@@ -724,15 +754,26 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       }
 
       // 現在の日本酒情報から保存用のデータを作成
-      final List<SavedSake> savedSakes = state.sakes!
-          .map(
-            (sake) => SavedSake(
-              name: sake.name ?? '不明な日本酒',
-              type: sake.type,
-              isRecommended: (sake.recommendationScore ?? 0) >= 7,
-            ),
-          )
-          .toList();
+      final List<SavedSake> savedSakes = state.sakes!.map((sake) {
+        String? inputName;
+        for (final entry in state.nameMapping.entries) {
+          if (entry.value == sake.name) {
+            inputName = entry.key;
+            break;
+          }
+        }
+        final matchPercent = inputName == null
+            ? null
+            : state.matchPercents[inputName];
+        return SavedSake(
+          name: sake.name ?? '不明な日本酒',
+          type: sake.type,
+          sakeId: sake.sakeId,
+          matchPercent: matchPercent,
+          recommendationBasis: matchPercent == null ? null : 'taste_profile_v1',
+          isRecommended: matchPercent != null && matchPercent >= 70,
+        );
+      }).toList();
 
       // 新しい履歴項目を作成
       final newHistoryItem = MenuAnalysisHistoryItem(

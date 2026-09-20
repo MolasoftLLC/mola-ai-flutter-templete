@@ -32,7 +32,11 @@ mixin _$MenuSearchPageState {
   List<Sake>? get sakes => throw _privateConstructorUsedError;
   Map<String, bool> get sakeLoadingStatus =>
       throw _privateConstructorUsedError; // 元の名前と取得した詳細情報の名前のマッピング
-  Map<String, String> get nameMapping =>
+  Map<String, String> get nameMapping => throw _privateConstructorUsedError;
+  Map<String, List<MenuSakeCandidate>> get resolutionCandidates =>
+      throw _privateConstructorUsedError;
+  Map<String, int> get matchPercents => throw _privateConstructorUsedError;
+  List<String> get unverifiedNames =>
       throw _privateConstructorUsedError; // ユーザーの好み
   String? get preferences =>
       throw _privateConstructorUsedError; // 日本酒リストが表示された後にスクロールしたかどうか
@@ -71,6 +75,9 @@ abstract class $MenuSearchPageStateCopyWith<$Res> {
       List<Sake>? sakes,
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
+      Map<String, List<MenuSakeCandidate>> resolutionCandidates,
+      Map<String, int> matchPercents,
+      List<String> unverifiedNames,
       String? preferences,
       bool hasScrolledToResults,
       List<MenuAnalysisHistoryItem> menuAnalysisHistory,
@@ -108,6 +115,9 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
     Object? sakes = freezed,
     Object? sakeLoadingStatus = null,
     Object? nameMapping = null,
+    Object? resolutionCandidates = null,
+    Object? matchPercents = null,
+    Object? unverifiedNames = null,
     Object? preferences = freezed,
     Object? hasScrolledToResults = null,
     Object? menuAnalysisHistory = null,
@@ -175,6 +185,18 @@ class _$MenuSearchPageStateCopyWithImpl<$Res, $Val extends MenuSearchPageState>
           ? _value.nameMapping
           : nameMapping // ignore: cast_nullable_to_non_nullable
               as Map<String, String>,
+      resolutionCandidates: null == resolutionCandidates
+          ? _value.resolutionCandidates
+          : resolutionCandidates // ignore: cast_nullable_to_non_nullable
+              as Map<String, List<MenuSakeCandidate>>,
+      matchPercents: null == matchPercents
+          ? _value.matchPercents
+          : matchPercents // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+      unverifiedNames: null == unverifiedNames
+          ? _value.unverifiedNames
+          : unverifiedNames // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       preferences: freezed == preferences
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
@@ -236,6 +258,9 @@ abstract class _$$MenuSearchPageStateImplCopyWith<$Res>
       List<Sake>? sakes,
       Map<String, bool> sakeLoadingStatus,
       Map<String, String> nameMapping,
+      Map<String, List<MenuSakeCandidate>> resolutionCandidates,
+      Map<String, int> matchPercents,
+      List<String> unverifiedNames,
       String? preferences,
       bool hasScrolledToResults,
       List<MenuAnalysisHistoryItem> menuAnalysisHistory,
@@ -272,6 +297,9 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
     Object? sakes = freezed,
     Object? sakeLoadingStatus = null,
     Object? nameMapping = null,
+    Object? resolutionCandidates = null,
+    Object? matchPercents = null,
+    Object? unverifiedNames = null,
     Object? preferences = freezed,
     Object? hasScrolledToResults = null,
     Object? menuAnalysisHistory = null,
@@ -339,6 +367,18 @@ class __$$MenuSearchPageStateImplCopyWithImpl<$Res>
           ? _value._nameMapping
           : nameMapping // ignore: cast_nullable_to_non_nullable
               as Map<String, String>,
+      resolutionCandidates: null == resolutionCandidates
+          ? _value._resolutionCandidates
+          : resolutionCandidates // ignore: cast_nullable_to_non_nullable
+              as Map<String, List<MenuSakeCandidate>>,
+      matchPercents: null == matchPercents
+          ? _value._matchPercents
+          : matchPercents // ignore: cast_nullable_to_non_nullable
+              as Map<String, int>,
+      unverifiedNames: null == unverifiedNames
+          ? _value._unverifiedNames
+          : unverifiedNames // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       preferences: freezed == preferences
           ? _value.preferences
           : preferences // ignore: cast_nullable_to_non_nullable
@@ -382,6 +422,10 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
       final List<Sake>? sakes,
       final Map<String, bool> sakeLoadingStatus = const {},
       final Map<String, String> nameMapping = const {},
+      final Map<String, List<MenuSakeCandidate>> resolutionCandidates =
+          const {},
+      final Map<String, int> matchPercents = const {},
+      final List<String> unverifiedNames = const <String>[],
       this.preferences,
       this.hasScrolledToResults = false,
       final List<MenuAnalysisHistoryItem> menuAnalysisHistory = const [],
@@ -391,6 +435,9 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
         _sakes = sakes,
         _sakeLoadingStatus = sakeLoadingStatus,
         _nameMapping = nameMapping,
+        _resolutionCandidates = resolutionCandidates,
+        _matchPercents = matchPercents,
+        _unverifiedNames = unverifiedNames,
         _menuAnalysisHistory = menuAnalysisHistory;
 
   @override
@@ -460,6 +507,34 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
     return EqualUnmodifiableMapView(_nameMapping);
   }
 
+  final Map<String, List<MenuSakeCandidate>> _resolutionCandidates;
+  @override
+  @JsonKey()
+  Map<String, List<MenuSakeCandidate>> get resolutionCandidates {
+    if (_resolutionCandidates is EqualUnmodifiableMapView)
+      return _resolutionCandidates;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_resolutionCandidates);
+  }
+
+  final Map<String, int> _matchPercents;
+  @override
+  @JsonKey()
+  Map<String, int> get matchPercents {
+    if (_matchPercents is EqualUnmodifiableMapView) return _matchPercents;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_matchPercents);
+  }
+
+  final List<String> _unverifiedNames;
+  @override
+  @JsonKey()
+  List<String> get unverifiedNames {
+    if (_unverifiedNames is EqualUnmodifiableListView) return _unverifiedNames;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_unverifiedNames);
+  }
+
 // ユーザーの好み
   @override
   final String? preferences;
@@ -489,7 +564,7 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
 
   @override
   String toString() {
-    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, preferences: $preferences, hasScrolledToResults: $hasScrolledToResults, menuAnalysisHistory: $menuAnalysisHistory, selectedHistoryItemId: $selectedHistoryItemId, isEditingStoreName: $isEditingStoreName)';
+    return 'MenuSearchPageState(isLoading: $isLoading, isExtractingInfo: $isExtractingInfo, isGettingDetails: $isGettingDetails, isAdLoading: $isAdLoading, isAnalyzingInBackground: $isAnalyzingInBackground, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, extractedSakes: $extractedSakes, sakeMenuRecognitionResponse: $sakeMenuRecognitionResponse, errorMessage: $errorMessage, sakes: $sakes, sakeLoadingStatus: $sakeLoadingStatus, nameMapping: $nameMapping, resolutionCandidates: $resolutionCandidates, matchPercents: $matchPercents, unverifiedNames: $unverifiedNames, preferences: $preferences, hasScrolledToResults: $hasScrolledToResults, menuAnalysisHistory: $menuAnalysisHistory, selectedHistoryItemId: $selectedHistoryItemId, isEditingStoreName: $isEditingStoreName)';
   }
 
   @override
@@ -528,6 +603,12 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
                 .equals(other._sakeLoadingStatus, _sakeLoadingStatus) &&
             const DeepCollectionEquality()
                 .equals(other._nameMapping, _nameMapping) &&
+            const DeepCollectionEquality()
+                .equals(other._resolutionCandidates, _resolutionCandidates) &&
+            const DeepCollectionEquality()
+                .equals(other._matchPercents, _matchPercents) &&
+            const DeepCollectionEquality()
+                .equals(other._unverifiedNames, _unverifiedNames) &&
             (identical(other.preferences, preferences) ||
                 other.preferences == preferences) &&
             (identical(other.hasScrolledToResults, hasScrolledToResults) ||
@@ -558,6 +639,9 @@ class _$MenuSearchPageStateImpl implements _MenuSearchPageState {
         const DeepCollectionEquality().hash(_sakes),
         const DeepCollectionEquality().hash(_sakeLoadingStatus),
         const DeepCollectionEquality().hash(_nameMapping),
+        const DeepCollectionEquality().hash(_resolutionCandidates),
+        const DeepCollectionEquality().hash(_matchPercents),
+        const DeepCollectionEquality().hash(_unverifiedNames),
         preferences,
         hasScrolledToResults,
         const DeepCollectionEquality().hash(_menuAnalysisHistory),
@@ -590,6 +674,9 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
       final List<Sake>? sakes,
       final Map<String, bool> sakeLoadingStatus,
       final Map<String, String> nameMapping,
+      final Map<String, List<MenuSakeCandidate>> resolutionCandidates,
+      final Map<String, int> matchPercents,
+      final List<String> unverifiedNames,
       final String? preferences,
       final bool hasScrolledToResults,
       final List<MenuAnalysisHistoryItem> menuAnalysisHistory,
@@ -626,6 +713,12 @@ abstract class _MenuSearchPageState implements MenuSearchPageState {
   Map<String, bool> get sakeLoadingStatus;
   @override // 元の名前と取得した詳細情報の名前のマッピング
   Map<String, String> get nameMapping;
+  @override
+  Map<String, List<MenuSakeCandidate>> get resolutionCandidates;
+  @override
+  Map<String, int> get matchPercents;
+  @override
+  List<String> get unverifiedNames;
   @override // ユーザーの好み
   String? get preferences;
   @override // 日本酒リストが表示された後にスクロールしたかどうか

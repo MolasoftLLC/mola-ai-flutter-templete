@@ -45,7 +45,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   static const String analysisFailedLabel = '解析失敗(名前変更して解析可能)';
 
   final Random _random = Random();
-  final Set<String> _syncingImageIds = <String>{};
+  final Map<String, Future<Sake?>> _syncTasks = <String, Future<Sake?>>{};
+  final Set<String> _completingSyncIds = <String>{};
+  final Set<String> _analysisStartedIds = <String>{};
 
   AuthRepository get _authRepository => read<AuthRepository>();
   SavedSakeSyncRepository get _syncRepository =>
@@ -382,6 +384,38 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   Future<Sake?> syncSavedSakeToServer(
     String savedId, {
     bool force = false,
+    bool startOnly = false,
+  }) async {
+    final pending = _syncTasks[savedId];
+    if (pending != null) {
+      final completesAnalysis = _completingSyncIds.contains(savedId);
+      logger.info('進行中の保存酒同期を待機します: id=$savedId');
+      final result = await pending;
+      if (startOnly || completesAnalysis) return result;
+      return syncSavedSakeToServer(savedId, force: force);
+    }
+
+    final task = _syncSavedSakeToServerUnlocked(
+      savedId,
+      force: force,
+      startOnly: startOnly,
+    );
+    _syncTasks[savedId] = task;
+    if (!startOnly) _completingSyncIds.add(savedId);
+    try {
+      return await task;
+    } finally {
+      if (identical(_syncTasks[savedId], task)) {
+        _syncTasks.remove(savedId);
+        _completingSyncIds.remove(savedId);
+      }
+    }
+  }
+
+  Future<Sake?> _syncSavedSakeToServerUnlocked(
+    String savedId, {
+    required bool force,
+    required bool startOnly,
   }) async {
     final user = _authRepository.currentUser;
     if (user == null) {
@@ -397,14 +431,8 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       return null;
     }
 
-    if (_syncingImageIds.contains(savedId)) {
-      logger.info('保存酒同期は既に進行中です: id=$savedId');
-      return null;
-    }
-    _syncingImageIds.add(savedId);
-
     try {
-      final target = state.savedSakeList[index];
+      var target = state.savedSakeList[index];
       if (!force && target.syncStatus == SavedSakeSyncStatus.serverSynced) {
         logger.info('保存酒は既にサーバーと同期済みです: id=$savedId');
         return target;
@@ -431,16 +459,20 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
       var succeeded = true;
 
-      final startResult = await _syncRepository.syncSavedSake(
-        stage: SavedSakeSyncStage.analysisStart,
-        userId: user.uid,
-        sake: target,
-        imageFile: primaryImage,
-        isPublic: target.isPublic,
-      );
+      final startResult = _analysisStartedIds.contains(savedId)
+          ? true
+          : await _syncRepository.syncSavedSake(
+              stage: SavedSakeSyncStage.analysisStart,
+              userId: user.uid,
+              sake: target,
+              imageFile: primaryImage,
+              isPublic: target.isPublic,
+            );
 
       if (!startResult) {
         succeeded = false;
+      } else {
+        _analysisStartedIds.add(savedId);
       }
 
       if (succeeded && localPaths.length > 1) {
@@ -460,13 +492,28 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
             userId: user.uid,
             savedId: savedId,
             imageFile: file,
+            imageRole: 'back',
           );
 
           if (uploadedUrl == null || uploadedUrl.isEmpty) {
             succeeded = false;
             break;
           }
+
+          final replacedPaths = [...(target.imagePaths ?? const <String>[])];
+          final pathIndex = replacedPaths.indexOf(path);
+          if (pathIndex >= 0) {
+            replacedPaths[pathIndex] = uploadedUrl;
+            target = target.copyWith(
+              imagePaths: replacedPaths.toSet().toList(),
+            );
+            await updateSavedSake(target);
+          }
         }
+      }
+
+      if (succeeded && startOnly) {
+        return target;
       }
 
       if (succeeded) {
@@ -483,12 +530,16 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
         logger.warning('保存酒の手動同期に失敗しました: id=$savedId');
         return null;
       }
+      _analysisStartedIds.remove(savedId);
 
       final synced = target.copyWith(
         syncStatus: SavedSakeSyncStatus.serverSynced,
       );
+      final syncedIndex = state.savedSakeList.indexWhere(
+        (item) => item.savedId == savedId,
+      );
       final nextList = [...state.savedSakeList];
-      nextList[index] = synced;
+      if (syncedIndex >= 0) nextList[syncedIndex] = synced;
       state = state.copyWith(savedSakeList: nextList);
       _syncFiltersWithAvailableTags();
       await _persistSavedSakes();
@@ -506,8 +557,6 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       logger.warning('保存酒の手動同期処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return null;
-    } finally {
-      _syncingImageIds.remove(savedId);
     }
   }
 
