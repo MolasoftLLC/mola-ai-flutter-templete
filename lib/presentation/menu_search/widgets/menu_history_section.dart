@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -234,12 +233,29 @@ class MenuHistorySection extends StatelessWidget {
                           ),
                         ],
                       ),
-                      subtitle: Text(
-                        context.l10n.sakeCount(historyItem.sakes.length),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
+                      subtitle: Row(
+                        children: [
+                          Text(
+                            context.l10n.sakeCount(historyItem.sakes.length),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          if (historyItem.analysisStatus != 'complete') ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              historyItem.analysisStatus == 'details_pending'
+                                  ? context.l10n.menuHistoryPending
+                                  : context.l10n.menuHistoryPartial,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       children: [
                         Padding(

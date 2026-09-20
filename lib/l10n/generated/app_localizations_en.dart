@@ -1662,4 +1662,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sameBrandSakes => 'More from this brand';
+
+  @override
+  String get menuHistorySaveFailed =>
+      'The analysis could not be saved to history. You can retry without losing the result.';
+
+  @override
+  String get menuHistoryLoadFailed =>
+      'The analysis history could not be loaded.';
+
+  @override
+  String get retryHistorySave => 'Retry saving history';
+
+  @override
+  String get menuHistoryPartial => 'Partially resolved';
+
+  @override
+  String get menuHistoryPending => 'Details pending';
 }

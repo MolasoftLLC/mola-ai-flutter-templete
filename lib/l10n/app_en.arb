@@ -520,5 +520,10 @@
   "communityImpressionCount": "{count} impressions",
   "@communityImpressionCount": {"placeholders": {"count": {"type": "int"}}},
   "recentPublicPosts": "Recent public posts",
-  "sameBrandSakes": "More from this brand"
+  "sameBrandSakes": "More from this brand",
+  "menuHistorySaveFailed": "The analysis could not be saved to history. You can retry without losing the result.",
+  "menuHistoryLoadFailed": "The analysis history could not be loaded.",
+  "retryHistorySave": "Retry saving history",
+  "menuHistoryPartial": "Partially resolved",
+  "menuHistoryPending": "Details pending"
 }

@@ -520,5 +520,10 @@
   "communityImpressionCount": "感想 {count}件",
   "@communityImpressionCount": {"placeholders": {"count": {"type": "int"}}},
   "recentPublicPosts": "最近の公開投稿",
-  "sameBrandSakes": "同じ銘柄の日本酒"
+  "sameBrandSakes": "同じ銘柄の日本酒",
+  "menuHistorySaveFailed": "解析結果を履歴へ保存できませんでした。結果を残したまま再試行できます。",
+  "menuHistoryLoadFailed": "解析履歴を読み込めませんでした。",
+  "retryHistorySave": "履歴保存を再試行",
+  "menuHistoryPartial": "一部未解決",
+  "menuHistoryPending": "詳細未取得"
 }

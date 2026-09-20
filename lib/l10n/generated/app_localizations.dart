@@ -3091,6 +3091,36 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'同じ銘柄の日本酒'**
   String get sameBrandSakes;
+
+  /// No description provided for @menuHistorySaveFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'解析結果を履歴へ保存できませんでした。結果を残したまま再試行できます。'**
+  String get menuHistorySaveFailed;
+
+  /// No description provided for @menuHistoryLoadFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'解析履歴を読み込めませんでした。'**
+  String get menuHistoryLoadFailed;
+
+  /// No description provided for @retryHistorySave.
+  ///
+  /// In ja, this message translates to:
+  /// **'履歴保存を再試行'**
+  String get retryHistorySave;
+
+  /// No description provided for @menuHistoryPartial.
+  ///
+  /// In ja, this message translates to:
+  /// **'一部未解決'**
+  String get menuHistoryPartial;
+
+  /// No description provided for @menuHistoryPending.
+  ///
+  /// In ja, this message translates to:
+  /// **'詳細未取得'**
+  String get menuHistoryPending;
 }
 
 class _AppLocalizationsDelegate

@@ -316,6 +316,14 @@ class MenuSearchPage extends StatelessWidget {
                                           ),
                                         ),
                                       ),
+                                      if (notifier.hasPendingHistorySave)
+                                        TextButton(
+                                          onPressed: notifier
+                                              .retrySaveMenuAnalysisHistory,
+                                          child: Text(
+                                            context.l10n.retryHistorySave,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

@@ -85,9 +85,11 @@ void main() {
       matchPercent: 84,
       recommendationBasis: 'taste_profile_v1',
       isRecommended: true,
+      extractedName: '天吹',
     );
     expect(SavedSake.fromJson(current.toJson()).sakeId, 58);
     expect(SavedSake.fromJson(current.toJson()).matchPercent, 84);
+    expect(SavedSake.fromJson(current.toJson()).extractedName, '天吹');
     expect(SavedSake.fromJson({'name': '旧履歴'}).recommendationBasis, isNull);
   });
 

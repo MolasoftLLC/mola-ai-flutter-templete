@@ -1580,4 +1580,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get sameBrandSakes => '同じ銘柄の日本酒';
+
+  @override
+  String get menuHistorySaveFailed => '解析結果を履歴へ保存できませんでした。結果を残したまま再試行できます。';
+
+  @override
+  String get menuHistoryLoadFailed => '解析履歴を読み込めませんでした。';
+
+  @override
+  String get retryHistorySave => '履歴保存を再試行';
+
+  @override
+  String get menuHistoryPartial => '一部未解決';
+
+  @override
+  String get menuHistoryPending => '詳細未取得';
 }

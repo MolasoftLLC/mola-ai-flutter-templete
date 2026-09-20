@@ -20,7 +20,8 @@ class SharedPreference {
     required String value,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
+    final saved = await prefs.setString(key, value);
+    if (!saved) throw StateError('SharedPreferencesへの保存に失敗しました: $key');
   }
 
   /// 静的に文字列を取得するメソッド
