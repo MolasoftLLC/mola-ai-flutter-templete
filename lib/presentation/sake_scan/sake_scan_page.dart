@@ -850,9 +850,15 @@ class _SakeScanPageState extends State<SakeScanPage>
                         final item = state.candidates[index];
                         final selected = index == state.selectedCandidateIndex;
                         final details =
-                            [item.brewery?.trim(), item.type?.trim()]
-                                .whereType<String>()
-                                .where((value) => value.isNotEmpty);
+                            [
+                              item.isOfficialTemporary
+                                  ? context.l10n.officialTemporaryCandidate
+                                  : null,
+                              item.brewery?.trim(),
+                              item.type?.trim(),
+                            ].whereType<String>().where(
+                              (value) => value.isNotEmpty,
+                            );
                         return Material(
                           color: selected
                               ? const Color(0xFFFFF8ED)

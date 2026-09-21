@@ -1575,6 +1575,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whichSakeCandidate => 'Is it one of these?';
 
   @override
+  String get officialTemporaryCandidate =>
+      'Official-site candidate · Not registered';
+
+  @override
   String get yesThisSake => 'Yes, this is it';
 
   @override

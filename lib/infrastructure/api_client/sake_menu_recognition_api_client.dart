@@ -62,6 +62,13 @@ abstract class SakeMenuRecognitionApiClient extends ChopperService {
     @Part('locale') String locale,
   );
 
+  @Post(path: 'sake-bottle/scan/front/lens-candidates')
+  @Multipart()
+  Future<Response<Map<String, dynamic>>> scanSakeFrontLabelWithLensCandidates(
+    @PartFile('image') MultipartFile image,
+    @Part('locale') String locale,
+  );
+
   @Post(path: 'sake-bottle/scan/{scanSessionId}/back')
   @Multipart()
   Future<Response<Map<String, dynamic>>> scanSakeBackLabel(

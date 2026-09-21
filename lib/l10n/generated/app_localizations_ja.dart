@@ -1501,6 +1501,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get whichSakeCandidate => 'この中のどれかですか？';
 
   @override
+  String get officialTemporaryCandidate => '公式サイト候補・未登録';
+
+  @override
   String get yesThisSake => 'はい、この日本酒です';
 
   @override

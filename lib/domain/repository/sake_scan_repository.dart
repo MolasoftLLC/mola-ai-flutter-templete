@@ -20,7 +20,9 @@ abstract class SakeScanRepository {
   Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds);
 
   Future<SakeOverview> fetchOverview(int sakeId, {bool trackView = false});
-  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(List<int> sakeIds);
+  Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(
+    List<int> sakeIds,
+  );
 }
 
 class SakeDetailViewMemory {
@@ -35,6 +37,7 @@ class SakeScanApiRepository implements SakeScanRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
+    this.frontCandidateTimeout = const Duration(seconds: 90),
     SakeDetailViewMemory? detailViewMemory,
   }) : _detailViewMemory = detailViewMemory ?? _appDetailViewMemory;
 
@@ -43,6 +46,7 @@ class SakeScanApiRepository implements SakeScanRepository {
 
   final SakeMenuRecognitionApiClient _apiClient;
   final Duration requestTimeout;
+  final Duration frontCandidateTimeout;
   final SakeDetailViewMemory _detailViewMemory;
 
   @override
@@ -52,8 +56,8 @@ class SakeScanApiRepository implements SakeScanRepository {
       final locale = await resolveAppLocaleLanguageCode();
       final imagePart = await _jpegPart(compressed);
       final response = await _apiClient
-          .scanSakeFrontLabel(imagePart, locale)
-          .timeout(requestTimeout);
+          .scanSakeFrontLabelWithLensCandidates(imagePart, locale)
+          .timeout(frontCandidateTimeout);
       return SakeScanResult.fromJson(_requireBody(response));
     } finally {
       await _deleteTemporaryFile(compressed);

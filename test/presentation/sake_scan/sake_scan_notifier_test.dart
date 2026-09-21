@@ -30,6 +30,35 @@ void main() {
       expect(notifier.currentState.scanSessionId, 'scan_test');
     });
 
+    test('公式サイト由来の未登録候補は選択後にAI詳細解析へ進む', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.candidates,
+          scanSessionId: 'scan_lens',
+          candidates: <SakeScanCandidate>[
+            SakeScanCandidate(
+              sakeId: 0,
+              name: '花雪 純米吟醸',
+              type: '純米吟醸',
+              brewery: '河津酒造株式会社',
+              candidateSource: 'official_temporary',
+            ),
+          ],
+        ),
+      );
+      final analysis = _FakeAnalysisService(
+        const Sake(name: '花雪 純米吟醸', brewery: '河津酒造株式会社'),
+      );
+      final notifier = _buildNotifier(repository, analysis: analysis);
+
+      await notifier.submitFront(image);
+      await notifier.confirmCandidate();
+
+      expect(analysis.calls, 1);
+      expect(analysis.lastConfirmedSake?.name, '花雪 純米吟醸');
+      expect(repository.confirmCalls, 0);
+    });
+
     test('候補確定後にキャッシュ済み解析を即時完了する', () async {
       final repository = _FakeScanRepository(
         frontResult: _candidatesResult(),
@@ -511,6 +540,7 @@ class _FakeScanRepository implements SakeScanRepository {
   final Object? frontError;
   final Completer<SakeScanResult>? frontCompleter;
   int frontCalls = 0;
+  int confirmCalls = 0;
   List<int>? rejectedSakeIds;
 
   @override
@@ -533,6 +563,7 @@ class _FakeScanRepository implements SakeScanRepository {
 
   @override
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId) async {
+    confirmCalls++;
     return confirmation ??
         SakeScanConfirmation(
           status: SakeScanApiStatus.cacheHit,

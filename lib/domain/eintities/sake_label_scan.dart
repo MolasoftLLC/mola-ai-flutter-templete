@@ -34,6 +34,8 @@ class SakeScanCandidate {
     this.imageScore,
     this.ocrScore,
     this.confidence,
+    this.candidateSource,
+    this.sourceUrl,
   });
 
   factory SakeScanCandidate.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,8 @@ class SakeScanCandidate {
       imageScore: _asDouble(json['imageScore']),
       ocrScore: _asDouble(json['ocrScore']),
       confidence: _asDouble(json['confidence']),
+      candidateSource: json['candidateSource']?.toString(),
+      sourceUrl: json['sourceUrl']?.toString(),
     );
   }
 
@@ -59,6 +63,10 @@ class SakeScanCandidate {
   final double? imageScore;
   final double? ocrScore;
   final double? confidence;
+  final String? candidateSource;
+  final String? sourceUrl;
+
+  bool get isOfficialTemporary => candidateSource == 'official_temporary';
 
   String get canonicalProductName {
     final productType = type?.trim();
@@ -100,7 +108,8 @@ class SakeScanResult {
               )
               .where(
                 (item) =>
-                    item.sakeId > 0 && isPlausibleRecognizedSakeName(item.name),
+                    (item.sakeId > 0 || item.isOfficialTemporary) &&
+                    isPlausibleRecognizedSakeName(item.name),
               )
               .toList(growable: false)
         : const <SakeScanCandidate>[];

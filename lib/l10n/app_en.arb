@@ -494,6 +494,7 @@
   "searchingLabel": "Matching this sake…",
   "isThisSake": "Is this the sake?",
   "whichSakeCandidate": "Is it one of these?",
+  "officialTemporaryCandidate": "Official-site candidate · Not registered",
   "yesThisSake": "Yes, this is it",
   "showOtherCandidate": "Other candidates",
   "wrongTakeBackLabel": "Not this one — scan back label",

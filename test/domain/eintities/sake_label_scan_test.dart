@@ -50,6 +50,27 @@ void main() {
     expect(result.backLabelReason, SakeScanBackLabelReason.ocrUnreadable);
   });
 
+  test('公式サイト由来の未登録候補をsakeId 0でも保持する', () {
+    final result = SakeScanResult.fromJson(<String, dynamic>{
+      'status': 'candidates',
+      'scanSessionId': 'scan_lens',
+      'candidates': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'sakeId': 0,
+          'name': '花雪 純米吟醸',
+          'brewery': '河津酒造株式会社',
+          'candidateSource': 'official_temporary',
+          'sourceUrl': 'https://example.jp/products/hanayuki',
+        },
+        <String, dynamic>{'sakeId': 0, 'name': '根拠なし候補'},
+      ],
+    });
+
+    expect(result.candidates, hasLength(1));
+    expect(result.candidates.single.isOfficialTemporary, isTrue);
+    expect(result.candidates.single.name, '花雪 純米吟醸');
+  });
+
   test('サーバーの酒概要レスポンスをFlutter表示モデルへ変換する', () {
     final overview = SakeOverview.fromJson(<String, dynamic>{
       'sake': <String, dynamic>{
