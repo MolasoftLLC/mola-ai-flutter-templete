@@ -58,6 +58,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _initializingCamera = false;
   bool _capturing = false;
   bool _isCloseUpMode = false;
+  SakeFrontScanMethod _frontScanMethod = SakeFrontScanMethod.googleLens;
   Offset? _focusRingPosition;
   double _minZoomLevel = 1;
   double _maxZoomLevel = 1;
@@ -479,7 +480,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (shouldSubmitBack) {
       await notifier.submitBack(file);
     } else {
-      await notifier.submitFront(file);
+      await notifier.submitFront(file, method: _frontScanMethod);
     }
   }
 
@@ -712,6 +713,10 @@ class _SakeScanPageState extends State<SakeScanPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (state.status == SakeScanViewStatus.frontScanning) ...[
+            _buildScanMethodToggle(),
+            const SizedBox(height: 14),
+          ],
           Row(
             children: [
               if (selectCloseUpSakeScanCamera(_availableCameras) != null) ...[
@@ -786,6 +791,54 @@ class _SakeScanPageState extends State<SakeScanPage>
     );
   }
 
+  Widget _buildScanMethodToggle() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black45,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: SegmentedButton<SakeFrontScanMethod>(
+          showSelectedIcon: false,
+          segments: <ButtonSegment<SakeFrontScanMethod>>[
+            ButtonSegment<SakeFrontScanMethod>(
+              value: SakeFrontScanMethod.googleLens,
+              icon: const Icon(Icons.image_search_rounded, size: 18),
+              label: Text(context.l10n.scanMethodGoogleLens),
+            ),
+            ButtonSegment<SakeFrontScanMethod>(
+              value: SakeFrontScanMethod.chatGpt,
+              icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: Text(context.l10n.scanMethodChatGpt),
+            ),
+          ],
+          selected: <SakeFrontScanMethod>{_frontScanMethod},
+          onSelectionChanged: _capturing
+              ? null
+              : (selection) {
+                  setState(() => _frontScanMethod = selection.single);
+                  unawaited(HapticFeedback.selectionClick());
+                },
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? const Color(0xFF1D3567)
+                  : Colors.white,
+            ),
+            backgroundColor: WidgetStateProperty.resolveWith(
+              (states) => states.contains(WidgetState.selected)
+                  ? const Color(0xFFFFD54F)
+                  : Colors.transparent,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatusPanel(String message) {
     return _BottomCard(
       child: Row(
@@ -853,6 +906,8 @@ class _SakeScanPageState extends State<SakeScanPage>
                             [
                               item.isOfficialTemporary
                                   ? context.l10n.officialTemporaryCandidate
+                                  : item.isAiTemporary
+                                  ? context.l10n.chatGptTemporaryCandidate
                                   : null,
                               item.brewery?.trim(),
                               item.type?.trim(),

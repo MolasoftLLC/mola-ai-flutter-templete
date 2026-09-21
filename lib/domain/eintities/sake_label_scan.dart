@@ -67,6 +67,8 @@ class SakeScanCandidate {
   final String? sourceUrl;
 
   bool get isOfficialTemporary => candidateSource == 'official_temporary';
+  bool get isAiTemporary => candidateSource == 'ai_temporary';
+  bool get isTemporary => isOfficialTemporary || isAiTemporary;
 
   String get canonicalProductName {
     final productType = type?.trim();
@@ -108,7 +110,7 @@ class SakeScanResult {
               )
               .where(
                 (item) =>
-                    (item.sakeId > 0 || item.isOfficialTemporary) &&
+                    (item.sakeId > 0 || item.isTemporary) &&
                     isPlausibleRecognizedSakeName(item.name),
               )
               .toList(growable: false)

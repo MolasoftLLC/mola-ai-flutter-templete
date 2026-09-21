@@ -146,6 +146,24 @@ abstract class AppLocalizations {
   /// **'ラベルを撮ってすぐ検索'**
   String get fastSearchShortcutDescription;
 
+  /// No description provided for @scanMethodGoogleLens.
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Lens'**
+  String get scanMethodGoogleLens;
+
+  /// No description provided for @scanMethodChatGpt.
+  ///
+  /// In ja, this message translates to:
+  /// **'ChatGPT画像解析'**
+  String get scanMethodChatGpt;
+
+  /// No description provided for @chatGptTemporaryCandidate.
+  ///
+  /// In ja, this message translates to:
+  /// **'ChatGPT候補・未登録'**
+  String get chatGptTemporaryCandidate;
+
   /// No description provided for @registeredVenueCount.
   ///
   /// In ja, this message translates to:

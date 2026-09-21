@@ -33,6 +33,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get fastSearchShortcutDescription => 'ラベルを撮ってすぐ検索';
 
   @override
+  String get scanMethodGoogleLens => 'Google Lens';
+
+  @override
+  String get scanMethodChatGpt => 'ChatGPT画像解析';
+
+  @override
+  String get chatGptTemporaryCandidate => 'ChatGPT候補・未登録';
+
+  @override
   String registeredVenueCount(int count) {
     return '登録店舗 $count件';
   }

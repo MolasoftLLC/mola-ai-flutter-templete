@@ -71,6 +71,25 @@ void main() {
     expect(result.candidates.single.name, '花雪 純米吟醸');
   });
 
+  test('ChatGPT画像解析由来の未登録候補をsakeId 0でも保持する', () {
+    final result = SakeScanResult.fromJson(<String, dynamic>{
+      'status': 'candidates',
+      'scanSessionId': 'scan_chatgpt',
+      'candidates': <Map<String, dynamic>>[
+        <String, dynamic>{
+          'sakeId': 0,
+          'name': '雪の茅舎 純米吟醸 山田穂 生酒',
+          'brewery': '株式会社齋彌酒造店',
+          'candidateSource': 'ai_temporary',
+        },
+      ],
+    });
+
+    expect(result.candidates, hasLength(1));
+    expect(result.candidates.single.isAiTemporary, isTrue);
+    expect(result.candidates.single.isTemporary, isTrue);
+  });
+
   test('サーバーの酒概要レスポンスをFlutter表示モデルへ変換する', () {
     final overview = SakeOverview.fromJson(<String, dynamic>{
       'sake': <String, dynamic>{
