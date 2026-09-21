@@ -60,7 +60,7 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'この機能で撮影した酒瓶の表ラベル画像は、次の用途で必ず利用されます。',
+                  'この機能で撮影した酒瓶のラベル画像は、次の用途で必ず利用されます。',
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),

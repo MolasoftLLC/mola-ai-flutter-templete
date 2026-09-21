@@ -1498,8 +1498,9 @@ class _MasterFavoriteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final favoriteNotifier = notifier;
     if (favoriteNotifier == null) return const SizedBox.shrink();
-    final isFavorite = favoriteNotifier.state.myFavoriteList.any(
-      (item) => item.name == sake.name && item.type == sake.type,
+    final isFavorite = favoriteNotifier.isFavorite(
+      sake.name ?? '名称不明',
+      sake.type,
     );
     return IconButton(
       tooltip: context.l10n.favoriteSake,
@@ -1784,10 +1785,9 @@ class _MasterRecordCta extends StatelessWidget {
   }
 }
 
-bool _isSaved(SavedSakeNotifier notifier, Sake sake) => notifier
-    .state
-    .savedSakeList
-    .any((candidate) => _isSameSakeIdentity(candidate, sake));
+bool _isSaved(SavedSakeNotifier notifier, Sake sake) => notifier.savedSakes.any(
+  (candidate) => _isSameSakeIdentity(candidate, sake),
+);
 
 bool _isSameSakeIdentity(Sake candidate, Sake sake) {
   if (sake.sakeId != null && candidate.sakeId == sake.sakeId) return true;
@@ -2026,7 +2026,7 @@ Future<void> _showRecordEditorSheet(
 
 Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
   if (notifier == null) return null;
-  for (final candidate in notifier.state.savedSakeList) {
+  for (final candidate in notifier.savedSakes) {
     if (_isSameSakeIdentity(candidate, sake)) return candidate;
   }
   return null;
@@ -2056,13 +2056,13 @@ List<String> detailImagePaths({
     if (paths.isEmpty && !isSakePlaceholderImagePath(fallbackImage)) {
       add(fallbackImage);
     }
-    for (final path in communityImagePaths) {
-      add(path);
-    }
-    if (paths.isEmpty) {
-      add(overviewImage);
-      if (paths.isEmpty) add(fallbackImage);
-    }
+  }
+  for (final path in communityImagePaths) {
+    add(path);
+  }
+  if (paths.isEmpty) {
+    add(overviewSake?.primaryImageUrl);
+    if (paths.isEmpty) add(fallback.primaryImageUrl);
   }
   return paths;
 }

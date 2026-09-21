@@ -173,7 +173,9 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<void> toggleSavedSake(Sake sake) async {
-    final exists = state.savedSakeList.any((item) => _isSameSake(item, sake));
+    final exists = state.savedSakeList.any(
+      (item) => _isSameSakeProduct(item, sake),
+    );
 
     if (exists) {
       if (!_isGuest) {
@@ -181,7 +183,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
         if (user != null) {
           Sake? target;
           for (final item in state.savedSakeList) {
-            if (_isSameSake(item, sake)) {
+            if (_isSameSakeProduct(item, sake)) {
               target = item;
               break;
             }
@@ -210,7 +212,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       }
 
       final updatedList = state.savedSakeList
-          .where((item) => !_isSameSake(item, sake))
+          .where((item) => !_isSameSakeProduct(item, sake))
           .toList();
       state = state.copyWith(savedSakeList: updatedList);
       _syncFiltersWithAvailableTags();
@@ -385,6 +387,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     String savedId, {
     bool force = false,
     bool startOnly = false,
+    bool publicLabelContribution = false,
   }) async {
     final pending = _syncTasks[savedId];
     if (pending != null) {
@@ -392,13 +395,18 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       logger.info('進行中の保存酒同期を待機します: id=$savedId');
       final result = await pending;
       if (startOnly || completesAnalysis) return result;
-      return syncSavedSakeToServer(savedId, force: force);
+      return syncSavedSakeToServer(
+        savedId,
+        force: force,
+        publicLabelContribution: publicLabelContribution,
+      );
     }
 
     final task = _syncSavedSakeToServerUnlocked(
       savedId,
       force: force,
       startOnly: startOnly,
+      publicLabelContribution: publicLabelContribution,
     );
     _syncTasks[savedId] = task;
     if (!startOnly) _completingSyncIds.add(savedId);
@@ -416,6 +424,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     String savedId, {
     required bool force,
     required bool startOnly,
+    required bool publicLabelContribution,
   }) async {
     final user = _authRepository.currentUser;
     if (user == null) {
@@ -467,6 +476,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
               sake: target,
               imageFile: primaryImage,
               isPublic: target.isPublic,
+              publicLabelContribution: publicLabelContribution,
             );
 
       if (!startResult) {
@@ -493,6 +503,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
             savedId: savedId,
             imageFile: file,
             imageRole: 'back',
+            publicLabelContribution: publicLabelContribution,
           );
 
           if (uploadedUrl == null || uploadedUrl.isEmpty) {
@@ -839,6 +850,16 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     }
     if (a.sakeId != null && b.sakeId != null) {
       return a.sakeId == b.sakeId;
+    }
+    return a.name == b.name && a.type == b.type;
+  }
+
+  bool _isSameSakeProduct(Sake a, Sake b) {
+    if (a.sakeId != null && b.sakeId != null) {
+      return a.sakeId == b.sakeId;
+    }
+    if (a.savedId != null && b.savedId != null && a.savedId == b.savedId) {
+      return true;
     }
     return a.name == b.name && a.type == b.type;
   }

@@ -591,6 +591,7 @@ class SavedSakeSyncRepository {
     required String savedId,
     required File imageFile,
     String imageRole = 'additional',
+    bool publicLabelContribution = false,
   }) async {
     try {
       final base64 = await ImageUtils.compressAndEncodeImage(
@@ -610,6 +611,11 @@ class SavedSakeSyncRepository {
         'contentHash': identity.contentHash,
         'imageRole': imageRole,
       };
+      if (publicLabelContribution) {
+        payload['publicLabelContribution'] = <String, dynamic>{
+          'consentVersion': sakeLabelConsentVersion,
+        };
+      }
 
       final response = await _apiClient.uploadSavedSakeImage(savedId, payload);
       if (!response.isSuccessful) {

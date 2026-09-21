@@ -146,7 +146,11 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     );
     final savedId = await _savedSakeNotifier.addSavedSake(draft);
     final saved = draft.copyWith(savedId: savedId);
-    await _savedSakeNotifier.syncSavedSakeToServer(savedId, startOnly: true);
+    await _savedSakeNotifier.syncSavedSakeToServer(
+      savedId,
+      startOnly: true,
+      publicLabelContribution: true,
+    );
     return saved;
   }
 

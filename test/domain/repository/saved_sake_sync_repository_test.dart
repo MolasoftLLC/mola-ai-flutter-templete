@@ -78,7 +78,7 @@ void main() {
     expect(sentBody?['isPublic'], isFalse);
     expect(sentBody?['sakeId'], 50);
     expect(sentBody?['publicLabelContribution'], <String, dynamic>{
-      'consentVersion': 'vision-product-search-v1',
+      'consentVersion': 'vision-product-search-v2',
     });
   });
 

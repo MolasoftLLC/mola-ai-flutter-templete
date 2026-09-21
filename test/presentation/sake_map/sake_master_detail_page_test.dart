@@ -90,6 +90,28 @@ void main() {
     expect(paths, ['https://images.example/yahoo-600.jpg']);
   });
 
+  test('保存した写真があっても過去ユーザーの公開ラベル画像をすべて表示する', () {
+    const fallback = VenueSake(sakeId: 123, name: '冩樂 純米吟醸', recordCount: 0);
+    final paths = detailImagePaths(
+      personalRecord: const Sake(
+        imagePaths: ['https://images.example/my-label.jpg'],
+      ),
+      overviewSake: const Sake(),
+      fallback: fallback,
+      communityImagePaths: const [
+        'https://images.example/my-label.jpg',
+        'https://images.example/previous-user-front.jpg',
+        'https://images.example/previous-user-back.jpg',
+      ],
+    );
+
+    expect(paths, [
+      'https://images.example/my-label.jpg',
+      'https://images.example/previous-user-front.jpg',
+      'https://images.example/previous-user-back.jpg',
+    ]);
+  });
+
   test('NoImageは除外し公開ユーザー画像を詳細の先頭にする', () {
     const fallback = VenueSake(
       sakeId: 123,

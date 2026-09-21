@@ -1,1 +1,1 @@
-const sakeLabelConsentVersion = 'vision-product-search-v1';
+const sakeLabelConsentVersion = 'vision-product-search-v2';

@@ -133,6 +133,7 @@ class _FakeSavedSakeSyncRepository extends SavedSakeSyncRepository {
     required String savedId,
     required File imageFile,
     String imageRole = 'additional',
+    bool publicLabelContribution = false,
   }) async {
     uploadCalls++;
     return 'https://example.com/back.webp';
