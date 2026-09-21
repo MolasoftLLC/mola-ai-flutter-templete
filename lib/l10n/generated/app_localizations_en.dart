@@ -39,9 +39,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanMethodChatGpt => 'ChatGPT vision';
 
   @override
-  String get chatGptTemporaryCandidate => 'ChatGPT candidate · not registered';
-
-  @override
   String registeredVenueCount(int count) {
     return '$count registered shops';
   }
@@ -1582,10 +1579,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whichSakeCandidate => 'Is it one of these?';
-
-  @override
-  String get officialTemporaryCandidate =>
-      'Official-site candidate · Not registered';
 
   @override
   String get yesThisSake => 'Yes, this is it';

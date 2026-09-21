@@ -158,12 +158,6 @@ abstract class AppLocalizations {
   /// **'ChatGPT画像解析'**
   String get scanMethodChatGpt;
 
-  /// No description provided for @chatGptTemporaryCandidate.
-  ///
-  /// In ja, this message translates to:
-  /// **'ChatGPT候補・未登録'**
-  String get chatGptTemporaryCandidate;
-
   /// No description provided for @registeredVenueCount.
   ///
   /// In ja, this message translates to:
@@ -2953,12 +2947,6 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'この中のどれかですか？'**
   String get whichSakeCandidate;
-
-  /// No description provided for @officialTemporaryCandidate.
-  ///
-  /// In ja, this message translates to:
-  /// **'公式サイト候補・未登録'**
-  String get officialTemporaryCandidate;
 
   /// No description provided for @yesThisSake.
   ///
