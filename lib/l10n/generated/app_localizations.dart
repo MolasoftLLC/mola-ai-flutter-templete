@@ -2948,6 +2948,12 @@ abstract class AppLocalizations {
   /// **'この中のどれかですか？'**
   String get whichSakeCandidate;
 
+  /// No description provided for @officiallyVerified.
+  ///
+  /// In ja, this message translates to:
+  /// **'公式確認済み'**
+  String get officiallyVerified;
+
   /// No description provided for @yesThisSake.
   ///
   /// In ja, this message translates to:

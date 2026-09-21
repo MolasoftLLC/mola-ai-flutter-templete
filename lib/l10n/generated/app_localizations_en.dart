@@ -1581,6 +1581,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whichSakeCandidate => 'Is it one of these?';
 
   @override
+  String get officiallyVerified => 'Officially verified';
+
+  @override
   String get yesThisSake => 'Yes, this is it';
 
   @override

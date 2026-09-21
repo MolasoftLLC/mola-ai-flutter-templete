@@ -35,6 +35,7 @@ class SakeScanCandidate {
     this.ocrScore,
     this.confidence,
     this.candidateSource,
+    this.officiallyVerified = false,
     this.sourceUrl,
   });
 
@@ -50,6 +51,7 @@ class SakeScanCandidate {
       ocrScore: _asDouble(json['ocrScore']),
       confidence: _asDouble(json['confidence']),
       candidateSource: json['candidateSource']?.toString(),
+      officiallyVerified: json['officiallyVerified'] == true,
       sourceUrl: json['sourceUrl']?.toString(),
     );
   }
@@ -64,6 +66,7 @@ class SakeScanCandidate {
   final double? ocrScore;
   final double? confidence;
   final String? candidateSource;
+  final bool officiallyVerified;
   final String? sourceUrl;
 
   bool get isOfficialTemporary => candidateSource == 'official_temporary';

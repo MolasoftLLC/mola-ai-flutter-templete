@@ -256,12 +256,10 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         sessionId,
         candidate.sakeId,
       );
-      final overview = await _scanRepository.fetchOverview(confirmation.sakeId);
       if (!_isCurrent(operation)) return null;
 
-      final confirmedSake = _mergeBasicAndAnalysis(
-        candidate.toSake(),
-        overview.sake,
+      final confirmedSake = candidate.toSake().copyWith(
+        sakeId: confirmation.sakeId,
       );
 
       final primaryImage = state.frontImage ?? state.backImage;
@@ -283,10 +281,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       if (!_isCurrent(operation)) return null;
       _emit(state.copyWith(sake: confirmedSake, savedSake: saved));
 
-      // confirm時点で解析キャッシュを確認済み。Overviewの表示用ペイロードが
-      // 空でも、既解析の酒に画像解析を重ねて走らせない。
-      if (overview.analysisCompleted ||
-          confirmation.status == SakeScanApiStatus.cacheHit) {
+      if (confirmation.status == SakeScanApiStatus.cacheHit) {
         final completed = await _persistenceService.saveCompleted(
           saved,
           confirmedSake,
@@ -304,8 +299,8 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
         );
         return completed;
       }
-      // 詳細補完はoverview取得時にサーバーへ依頼済み。撮影画面で待たず、
-      // 詳細画面がpending状態をポーリングして更新する。
+      // 登録済みマスターはここで外部解析やoverview取得を待たない。
+      // 詳細画面自身がマスター情報を一度だけ取得する。
       _emit(
         state.copyWith(
           status: SakeScanViewStatus.completed,

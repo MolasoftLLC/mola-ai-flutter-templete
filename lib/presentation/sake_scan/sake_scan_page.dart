@@ -337,9 +337,14 @@ class _SakeScanPageState extends State<SakeScanPage>
     });
   }
 
-  void _startCandidateAnalysis() {
+  Future<void> _startCandidateAnalysis() async {
     _resetAnalysisRecordDraft();
-    unawaited(context.read<SakeScanNotifier>().confirmCandidate());
+    final notifier = context.read<SakeScanNotifier>();
+    final opensExistingMaster =
+        (notifier.currentState.selectedCandidate?.sakeId ?? 0) > 0;
+    final sake = await notifier.confirmCandidate();
+    if (!mounted || sake == null || !opensExistingMaster) return;
+    await _openAnalyzedDetail(notifier.currentState);
   }
 
   Future<void> _openRecordPlacePicker() async {
@@ -929,12 +934,30 @@ class _SakeScanPageState extends State<SakeScanPage>
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            subtitle: details.isEmpty
+                            subtitle:
+                                details.isEmpty && !item.officiallyVerified
                                 ? null
-                                : Text(
-                                    details.join(' / '),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                : Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (details.isNotEmpty)
+                                        Text(
+                                          details.join(' / '),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      if (item.officiallyVerified)
+                                        Text(
+                                          context.l10n.officiallyVerified,
+                                          style: const TextStyle(
+                                            color: Color(0xFF2E7D32),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                             trailing: Icon(
                               selected
@@ -966,7 +989,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ? null
                   : () {
                       unawaited(HapticFeedback.selectionClick());
-                      _startCandidateAnalysis();
+                      unawaited(_startCandidateAnalysis());
                     },
               icon: const Icon(Icons.check_circle_outline),
               label: Text(context.l10n.yesThisSake),
