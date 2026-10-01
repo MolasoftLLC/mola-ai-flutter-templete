@@ -265,7 +265,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('基本スペック'), 300);
     expect(find.byKey(const Key('sake-taste-radar-chart')), findsOneWidget);
     await tester.scrollUntilVisible(find.text('この食事に合うかも！'), 300);
-    expect(find.text('ぶり大根・煮付け'), findsOneWidget);
+    expect(find.text('ぶり大根・魚の煮付け'), findsOneWidget);
     expect(
       find.byKey(const Key('pairing-assets/images/pairings/simmered_fish.jpg')),
       findsOneWidget,

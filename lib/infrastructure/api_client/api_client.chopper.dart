@@ -362,6 +362,22 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> reassignSavedSake(
+    String savedId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/saved-sakes/${savedId}/reassign');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> uploadSavedSakeImage(
     String savedId,
     Map<String, dynamic> body,

@@ -23,9 +23,21 @@ import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
 
 class SakeScanPage extends StatefulWidget {
-  const SakeScanPage._();
+  const SakeScanPage._({
+    this.initialFrontImage,
+    this.initialBackImage,
+    this.reassignTarget,
+  });
 
-  static Widget wrapped() {
+  final File? initialFrontImage;
+  final File? initialBackImage;
+  final Sake? reassignTarget;
+
+  static Widget wrapped({
+    File? initialFrontImage,
+    File? initialBackImage,
+    Sake? reassignTarget,
+  }) {
     return Builder(
       builder: (context) {
         return StateNotifierProvider<SakeScanNotifier, SakeScanState>(
@@ -38,9 +50,14 @@ class SakeScanPage extends StatefulWidget {
             ),
             persistenceService: DefaultSakeScanPersistenceService(
               savedSakeNotifier: context.read<SavedSakeNotifier>(),
+              reassignTarget: reassignTarget,
             ),
           ),
-          child: const SakeScanPage._(),
+          child: SakeScanPage._(
+            initialFrontImage: initialFrontImage,
+            initialBackImage: initialBackImage,
+            reassignTarget: reassignTarget,
+          ),
         );
       },
     );
@@ -72,13 +89,36 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _recordSaved = false;
   bool _recordSaving = false;
   String? _recordSaveError;
+  bool _initialReanalysisStarted = false;
 
   @override
   void initState() {
     super.initState();
     _recordImpressionController = TextEditingController();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(_initializeCamera());
+    if (widget.initialFrontImage == null) {
+      unawaited(_initializeCamera());
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_startInitialReanalysis());
+      });
+    }
+  }
+
+  Future<void> _startInitialReanalysis() async {
+    if (_initialReanalysisStarted || widget.initialFrontImage == null) return;
+    _initialReanalysisStarted = true;
+    final notifier = context.read<SakeScanNotifier>();
+    await notifier.submitFront(widget.initialFrontImage!);
+    if (!mounted) return;
+    if (notifier.currentState.status == SakeScanViewStatus.backScanning) {
+      final backImage = widget.initialBackImage;
+      if (backImage != null && await backImage.exists()) {
+        await notifier.submitBack(backImage);
+      } else {
+        unawaited(_initializeCamera());
+      }
+    }
   }
 
   @override
@@ -344,6 +384,10 @@ class _SakeScanPageState extends State<SakeScanPage>
         (notifier.currentState.selectedCandidate?.sakeId ?? 0) > 0;
     final sake = await notifier.confirmCandidate();
     if (!mounted || sake == null || !opensExistingMaster) return;
+    if (widget.reassignTarget != null) {
+      Navigator.of(context).pop<Sake>(notifier.currentState.savedSake ?? sake);
+      return;
+    }
     await _openAnalyzedDetail(notifier.currentState);
   }
 
@@ -419,6 +463,10 @@ class _SakeScanPageState extends State<SakeScanPage>
     var currentState = context.read<SakeScanNotifier>().currentState;
     var sake = currentState.savedSake ?? currentState.sake;
     if (sake == null) return;
+    if (widget.reassignTarget != null) {
+      Navigator.of(context).pop<Sake>(sake);
+      return;
+    }
     final savedId = sake.savedId;
     final place = _recordPlace;
     final user = context.read<AuthRepository>().currentUser;

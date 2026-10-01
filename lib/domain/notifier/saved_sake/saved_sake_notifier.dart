@@ -673,6 +673,57 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     logger.info('保存済み日本酒に解析結果を反映: ${merged.name ?? '名称不明'} (id=$savedId)');
   }
 
+  Future<Sake?> reassignSavedSake({
+    required String savedId,
+    required Sake target,
+  }) async {
+    final targetSakeId = target.sakeId;
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId == savedId,
+    );
+    if (index == -1 || targetSakeId == null || targetSakeId <= 0) {
+      logger.warning('保存酒の付け替え対象が不正です: savedId=$savedId sakeId=$targetSakeId');
+      return null;
+    }
+
+    final existing = state.savedSakeList[index];
+    final user = _authRepository.currentUser;
+    if (user != null) {
+      final success = await _syncRepository.reassignSavedSake(
+        userId: user.uid,
+        savedId: savedId,
+        targetSakeId: targetSakeId,
+      );
+      if (!success) return null;
+    }
+
+    final reassigned = target.copyWith(
+      savedId: savedId,
+      impression: existing.impression,
+      timelineComment: existing.timelineComment,
+      place: existing.place,
+      drinkingPlace: existing.drinkingPlace,
+      userTags: existing.userTags,
+      personalTasteRatings: existing.personalTasteRatings,
+      imagePaths: existing.imagePaths,
+      isPublic: existing.isPublic,
+      syncStatus: user == null
+          ? existing.syncStatus
+          : SavedSakeSyncStatus.serverSynced,
+    );
+    final updatedList = [...state.savedSakeList];
+    updatedList[index] = reassigned;
+    state = state.copyWith(savedSakeList: updatedList);
+    _syncFiltersWithAvailableTags();
+    await _persistSavedSakes();
+
+    if (user != null) await refreshFromServer();
+    return state.savedSakeList.firstWhere(
+      (item) => item.savedId == savedId,
+      orElse: () => reassigned,
+    );
+  }
+
   bool isSaved(String? name, String? type) {
     return state.savedSakeList.any(
       (item) => item.name == name && item.type == type,

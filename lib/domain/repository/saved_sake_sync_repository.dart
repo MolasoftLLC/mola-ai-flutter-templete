@@ -340,6 +340,30 @@ class SavedSakeSyncRepository {
     }
   }
 
+  Future<bool> reassignSavedSake({
+    required String userId,
+    required String savedId,
+    required int targetSakeId,
+  }) async {
+    try {
+      final response = await _apiClient.reassignSavedSake(savedId, {
+        'userId': userId,
+        'targetSakeId': targetSakeId,
+      });
+      if (!response.isSuccessful) {
+        logger.warning(
+          '保存酒の付け替えに失敗しました: status=${response.statusCode}, error=${response.error}',
+        );
+        return false;
+      }
+      return true;
+    } catch (error, stackTrace) {
+      logger.warning('保存酒の付け替え処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+      return false;
+    }
+  }
+
   Future<List<Sake>> _parseSakeRecords(
     dynamic rawBody, {
     required String logPrefix,

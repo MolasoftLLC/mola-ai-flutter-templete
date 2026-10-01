@@ -110,9 +110,11 @@ abstract class SakeScanPersistenceService {
 class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
   DefaultSakeScanPersistenceService({
     required SavedSakeNotifier savedSakeNotifier,
+    this.reassignTarget,
   }) : _savedSakeNotifier = savedSakeNotifier;
 
   final SavedSakeNotifier _savedSakeNotifier;
+  final Sake? reassignTarget;
 
   @override
   Future<Sake> saveInitial(
@@ -121,6 +123,21 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     File? secondaryImage,
     required bool isPublic,
   }) async {
+    final targetRecord = reassignTarget;
+    if (targetRecord != null) {
+      final savedId = targetRecord.savedId;
+      if (savedId == null || savedId.isEmpty) {
+        throw StateError('付け替え元の保存酒IDがありません');
+      }
+      final reassigned = await _savedSakeNotifier.reassignSavedSake(
+        savedId: savedId,
+        target: sake,
+      );
+      if (reassigned == null) {
+        throw StateError('保存記録を選択した日本酒へ移管できませんでした');
+      }
+      return reassigned;
+    }
     final savedPath = await _saveCompressedImagePermanently(
       primaryImage,
       'saved_sake',

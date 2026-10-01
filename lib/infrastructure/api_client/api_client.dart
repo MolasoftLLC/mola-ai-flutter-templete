@@ -108,6 +108,12 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Post(path: 'saved-sakes/{savedId}/reassign')
+  Future<Response> reassignSavedSake(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'saved-sakes/{savedId}/images')
   Future<Response> uploadSavedSakeImage(
     @Path('savedId') String savedId,

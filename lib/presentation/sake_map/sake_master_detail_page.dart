@@ -6,6 +6,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,6 +31,7 @@ import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/sake_community_repository.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
+import '../sake_scan/sake_scan_page.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'sake_map_page.dart';
 
@@ -58,6 +60,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   var _masterEnrichmentPollCount = 0;
   var _isFetchingDetails = false;
   var _isSharingTimeline = false;
+  var _isCorrectingProduct = false;
+  int? _selectedSakeId;
 
   bool get _isAiSearchCandidate =>
       widget.venueSake.sakeId == null &&
@@ -122,7 +126,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<SakeOverview> _fetch() async {
-    final id = _headerOverview?.sake.sakeId ?? widget.venueSake.sakeId;
+    final id =
+        _selectedSakeId ??
+        _headerOverview?.sake.sakeId ??
+        widget.venueSake.sakeId;
     try {
       final SakeOverview overview;
       if (id != null && id > 0) {
@@ -225,6 +232,250 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       await _future;
     } catch (_) {
       // FutureBuilder presents the failure and retry action.
+    }
+  }
+
+  Future<void> _openCorrectionMenu(
+    SakeOverview overview,
+    Sake personalRecord,
+  ) async {
+    if (_isCorrectingProduct) return;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'お酒の情報を修正',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.format_list_bulleted),
+              title: const Text('同じ酒蔵から再選択'),
+              subtitle: const Text('同じ銘柄の商品候補から選び直します'),
+              onTap: () => Navigator.pop(sheetContext, 'select'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_search_outlined),
+              title: const Text('全く違うので再解析'),
+              subtitle: const Text('登録済みのラベル画像でもう一度解析します'),
+              onTap: () => Navigator.pop(sheetContext, 'reanalyze'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('キャンセル'),
+              onTap: () => Navigator.pop(sheetContext),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'select') {
+      await _showRelatedProductSelection(overview, personalRecord);
+    } else if (action == 'reanalyze') {
+      await _reanalyzeSavedImages(personalRecord);
+    }
+  }
+
+  Future<void> _showRelatedProductSelection(
+    SakeOverview overview,
+    Sake personalRecord,
+  ) async {
+    final currentSakeId = overview.sake.sakeId;
+    final products = overview.relatedProducts
+        .where(
+          (product) => product.sakeId > 0 && product.sakeId != currentSakeId,
+        )
+        .toList(growable: false);
+    if (products.isEmpty) {
+      SnackBarUtils.showInfoSnackBar(context, message: '同じ銘柄に選び直せる登録商品がありません。');
+      return;
+    }
+    final selected = await showModalBottomSheet<RelatedSakeProduct>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: .72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '同じ銘柄の商品から再選択',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text('選択後、写真・場所・評価・メモはその商品へ移管されます。'),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: products.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, index) {
+                    final product = products[index];
+                    return ListTile(
+                      leading: SizedBox(
+                        width: 42,
+                        height: 54,
+                        child: _BottleImage(url: product.imageUrl),
+                      ),
+                      title: Text(product.name),
+                      subtitle: product.type == null
+                          ? null
+                          : Text(product.type!),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.pop(sheetContext, product),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    await _reassignToSakeId(personalRecord, selected.sakeId);
+  }
+
+  Future<void> _reassignToSakeId(Sake personalRecord, int targetSakeId) async {
+    final savedId = personalRecord.savedId;
+    final notifier = _savedSakeNotifier;
+    if (savedId == null || savedId.isEmpty || notifier == null) return;
+    setState(() => _isCorrectingProduct = true);
+    try {
+      final targetOverview = await context
+          .read<SakeScanRepository>()
+          .fetchOverview(targetSakeId);
+      final reassigned = await notifier.reassignSavedSake(
+        savedId: savedId,
+        target: targetOverview.sake,
+      );
+      if (!mounted) return;
+      if (reassigned == null) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '保存記録を選択した商品へ移管できませんでした。',
+        );
+        return;
+      }
+      setState(() {
+        _selectedSakeId = targetSakeId;
+        _headerOverview = targetOverview;
+        _isFetchingDetails = true;
+        _future = _fetch();
+      });
+      await _future;
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(
+          context,
+          message: '写真・場所・評価・メモを選択した商品へ移管しました。',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '商品の再選択を完了できませんでした。',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCorrectingProduct = false);
+    }
+  }
+
+  Future<void> _reanalyzeSavedImages(Sake personalRecord) async {
+    final imagePaths = personalRecord.imagePaths
+        ?.where((path) => path.trim().isNotEmpty)
+        .toList(growable: false);
+    if (imagePaths == null || imagePaths.isEmpty) {
+      SnackBarUtils.showWarningSnackBar(context, message: '再解析に使える登録画像がありません。');
+      return;
+    }
+    setState(() => _isCorrectingProduct = true);
+    try {
+      final frontImage = await _fileForReanalysis(imagePaths.first, 0);
+      final backImage = imagePaths.length > 1
+          ? await _fileForReanalysis(imagePaths[1], 1)
+          : null;
+      if (!mounted) return;
+      final reassigned = await Navigator.of(context).push<Sake>(
+        MaterialPageRoute<Sake>(
+          builder: (_) => SakeScanPage.wrapped(
+            initialFrontImage: frontImage,
+            initialBackImage: backImage,
+            reassignTarget: personalRecord,
+          ),
+        ),
+      );
+      final targetSakeId = reassigned?.sakeId;
+      if (!mounted || targetSakeId == null || targetSakeId <= 0) return;
+      setState(() {
+        _selectedSakeId = targetSakeId;
+        _headerOverview = null;
+        _isFetchingDetails = true;
+        _future = _fetch();
+      });
+      await _future;
+      if (mounted) {
+        SnackBarUtils.showInfoSnackBar(
+          context,
+          message: '再解析結果へ写真・場所・評価・メモを移管しました。',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '登録画像を使った再解析を開始できませんでした。',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCorrectingProduct = false);
+    }
+  }
+
+  Future<File> _fileForReanalysis(String path, int index) async {
+    final trimmed = path.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      final file = File(trimmed);
+      if (await file.exists()) return file;
+      throw StateError('登録画像が見つかりません');
+    }
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(Uri.parse(trimmed));
+      final response = await request.close();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException('画像の取得に失敗しました', uri: Uri.parse(trimmed));
+      }
+      final bytes = await response.fold<List<int>>(
+        <int>[],
+        (buffer, chunk) => buffer..addAll(chunk),
+      );
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/sake-reanalysis-${DateTime.now().microsecondsSinceEpoch}-$index.jpg',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -684,6 +935,9 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                           fallback: widget.venueSake,
                           savedSakeNotifier: _savedSakeNotifier,
                           preferredName: displayName,
+                          isCorrectingProduct: _isCorrectingProduct,
+                          onCorrection: (overview, record) =>
+                              _openCorrectionMenu(overview, record),
                           onReview: (current) =>
                               _openReviewEditor(detailSake, current),
                           onReportReview: _reportCommunityReview,
@@ -1018,6 +1272,8 @@ class _Details extends StatelessWidget {
     required this.fallback,
     required this.savedSakeNotifier,
     this.preferredName,
+    required this.isCorrectingProduct,
+    required this.onCorrection,
     required this.onReview,
     required this.onReportReview,
   });
@@ -1025,6 +1281,8 @@ class _Details extends StatelessWidget {
   final VenueSake fallback;
   final SavedSakeNotifier? savedSakeNotifier;
   final String? preferredName;
+  final bool isCorrectingProduct;
+  final void Function(SakeOverview overview, Sake personalRecord) onCorrection;
   final ValueChanged<SakeCommunityReview?> onReview;
   final ValueChanged<int> onReportReview;
 
@@ -1087,7 +1345,6 @@ class _Details extends StatelessWidget {
           ];
     final pairings = _pairingsFor(
       profile: profile,
-      category: category,
       styles: master.styles.map((style) => style.name),
     );
     final breweryName =
@@ -1108,14 +1365,39 @@ class _Details extends StatelessWidget {
                     _Tags(values: [category], accent: true),
                   ],
                   if (category != null) const SizedBox(height: 14),
-                  Text(
-                    preferredName ?? sake?.name ?? fallback.name,
-                    style: const TextStyle(
-                      color: _navy,
-                      fontSize: 26,
-                      height: 1.3,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          preferredName ?? sake?.name ?? fallback.name,
+                          style: const TextStyle(
+                            color: _navy,
+                            fontSize: 26,
+                            height: 1.3,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (overview != null && personalRecord != null) ...[
+                        const SizedBox(width: 8),
+                        IconButton(
+                          key: const Key('sake-product-correction-menu'),
+                          tooltip: 'お酒の情報を修正',
+                          onPressed: isCorrectingProduct
+                              ? null
+                              : () => onCorrection(overview!, personalRecord),
+                          icon: isCorrectingProduct
+                              ? const SizedBox.square(
+                                  dimension: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.more_horiz, color: _navy),
+                        ),
+                      ],
+                    ],
                   ),
                   if (breweryName != null) ...[
                     const SizedBox(height: 8),
@@ -4015,7 +4297,6 @@ class _PairingRow extends StatelessWidget {
 
 List<_Pairing> _pairingsFor({
   required SakeTasteProfileDetails? profile,
-  required String? category,
   required Iterable<String> styles,
 }) {
   if (profile == null) return const <_Pairing>[];
@@ -4048,7 +4329,7 @@ List<_Pairing> _pairingsFor({
     add(
       const _Pairing(
         imagePath: 'assets/images/pairings/simmered_fish.jpg',
-        title: 'ぶり大根・煮付け',
+        title: 'ぶり大根・魚の煮付け',
         reason: 'ふくらみのある旨みが、だしの効いた味付けによく合います。',
       ),
     );
@@ -4089,10 +4370,10 @@ List<_Pairing> _pairingsFor({
   }
   if (pairings.isEmpty) {
     add(
-      _Pairing(
+      const _Pairing(
         imagePath: 'assets/images/pairings/washoku.jpg',
-        title: category == null ? '和食の定食' : '$categoryのやさしい和食',
-        reason: '主張しすぎない味わいなので、季節の小鉢やご飯と気軽にどうぞ。',
+        title: '焼き魚と季節の小鉢',
+        reason: '穏やかな味わいなので、だしを生かした小鉢や焼き魚と合わせやすいです。',
       ),
     );
   }
