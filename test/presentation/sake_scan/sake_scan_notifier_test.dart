@@ -460,20 +460,21 @@ void main() {
       );
     });
 
-    test('APIエラーをerror状態へ変換する', () async {
+    test('表ラベル解析のサーバーエラーは裏ラベル撮影へ切り替える', () async {
       final repository = _FakeScanRepository(
         frontError: const SakeScanException(
-          kind: SakeScanErrorKind.rateLimited,
-          message: 'too many requests',
-          statusCode: 429,
+          kind: SakeScanErrorKind.server,
+          message: 'upstream response was empty',
+          statusCode: 502,
         ),
       );
       final notifier = _buildNotifier(repository);
 
       await notifier.submitFront(image);
 
-      expect(notifier.currentState.status, SakeScanViewStatus.error);
-      expect(notifier.currentState.error?.kind, SakeScanErrorKind.rateLimited);
+      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(notifier.currentState.scanSessionId, 'scan_fallback');
+      expect(notifier.currentState.frontImage, image);
     });
 
     test('送信中の多重実行を防止する', () async {
@@ -573,6 +574,15 @@ class _FakeScanRepository implements SakeScanRepository {
   @override
   Future<SakeScanResult> scanBack(String scanSessionId, File image) async {
     return backResult!;
+  }
+
+  @override
+  Future<SakeScanResult> startBackLabelFallback() async {
+    return const SakeScanResult(
+      status: SakeScanApiStatus.needBackLabel,
+      scanSessionId: 'scan_fallback',
+      backLabelReason: SakeScanBackLabelReason.noCatalogMatch,
+    );
   }
 
   @override

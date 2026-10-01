@@ -1285,6 +1285,17 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildError(SakeScanState state) {
+    final canContinueWithBackLabel =
+        state.frontImage != null &&
+        switch (state.error?.kind) {
+          SakeScanErrorKind.timeout ||
+          SakeScanErrorKind.noCandidates ||
+          SakeScanErrorKind.sessionExpired ||
+          SakeScanErrorKind.server ||
+          SakeScanErrorKind.aiAnalysis ||
+          SakeScanErrorKind.unknown => true,
+          _ => false,
+        };
     return _BottomCard(
       child: SingleChildScrollView(
         child: Column(
@@ -1298,14 +1309,40 @@ class _SakeScanPageState extends State<SakeScanPage>
               style: const TextStyle(color: Color(0xFF1D3567), fontSize: 15),
             ),
             const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: () {
-                context.read<SakeScanNotifier>().retry();
-                unawaited(_initializeCamera());
-              },
-              icon: const Icon(Icons.refresh),
-              label: Text(context.l10n.retryScan),
-            ),
+            if (canContinueWithBackLabel) ...[
+              FilledButton.icon(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => unawaited(
+                        context
+                            .read<SakeScanNotifier>()
+                            .continueWithBackLabelAfterError(),
+                      ),
+                icon: const Icon(Icons.flip_camera_ios_outlined),
+                label: Text(context.l10n.scanBackPromptAction),
+              ),
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () {
+                        context.read<SakeScanNotifier>().retry();
+                        unawaited(_initializeCamera());
+                      },
+                icon: const Icon(Icons.refresh),
+                label: Text(context.l10n.retryScan),
+              ),
+            ] else
+              FilledButton.icon(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () {
+                        context.read<SakeScanNotifier>().retry();
+                        unawaited(_initializeCamera());
+                      },
+                icon: const Icon(Icons.refresh),
+                label: Text(context.l10n.retryScan),
+              ),
           ],
         ),
       ),

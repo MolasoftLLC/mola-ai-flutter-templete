@@ -274,6 +274,17 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   }
 
   @override
+  Future<Response<Map<String, dynamic>>> startSakeBackLabelFallback() {
+    final Uri $url = Uri.parse('/api/sake-bottle/scan/back-fallback');
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+    );
+    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
+  }
+
+  @override
   Future<Response<Map<String, dynamic>>> scanSakeBackLabel(
     String scanSessionId,
     MultipartFile image,

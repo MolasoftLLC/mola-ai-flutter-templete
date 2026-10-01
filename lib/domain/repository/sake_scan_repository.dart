@@ -18,6 +18,8 @@ abstract class SakeScanRepository {
 
   Future<SakeScanResult> scanBack(String scanSessionId, File image);
 
+  Future<SakeScanResult> startBackLabelFallback();
+
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId);
 
   Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds);
@@ -95,6 +97,14 @@ class SakeScanApiRepository implements SakeScanRepository {
     } finally {
       await _deleteTemporaryFile(compressed);
     }
+  }
+
+  @override
+  Future<SakeScanResult> startBackLabelFallback() async {
+    final response = await _apiClient.startSakeBackLabelFallback().timeout(
+      requestTimeout,
+    );
+    return SakeScanResult.fromJson(_requireBody(response));
   }
 
   @override
@@ -254,11 +264,13 @@ class SakeScanException implements Exception {
 }
 
 SakeScanErrorKind _errorKindForStatus(int? statusCode) {
+  if (statusCode != null && statusCode >= 500 && statusCode <= 599) {
+    return SakeScanErrorKind.server;
+  }
   return switch (statusCode) {
     400 || 422 => SakeScanErrorKind.invalidRequest,
     404 => SakeScanErrorKind.sessionExpired,
     429 => SakeScanErrorKind.rateLimited,
-    500 => SakeScanErrorKind.server,
     _ => SakeScanErrorKind.unknown,
   };
 }

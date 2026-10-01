@@ -1083,6 +1083,12 @@ class _FakeSakeMenuRecognitionRepository extends SakeMenuRecognitionRepository {
 }
 
 class _FakeSakeScanRepository implements SakeScanRepository {
+  @override
+  Future<SakeScanResult> startBackLabelFallback() async => const SakeScanResult(
+    status: SakeScanApiStatus.needBackLabel,
+    scanSessionId: 'scan_fallback',
+  );
+
   _FakeSakeScanRepository({this.overview});
 
   final SakeOverview? overview;

@@ -130,8 +130,20 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       if (!_isCurrent(operation)) return;
       _applyScanResult(result);
     } catch (error, stackTrace) {
-      _handleError(error, stackTrace, operation);
+      await _handleFrontError(error, stackTrace, operation);
     }
+  }
+
+  Future<void> continueWithBackLabelAfterError() async {
+    if (state.frontImage == null || !_beginSubmission()) return;
+    final operation = ++_operation;
+    _emit(
+      state.copyWith(
+        status: SakeScanViewStatus.searchingFront,
+        clearError: true,
+      ),
+    );
+    await _openBackLabelFallback(operation);
   }
 
   Future<void> submitBack(File image) async {
@@ -561,6 +573,62 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     logger.info(stackTrace.toString());
     if (!_isCurrent(operation)) return;
     _fail(SakeScanException.fromError(error));
+  }
+
+  Future<void> _handleFrontError(
+    Object error,
+    StackTrace stackTrace,
+    int operation,
+  ) async {
+    logger.warning('日本酒表ラベルスキャンに失敗したため裏ラベルへ切り替えます: $error');
+    logger.info(stackTrace.toString());
+    if (!_isCurrent(operation)) return;
+    final exception = SakeScanException.fromError(error);
+    if (!_canContinueWithBackLabel(exception)) {
+      _fail(exception);
+      return;
+    }
+    await _openBackLabelFallback(operation, originalError: exception);
+  }
+
+  bool _canContinueWithBackLabel(SakeScanException exception) {
+    return state.frontImage != null &&
+        switch (exception.kind) {
+          SakeScanErrorKind.timeout ||
+          SakeScanErrorKind.noCandidates ||
+          SakeScanErrorKind.sessionExpired ||
+          SakeScanErrorKind.server ||
+          SakeScanErrorKind.aiAnalysis ||
+          SakeScanErrorKind.unknown => true,
+          _ => false,
+        };
+  }
+
+  Future<void> _openBackLabelFallback(
+    int operation, {
+    SakeScanException? originalError,
+  }) async {
+    try {
+      final result = await _scanRepository.startBackLabelFallback();
+      if (!_isCurrent(operation)) return;
+      _emit(
+        state.copyWith(
+          status: SakeScanViewStatus.backScanning,
+          scanSessionId: result.scanSessionId,
+          candidates: const <SakeScanCandidate>[],
+          selectedCandidateIndex: 0,
+          backLabelReason:
+              result.backLabelReason ?? SakeScanBackLabelReason.noCatalogMatch,
+          clearError: true,
+          isSubmitting: false,
+        ),
+      );
+    } catch (fallbackError, fallbackStackTrace) {
+      logger.warning('裏ラベル用スキャンセッションの作成に失敗しました: $fallbackError');
+      logger.info(fallbackStackTrace.toString());
+      if (!_isCurrent(operation)) return;
+      _fail(originalError ?? SakeScanException.fromError(fallbackError));
+    }
   }
 
   void _fail(SakeScanException exception) {
