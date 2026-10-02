@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
@@ -65,11 +66,14 @@ class _SakeMapPageState extends State<SakeMapPage> {
     final state = context.watch<SakeMapState>();
     final notifier = context.read<SakeMapPageNotifier>();
     _requestMarkerIcons(state.venues);
+    final markerLayout = _layoutNearbyMarkers(state.venues, _zoom);
     final markers = state.venues
         .map(
           (venue) => Marker(
             markerId: MarkerId(venue.venueId),
-            position: LatLng(venue.latitude, venue.longitude),
+            position:
+                markerLayout.positions[venue.venueId] ??
+                LatLng(venue.latitude, venue.longitude),
             icon:
                 _markerIcons[_markerKey(venue)] ??
                 BitmapDescriptor.defaultMarker,
@@ -92,6 +96,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
           GoogleMap(
             initialCameraPosition: _initialCamera,
             markers: markers,
+            polylines: markerLayout.connectorLines,
             myLocationEnabled: _showMyLocation,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -573,6 +578,112 @@ class _SakeMapPageState extends State<SakeMapPage> {
       ),
     );
   }
+}
+
+const _nearbyMarkerDistancePixels = 74.0;
+const _minimumNearbyMarkerZoom = 14.0;
+
+_NearbyMarkerLayout _layoutNearbyMarkers(List<MapVenue> venues, double zoom) {
+  if (venues.length < 2 || zoom < _minimumNearbyMarkerZoom) {
+    return const _NearbyMarkerLayout();
+  }
+
+  final worldSize = 256 * math.pow(2.0, zoom).toDouble();
+  final remaining = venues.toList(growable: true)
+    ..sort((left, right) => left.venueId.compareTo(right.venueId));
+  final worldPositions = <String, Offset>{
+    for (final venue in venues)
+      venue.venueId: _toWorldPixel(
+        LatLng(venue.latitude, venue.longitude),
+        worldSize,
+      ),
+  };
+  final positions = <String, LatLng>{};
+  final connectorLines = <Polyline>{};
+
+  while (remaining.isNotEmpty) {
+    final seed = remaining.removeAt(0);
+    final seedPosition = worldPositions[seed.venueId]!;
+    final group = <MapVenue>[seed];
+    for (var index = remaining.length - 1; index >= 0; index -= 1) {
+      final candidate = remaining[index];
+      if ((worldPositions[candidate.venueId]! - seedPosition).distance <=
+          _nearbyMarkerDistancePixels) {
+        group.add(candidate);
+        remaining.removeAt(index);
+      }
+    }
+    if (group.length == 1) continue;
+
+    group.sort((left, right) => left.venueId.compareTo(right.venueId));
+    final center =
+        group
+            .map((venue) => worldPositions[venue.venueId]!)
+            .reduce((left, right) => left + right) /
+        group.length.toDouble();
+    final radius = _nearbyMarkerRadius(group.length);
+
+    for (var index = 0; index < group.length; index += 1) {
+      final venue = group[index];
+      final angle = group.length == 2
+          ? math.pi * index
+          : -math.pi / 2 + (2 * math.pi * index / group.length);
+      final displayPixel =
+          center + Offset(math.cos(angle) * radius, math.sin(angle) * radius);
+      final displayPosition = _fromWorldPixel(displayPixel, worldSize);
+      final actualPosition = LatLng(venue.latitude, venue.longitude);
+      positions[venue.venueId] = displayPosition;
+      connectorLines.add(
+        Polyline(
+          polylineId: PolylineId('nearby-marker-${venue.venueId}'),
+          points: [actualPosition, displayPosition],
+          color: const Color(0xFF143861).withValues(alpha: 0.42),
+          width: 2,
+        ),
+      );
+    }
+  }
+
+  return _NearbyMarkerLayout(
+    positions: positions,
+    connectorLines: connectorLines,
+  );
+}
+
+double _nearbyMarkerRadius(int count) {
+  if (count == 2) return 42;
+  final radius = 38 / math.sin(math.pi / count);
+  return radius.clamp(48, 110).toDouble();
+}
+
+Offset _toWorldPixel(LatLng position, double worldSize) {
+  final sinLatitude = math
+      .sin(position.latitude * math.pi / 180)
+      .clamp(-0.9999, 0.9999)
+      .toDouble();
+  return Offset(
+    (position.longitude + 180) / 360 * worldSize,
+    (0.5 - math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * math.pi)) *
+        worldSize,
+  );
+}
+
+LatLng _fromWorldPixel(Offset pixel, double worldSize) {
+  final longitude = pixel.dx / worldSize * 360 - 180;
+  final mercator = math.pi - 2 * math.pi * pixel.dy / worldSize;
+  final hyperbolicSine = (math.exp(mercator) - math.exp(-mercator)) / 2;
+  final latitude = 180 / math.pi * math.atan(hyperbolicSine);
+  return LatLng(latitude, longitude);
+}
+
+class _NearbyMarkerLayout {
+  const _NearbyMarkerLayout({
+    this.positions = const {},
+    this.connectorLines = const {},
+  });
+
+  final Map<String, LatLng> positions;
+  final Set<Polyline> connectorLines;
 }
 
 class _MarkerIconRequest {
