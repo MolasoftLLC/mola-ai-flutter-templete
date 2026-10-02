@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
 
+import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -482,19 +483,15 @@ class _SakeScanPageState extends State<SakeScanPage>
             ? latest
             : await savedNotifier.syncSavedSakeToServer(savedId, force: true);
         if (synced != null && place?.providerPlaceId != null && mounted) {
-          final result = await context.read<PlaceMapRepository>().savePlace(
-            savedId: savedId,
-            place: place!,
+          unawaited(
+            _syncAnalysisPlace(
+              savedNotifier: savedNotifier,
+              repository: context.read<PlaceMapRepository>(),
+              savedId: savedId,
+              synced: synced,
+              place: place!,
+            ),
           );
-          if (result != null && mounted) {
-            final withPlace = synced.copyWith(
-              place: result.drinkingPlace.displayName,
-              drinkingPlace: result.drinkingPlace,
-            );
-            await savedNotifier.updateSavedSake(withPlace);
-            if (!mounted) return;
-            context.read<SakeScanNotifier>().updateSavedRecord(withPlace);
-          }
         }
       } finally {
         if (mounted) setState(() => _recordSaving = false);
@@ -520,6 +517,30 @@ class _SakeScanPageState extends State<SakeScanPage>
     await Navigator.of(
       context,
     ).pushReplacement(MaterialPageRoute<void>(builder: (_) => detailPage));
+  }
+
+  Future<void> _syncAnalysisPlace({
+    required SavedSakeNotifier savedNotifier,
+    required PlaceMapRepository repository,
+    required String savedId,
+    required Sake synced,
+    required DrinkingPlace place,
+  }) async {
+    try {
+      final result = await repository.savePlace(savedId: savedId, place: place);
+      if (result == null) return;
+      final withPlace = synced.copyWith(
+        place: result.drinkingPlace.displayName,
+        drinkingPlace: result.drinkingPlace,
+      );
+      await savedNotifier.updateSavedSake(withPlace);
+      if (mounted) {
+        context.read<SakeScanNotifier>().updateSavedRecord(withPlace);
+      }
+    } catch (error, stackTrace) {
+      logger.warning('解析画面での場所登録に失敗しましたが詳細表示を続行します: $error');
+      logger.info(stackTrace.toString());
+    }
   }
 
   Future<void> _submitImage(File file) async {
