@@ -178,9 +178,13 @@ class _NavigationItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  static const _selectedColor = Color(0xFFFFD166);
+
   @override
   Widget build(BuildContext context) {
-    final color = Colors.white.withValues(alpha: selected ? 1 : 0.78);
+    final color = selected
+        ? _selectedColor
+        : Colors.white.withValues(alpha: 0.78);
     return Expanded(
       child: InkWell(
         onTap: onTap,
