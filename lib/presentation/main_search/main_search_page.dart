@@ -1412,12 +1412,12 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
                 padding: EdgeInsets.only(left: 4, bottom: 8),
                 child: Row(
                   children: [
-                    Icon(Icons.history, size: 17, color: Color(0xFF697386)),
+                    Icon(Icons.history, size: 17, color: Color(0xFFFFC58A)),
                     SizedBox(width: 6),
                     Text(
                       '最近見た日本酒',
                       style: TextStyle(
-                        color: Color(0xFF697386),
+                        color: Color(0xFFFFC58A),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1439,7 +1439,9 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
                 ),
               ),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 360),
+              constraints: BoxConstraints(
+                maxHeight: showRecentSearches ? 126 : 360,
+              ),
               child: Material(
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
@@ -1470,29 +1472,44 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
                       key: ValueKey(
                         'masterSakeCandidate_${sake.identityKey ?? sake.searchToken ?? sake.sakeId ?? index}',
                       ),
-                      leading: _SakeCandidateImage(
-                        imageUrl: preferredSakeImagePath(
-                          thumbnailImageUrl: sake.thumbnailImageUrl,
-                          primaryImageUrl: sake.primaryImageUrl,
-                        ),
+                      dense: showRecentSearches,
+                      visualDensity: showRecentSearches
+                          ? const VisualDensity(vertical: -4)
+                          : null,
+                      minVerticalPadding: 0,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: showRecentSearches ? 0 : 4,
                       ),
+                      leading: showRecentSearches
+                          ? null
+                          : _SakeCandidateImage(
+                              imageUrl: preferredSakeImagePath(
+                                thumbnailImageUrl: sake.thumbnailImageUrl,
+                                primaryImageUrl: sake.primaryImageUrl,
+                              ),
+                            ),
                       title: Text(
                         sake.name,
-                        maxLines: 2,
+                        maxLines: showRecentSearches ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFF1D3567),
                           fontWeight: FontWeight.w700,
+                          fontSize: showRecentSearches ? 13 : null,
                         ),
                       ),
-                      subtitle: details.isEmpty
+                      subtitle: showRecentSearches || details.isEmpty
                           ? null
                           : Text(
                               details.join(' / '),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        size: showRecentSearches ? 18 : 24,
+                      ),
                       onTap: () => _openDetail(sake),
                     );
                   },
