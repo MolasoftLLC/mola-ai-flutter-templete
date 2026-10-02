@@ -235,11 +235,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     }
   }
 
-  Future<void> _openCorrectionMenu(
+  Future<void> _openSakeActionsMenu(
     SakeOverview overview,
-    Sake personalRecord,
+    Sake? personalRecord,
   ) async {
-    if (_isCorrectingProduct) return;
+    if (_isCorrectingProduct || _isSharingTimeline) return;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -248,22 +248,31 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           children: [
             const ListTile(
               title: Text(
-                'お酒の情報を修正',
+                'この日本酒の操作',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.format_list_bulleted),
-              title: const Text('同じ酒蔵から再選択'),
-              subtitle: const Text('同じ銘柄の商品候補から選び直します'),
-              onTap: () => Navigator.pop(sheetContext, 'select'),
+              leading: const Icon(Icons.ios_share_outlined),
+              title: Text(
+                personalRecord?.isPublic == true ? 'タイムライン投稿を編集' : 'タイムラインで共有',
+              ),
+              onTap: () => Navigator.pop(sheetContext, 'timeline'),
             ),
-            ListTile(
-              leading: const Icon(Icons.image_search_outlined),
-              title: const Text('全く違うので再解析'),
-              subtitle: const Text('登録済みのラベル画像でもう一度解析します'),
-              onTap: () => Navigator.pop(sheetContext, 'reanalyze'),
-            ),
+            if (personalRecord != null) ...[
+              ListTile(
+                leading: const Icon(Icons.format_list_bulleted),
+                title: const Text('同じ酒蔵から再選択'),
+                subtitle: const Text('同じ銘柄の商品候補から選び直します'),
+                onTap: () => Navigator.pop(sheetContext, 'select'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.image_search_outlined),
+                title: const Text('全く違うので再解析'),
+                subtitle: const Text('登録済みのラベル画像でもう一度解析します'),
+                onTap: () => Navigator.pop(sheetContext, 'reanalyze'),
+              ),
+            ],
             ListTile(
               leading: const Icon(Icons.close),
               title: const Text('キャンセル'),
@@ -274,9 +283,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       ),
     );
     if (!mounted) return;
-    if (action == 'select') {
+    if (action == 'timeline') {
+      await _openTimelineShare(overview.sake);
+    } else if (action == 'select' && personalRecord != null) {
       await _showRelatedProductSelection(overview, personalRecord);
-    } else if (action == 'reanalyze') {
+    } else if (action == 'reanalyze' && personalRecord != null) {
       await _reanalyzeSavedImages(personalRecord);
     }
   }
@@ -864,28 +875,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                             sake: detailSake,
                             notifier: _favoriteNotifier,
                           ),
-                          IconButton(
-                            key: const Key('sake-timeline-share-button'),
-                            tooltip: record?.isPublic == true
-                                ? 'タイムライン投稿を編集'
-                                : 'タイムラインで共有',
-                            onPressed: _isSharingTimeline
-                                ? null
-                                : () => _openTimelineShare(detailSake),
-                            icon: _isSharingTimeline
-                                ? const SizedBox.square(
-                                    dimension: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Icon(
-                                    record?.isPublic == true
-                                        ? Icons.ios_share
-                                        : Icons.ios_share_outlined,
-                                  ),
-                          ),
                         ],
                         if (_showCompactHeader)
                           IconButton(
@@ -935,9 +924,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                           fallback: widget.venueSake,
                           savedSakeNotifier: _savedSakeNotifier,
                           preferredName: displayName,
-                          isCorrectingProduct: _isCorrectingProduct,
+                          isCorrectingProduct:
+                              _isCorrectingProduct || _isSharingTimeline,
                           onCorrection: (overview, record) =>
-                              _openCorrectionMenu(overview, record),
+                              _openSakeActionsMenu(overview, record),
                           onReview: (current) =>
                               _openReviewEditor(detailSake, current),
                           onReportReview: _reportCommunityReview,
@@ -1282,7 +1272,7 @@ class _Details extends StatelessWidget {
   final SavedSakeNotifier? savedSakeNotifier;
   final String? preferredName;
   final bool isCorrectingProduct;
-  final void Function(SakeOverview overview, Sake personalRecord) onCorrection;
+  final void Function(SakeOverview overview, Sake? personalRecord) onCorrection;
   final ValueChanged<SakeCommunityReview?> onReview;
   final ValueChanged<int> onReportReview;
 
@@ -1379,7 +1369,7 @@ class _Details extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (overview != null && personalRecord != null) ...[
+                      if (overview != null) ...[
                         const SizedBox(width: 8),
                         IconButton(
                           key: const Key('sake-product-correction-menu'),
