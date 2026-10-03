@@ -37,6 +37,7 @@ class SakeScanCandidate {
     this.candidateSource,
     this.officiallyVerified = false,
     this.sourceUrl,
+    this.labelHint,
   });
 
   factory SakeScanCandidate.fromJson(Map<String, dynamic> json) {
@@ -53,6 +54,7 @@ class SakeScanCandidate {
       candidateSource: json['candidateSource']?.toString(),
       officiallyVerified: json['officiallyVerified'] == true,
       sourceUrl: json['sourceUrl']?.toString(),
+      labelHint: json['labelHint']?.toString(),
     );
   }
 
@@ -68,6 +70,7 @@ class SakeScanCandidate {
   final String? candidateSource;
   final bool officiallyVerified;
   final String? sourceUrl;
+  final String? labelHint;
 
   bool get isOfficialTemporary => candidateSource == 'official_temporary';
   bool get isAiTemporary => candidateSource == 'ai_temporary';

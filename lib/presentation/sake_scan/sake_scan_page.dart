@@ -11,6 +11,7 @@ import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
+import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
@@ -1096,46 +1097,89 @@ class _SakeScanPageState extends State<SakeScanPage>
                       itemBuilder: (_, index) {
                         final item = state.candidates[index];
                         final selected = index == state.selectedCandidateIndex;
-                        final details =
-                            [item.brewery?.trim(), item.type?.trim()]
-                                .whereType<String>()
-                                .where((value) => value.isNotEmpty);
+                        final brewery = item.brewery?.trim();
+                        final type = item.type?.trim();
+                        final labelHint = item.labelHint?.trim();
+                        final hasImage = _hasCandidateImage(item.imageUrl);
                         return Material(
                           color: selected
                               ? const Color(0xFFFFF8ED)
                               : Colors.white,
                           child: ListTile(
                             contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: selected ? 12 : 3,
+                              horizontal: 12,
+                              vertical: selected ? 8 : 4,
                             ),
                             leading: _ScanCandidateThumbnail(
                               imageUrl: item.imageUrl,
                             ),
                             title: Text(
                               item.canonicalProductName,
-                              maxLines: selected ? null : 2,
-                              overflow: selected
-                                  ? TextOverflow.visible
-                                  : TextOverflow.ellipsis,
+                              maxLines: null,
+                              overflow: TextOverflow.visible,
                               style: const TextStyle(
                                 color: Color(0xFF1D3567),
+                                fontSize: 14,
+                                height: 1.28,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             subtitle:
-                                details.isEmpty && !item.officiallyVerified
+                                (brewery == null || brewery.isEmpty) &&
+                                    (type == null || type.isEmpty) &&
+                                    (labelHint == null || labelHint.isEmpty) &&
+                                    hasImage &&
+                                    !item.officiallyVerified
                                 ? null
                                 : Column(
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      if (details.isNotEmpty)
+                                      if (brewery != null && brewery.isNotEmpty)
                                         Text(
-                                          details.join(' / '),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                          brewery,
+                                          maxLines: null,
+                                          style: const TextStyle(
+                                            color: Color(0xFF4B5565),
+                                            fontSize: 12,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      if (type != null && type.isNotEmpty)
+                                        Text(
+                                          type,
+                                          maxLines: null,
+                                          style: const TextStyle(
+                                            color: Color(0xFF697386),
+                                            fontSize: 11,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      if (labelHint != null &&
+                                          labelHint.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'ラベル照合情報：$labelHint',
+                                          maxLines: null,
+                                          style: const TextStyle(
+                                            color: Color(0xFF76521C),
+                                            fontSize: 10.5,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      ],
+                                      if (!hasImage)
+                                        const Padding(
+                                          padding: EdgeInsets.only(top: 3),
+                                          child: Text(
+                                            '商品画像なし',
+                                            style: TextStyle(
+                                              color: Color(0xFFB45309),
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                         ),
                                       if (item.officiallyVerified)
                                         Text(
@@ -1706,24 +1750,56 @@ class _ScanCandidateThumbnail extends StatelessWidget {
   final String? imageUrl;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(8),
-    child: ColoredBox(
-      color: const Color(0xFFF0F2F5),
-      child: SizedBox(
-        width: 46,
-        height: 46,
-        child: imageUrl?.isNotEmpty ?? false
-            ? Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.local_drink_outlined,
-                  color: Color(0xFF1D3567),
-                ),
-              )
-            : const Icon(Icons.local_drink_outlined, color: Color(0xFF1D3567)),
+  Widget build(BuildContext context) {
+    final hasImage = _hasCandidateImage(imageUrl);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: ColoredBox(
+        color: const Color(0xFFF0F2F5),
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: hasImage
+              ? Image.network(
+                  imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const _NoCandidateImage(),
+                )
+              : const _NoCandidateImage(),
+        ),
       ),
-    ),
+    );
+  }
+}
+
+bool _hasCandidateImage(String? imageUrl) {
+  final value = imageUrl?.trim();
+  return value != null &&
+      value.isNotEmpty &&
+      !isSakePlaceholderImagePath(value);
+}
+
+class _NoCandidateImage extends StatelessWidget {
+  const _NoCandidateImage();
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Icon(
+        Icons.image_not_supported_outlined,
+        size: 20,
+        color: Color(0xFF697386),
+      ),
+      SizedBox(height: 2),
+      Text(
+        '画像なし',
+        style: TextStyle(
+          color: Color(0xFF697386),
+          fontSize: 8.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
   );
 }
