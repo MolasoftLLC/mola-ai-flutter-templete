@@ -1,6 +1,12 @@
 # Repository Guidelines
 日本語で簡潔かつ丁寧に回答してください
 
+## iOS TestFlight delivery on this Mac
+- Prefer Xcode Organizer cloud signing: open the completed `build/ios/archive/Runner.xcarchive`, verify version/build, then `Distribute App` → `TestFlight Internal Only` → `Distribute`. This succeeded for builds 112 and 113 (October 2–3, 2026).
+- CLI export may report `No Accounts`, `Failed to Use Accounts`, or missing `iOS Distribution` even while Organizer is signed in and can upload. These errors alone do not establish that the user must log in again or create a certificate. Check Organizer and use the successful cloud-signing route before declaring a blocker.
+- Reuse the completed archive when only export/upload failed. Do not recreate/revoke certificates merely to address the CLI error.
+- Verify `uploaded` / `Uploaded to Apple` for the requested build. Report Apple processing and TestFlight availability separately from upload completion.
+
 ## Project Structure & Module Organization
 The Flutter app lives in `lib/`, split by layer: `presentation/` for UI widgets and routing, `domain/` for models and use-cases, `infrastructure/` for data sources, and `common/` utilities (logging, shared services, asset helpers). Runtime configuration is centralized in `lib/app_config.dart` and `lib/config/`. Platform shells remain in `android/`, `ios/`, `macos/`, `linux/`, `windows/`, and the web entry in `web/`. Shared images and JSON live under `assets/`. Tests belong in `test/`, mirroring `lib/` packages for future suites.
 
