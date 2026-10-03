@@ -4,11 +4,13 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
+import '../../common/utils/custom_image_picker.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
@@ -284,6 +286,40 @@ class _SakeScanPageState extends State<SakeScanPage>
         SakeScanException(
           kind: SakeScanErrorKind.unknown,
           message: error.description ?? error.code,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      context.read<SakeScanNotifier>().reportCameraError(
+        SakeScanException(
+          kind: SakeScanErrorKind.compression,
+          message: error.toString(),
+        ),
+      );
+    } finally {
+      _capturing = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final scanState = context.read<SakeScanNotifier>().currentState;
+    if (_capturing || scanState.isSubmitting) return;
+    _capturing = true;
+    if (mounted) setState(() {});
+    try {
+      final file = await CustomImagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (file == null || !mounted) return;
+      await HapticFeedback.selectionClick();
+      await _submitImage(file);
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      context.read<SakeScanNotifier>().reportCameraError(
+        SakeScanException(
+          kind: SakeScanErrorKind.unknown,
+          message: error.message ?? error.code,
         ),
       );
     } catch (error) {
@@ -835,29 +871,63 @@ class _SakeScanPageState extends State<SakeScanPage>
             ],
           ),
           const SizedBox(height: 14),
-          Semantics(
-            button: true,
-            label: context.l10n.captureLabel,
-            child: SizedBox.square(
-              dimension: 76,
-              child: FilledButton(
-                onPressed:
-                    _capturing ||
-                        state.isSubmitting ||
-                        _cameraController == null ||
-                        !_cameraController!.value.isInitialized
-                    ? null
-                    : _capture,
-                style: FilledButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  shape: const CircleBorder(
-                    side: BorderSide(color: Colors.white, width: 4),
+          SizedBox(
+            width: 220,
+            height: 76,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Semantics(
+                  button: true,
+                  label: context.l10n.captureLabel,
+                  child: SizedBox.square(
+                    dimension: 76,
+                    child: FilledButton(
+                      onPressed:
+                          _capturing ||
+                              state.isSubmitting ||
+                              _cameraController == null ||
+                              !_cameraController!.value.isInitialized
+                          ? null
+                          : _capture,
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: const CircleBorder(
+                          side: BorderSide(color: Colors.white, width: 4),
+                        ),
+                        backgroundColor: const Color(0xFFFFD54F),
+                        foregroundColor: const Color(0xFF1D3567),
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, size: 34),
+                    ),
                   ),
-                  backgroundColor: const Color(0xFFFFD54F),
-                  foregroundColor: const Color(0xFF1D3567),
                 ),
-                child: const Icon(Icons.camera_alt_rounded, size: 34),
-              ),
+                Positioned(
+                  right: 0,
+                  child: Semantics(
+                    button: true,
+                    label: context.l10n.selectFromPhotoLibrary,
+                    child: SizedBox.square(
+                      dimension: 52,
+                      child: IconButton.filledTonal(
+                        onPressed: _capturing || state.isSubmitting
+                            ? null
+                            : _pickFromGallery,
+                        tooltip: context.l10n.selectFromPhotoLibrary,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF1D3567),
+                          disabledBackgroundColor: Colors.white38,
+                          shape: const CircleBorder(
+                            side: BorderSide(color: Colors.white70, width: 2),
+                          ),
+                        ),
+                        icon: const Icon(Icons.photo_library_rounded, size: 27),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
