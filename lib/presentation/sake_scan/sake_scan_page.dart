@@ -548,9 +548,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     final state = notifier.currentState;
     final shouldSubmitBack =
         state.status == SakeScanViewStatus.backScanning ||
-        (state.status == SakeScanViewStatus.error &&
-            state.scanSessionId != null &&
-            state.frontImage != null);
+        (state.status == SakeScanViewStatus.error && state.frontImage != null);
     if (shouldSubmitBack) {
       await notifier.submitBack(file);
     } else {
@@ -569,8 +567,10 @@ class _SakeScanPageState extends State<SakeScanPage>
     };
     if (state.status == SakeScanViewStatus.backScanning &&
         state.backLabelReason != null &&
-        state.scanSessionId != _promptedBackLabelSessionId) {
-      _promptedBackLabelSessionId = state.scanSessionId;
+        (state.scanSessionId ?? state.frontImage?.path) !=
+            _promptedBackLabelSessionId) {
+      _promptedBackLabelSessionId =
+          state.scanSessionId ?? state.frontImage?.path;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_showBackLabelPrompt(state.backLabelReason!));
       });
@@ -1354,17 +1354,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildError(SakeScanState state) {
-    final canContinueWithBackLabel =
-        state.frontImage != null &&
-        switch (state.error?.kind) {
-          SakeScanErrorKind.timeout ||
-          SakeScanErrorKind.noCandidates ||
-          SakeScanErrorKind.sessionExpired ||
-          SakeScanErrorKind.server ||
-          SakeScanErrorKind.aiAnalysis ||
-          SakeScanErrorKind.unknown => true,
-          _ => false,
-        };
+    final canContinueWithBackLabel = state.frontImage != null;
     return _BottomCard(
       child: SingleChildScrollView(
         child: Column(
@@ -1380,35 +1370,30 @@ class _SakeScanPageState extends State<SakeScanPage>
             const SizedBox(height: 14),
             if (canContinueWithBackLabel) ...[
               FilledButton.icon(
-                onPressed: state.isSubmitting
-                    ? null
-                    : () => unawaited(
-                        context
-                            .read<SakeScanNotifier>()
-                            .continueWithBackLabelAfterError(),
-                      ),
+                onPressed:
+                    state.isSubmitting
+                        ? null
+                        : () => unawaited(
+                          context
+                              .read<SakeScanNotifier>()
+                              .continueWithBackLabelAfterError(),
+                        ),
                 icon: const Icon(Icons.flip_camera_ios_outlined),
-                label: Text(context.l10n.scanBackPromptAction),
-              ),
-              const SizedBox(height: 4),
-              TextButton.icon(
-                onPressed: state.isSubmitting
-                    ? null
-                    : () {
-                        context.read<SakeScanNotifier>().retry();
-                        unawaited(_initializeCamera());
-                      },
-                icon: const Icon(Icons.refresh),
-                label: Text(context.l10n.retryScan),
+                label: Text(
+                  state.backImage != null
+                      ? context.l10n.reanalyze
+                      : context.l10n.scanBackPromptAction,
+                ),
               ),
             ] else
               FilledButton.icon(
-                onPressed: state.isSubmitting
-                    ? null
-                    : () {
-                        context.read<SakeScanNotifier>().retry();
-                        unawaited(_initializeCamera());
-                      },
+                onPressed:
+                    state.isSubmitting
+                        ? null
+                        : () {
+                          context.read<SakeScanNotifier>().retry();
+                          unawaited(_initializeCamera());
+                        },
                 icon: const Icon(Icons.refresh),
                 label: Text(context.l10n.retryScan),
               ),

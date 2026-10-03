@@ -64,12 +64,14 @@ class SakeScanState {
     SakeScanException? error,
     SakeScanBackLabelReason? backLabelReason,
     bool clearError = false,
+    bool clearScanSession = false,
     bool clearBackLabelReason = false,
     bool? isSubmitting,
   }) {
     return SakeScanState(
       status: status ?? this.status,
-      scanSessionId: scanSessionId ?? this.scanSessionId,
+      scanSessionId:
+          clearScanSession ? null : scanSessionId ?? this.scanSessionId,
       candidates: candidates ?? this.candidates,
       selectedCandidateIndex:
           selectedCandidateIndex ?? this.selectedCandidateIndex,
@@ -78,9 +80,8 @@ class SakeScanState {
       sake: sake ?? this.sake,
       savedSake: savedSake ?? this.savedSake,
       error: clearError ? null : error ?? this.error,
-      backLabelReason: clearBackLabelReason
-          ? null
-          : backLabelReason ?? this.backLabelReason,
+      backLabelReason:
+          clearBackLabelReason ? null : backLabelReason ?? this.backLabelReason,
       isSubmitting: isSubmitting ?? this.isSubmitting,
     );
   }
@@ -136,6 +137,11 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   Future<void> continueWithBackLabelAfterError() async {
     if (state.frontImage == null || !_beginSubmission()) return;
+    if (state.backImage != null) {
+      _emit(state.copyWith(isSubmitting: false));
+      await submitBack(state.backImage!);
+      return;
+    }
     final operation = ++_operation;
     _emit(
       state.copyWith(
@@ -148,16 +154,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   Future<void> submitBack(File image) async {
     if (!_beginSubmission()) return;
-    final sessionId = state.scanSessionId;
-    if (sessionId == null || sessionId.isEmpty) {
-      _fail(
-        const SakeScanException(
-          kind: SakeScanErrorKind.sessionExpired,
-          message: 'スキャンセッションの有効期限が切れています',
-        ),
-      );
-      return;
-    }
+    var sessionId = state.scanSessionId;
     final operation = ++_operation;
     _emit(
       state.copyWith(
@@ -167,6 +164,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       ),
     );
     try {
+      if (sessionId == null || sessionId.isEmpty) {
+        final fallback = await _scanRepository.startBackLabelFallback();
+        if (!_isCurrent(operation)) return;
+        sessionId = fallback.scanSessionId;
+        _emit(state.copyWith(scanSessionId: sessionId));
+      }
       final result = await _scanRepository.scanBack(sessionId, image);
       if (!_isCurrent(operation)) return;
       if (result.status == SakeScanApiStatus.aiRequired) {
@@ -583,52 +586,28 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     logger.warning('日本酒表ラベルスキャンに失敗したため裏ラベルへ切り替えます: $error');
     logger.info(stackTrace.toString());
     if (!_isCurrent(operation)) return;
-    final exception = SakeScanException.fromError(error);
-    if (!_canContinueWithBackLabel(exception)) {
-      _fail(exception);
+    if (state.frontImage == null) {
+      _fail(SakeScanException.fromError(error));
       return;
     }
-    await _openBackLabelFallback(operation, originalError: exception);
+    await _openBackLabelFallback(operation);
   }
 
-  bool _canContinueWithBackLabel(SakeScanException exception) {
-    return state.frontImage != null &&
-        switch (exception.kind) {
-          SakeScanErrorKind.timeout ||
-          SakeScanErrorKind.noCandidates ||
-          SakeScanErrorKind.sessionExpired ||
-          SakeScanErrorKind.server ||
-          SakeScanErrorKind.aiAnalysis ||
-          SakeScanErrorKind.unknown => true,
-          _ => false,
-        };
-  }
-
-  Future<void> _openBackLabelFallback(
-    int operation, {
-    SakeScanException? originalError,
-  }) async {
-    try {
-      final result = await _scanRepository.startBackLabelFallback();
-      if (!_isCurrent(operation)) return;
-      _emit(
-        state.copyWith(
-          status: SakeScanViewStatus.backScanning,
-          scanSessionId: result.scanSessionId,
-          candidates: const <SakeScanCandidate>[],
-          selectedCandidateIndex: 0,
-          backLabelReason:
-              result.backLabelReason ?? SakeScanBackLabelReason.noCatalogMatch,
-          clearError: true,
-          isSubmitting: false,
-        ),
-      );
-    } catch (fallbackError, fallbackStackTrace) {
-      logger.warning('裏ラベル用スキャンセッションの作成に失敗しました: $fallbackError');
-      logger.info(fallbackStackTrace.toString());
-      if (!_isCurrent(operation)) return;
-      _fail(originalError ?? SakeScanException.fromError(fallbackError));
-    }
+  Future<void> _openBackLabelFallback(int operation) async {
+    if (!_isCurrent(operation)) return;
+    // Camera navigation must not depend on a second network request succeeding.
+    // Create the fallback session when submitting the back label instead.
+    _emit(
+      state.copyWith(
+        status: SakeScanViewStatus.backScanning,
+        clearScanSession: true,
+        candidates: const <SakeScanCandidate>[],
+        selectedCandidateIndex: 0,
+        backLabelReason: SakeScanBackLabelReason.noCatalogMatch,
+        clearError: true,
+        isSubmitting: false,
+      ),
+    );
   }
 
   void _fail(SakeScanException exception) {

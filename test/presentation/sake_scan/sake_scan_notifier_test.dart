@@ -473,8 +473,50 @@ void main() {
       await notifier.submitFront(image);
 
       expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
-      expect(notifier.currentState.scanSessionId, 'scan_fallback');
+      expect(notifier.currentState.scanSessionId, isNull);
+      expect(repository.fallbackCalls, 0);
       expect(notifier.currentState.frontImage, image);
+    });
+
+    test('表解析の全エラーは通信を待たず裏撮影へ進む', () async {
+      for (final kind in SakeScanErrorKind.values) {
+        final repository = _FakeScanRepository(
+          frontError: SakeScanException(kind: kind, message: 'front failed'),
+        );
+        final notifier = _buildNotifier(repository);
+        await notifier.submitFront(image);
+        expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+        expect(notifier.currentState.frontImage, image);
+        expect(repository.fallbackCalls, 0);
+        notifier.dispose();
+      }
+    });
+
+    test('裏用セッション作成に失敗しても画像を保持して再送できる', () async {
+      final repository = _FakeScanRepository(
+        frontError: const SakeScanException(
+          kind: SakeScanErrorKind.server,
+          message: 'front failed',
+        ),
+        backResult: _candidatesResult(),
+      );
+      final notifier = _buildNotifier(repository);
+      final back = File('/tmp/sake_back.jpg');
+      await notifier.submitFront(image);
+      repository.fallbackError = TimeoutException('offline');
+      await notifier.submitBack(back);
+      expect(notifier.currentState.status, SakeScanViewStatus.error);
+      expect(notifier.currentState.frontImage, image);
+      expect(notifier.currentState.backImage, back);
+      repository.fallbackError = null;
+      await notifier.continueWithBackLabelAfterError();
+      expect(
+        notifier.currentState.status,
+        SakeScanViewStatus.confirmingCandidate,
+      );
+      expect(repository.lastBackImage, back);
+      expect(repository.frontCalls, 1);
+      expect(repository.fallbackCalls, 2);
     });
 
     test('送信中の多重実行を防止する', () async {
@@ -550,6 +592,9 @@ class _FakeScanRepository implements SakeScanRepository {
   final Object? frontError;
   final Completer<SakeScanResult>? frontCompleter;
   int frontCalls = 0;
+  int fallbackCalls = 0;
+  Object? fallbackError;
+  File? lastBackImage;
   SakeFrontScanMethod? lastFrontMethod;
   int confirmCalls = 0;
   List<int>? rejectedSakeIds;
@@ -573,11 +618,14 @@ class _FakeScanRepository implements SakeScanRepository {
 
   @override
   Future<SakeScanResult> scanBack(String scanSessionId, File image) async {
+    lastBackImage = image;
     return backResult!;
   }
 
   @override
   Future<SakeScanResult> startBackLabelFallback() async {
+    fallbackCalls++;
+    if (fallbackError != null) throw fallbackError!;
     return const SakeScanResult(
       status: SakeScanApiStatus.needBackLabel,
       scanSessionId: 'scan_fallback',
