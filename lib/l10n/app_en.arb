@@ -528,5 +528,7 @@
   "menuHistoryLoadFailed": "The analysis history could not be loaded.",
   "retryHistorySave": "Retry saving history",
   "menuHistoryPartial": "Partially resolved",
-  "menuHistoryPending": "Details pending"
+  "menuHistoryPending": "Details pending",
+  "scanMethodProgressiveLens": "Progressive Google Lens",
+  "scanLensPreviewNotice": "Search result · checking the label"
 }

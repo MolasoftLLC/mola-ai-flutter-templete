@@ -3139,6 +3139,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'詳細未取得'**
   String get menuHistoryPending;
+
+  /// No description provided for @scanMethodProgressiveLens.
+  ///
+  /// In ja, this message translates to:
+  /// **'段階Google Lens'**
+  String get scanMethodProgressiveLens;
+
+  /// No description provided for @scanLensPreviewNotice.
+  ///
+  /// In ja, this message translates to:
+  /// **'検索で見つかった情報・照合中'**
+  String get scanLensPreviewNotice;
 }
 
 class _AppLocalizationsDelegate

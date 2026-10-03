@@ -34,6 +34,7 @@ class SakeScanState {
     this.error,
     this.backLabelReason,
     this.isSubmitting = false,
+    this.lensPreviewTitles = const <String>[],
   });
 
   final SakeScanViewStatus status;
@@ -47,6 +48,7 @@ class SakeScanState {
   final SakeScanException? error;
   final SakeScanBackLabelReason? backLabelReason;
   final bool isSubmitting;
+  final List<String> lensPreviewTitles;
 
   SakeScanCandidate? get selectedCandidate => candidates.isEmpty
       ? null
@@ -67,11 +69,13 @@ class SakeScanState {
     bool clearScanSession = false,
     bool clearBackLabelReason = false,
     bool? isSubmitting,
+    List<String>? lensPreviewTitles,
   }) {
     return SakeScanState(
       status: status ?? this.status,
-      scanSessionId:
-          clearScanSession ? null : scanSessionId ?? this.scanSessionId,
+      scanSessionId: clearScanSession
+          ? null
+          : scanSessionId ?? this.scanSessionId,
       candidates: candidates ?? this.candidates,
       selectedCandidateIndex:
           selectedCandidateIndex ?? this.selectedCandidateIndex,
@@ -80,9 +84,11 @@ class SakeScanState {
       sake: sake ?? this.sake,
       savedSake: savedSake ?? this.savedSake,
       error: clearError ? null : error ?? this.error,
-      backLabelReason:
-          clearBackLabelReason ? null : backLabelReason ?? this.backLabelReason,
+      backLabelReason: clearBackLabelReason
+          ? null
+          : backLabelReason ?? this.backLabelReason,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      lensPreviewTitles: lensPreviewTitles ?? this.lensPreviewTitles,
     );
   }
 }
@@ -120,6 +126,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       state.copyWith(
         status: SakeScanViewStatus.searchingFront,
         frontImage: image,
+        lensPreviewTitles: const <String>[],
         candidates: const <SakeScanCandidate>[],
         selectedCandidateIndex: 0,
         clearError: true,
@@ -127,7 +134,20 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       ),
     );
     try {
-      final result = await _scanRepository.scanFront(image, method: method);
+      final repository = _scanRepository;
+      final result =
+          method == SakeFrontScanMethod.progressiveLens &&
+              repository is ProgressiveSakeScanRepository
+          ? await (repository as ProgressiveSakeScanRepository)
+                .scanFrontProgressively(
+                  image,
+                  onLensResults: (titles) {
+                    if (_isCurrent(operation)) {
+                      _emit(state.copyWith(lensPreviewTitles: titles));
+                    }
+                  },
+                )
+          : await repository.scanFront(image, method: method);
       if (!_isCurrent(operation)) return;
       _applyScanResult(result);
     } catch (error, stackTrace) {

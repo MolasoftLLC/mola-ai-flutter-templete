@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:http/http.dart' show MultipartFile;
 import 'package:http_parser/http_parser.dart';
@@ -30,7 +34,14 @@ abstract class SakeScanRepository {
   );
 }
 
-enum SakeFrontScanMethod { googleLens, chatGpt }
+abstract interface class ProgressiveSakeScanRepository {
+  Future<SakeScanResult> scanFrontProgressively(
+    File image, {
+    required void Function(List<String>) onLensResults,
+  });
+}
+
+enum SakeFrontScanMethod { googleLens, chatGpt, progressiveLens }
 
 class SakeDetailViewMemory {
   final Set<int> _viewedSakeIds = <int>{};
@@ -40,7 +51,8 @@ class SakeDetailViewMemory {
   void forget(int sakeId) => _viewedSakeIds.remove(sakeId);
 }
 
-class SakeScanApiRepository implements SakeScanRepository {
+class SakeScanApiRepository
+    implements SakeScanRepository, ProgressiveSakeScanRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
@@ -66,6 +78,9 @@ class SakeScanApiRepository implements SakeScanRepository {
       final locale = await resolveAppLocaleLanguageCode();
       final imagePart = await _jpegPart(compressed);
       final response = switch (method) {
+        SakeFrontScanMethod.progressiveLens => throw StateError(
+          'Use scanFrontProgressively for streaming scans',
+        ),
         SakeFrontScanMethod.googleLens =>
           _apiClient.scanSakeFrontLabelWithLensCandidates(imagePart, locale),
         SakeFrontScanMethod.chatGpt =>
@@ -74,6 +89,71 @@ class SakeScanApiRepository implements SakeScanRepository {
       final completedResponse = await response.timeout(frontCandidateTimeout);
       return SakeScanResult.fromJson(_requireBody(completedResponse));
     } finally {
+      await _deleteTemporaryFile(compressed);
+    }
+  }
+
+  @override
+  Future<SakeScanResult> scanFrontProgressively(
+    File image, {
+    required void Function(List<String>) onLensResults,
+  }) async {
+    final compressed = await _prepareImage(image);
+    final client = http.Client();
+    try {
+      return await (() async {
+        final request = http.MultipartRequest(
+          'POST',
+          _apiClient.client.baseUrl.resolve(
+            '/api/sake-bottle/scan/front/lens-progressive',
+          ),
+        );
+        final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (token != null) request.headers['Authorization'] = 'Bearer $token';
+        request.headers['Accept'] = 'application/x-ndjson';
+        request.fields['locale'] = await resolveAppLocaleLanguageCode();
+        request.files.add(await _jpegPart(compressed));
+        final response = await client.send(request);
+        if (response.statusCode != 200) {
+          throw SakeScanException(
+            kind: _errorKindForStatus(response.statusCode),
+            statusCode: response.statusCode,
+            message: await response.stream.bytesToString(),
+          );
+        }
+        await for (final line
+            in response.stream
+                .transform(utf8.decoder)
+                .transform(const LineSplitter())) {
+          if (line.trim().isEmpty) continue;
+          final event = jsonDecode(line) as Map<String, dynamic>;
+          if (event['event'] == 'lens_results') {
+            final results = (event['results'] as List)
+                .cast<Map<String, dynamic>>();
+            onLensResults(
+              results.map((item) => item['name'] as String).toList(),
+            );
+          } else if (event['event'] == 'complete') {
+            return SakeScanResult.fromJson(
+              event['result'] as Map<String, dynamic>,
+            );
+          } else if (event['event'] == 'error') {
+            throw SakeScanException(
+              kind: SakeScanErrorKind.server,
+              message: event['error'].toString(),
+            );
+          } else if (event['status'] != null) {
+            // A pre-stream failure may return the regular back-label fallback.
+            return SakeScanResult.fromJson(event);
+          }
+        }
+        throw const SakeScanException(
+          kind: SakeScanErrorKind.server,
+          message: '検索の接続が切れました',
+        );
+      })().timeout(frontCandidateTimeout);
+    } finally {
+      client.close();
       await _deleteTemporaryFile(compressed);
     }
   }

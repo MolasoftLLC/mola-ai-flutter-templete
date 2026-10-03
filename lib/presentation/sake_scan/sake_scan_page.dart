@@ -24,6 +24,7 @@ import '../my_page/saved_sake_detail_page.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
+import 'widgets/lens_progress_toasts.dart';
 
 class SakeScanPage extends StatefulWidget {
   const SakeScanPage._({
@@ -650,6 +651,14 @@ class _SakeScanPageState extends State<SakeScanPage>
                 ),
               ),
             ),
+            if (state.status == SakeScanViewStatus.searchingFront &&
+                state.lensPreviewTitles.isNotEmpty)
+              Positioned(
+                top: 64,
+                left: 20,
+                right: 20,
+                child: LensProgressToasts(titles: state.lensPreviewTitles),
+              ),
             Positioned(
               top: 8,
               left: 8,
@@ -936,6 +945,43 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildScanMethodToggle() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _capturing
+                ? null
+                : () {
+                    setState(
+                      () => _frontScanMethod =
+                          SakeFrontScanMethod.progressiveLens,
+                    );
+                    unawaited(HapticFeedback.selectionClick());
+                  },
+            icon: const Icon(Icons.bolt_rounded, size: 18),
+            label: Text(context.l10n.scanMethodProgressiveLens),
+            style: OutlinedButton.styleFrom(
+              foregroundColor:
+                  _frontScanMethod == SakeFrontScanMethod.progressiveLens
+                  ? const Color(0xFF1D3567)
+                  : Colors.white,
+              backgroundColor:
+                  _frontScanMethod == SakeFrontScanMethod.progressiveLens
+                  ? const Color(0xFFFFD54F)
+                  : Colors.black45,
+              side: const BorderSide(color: Colors.white24),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        _buildOriginalScanMethodToggle(),
+      ],
+    );
+  }
+
+  Widget _buildOriginalScanMethodToggle() {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.black45,
@@ -958,10 +1004,14 @@ class _SakeScanPageState extends State<SakeScanPage>
               label: Text(context.l10n.scanMethodChatGpt),
             ),
           ],
-          selected: <SakeFrontScanMethod>{_frontScanMethod},
+          emptySelectionAllowed: true,
+          selected: _frontScanMethod == SakeFrontScanMethod.progressiveLens
+              ? <SakeFrontScanMethod>{}
+              : <SakeFrontScanMethod>{_frontScanMethod},
           onSelectionChanged: _capturing
               ? null
               : (selection) {
+                  if (selection.isEmpty) return;
                   setState(() => _frontScanMethod = selection.single);
                   unawaited(HapticFeedback.selectionClick());
                 },
@@ -1440,14 +1490,13 @@ class _SakeScanPageState extends State<SakeScanPage>
             const SizedBox(height: 14),
             if (canContinueWithBackLabel) ...[
               FilledButton.icon(
-                onPressed:
-                    state.isSubmitting
-                        ? null
-                        : () => unawaited(
-                          context
-                              .read<SakeScanNotifier>()
-                              .continueWithBackLabelAfterError(),
-                        ),
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => unawaited(
+                        context
+                            .read<SakeScanNotifier>()
+                            .continueWithBackLabelAfterError(),
+                      ),
                 icon: const Icon(Icons.flip_camera_ios_outlined),
                 label: Text(
                   state.backImage != null
@@ -1457,13 +1506,12 @@ class _SakeScanPageState extends State<SakeScanPage>
               ),
             ] else
               FilledButton.icon(
-                onPressed:
-                    state.isSubmitting
-                        ? null
-                        : () {
-                          context.read<SakeScanNotifier>().retry();
-                          unawaited(_initializeCamera());
-                        },
+                onPressed: state.isSubmitting
+                    ? null
+                    : () {
+                        context.read<SakeScanNotifier>().retry();
+                        unawaited(_initializeCamera());
+                      },
                 icon: const Icon(Icons.refresh),
                 label: Text(context.l10n.retryScan),
               ),

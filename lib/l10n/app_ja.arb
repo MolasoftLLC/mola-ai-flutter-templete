@@ -528,5 +528,7 @@
   "menuHistoryLoadFailed": "解析履歴を読み込めませんでした。",
   "retryHistorySave": "履歴保存を再試行",
   "menuHistoryPartial": "一部未解決",
-  "menuHistoryPending": "詳細未取得"
+  "menuHistoryPending": "詳細未取得",
+  "scanMethodProgressiveLens": "段階Google Lens",
+  "scanLensPreviewNotice": "検索で見つかった情報・照合中"
 }

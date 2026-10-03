@@ -1688,4 +1688,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuHistoryPending => 'Details pending';
+
+  @override
+  String get scanMethodProgressiveLens => 'Progressive Google Lens';
+
+  @override
+  String get scanLensPreviewNotice => 'Search result · checking the label';
 }
