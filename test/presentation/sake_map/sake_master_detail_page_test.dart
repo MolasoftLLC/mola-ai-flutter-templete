@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
@@ -28,6 +29,116 @@ import 'package:mola_gemini_flutter_template/common/utils/sake_image_utils.dart'
 void main() {
   setUpAll(loggerConfigure);
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  testWidgets('日本酒名の全文を長押しコピーし、同じ名前で外部検索する', (tester) async {
+    final launcher = _FakeUrlLauncher();
+    final previous = UrlLauncherPlatform.instance;
+    UrlLauncherPlatform.instance = launcher;
+    addTearDown(() => UrlLauncherPlatform.instance = previous);
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    const name = '楽器正宗 FUZZY GREEN 本醸造 とても長い日本酒の商品名';
+    await _pumpLensPage(
+      tester,
+      _FakeSakeScanRepository(
+        overview: const SakeOverview(
+          sake: Sake(sakeId: 123, name: name),
+          analysisCompleted: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const Key('sake-product-correction-menu')),
+    );
+    await tester.pumpAndSettle();
+    await tester.longPress(find.text(name).last);
+    await tester.pump();
+    expect(copied, name);
+    expect(find.text('日本酒名をコピーしました'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('sake-product-correction-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('この名前でブラウザで検索'));
+    await tester.pumpAndSettle();
+    expect(Uri.parse(launcher.openedUrl!).queryParameters['q'], name);
+    expect(launcher.mode, PreferredLaunchMode.externalApplication);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    copied = null;
+    await tester.longPress(
+      find.descendant(
+        of: find.byKey(const Key('compact-sake-header')),
+        matching: find.byType(Text),
+      ),
+    );
+    await tester.pump();
+    expect(copied, name);
+  });
+
+  testWidgets('Lens情報を先に表示し、完了時に名前と購入情報を更新する', (tester) async {
+    final repository = _LensDetailsRepository();
+    await _pumpLensPage(tester, repository);
+    await tester.pump();
+    await tester.pump();
+    expect(repository.starts, 1);
+    expect(find.text('詳細情報を取得中'), findsOneWidget);
+    expect(find.text('Lensで見つかった日本酒'), findsWidgets);
+    repository.done = true;
+    repository.completion.complete('completed');
+    await tester.pumpAndSettle();
+    expect(find.text('解析完了'), findsOneWidget);
+    expect(find.text('詳細情報を取得中'), findsNothing);
+    expect(find.text('解析後の日本酒'), findsWidgets);
+    expect(find.textContaining('3,456'), findsWidgets);
+    expect(repository.starts, 1);
+  });
+
+  testWidgets('Lens解析失敗は情報を残し再試行できる', (tester) async {
+    final repository = _LensDetailsRepository();
+    await _pumpLensPage(tester, repository);
+    await tester.pump();
+    repository.completion.complete('failed');
+    await tester.pumpAndSettle();
+    expect(find.text('詳細情報を取得できませんでした'), findsOneWidget);
+    expect(find.text('詳細情報を取得中'), findsNothing);
+    expect(find.text('Lensで見つかった日本酒'), findsWidgets);
+    repository.completion = Completer<String>();
+    await tester.tap(find.text('再試行'));
+    await tester.pump();
+    expect(repository.starts, 2);
+    expect(repository.retried, isTrue);
+    repository.done = true;
+    repository.completion.complete('completed');
+    await tester.pumpAndSettle();
+    expect(find.text('解析完了'), findsOneWidget);
+  });
+
+  testWidgets('閉じたLens詳細画面へ完了通知や取得を行わない', (tester) async {
+    final repository = _LensDetailsRepository();
+    await _pumpLensPage(tester, repository);
+    await tester.pump();
+    await tester.pumpWidget(const MaterialApp(home: Text('閉じた画面')));
+    repository.done = true;
+    repository.completion.complete('completed');
+    await tester.pumpAndSettle();
+    expect(repository.overviews, 1);
+    expect(find.text('解析完了'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   test('検索候補は詳細用とサムネイル用のURLを分けて保持する', () {
     final result = SakeMapSearchResult.fromJson({
       'sakeId': 26,
@@ -1169,4 +1280,62 @@ class _FakeSakeScanRepository implements SakeScanRepository {
   @override
   Future<void> rejectCandidates(String scanSessionId, List<int> sakeIds) =>
       throw UnimplementedError();
+}
+
+Future<void> _pumpLensPage(
+  WidgetTester tester,
+  SakeScanRepository repository,
+) async {
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    Provider<SakeScanRepository>.value(
+      value: repository,
+      child: const MaterialApp(
+        home: SakeMasterDetailPage(
+          venueSake: VenueSake(sakeId: 123, name: '取得済みの名前', recordCount: 0),
+        ),
+      ),
+    ),
+  );
+}
+
+class _LensDetailsRepository extends _FakeSakeScanRepository
+    implements LensDetailAnalysisRepository {
+  Completer<String> completion = Completer<String>();
+  bool done = false;
+  bool retried = false;
+  int starts = 0;
+  int overviews = 0;
+  @override
+  Future<String> startLensDetailAnalysis(int sakeId, {bool retry = false}) {
+    starts++;
+    retried = retry;
+    return completion.future;
+  }
+
+  @override
+  Future<String> fetchLensDetailAnalysisStatus(int sakeId) => completion.future;
+  @override
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  }) async {
+    overviews++;
+    return SakeOverview(
+      sake: Sake(
+        sakeId: sakeId,
+        name: done ? '解析後の日本酒' : 'Lensで見つかった日本酒',
+        description: done ? '解析後の説明' : '取得済みLens情報',
+      ),
+      analysisCompleted: done,
+      isProvisional: true,
+      lensDetailAnalysisStatus: done ? 'completed' : 'idle',
+      master: SakeMasterDetails(
+        imagePrice: done ? 3456 : 1234,
+        imageCurrency: 'JPY',
+        imageProductUrl: 'https://example.com/item',
+      ),
+    );
+  }
 }

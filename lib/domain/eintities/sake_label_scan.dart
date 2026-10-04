@@ -162,6 +162,7 @@ class SakeOverview {
     this.analysisPayload,
     this.masterEnrichmentPending = false,
     this.isProvisional = false,
+    this.lensDetailAnalysisStatus,
     this.master = const SakeMasterDetails(),
     this.brand = const SakeBrandDetails(),
     this.brewery = const SakeBreweryDetails(),
@@ -223,6 +224,7 @@ class SakeOverview {
       analysisPayload: analysisJson.isEmpty ? null : analysisJson,
       masterEnrichmentPending: enrichmentJson['status'] == 'pending',
       isProvisional: sakeJson['isProvisional'] == true,
+      lensDetailAnalysisStatus: sakeJson['lensDetailAnalysisStatus'] as String?,
       master: SakeMasterDetails.fromJson(sakeJson),
       brand: SakeBrandDetails.fromJson(brandJson),
       brewery: SakeBreweryDetails.fromJson(breweryJson),
@@ -237,6 +239,7 @@ class SakeOverview {
   final Map<String, dynamic>? analysisPayload;
   final bool masterEnrichmentPending;
   final bool isProvisional;
+  final String? lensDetailAnalysisStatus;
   final SakeMasterDetails master;
   final SakeBrandDetails brand;
   final SakeBreweryDetails brewery;

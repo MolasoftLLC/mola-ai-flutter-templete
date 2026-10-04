@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/logger.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/sake/taste_match.dart';
 import '../../common/utils/custom_image_picker.dart';
@@ -58,6 +60,120 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   void Function()? _removeFavoriteListener;
   Timer? _masterEnrichmentPollTimer;
   var _masterEnrichmentPollCount = 0;
+  bool _isLensAnalyzing = false;
+  bool _lensAnalysisFailed = false;
+  int? _lensScheduledSakeId;
+  int _lensAnalysisGeneration = 0;
+  int _overviewRequestGeneration = 0;
+
+  bool _acceptLensResult(int sakeId, int generation) =>
+      mounted &&
+      ModalRoute.of(context)?.isActive != false &&
+      generation == _lensAnalysisGeneration &&
+      (_selectedSakeId ??
+              _headerOverview?.sake.sakeId ??
+              widget.venueSake.sakeId) ==
+          sakeId;
+
+  void _scheduleLensAnalysis(SakeOverview overview) {
+    final status = overview.lensDetailAnalysisStatus;
+    final id = overview.sake.sakeId;
+    if (id == null || _lensScheduledSakeId == id) return;
+    if (_lensScheduledSakeId != null && _lensScheduledSakeId != id) {
+      _lensAnalysisGeneration++;
+      _isLensAnalyzing = false;
+      _lensAnalysisFailed = false;
+    }
+    _lensScheduledSakeId = id;
+    if (status == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          ModalRoute.of(context)?.isActive == false ||
+          _headerOverview?.sake.sakeId != id) {
+        return;
+      }
+      if (status == 'idle' || status == 'running') {
+        unawaited(_analyzeLensDetails(id));
+      } else if (status == 'failed') {
+        setState(() => _lensAnalysisFailed = true);
+      }
+    });
+  }
+
+  Future<void> _analyzeLensDetails(int sakeId, {bool retry = false}) async {
+    if (_isLensAnalyzing) return;
+    final repository = context.read<SakeScanRepository>();
+    if (repository is! LensDetailAnalysisRepository) return;
+    final analysisRepository = repository as LensDetailAnalysisRepository;
+    final generation = ++_lensAnalysisGeneration;
+    setState(() {
+      _isLensAnalyzing = true;
+      _lensAnalysisFailed = false;
+    });
+    try {
+      var status = await analysisRepository.startLensDetailAnalysis(
+        sakeId,
+        retry: retry,
+      );
+      final deadline = DateTime.now().add(const Duration(minutes: 16));
+      while (status == 'running' && DateTime.now().isBefore(deadline)) {
+        if (!_acceptLensResult(sakeId, generation)) return;
+        await Future<void>.delayed(const Duration(seconds: 3));
+        if (!_acceptLensResult(sakeId, generation)) return;
+        status = await analysisRepository.fetchLensDetailAnalysisStatus(sakeId);
+      }
+      if (!_acceptLensResult(sakeId, generation)) return;
+      if (status != 'completed') {
+        throw StateError('Lens detail analysis: $status');
+      }
+      final updated = await repository.fetchOverview(sakeId);
+      if (!mounted || !_acceptLensResult(sakeId, generation)) return;
+      setState(() {
+        _overviewRequestGeneration++;
+        _isFetchingDetails = false;
+        _headerOverview = updated;
+        _future = Future.value(updated);
+        _isLensAnalyzing = false;
+      });
+      // Merge only product information into the current record, preserving edits
+      // made to photos, ratings and notes while the analysis was running.
+      final notifier = _savedSakeNotifier;
+      final savedId = _findSavedSake(notifier, updated.sake)?.savedId;
+      if (notifier != null && savedId != null) {
+        unawaited(
+          notifier.updateSavedSakeWithInfo(savedId, updated.sake).catchError((
+            Object error,
+          ) {
+            logger.warning('解析後の商品情報を保存記録へ反映できませんでした: $error');
+          }),
+        );
+      }
+      SnackBarUtils.showInfoSnackBar(context, message: '解析完了');
+    } catch (_) {
+      if (!mounted || !_acceptLensResult(sakeId, generation)) return;
+      setState(() {
+        _isLensAnalyzing = false;
+        _lensAnalysisFailed = true;
+      });
+      SnackBarUtils.showSnackBar(
+        context,
+        message: '詳細情報を取得できませんでした',
+        action: SnackBarAction(
+          label: '再試行',
+          onPressed: () {
+            if (_acceptLensResult(sakeId, generation)) {
+              unawaited(_analyzeLensDetails(sakeId, retry: true));
+            }
+          },
+        ),
+      );
+    } finally {
+      if (_acceptLensResult(sakeId, generation)) {
+        setState(() => _isLensAnalyzing = false);
+      }
+    }
+  }
+
   var _isFetchingDetails = false;
   var _isSharingTimeline = false;
   var _isCorrectingProduct = false;
@@ -126,6 +242,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<SakeOverview> _fetch() async {
+    final requestGeneration = ++_overviewRequestGeneration;
     final id =
         _selectedSakeId ??
         _headerOverview?.sake.sakeId ??
@@ -149,14 +266,15 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         throw StateError('詳細取得に必要な日本酒IDがありません');
       }
 
-      if (mounted) {
+      if (mounted && requestGeneration == _overviewRequestGeneration) {
         setState(() => _headerOverview = overview);
+        unawaited(_syncOverviewImagesToSavedRecord(overview));
+        _scheduleMasterEnrichmentPolling(overview);
+        _scheduleLensAnalysis(overview);
       }
-      unawaited(_syncOverviewImagesToSavedRecord(overview));
-      _scheduleMasterEnrichmentPolling(overview);
       return overview;
     } finally {
-      if (mounted) {
+      if (mounted && requestGeneration == _overviewRequestGeneration) {
         setState(() => _isFetchingDetails = false);
       }
     }
@@ -164,6 +282,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   void _scheduleMasterEnrichmentPolling(SakeOverview overview) {
     _masterEnrichmentPollTimer?.cancel();
+    if (!mounted) return;
     if (!overview.masterEnrichmentPending ||
         overview.master.tasteProfile != null) {
       return;
@@ -253,6 +372,17 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               ),
             ),
             ListTile(
+              leading: const Icon(Icons.open_in_browser),
+              title: const Text('この名前でブラウザで検索'),
+              onTap: () => Navigator.pop(sheetContext, 'browser'),
+            ),
+            if (_lensAnalysisFailed && !_isLensAnalyzing)
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: const Text('詳細情報の取得を再試行'),
+                onTap: () => Navigator.pop(sheetContext, 'retryDetails'),
+              ),
+            ListTile(
               leading: const Icon(Icons.ios_share_outlined),
               title: Text(
                 personalRecord?.isPublic == true ? 'タイムライン投稿を編集' : 'タイムラインで共有',
@@ -283,7 +413,26 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       ),
     );
     if (!mounted) return;
-    if (action == 'timeline') {
+    if (action == 'browser') {
+      final name = overview.sake.name?.trim();
+      final query = name == null || name.isEmpty
+          ? widget.venueSake.name.trim()
+          : name;
+      try {
+        if (!await launchUrl(
+          Uri.https('www.google.com', '/search', {'q': query}),
+          mode: LaunchMode.externalApplication,
+        )) {
+          throw StateError('Cannot open browser');
+        }
+      } catch (_) {
+        if (mounted) {
+          SnackBarUtils.showWarningSnackBar(context, message: 'ブラウザを開けませんでした');
+        }
+      }
+    } else if (action == 'retryDetails' && overview.sake.sakeId != null) {
+      await _analyzeLensDetails(overview.sake.sakeId!, retry: true);
+    } else if (action == 'timeline') {
       await _openTimelineShare(overview.sake);
     } else if (action == 'select' && personalRecord != null) {
       await _showRelatedProductSelection(overview, personalRecord);
@@ -890,7 +1039,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                         community: community,
                         onImageAction: _handleCommunityImage,
                         isProfileEnrichmentPending: isProfileEnrichmentPending,
-                        isFetchingDetails: _isFetchingDetails,
+                        isFetchingDetails:
+                            _isFetchingDetails || _isLensAnalyzing,
                         expandedHeight: heroExpandedHeight,
                       ),
                     ),
@@ -908,9 +1058,15 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: _ShopPriceHeaderDelegate(
-                        yahooPrice: snapshot.data?.master.imagePrice,
-                        yahooCurrency: snapshot.data?.master.imageCurrency,
-                        yahooProductUrl: snapshot.data?.master.imageProductUrl,
+                        yahooPrice: (_headerOverview ?? snapshot.data)
+                            ?.master
+                            .imagePrice,
+                        yahooCurrency: (_headerOverview ?? snapshot.data)
+                            ?.master
+                            .imageCurrency,
+                        yahooProductUrl: (_headerOverview ?? snapshot.data)
+                            ?.master
+                            .imageProductUrl,
                         rakutenOffer: (_headerOverview ?? snapshot.data)
                             ?.master
                             .rakutenOffer,
@@ -1233,7 +1389,7 @@ class _CollapsingSakeHeroState extends State<_CollapsingSakeHero> {
             child: collapsedProgress > .5
                 ? KeyedSubtree(
                     key: const Key('compact-sake-header'),
-                    child: Text(
+                    child: _CopyableSakeName(
                       widget.name?.trim().isNotEmpty == true
                           ? widget.name!
                           : '日本酒詳細',
@@ -1359,7 +1515,7 @@ class _Details extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
+                        child: _CopyableSakeName(
                           preferredName ?? sake?.name ?? fallback.name,
                           style: const TextStyle(
                             color: _navy,
@@ -4396,4 +4552,36 @@ String _price(SakeProductVariant variant) {
       : variant.taxIncluded == false
       ? '（税別）'
       : ''}';
+}
+
+class _CopyableSakeName extends StatelessWidget {
+  const _CopyableSakeName(
+    this.name, {
+    this.style,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  });
+  final String name;
+  final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final TextAlign? textAlign;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onLongPress: () async {
+      await Clipboard.setData(ClipboardData(text: name));
+      if (context.mounted && ModalRoute.of(context)?.isActive != false) {
+        SnackBarUtils.showInfoSnackBar(context, message: '日本酒名をコピーしました');
+      }
+    },
+    child: Text(
+      name,
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
+    ),
+  );
 }

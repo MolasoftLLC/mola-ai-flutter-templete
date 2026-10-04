@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chopper/chopper.dart' as chopper;
 import 'package:http/http.dart' as http;
 
 import 'package:http/http.dart' show MultipartFile;
@@ -34,6 +35,11 @@ abstract class SakeScanRepository {
   );
 }
 
+abstract interface class LensDetailAnalysisRepository {
+  Future<String> startLensDetailAnalysis(int sakeId, {bool retry = false});
+  Future<String> fetchLensDetailAnalysisStatus(int sakeId);
+}
+
 abstract interface class LensDiscoveryRepository {
   Future<SakeScanConfirmation> confirmDiscovery(
     String scanSessionId,
@@ -62,7 +68,8 @@ class SakeScanApiRepository
     implements
         SakeScanRepository,
         ProgressiveSakeScanRepository,
-        LensDiscoveryRepository {
+        LensDiscoveryRepository,
+        LensDetailAnalysisRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
@@ -277,6 +284,40 @@ class SakeScanApiRepository
       if (shouldTrackView) _detailViewMemory.forget(sakeId);
       rethrow;
     }
+  }
+
+  @override
+  Future<String> startLensDetailAnalysis(
+    int sakeId, {
+    bool retry = false,
+  }) async {
+    return _lensDetailRequest(
+      sakeId,
+      'POST',
+      body: {'locale': await resolveAppLocaleLanguageCode(), 'retry': retry},
+    );
+  }
+
+  @override
+  Future<String> fetchLensDetailAnalysisStatus(int sakeId) =>
+      _lensDetailRequest(sakeId, 'GET');
+
+  Future<String> _lensDetailRequest(
+    int sakeId,
+    String method, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await _apiClient.client
+        .send<Map<String, dynamic>, Map<String, dynamic>>(
+          chopper.Request(
+            method,
+            Uri.parse('/api/sakes/$sakeId/lens-detail-analysis'),
+            _apiClient.client.baseUrl,
+            body: body,
+          ),
+        )
+        .timeout(requestTimeout);
+    return _requireBody(response)['status'] as String;
   }
 
   Future<File> _prepareImage(File image) async {
