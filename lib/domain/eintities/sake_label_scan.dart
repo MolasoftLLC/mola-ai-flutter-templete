@@ -35,6 +35,7 @@ class SakeScanCandidate {
     this.ocrScore,
     this.confidence,
     this.candidateSource,
+    this.candidateKey,
     this.officiallyVerified = false,
     this.sourceUrl,
     this.labelHint,
@@ -52,6 +53,7 @@ class SakeScanCandidate {
       ocrScore: _asDouble(json['ocrScore']),
       confidence: _asDouble(json['confidence']),
       candidateSource: json['candidateSource']?.toString(),
+      candidateKey: json['candidateKey']?.toString(),
       officiallyVerified: json['officiallyVerified'] == true,
       sourceUrl: json['sourceUrl']?.toString(),
       labelHint: json['labelHint']?.toString(),
@@ -68,13 +70,17 @@ class SakeScanCandidate {
   final double? ocrScore;
   final double? confidence;
   final String? candidateSource;
+  final String? candidateKey;
+  bool get isLensDiscovery =>
+      candidateSource == 'lens_discovery' && candidateKey != null;
   final bool officiallyVerified;
   final String? sourceUrl;
   final String? labelHint;
 
   bool get isOfficialTemporary => candidateSource == 'official_temporary';
   bool get isAiTemporary => candidateSource == 'ai_temporary';
-  bool get isTemporary => isOfficialTemporary || isAiTemporary;
+  bool get isTemporary =>
+      isOfficialTemporary || isAiTemporary || isLensDiscovery;
 
   String get canonicalProductName {
     final productType = type?.trim();
@@ -155,6 +161,7 @@ class SakeOverview {
     required this.analysisCompleted,
     this.analysisPayload,
     this.masterEnrichmentPending = false,
+    this.isProvisional = false,
     this.master = const SakeMasterDetails(),
     this.brand = const SakeBrandDetails(),
     this.brewery = const SakeBreweryDetails(),
@@ -215,6 +222,7 @@ class SakeOverview {
       analysisCompleted: analysisJson.isNotEmpty,
       analysisPayload: analysisJson.isEmpty ? null : analysisJson,
       masterEnrichmentPending: enrichmentJson['status'] == 'pending',
+      isProvisional: sakeJson['isProvisional'] == true,
       master: SakeMasterDetails.fromJson(sakeJson),
       brand: SakeBrandDetails.fromJson(brandJson),
       brewery: SakeBreweryDetails.fromJson(breweryJson),
@@ -228,6 +236,7 @@ class SakeOverview {
   final bool analysisCompleted;
   final Map<String, dynamic>? analysisPayload;
   final bool masterEnrichmentPending;
+  final bool isProvisional;
   final SakeMasterDetails master;
   final SakeBrandDetails brand;
   final SakeBreweryDetails brewery;

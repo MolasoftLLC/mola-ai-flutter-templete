@@ -14,6 +14,40 @@ void main() {
   final image = File('/tmp/sake_scan_test.jpg');
 
   group('SakeScanNotifier', () {
+    test('新発見を選択すると仮マスターの正IDで保存しAI解析を呼ばない', () async {
+      final repository = _FakeScanRepository(
+        frontResult: SakeScanResult.fromJson({
+          'status': 'candidates',
+          'scanSessionId': 'discovery_scan',
+          'candidates': [
+            {
+              'sakeId': 0,
+              'name': '倉本77 奈々露 火入れ',
+              'candidateSource': 'lens_discovery',
+              'candidateKey': 'lens_pick',
+              'sourceUrl': 'https://shop.example/item',
+            },
+          ],
+        }),
+      );
+      final analysis = _FakeAnalysisService(const Sake(name: 'unused'));
+      final persistence = _FakePersistenceService();
+      final notifier = _buildNotifier(
+        repository,
+        analysis: analysis,
+        persistence: persistence,
+      );
+      await notifier.submitFront(image);
+      expect(notifier.currentState.candidates.single.isLensDiscovery, true);
+      final result = await notifier.confirmCandidate();
+      expect(repository.selectedDiscoveryKey, 'lens_pick');
+      expect(repository.confirmCalls, 0);
+      expect(analysis.calls, 0);
+      expect(result?.sakeId, 9001);
+      expect(persistence.initialSakes.single.sakeId, 9001);
+      expect(notifier.currentState.status, SakeScanViewStatus.completed);
+    });
+
     test('正面ラベルの候補を全件表示する', () async {
       final repository = _FakeScanRepository(
         frontResult: _candidatesResult(count: 4),
@@ -575,7 +609,21 @@ SakeOverview _overview({required bool completed}) {
   );
 }
 
-class _FakeScanRepository implements SakeScanRepository {
+class _FakeScanRepository
+    implements SakeScanRepository, LensDiscoveryRepository {
+  String? selectedDiscoveryKey;
+  @override
+  Future<SakeScanConfirmation> confirmDiscovery(
+    String sessionId,
+    String candidateKey,
+  ) async {
+    selectedDiscoveryKey = candidateKey;
+    return const SakeScanConfirmation(
+      status: SakeScanApiStatus.analysisRequired,
+      sakeId: 9001,
+    );
+  }
+
   _FakeScanRepository({
     this.frontResult,
     this.backResult,

@@ -34,6 +34,13 @@ abstract class SakeScanRepository {
   );
 }
 
+abstract interface class LensDiscoveryRepository {
+  Future<SakeScanConfirmation> confirmDiscovery(
+    String scanSessionId,
+    String candidateKey,
+  );
+}
+
 abstract interface class ProgressiveSakeScanRepository {
   Future<SakeScanResult> scanFrontProgressively(
     File image, {
@@ -52,7 +59,10 @@ class SakeDetailViewMemory {
 }
 
 class SakeScanApiRepository
-    implements SakeScanRepository, ProgressiveSakeScanRepository {
+    implements
+        SakeScanRepository,
+        ProgressiveSakeScanRepository,
+        LensDiscoveryRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
@@ -185,6 +195,19 @@ class SakeScanApiRepository
       requestTimeout,
     );
     return SakeScanResult.fromJson(_requireBody(response));
+  }
+
+  @override
+  Future<SakeScanConfirmation> confirmDiscovery(
+    String scanSessionId,
+    String candidateKey,
+  ) async {
+    final response = await _apiClient
+        .confirmScannedSake(scanSessionId, <String, dynamic>{
+          'candidateKey': candidateKey,
+        })
+        .timeout(requestTimeout);
+    return SakeScanConfirmation.fromJson(_requireBody(response));
   }
 
   @override

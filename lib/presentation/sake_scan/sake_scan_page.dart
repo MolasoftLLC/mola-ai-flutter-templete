@@ -420,7 +420,8 @@ class _SakeScanPageState extends State<SakeScanPage>
     _resetAnalysisRecordDraft();
     final notifier = context.read<SakeScanNotifier>();
     final opensExistingMaster =
-        (notifier.currentState.selectedCandidate?.sakeId ?? 0) > 0;
+        (notifier.currentState.selectedCandidate?.sakeId ?? 0) > 0 ||
+        (notifier.currentState.selectedCandidate?.isLensDiscovery ?? false);
     final sake = await notifier.confirmCandidate();
     if (!mounted || sake == null || !opensExistingMaster) return;
     if (widget.reassignTarget != null) {
@@ -1181,9 +1182,12 @@ class _SakeScanPageState extends State<SakeScanPage>
                                             ),
                                           ),
                                         ),
-                                      if (item.officiallyVerified)
+                                      if (item.officiallyVerified ||
+                                          item.isLensDiscovery)
                                         Text(
-                                          context.l10n.officiallyVerified,
+                                          item.isLensDiscovery
+                                              ? '新発見！'
+                                              : context.l10n.officiallyVerified,
                                           style: const TextStyle(
                                             color: Color(0xFF2E7D32),
                                             fontSize: 11,
@@ -1207,6 +1211,9 @@ class _SakeScanPageState extends State<SakeScanPage>
                                         .read<SakeScanNotifier>()
                                         .selectCandidate(index);
                                     unawaited(HapticFeedback.selectionClick());
+                                    if (item.isLensDiscovery) {
+                                      unawaited(_startCandidateAnalysis());
+                                    }
                                   },
                           ),
                         );

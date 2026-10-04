@@ -283,14 +283,16 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       ),
     );
     try {
-      if (candidate.sakeId <= 0) {
+      if (candidate.sakeId <= 0 && !candidate.isLensDiscovery) {
         await _runAiAnalysis(operation);
         return state.savedSake ?? state.sake;
       }
-      final confirmation = await _scanRepository.confirm(
-        sessionId,
-        candidate.sakeId,
-      );
+      final confirmation = candidate.isLensDiscovery
+          ? await (_scanRepository as LensDiscoveryRepository).confirmDiscovery(
+              sessionId,
+              candidate.candidateKey!,
+            )
+          : await _scanRepository.confirm(sessionId, candidate.sakeId);
       if (!_isCurrent(operation)) return null;
 
       final confirmedSake = candidate.toSake().copyWith(

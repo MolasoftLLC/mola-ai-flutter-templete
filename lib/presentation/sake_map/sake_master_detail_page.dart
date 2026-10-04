@@ -1389,6 +1389,13 @@ class _Details extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (overview?.isProvisional ?? false) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      '新発見！・商品情報は仮登録',
+                      style: TextStyle(color: Color(0xFF2E7D32)),
+                    ),
+                  ],
                   if (breweryName != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -1423,7 +1430,9 @@ class _Details extends StatelessWidget {
                   onReportReview: onReportReview,
                 ),
               ),
-            if (preferenceAxes == null && !isLoggedIn)
+            if (!(overview?.isProvisional ?? false) &&
+                preferenceAxes == null &&
+                !isLoggedIn)
               const _Section(
                 title: 'あなたの好みマッチ度',
                 child: _LoginRecommendationPrompt(),
