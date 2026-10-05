@@ -260,9 +260,10 @@ class SakeScanApiRepository
       final sakeId = json['sakeId'];
       final profile = json['tasteProfile'];
       if (sakeId is num && profile is Map) {
-        result[sakeId.toInt()] = SakeTasteProfileDetails.fromJson(
+        final parsed = SakeTasteProfileDetails.tryFromJson(
           Map<String, dynamic>.from(profile),
         );
+        if (parsed != null) result[sakeId.toInt()] = parsed;
       }
     }
     return result;

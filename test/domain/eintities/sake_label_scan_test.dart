@@ -2,6 +2,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 
 void main() {
+  test('不明な味わいは0へ変換せずチャートを保留する', () {
+    final profile = <String, dynamic>{
+      'fruity': 0.8,
+      'sweetness': null,
+      'acidity': null,
+      'umami': null,
+      'kire': null,
+      'dryness': null,
+    };
+    expect(SakeTasteProfileDetails.tryFromJson(profile), isNull);
+    profile.addAll({
+      'sweetness': 0,
+      'acidity': .4,
+      'umami': .6,
+      'kire': .7,
+      'dryness': .5,
+    });
+    expect(SakeTasteProfileDetails.tryFromJson(profile)?.sweetness, 0);
+    profile['acidity'] = double.nan;
+    expect(SakeTasteProfileDetails.tryFromJson(profile), isNull);
+  });
+
   test('旧tasteは読み込まず保存もしない・空のdescriptionは補完しない', () {
     for (final description in [null, '', 'このお酒の説明']) {
       final overview = SakeOverview.fromJson({

@@ -61,7 +61,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Timer? _masterEnrichmentPollTimer;
   var _masterEnrichmentPollCount = 0;
   bool _isLensAnalyzing = false;
-  bool _lensAnalysisFailed = false;
   int? _lensScheduledSakeId;
   int _lensAnalysisGeneration = 0;
   int _overviewRequestGeneration = 0;
@@ -82,7 +81,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (_lensScheduledSakeId != null && _lensScheduledSakeId != id) {
       _lensAnalysisGeneration++;
       _isLensAnalyzing = false;
-      _lensAnalysisFailed = false;
     }
     _lensScheduledSakeId = id;
     if (status == null) return;
@@ -94,8 +92,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       }
       if (status == 'idle' || status == 'running') {
         unawaited(_analyzeLensDetails(id));
-      } else if (status == 'failed') {
-        setState(() => _lensAnalysisFailed = true);
       }
     });
   }
@@ -108,7 +104,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     final generation = ++_lensAnalysisGeneration;
     setState(() {
       _isLensAnalyzing = true;
-      _lensAnalysisFailed = false;
     });
     try {
       var status = await analysisRepository.startLensDetailAnalysis(
@@ -123,7 +118,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         status = await analysisRepository.fetchLensDetailAnalysisStatus(sakeId);
       }
       if (!_acceptLensResult(sakeId, generation)) return;
-      if (status != 'completed') {
+      if (status != 'completed' && status != 'partial') {
         throw StateError('Lens detail analysis: $status');
       }
       final updated = await repository.fetchOverview(sakeId);
@@ -153,7 +148,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       if (!mounted || !_acceptLensResult(sakeId, generation)) return;
       setState(() {
         _isLensAnalyzing = false;
-        _lensAnalysisFailed = true;
       });
       SnackBarUtils.showSnackBar(
         context,
@@ -376,12 +370,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               title: const Text('この名前でブラウザで検索'),
               onTap: () => Navigator.pop(sheetContext, 'browser'),
             ),
-            if (_lensAnalysisFailed && !_isLensAnalyzing)
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: const Text('詳細情報の取得を再試行'),
-                onTap: () => Navigator.pop(sheetContext, 'retryDetails'),
-              ),
             ListTile(
               leading: const Icon(Icons.ios_share_outlined),
               title: Text(
@@ -430,8 +418,6 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           SnackBarUtils.showWarningSnackBar(context, message: 'ブラウザを開けませんでした');
         }
       }
-    } else if (action == 'retryDetails' && overview.sake.sakeId != null) {
-      await _analyzeLensDetails(overview.sake.sakeId!, retry: true);
     } else if (action == 'timeline') {
       await _openTimelineShare(overview.sake);
     } else if (action == 'select' && personalRecord != null) {

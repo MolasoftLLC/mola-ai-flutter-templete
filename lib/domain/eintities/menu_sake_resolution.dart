@@ -10,7 +10,7 @@ class MenuSakeCandidate {
       MenuSakeCandidate(
         sake: Sake.fromJson(json),
         tasteProfile: json['tasteProfile'] is Map
-            ? SakeTasteProfileDetails.fromJson(
+            ? SakeTasteProfileDetails.tryFromJson(
                 Map<String, dynamic>.from(json['tasteProfile'] as Map),
               )
             : null,

@@ -502,7 +502,7 @@ class SakeMasterDetails {
           : const <SakeProductVariant>[],
       tasteProfile: tasteProfile.isEmpty
           ? null
-          : SakeTasteProfileDetails.fromJson(tasteProfile),
+          : SakeTasteProfileDetails.tryFromJson(tasteProfile),
     );
   }
 
@@ -597,14 +597,25 @@ class SakeTasteProfileDetails {
     this.confidence,
   });
 
+  static SakeTasteProfileDetails? tryFromJson(Map<String, dynamic> json) {
+    const axes = ['fruity', 'sweetness', 'acidity', 'umami', 'kire', 'dryness'];
+    if (!axes.every((key) {
+      final value = _asDouble(json[key]);
+      return value != null && value.isFinite && value >= 0 && value <= 1;
+    })) {
+      return null;
+    }
+    return SakeTasteProfileDetails.fromJson(json);
+  }
+
   factory SakeTasteProfileDetails.fromJson(Map<String, dynamic> json) =>
       SakeTasteProfileDetails(
-        fruity: _asDouble(json['fruity']) ?? 0,
-        sweetness: _asDouble(json['sweetness']) ?? 0,
-        acidity: _asDouble(json['acidity']) ?? 0,
-        umami: _asDouble(json['umami']) ?? 0,
-        kire: _asDouble(json['kire']) ?? 0,
-        dryness: _asDouble(json['dryness']) ?? 0,
+        fruity: _asDouble(json['fruity'])!,
+        sweetness: _asDouble(json['sweetness'])!,
+        acidity: _asDouble(json['acidity'])!,
+        umami: _asDouble(json['umami'])!,
+        kire: _asDouble(json['kire'])!,
+        dryness: _asDouble(json['dryness'])!,
         body: _asDouble(json['body']),
         aroma: _asDouble(json['aroma']),
         sourceType: _asNonEmptyString(json['sourceType']),
