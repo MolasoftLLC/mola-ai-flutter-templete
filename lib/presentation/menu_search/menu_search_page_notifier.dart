@@ -26,6 +26,7 @@ import '../common/widgets/ad_consent_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../common/sake/taste_match.dart';
 import '../../domain/eintities/menu_sake_resolution.dart';
+import '../../domain/eintities/sake_label_scan.dart';
 
 part 'menu_search_page_notifier.freezed.dart';
 
@@ -50,6 +51,7 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     @Default({}) Map<String, String> nameMapping,
     @Default({}) Map<String, List<MenuSakeCandidate>> resolutionCandidates,
     @Default({}) Map<String, int> matchPercents,
+    @Default({}) Map<String, SakeTasteProfileDetails> tasteProfiles,
     @Default(<String>[]) List<String> unverifiedNames,
     // ユーザーの好み
     String? preferences,
@@ -252,6 +254,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       nameMapping: {},
       resolutionCandidates: {},
       matchPercents: {},
+      tasteProfiles: {},
       unverifiedNames: [],
       isAdLoading: true,
       hasScrolledToResults: false,
@@ -432,6 +435,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         sakeLoadingStatus: loading,
         resolutionCandidates: const {},
         matchPercents: const {},
+        tasteProfiles: const {},
         unverifiedNames: const [],
       );
 
@@ -441,6 +445,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       final nameMapping = <String, String>{};
       final candidates = <String, List<MenuSakeCandidate>>{};
       final matchPercents = <String, int>{};
+      final tasteProfiles = <String, SakeTasteProfileDetails>{};
       final unverifiedNames = <String>[];
       final resolvedSakes = <Sake>[];
       final preference = read<MyPageNotifier>().state.tasteProfile;
@@ -458,6 +463,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           final sake = selected.sake;
           nameMapping[resolution.inputName] = sake.name ?? resolution.inputName;
           resolvedSakes.add(sake);
+          if (selected.tasteProfile != null) {
+            tasteProfiles[resolution.inputName] = selected.tasteProfile!;
+          }
           final matchPercent = calculateOptionalSakeTasteMatchPercent(
             profile: selected.tasteProfile,
             preference: preference,
@@ -484,6 +492,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         nameMapping: nameMapping,
         resolutionCandidates: candidates,
         matchPercents: matchPercents,
+        tasteProfiles: tasteProfiles,
         unverifiedNames: unverifiedNames,
       );
 
@@ -509,6 +518,14 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       sakes.add(candidate.sake);
     }
     final scores = Map<String, int>.from(state.matchPercents);
+    final profiles = Map<String, SakeTasteProfileDetails>.from(
+      state.tasteProfiles,
+    );
+    if (candidate.tasteProfile != null) {
+      profiles[inputName] = candidate.tasteProfile!;
+    } else {
+      profiles.remove(inputName);
+    }
     final preference = read<MyPageNotifier>().state.tasteProfile;
     final matchPercent = calculateOptionalSakeTasteMatchPercent(
       profile: candidate.tasteProfile,
@@ -526,6 +543,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       sakes: sakes,
       nameMapping: mapped,
       matchPercents: scores,
+      tasteProfiles: profiles,
       resolutionCandidates: choices,
     );
     unawaited(addCurrentAnalysisToHistory());

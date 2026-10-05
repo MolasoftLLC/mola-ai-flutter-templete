@@ -312,6 +312,33 @@ class MainSearchPage extends StatelessWidget {
       ),
       child: Column(
         children: [
+          Row(
+            children: [
+              Container(width: 5, height: 17, color: const Color(0xFF494949)),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    text: '旧ラベル検索',
+                    children: [
+                      TextSpan(
+                        text: '（じきに消えます）',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF777777),
+                        ),
+                      ),
+                    ],
+                  ),
+                  style: TextStyle(
+                    color: Color(0xFF404040),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           Text(
             context.l10n.selectBottleImage,
@@ -1323,6 +1350,7 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SakeMasterDetailPage(
+          recordRecentView: true,
           venueSake: VenueSake(
             sakeId: sake.sakeId,
             searchToken: sake.searchToken,
@@ -1666,10 +1694,10 @@ class _SearchShortcuts extends StatelessWidget {
         children: [
           Expanded(
             child: _SearchShortcutCard(
-              icon: Icons.map_outlined,
-              title: context.l10n.mapSearchShortcut,
-              description: context.l10n.mapSearchShortcutDescription,
-              onTap: onMapTap,
+              icon: Icons.menu_book_outlined,
+              title: context.l10n.menuSearchPageTitle,
+              description: context.l10n.menuPhotoDescription,
+              onTap: onMenuSearchTap,
             ),
           ),
           const SizedBox(width: 12),
@@ -1697,10 +1725,10 @@ class _SearchShortcuts extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _SearchShortcutCard(
-              icon: Icons.menu_book_outlined,
-              title: context.l10n.menuSearchPageTitle,
-              description: context.l10n.menuPhotoDescription,
-              onTap: onMenuSearchTap,
+              icon: Icons.map_outlined,
+              title: context.l10n.mapSearchShortcut,
+              description: context.l10n.mapSearchShortcutDescription,
+              onTap: onMapTap,
             ),
           ),
         ],

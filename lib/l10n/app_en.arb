@@ -2,6 +2,7 @@
   "@@locale": "en",
   "appTitle": "SAKEPEDIA",
   "navigationSearch": "Search",
+  "navigationHome": "Home",
   "navigationMap": "Map",
   "newFeatureBadge": "NEW & HANDY",
   "mapSearchShortcut": "Map search",

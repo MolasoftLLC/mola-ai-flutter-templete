@@ -14,13 +14,13 @@ import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/notifier/recent_sake_history.dart';
 import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
-import '../my_page/my_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../sake_scan/sake_scan_entry.dart';
 import '../sake_map/sake_master_detail_page.dart';
@@ -28,6 +28,7 @@ import '../timeline/envy_result.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'new_home_page_notifier.dart';
 import 'recent_sake_list_page.dart';
+import 'widgets/home_notice_ticker.dart';
 
 const _brandColor = Color(0xFF143861);
 const _scanColor = Color(0xFFFF7A1A);
@@ -78,9 +79,10 @@ class _NewHomePageState extends State<NewHomePage> {
     final notifier = context.watch<NewHomePageNotifier>();
     final savedNotifier = context.read<SavedSakeNotifier>();
     final favoriteNotifier = context.read<FavoriteNotifier>();
-    final savedSakes = context.select(
+    final savedRecords = context.select(
       (SavedSakeState state) => state.savedSakeList,
     );
+    final savedSakes = context.watch<RecentSakeHistory>().merge(savedRecords);
     final favorites = context.select(
       (FavoriteState state) => state.myFavoriteList,
     );
@@ -105,11 +107,24 @@ class _NewHomePageState extends State<NewHomePage> {
       body: Column(
         children: [
           _HomeHeader(
+            scanKey: context
+                .read<AppPageNotifier>()
+                .homeFeatureGuide
+                .headerScanKey,
+            searchKey: context
+                .read<AppPageNotifier>()
+                .homeFeatureGuide
+                .searchKey,
+            onTutorialTap: () =>
+                context.read<AppPageNotifier>().homeFeatureGuide.showIfNeeded(
+                  context,
+                  () =>
+                      context.mounted &&
+                      context.read<AppPageState>().currentIndex == 0,
+                  force: true,
+                ),
             onSearchTap: () => _openSearch(context),
             onScanTap: () => openNewHomeScanner(context),
-            onMyPageTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute<void>(builder: (_) => MyPage.wrapped())),
           ),
           Expanded(
             child: RefreshIndicator(
@@ -122,13 +137,17 @@ class _NewHomePageState extends State<NewHomePage> {
                 ]);
               },
               child: ListView(
+                controller: context
+                    .read<AppPageNotifier>()
+                    .homeFeatureGuide
+                    .homeScrollController,
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
-                padding: const EdgeInsets.only(top: 34, bottom: 34),
+                padding: const EdgeInsets.only(top: 8, bottom: 34),
                 children: [
                   const _HomePromotionBanners(),
-                  const _ObiDivider(),
+                  const _ObiDivider(topPadding: 0),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
                     onMoreTap: () => Navigator.of(context).push(
@@ -189,7 +208,20 @@ class _NewHomePageState extends State<NewHomePage> {
                       onTap: (sake) async {
                         await Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => SavedSakeDetailPage.forSake(sake),
+                            builder: (_) => sake.savedId != null
+                                ? SavedSakeDetailPage.forSake(sake)
+                                : SakeMasterDetailPage(
+                                    recordRecentView: true,
+                                    venueSake: VenueSake(
+                                      sakeId: sake.sakeId,
+                                      name: sake.name ?? '',
+                                      brewery: sake.brewery,
+                                      type: sake.type,
+                                      recordCount: 0,
+                                      primaryImageUrl: sake.primaryImageUrl,
+                                      thumbnailImageUrl: sake.thumbnailImageUrl,
+                                    ),
+                                  ),
                           ),
                         );
                         if (context.mounted) {
@@ -198,7 +230,13 @@ class _NewHomePageState extends State<NewHomePage> {
                       },
                     ),
                   const SizedBox(height: 28),
-                  _HomeRecommendations(profilesFor: _profilesFor),
+                  _HomeRecommendations(
+                    key: context
+                        .read<AppPageNotifier>()
+                        .homeFeatureGuide
+                        .recommendationsKey,
+                    profilesFor: _profilesFor,
+                  ),
                   const SizedBox(height: 28),
                   const _ObiDivider(),
                   _SectionTitle(
@@ -335,7 +373,7 @@ class _HomePromotionBannersState extends State<_HomePromotionBanners> {
     final banners = context.select((AppPageState state) => state.homeBanners);
     if (banners.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 28),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
           SizedBox(
@@ -431,7 +469,7 @@ class _PromotionBanner extends StatelessWidget {
 }
 
 class _HomeRecommendations extends StatefulWidget {
-  const _HomeRecommendations({required this.profilesFor});
+  const _HomeRecommendations({super.key, required this.profilesFor});
 
   final Future<Map<int, SakeTasteProfileDetails>> Function(List<Sake>)
   profilesFor;
@@ -497,14 +535,6 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
         future: _future,
         builder: (context, snapshot) {
           final recommendations = snapshot.data ?? const [];
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 110,
-              child: Center(
-                child: CircularProgressIndicator(color: _brandColor),
-              ),
-            );
-          }
           final sakes = recommendations
               .map(
                 (item) => Sake(
@@ -524,6 +554,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                 title: 'あなたが好きそうな日本酒',
                 onMoreTap: sakes.isEmpty ? null : _refresh,
                 actionLabel: _isRefreshing ? '更新中…' : '再選定',
+                actionAsButton: true,
               ),
               const Padding(
                 padding: EdgeInsets.fromLTRB(29, 4, 20, 0),
@@ -532,7 +563,14 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                   style: TextStyle(color: Color(0xFF777777), fontSize: 13),
                 ),
               ),
-              if (sakes.isNotEmpty) ...[
+              if (snapshot.connectionState != ConnectionState.done)
+                const SizedBox(
+                  height: 110,
+                  child: Center(
+                    child: CircularProgressIndicator(color: _brandColor),
+                  ),
+                )
+              else if (sakes.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 _SakeCardRail(
                   sakes: sakes,
@@ -588,12 +626,16 @@ class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.onSearchTap,
     required this.onScanTap,
-    required this.onMyPageTap,
+    required this.scanKey,
+    required this.searchKey,
+    required this.onTutorialTap,
   });
 
+  final VoidCallback onTutorialTap;
   final VoidCallback onSearchTap;
   final VoidCallback onScanTap;
-  final VoidCallback onMyPageTap;
+  final GlobalKey scanKey;
+  final GlobalKey searchKey;
 
   @override
   Widget build(BuildContext context) {
@@ -617,17 +659,30 @@ class _HomeHeader extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 Positioned(
-                  right: 10,
-                  child: Semantics(
-                    button: true,
-                    label: context.l10n.navigationMyPage,
-                    child: IconButton(
-                      tooltip: context.l10n.navigationMyPage,
-                      onPressed: onMyPageTap,
-                      icon: const Icon(
-                        Icons.account_circle_outlined,
-                        color: Colors.white,
-                        size: 35,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'もう一度チュートリアルを見る',
+                    child: TextButton(
+                      onPressed: onTutorialTap,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        minimumSize: const Size(48, 48),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.help_outline_rounded, size: 23),
+                          SizedBox(height: 3),
+                          Text(
+                            'もう一度\nチュートリアルを見る',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 10, height: 1.2),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -646,6 +701,7 @@ class _HomeHeader extends StatelessWidget {
                       button: true,
                       label: context.l10n.newHomeSearchHint,
                       child: InkWell(
+                        key: searchKey,
                         onTap: onSearchTap,
                         borderRadius: BorderRadius.circular(14),
                         child: Ink(
@@ -685,9 +741,22 @@ class _HomeHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _ScanCircleButton(size: 60, iconSize: 34, onTap: onScanTap),
+                  _ScanCircleButton(
+                    key: scanKey,
+                    size: 60,
+                    iconSize: 34,
+                    onTap: onScanTap,
+                  ),
                 ],
               ),
+            ),
+          ),
+          TickerMode(
+            enabled: context.select(
+              (AppPageState state) => state.currentIndex == 0,
+            ),
+            child: const HomeNoticeTicker(
+              message: '日本酒との新しい出会いを楽しもう！名前やラベルから検索して、気になるお酒を見つけてお気に入りに登録しよう。',
             ),
           ),
         ],
@@ -697,11 +766,13 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _ObiDivider extends StatelessWidget {
-  const _ObiDivider();
+  const _ObiDivider({this.topPadding = 14});
+
+  final double topPadding;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+    padding: EdgeInsets.fromLTRB(20, topPadding, 20, 8),
     child: SizedBox(
       key: const Key('home-obi-divider'),
       height: 42,
@@ -721,11 +792,13 @@ class _SectionTitle extends StatelessWidget {
     required this.title,
     this.onMoreTap,
     this.actionLabel = 'もっとみる',
+    this.actionAsButton = false,
   });
 
   final String title;
   final VoidCallback? onMoreTap;
   final String actionLabel;
+  final bool actionAsButton;
 
   @override
   Widget build(BuildContext context) {
@@ -750,16 +823,38 @@ class _SectionTitle extends StatelessWidget {
               onPressed: onMoreTap,
               style: TextButton.styleFrom(
                 foregroundColor: _brandColor,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                backgroundColor: actionAsButton
+                    ? const Color(0xFFEAF0F7)
+                    : null,
+                side: actionAsButton
+                    ? const BorderSide(color: Color(0xFFB8C9DE))
+                    : null,
+                shape: actionAsButton
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      )
+                    : null,
+                padding: EdgeInsets.symmetric(
+                  horizontal: actionAsButton ? 12 : 4,
+                ),
                 minimumSize: const Size(60, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(
-                actionLabel,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (actionAsButton) ...[
+                    const Icon(Icons.refresh_rounded, size: 16),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    actionLabel,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1044,6 +1139,7 @@ class _RoundCardAction extends StatelessWidget {
 
 class _ScanCircleButton extends StatelessWidget {
   const _ScanCircleButton({
+    super.key,
     required this.size,
     required this.iconSize,
     required this.onTap,

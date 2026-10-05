@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import '../../common/localization/localization_extensions.dart';
 import '../../common/logger.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/sake/taste_match.dart';
+import '../common/widgets/sake_taste_widgets.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/sake_image_utils.dart';
@@ -23,6 +23,7 @@ import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
+import '../../domain/notifier/recent_sake_history.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -41,7 +42,12 @@ const _navy = Color(0xFF143861);
 const _orange = Color(0xFFFF7A1A);
 
 class SakeMasterDetailPage extends StatefulWidget {
-  const SakeMasterDetailPage({super.key, required this.venueSake});
+  const SakeMasterDetailPage({
+    super.key,
+    required this.venueSake,
+    this.recordRecentView = false,
+  });
+  final bool recordRecentView;
   final VenueSake venueSake;
 
   @override
@@ -52,6 +58,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   Future<SakeOverview>? _future;
   final ScrollController _scrollController = ScrollController();
   bool _initialized = false;
+  bool _recentViewRecorded = false;
   bool _showCompactHeader = false;
   bool _showFloatingReview = false;
   SakeOverview? _headerOverview;
@@ -271,6 +278,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
       if (mounted && requestGeneration == _overviewRequestGeneration) {
         setState(() => _headerOverview = overview);
+        if (widget.recordRecentView && !_recentViewRecorded) {
+          _recentViewRecorded = true;
+          context.read<RecentSakeHistory>().record(overview.sake);
+        }
         unawaited(_syncOverviewToSavedRecord(overview));
         _scheduleMasterEnrichmentPolling(overview);
         _scheduleLensAnalysis(overview);
@@ -1547,24 +1558,24 @@ class _Details extends StatelessWidget {
       if (master.releaseSeason != null) '販売時期': master.releaseSeason!,
     };
     final tasteAxes = profile == null
-        ? const <_TasteAxis>[]
-        : <_TasteAxis>[
-            _TasteAxis('フルーティ', profile.fruity),
-            _TasteAxis('甘み', profile.sweetness),
-            _TasteAxis('酸味', profile.acidity),
-            _TasteAxis('コク', profile.body ?? profile.umami),
-            _TasteAxis('キレ', profile.kire),
-            _TasteAxis('辛さ', profile.dryness),
+        ? const <SakeTasteAxis>[]
+        : <SakeTasteAxis>[
+            SakeTasteAxis('フルーティ', profile.fruity),
+            SakeTasteAxis('甘み', profile.sweetness),
+            SakeTasteAxis('酸味', profile.acidity),
+            SakeTasteAxis('コク', profile.body ?? profile.umami),
+            SakeTasteAxis('キレ', profile.kire),
+            SakeTasteAxis('辛さ', profile.dryness),
           ];
     final preferenceAxes = profile == null || preference == null
         ? null
-        : <_TasteAxis>[
-            _TasteAxis('フルーティ', preference.fruity),
-            _TasteAxis('甘み', preference.sweetness),
-            _TasteAxis('酸味', preference.acidity),
-            _TasteAxis('コク', preference.umami),
-            _TasteAxis('キレ', preference.kire),
-            _TasteAxis('辛さ', preference.spiciness),
+        : <SakeTasteAxis>[
+            SakeTasteAxis('フルーティ', preference.fruity),
+            SakeTasteAxis('甘み', preference.sweetness),
+            SakeTasteAxis('酸味', preference.acidity),
+            SakeTasteAxis('コク', preference.umami),
+            SakeTasteAxis('キレ', preference.kire),
+            SakeTasteAxis('辛さ', preference.spiciness),
           ];
     final pairings = _pairingsFor(
       profile: profile,
@@ -1682,14 +1693,14 @@ class _Details extends StatelessWidget {
                     ],
                     if (tasteAxes.isNotEmpty)
                       Center(
-                        child: _SakeTasteRadarChart(
+                        child: SakeTasteRadarChart(
                           axes: tasteAxes,
                           preferenceAxes: preferenceAxes,
                         ),
                       ),
                     if (preferenceAxes != null) ...[
                       const SizedBox(height: 14),
-                      const _TasteChartLegend(),
+                      const SakeTasteChartLegend(),
                     ],
                     _Tags(
                       values: {
@@ -2621,7 +2632,7 @@ class _SakeScoreSummary extends StatelessWidget {
     children: [
       if (matchPercent != null)
         Expanded(
-          child: _PreferenceMatchSection(
+          child: SakePreferenceMatchSection(
             percent: matchPercent!,
             fullWidth: averageRating == null,
           ),
@@ -2679,20 +2690,6 @@ class _SakeScoreSummary extends StatelessWidget {
         ),
     ],
   );
-}
-
-class _PreferenceMatchSection extends StatefulWidget {
-  const _PreferenceMatchSection({
-    required this.percent,
-    required this.fullWidth,
-  });
-
-  final int percent;
-  final bool fullWidth;
-
-  @override
-  State<_PreferenceMatchSection> createState() =>
-      _PreferenceMatchSectionState();
 }
 
 class _ProfileAnalysisProgress extends StatelessWidget {
@@ -2768,109 +2765,6 @@ class _LoginRecommendationPrompt extends StatelessWidget {
         ),
       ],
     ),
-  );
-}
-
-class _PreferenceMatchSectionState extends State<_PreferenceMatchSection> {
-  ScrollPosition? _scrollPosition;
-  var _hasEnteredViewport = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final nextPosition = Scrollable.maybeOf(context)?.position;
-    if (identical(_scrollPosition, nextPosition)) return;
-    _scrollPosition?.removeListener(_checkViewport);
-    _scrollPosition = nextPosition;
-    _scrollPosition?.addListener(_checkViewport);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkViewport());
-  }
-
-  @override
-  void dispose() {
-    _scrollPosition?.removeListener(_checkViewport);
-    super.dispose();
-  }
-
-  void _checkViewport() {
-    if (!mounted || _hasEnteredViewport) return;
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.hasSize) return;
-    final top = renderObject.localToGlobal(Offset.zero).dy;
-    final bottom = top + renderObject.size.height;
-    final viewportHeight = MediaQuery.sizeOf(context).height;
-    if (top >= viewportHeight * 0.9 || bottom <= 0) return;
-    setState(() => _hasEnteredViewport = true);
-  }
-
-  @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-    key: const Key('taste-preference-match'),
-    duration: const Duration(milliseconds: 900),
-    curve: Curves.easeOutCubic,
-    tween: Tween<double>(
-      end: _hasEnteredViewport ? widget.percent.toDouble() : 0,
-    ),
-    builder: (context, value, _) {
-      final shownPercent = value.round();
-      return Semantics(
-        label: 'あなたの好みマッチ度 $shownPercent%',
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            crossAxisAlignment: widget.fullWidth
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
-            children: [
-              Text(
-                'あなたの好みマッチ度',
-                textAlign: widget.fullWidth ? TextAlign.left : TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                '$shownPercent%',
-                style: const TextStyle(
-                  color: Color(0xFFFFB347),
-                  fontSize: 20,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 9),
-              LayoutBuilder(
-                builder: (context, constraints) => Container(
-                  key: const Key('sake-match-gauge'),
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    width: constraints.maxWidth * value / 100,
-                    height: 8,
-                    child: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
   );
 }
 
@@ -3500,7 +3394,7 @@ class _CommunityReviewsSection extends StatelessWidget {
                                             top: 12,
                                           ),
                                           child: Center(
-                                            child: _SakeTasteRadarChart(
+                                            child: SakeTasteRadarChart(
                                               key: Key(
                                                 'review-taste-radar-${review.reviewId}',
                                               ),
@@ -3508,7 +3402,7 @@ class _CommunityReviewsSection extends StatelessWidget {
                                               axes: [
                                                 for (final entry
                                                     in _tasteLabels.entries)
-                                                  _TasteAxis(
+                                                  SakeTasteAxis(
                                                     entry.value,
                                                     (review.tasteRatings[entry
                                                                 .key]! /
@@ -3977,7 +3871,7 @@ class _ShopPriceBar extends StatelessWidget {
           child: _ShopPrice(
             name: 'Amazon',
             price: amazonOffer == null
-                ? (amazonSearchUrl == null ? '—' : '探す')
+                ? (amazonSearchUrl == null ? '—' : '検索')
                 : _formatShopPrice(amazonOffer?.price, amazonOffer?.currency),
             url: amazonOffer?.affiliateUrl ?? amazonSearchUrl,
           ),
@@ -4019,6 +3913,8 @@ class _ShopPrice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uri = Uri.tryParse(url ?? '');
+    final canOpen = uri != null && ['https', 'http'].contains(uri.scheme);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -4033,18 +3929,30 @@ class _ShopPrice extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          price,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            height: 1,
-            fontWeight: FontWeight.w800,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                price,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            if (canOpen && price != '—') ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.open_in_new, size: 14, color: _navy),
+            ],
+          ],
         ),
       ],
     );
-    final uri = Uri.tryParse(url ?? '');
     if (uri == null || !['https', 'http'].contains(uri.scheme)) return content;
     return InkWell(
       key: Key('shop-price-link-$name'),
@@ -4182,301 +4090,6 @@ class _WebLink extends StatelessWidget {
       },
     ),
   );
-}
-
-class _TasteAxis {
-  const _TasteAxis(this.label, this.value);
-
-  final String label;
-  final double value;
-}
-
-class _TasteChartLegend extends StatelessWidget {
-  const _TasteChartLegend();
-
-  @override
-  Widget build(BuildContext context) => const Wrap(
-    spacing: 16,
-    runSpacing: 8,
-    children: [
-      _TasteChartLegendItem(
-        colors: [Color(0xFFFFA13C), Color(0xFFE95C9A)],
-        label: '橙・紫：このお酒',
-      ),
-      _TasteChartLegendItem(
-        colors: [Color(0xFF2E8BFF), Color(0xFF65C7FF)],
-        label: '青：あなたの好きな傾向',
-      ),
-    ],
-  );
-}
-
-class _TasteChartLegendItem extends StatelessWidget {
-  const _TasteChartLegendItem({required this.colors, required this.label});
-
-  final List<Color> colors;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 22,
-        height: 8,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(99),
-          gradient: LinearGradient(colors: colors),
-        ),
-      ),
-      const SizedBox(width: 6),
-      Text(
-        label,
-        style: const TextStyle(color: Color(0xFF647184), fontSize: 12),
-      ),
-    ],
-  );
-}
-
-class _SakeTasteRadarChart extends StatelessWidget {
-  const _SakeTasteRadarChart({
-    super.key,
-    required this.axes,
-    this.preferenceAxes,
-    this.maxSize = 248,
-  });
-
-  final List<_TasteAxis> axes;
-  final List<_TasteAxis>? preferenceAxes;
-  final double maxSize;
-
-  @override
-  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
-    tween: Tween(begin: 0, end: 1),
-    duration: const Duration(milliseconds: 700),
-    curve: Curves.easeOutCubic,
-    builder: (context, progress, _) => LayoutBuilder(
-      builder: (context, constraints) {
-        final size = math.min(constraints.maxWidth, maxSize);
-        final radius = size * .31;
-        return SizedBox(
-          key: const Key('sake-taste-radar-chart'),
-          width: size,
-          height: size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CustomPaint(
-                size: Size.square(size),
-                painter: _SakeTasteRadarPainter(
-                  axes: axes,
-                  preferenceAxes: preferenceAxes,
-                  radius: radius,
-                  progress: progress,
-                ),
-              ),
-              for (var index = 0; index < axes.length; index++)
-                _RadarLabel(
-                  axis: axes[index],
-                  index: index,
-                  total: axes.length,
-                  size: size,
-                  radius: radius,
-                ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
-
-class _RadarLabel extends StatelessWidget {
-  const _RadarLabel({
-    required this.axis,
-    required this.index,
-    required this.total,
-    required this.size,
-    required this.radius,
-  });
-
-  final _TasteAxis axis;
-  final int index;
-  final int total;
-  final double size;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final angle = -math.pi / 2 + (2 * math.pi * index) / total;
-    final labelRadius = radius + 34;
-    const labelWidth = 62.0;
-    final left = (size / 2 + math.cos(angle) * labelRadius - labelWidth / 2)
-        .clamp(0.0, size - labelWidth);
-    final top = (size / 2 + math.sin(angle) * labelRadius - 14).clamp(
-      0.0,
-      size - 28,
-    );
-    return Positioned(
-      left: left,
-      top: top,
-      width: labelWidth,
-      child: Text(
-        axis.label,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: _navy,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _SakeTasteRadarPainter extends CustomPainter {
-  const _SakeTasteRadarPainter({
-    required this.axes,
-    required this.preferenceAxes,
-    required this.radius,
-    required this.progress,
-  });
-
-  final List<_TasteAxis> axes;
-  final List<_TasteAxis>? preferenceAxes;
-  final double radius;
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final angleStep = 2 * math.pi / axes.length;
-    final gridPaint = Paint()
-      ..color = const Color(0xFFDCE5EF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final axisPaint = Paint()
-      ..color = const Color(0xFFE8EDF4)
-      ..strokeWidth = 1;
-
-    for (var level = 1; level <= 4; level++) {
-      canvas.drawPath(
-        _polygonPath(
-          center: center,
-          count: axes.length,
-          radius: radius * level / 4,
-        ),
-        gridPaint,
-      );
-    }
-    for (var index = 0; index < axes.length; index++) {
-      canvas.drawLine(
-        center,
-        _point(center, radius, index, angleStep),
-        axisPaint,
-      );
-    }
-
-    final bounds = Rect.fromCircle(center: center, radius: radius);
-    final userAxes = preferenceAxes;
-    if (userAxes != null && userAxes.length == axes.length) {
-      final userPath = _tastePath(
-        center: center,
-        axes: userAxes,
-        radius: radius,
-        angleStep: angleStep,
-      );
-      final userFillPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            const Color(0xFF65C7FF).withValues(alpha: .42),
-            const Color(0xFF2E8BFF).withValues(alpha: .16),
-          ],
-        ).createShader(bounds);
-      final userStrokePaint = Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFF65C7FF), Color(0xFF2E8BFF)],
-        ).createShader(bounds)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4;
-      canvas.drawPath(userPath, userFillPaint);
-      canvas.drawPath(userPath, userStrokePaint);
-    }
-
-    final path = _tastePath(
-      center: center,
-      axes: axes,
-      radius: radius,
-      angleStep: angleStep,
-    );
-    final fillPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFFFFD96A).withValues(alpha: .72),
-          const Color(0xFFFF8B5A).withValues(alpha: .38),
-          const Color(0xFFBE6DE0).withValues(alpha: .24),
-        ],
-      ).createShader(bounds);
-    final strokePaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFFFA13C), Color(0xFFE95C9A), Color(0xFF8D6CDB)],
-      ).createShader(bounds)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawPath(path, fillPaint);
-    canvas.drawPath(path, strokePaint);
-  }
-
-  Path _tastePath({
-    required Offset center,
-    required List<_TasteAxis> axes,
-    required double radius,
-    required double angleStep,
-  }) {
-    final path = Path();
-    for (var index = 0; index < axes.length; index++) {
-      final value = axes[index].value.clamp(0.0, 1.0) * progress;
-      final point = _point(center, radius * value, index, angleStep);
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
-    }
-    return path..close();
-  }
-
-  Path _polygonPath({
-    required Offset center,
-    required int count,
-    required double radius,
-  }) {
-    final path = Path();
-    final angleStep = 2 * math.pi / count;
-    for (var index = 0; index < count; index++) {
-      final point = _point(center, radius, index, angleStep);
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
-    }
-    return path..close();
-  }
-
-  Offset _point(Offset center, double radius, int index, double angleStep) {
-    final angle = -math.pi / 2 + angleStep * index;
-    return Offset(
-      center.dx + math.cos(angle) * radius,
-      center.dy + math.sin(angle) * radius,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _SakeTasteRadarPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.axes != axes ||
-      oldDelegate.preferenceAxes != preferenceAxes;
 }
 
 class _Pairing {

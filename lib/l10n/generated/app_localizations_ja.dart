@@ -15,6 +15,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navigationSearch => '検索';
 
   @override
+  String get navigationHome => 'ホーム';
+
+  @override
   String get navigationMap => 'マップ';
 
   @override
@@ -27,7 +30,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mapSearchShortcutDescription => 'お店から日本酒を探す';
 
   @override
-  String get fastSearchShortcut => '高速検索';
+  String get fastSearchShortcut => '高速ラベル検索';
 
   @override
   String get fastSearchShortcutDescription => 'ラベルを撮ってすぐ検索';

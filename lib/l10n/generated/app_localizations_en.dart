@@ -15,6 +15,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationSearch => 'Search';
 
   @override
+  String get navigationHome => 'Home';
+
+  @override
   String get navigationMap => 'Map';
 
   @override

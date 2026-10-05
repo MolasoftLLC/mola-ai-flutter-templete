@@ -16,6 +16,7 @@ import '../domain/eintities/app_content.dart';
 import '../domain/repository/mola_api_repository.dart';
 import 'common/dialogs/sake_preferences_dialog.dart';
 import 'common/help/help_guide_dialog.dart';
+import 'common/help/home_feature_guide.dart';
 
 part 'app_page_notifier.freezed.dart';
 
@@ -43,6 +44,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   AppPageNotifier({required this.context}) : super(const AppPageState());
 
   final BuildContext context;
+  final homeFeatureGuide = HomeFeatureGuide();
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
   MyPageNotifier get myPageNotifier => read<MyPageNotifier>();
@@ -104,11 +106,12 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     unawaited(_restoreTimelineIntroStatus());
 
     // アプリ起動時に好みの設定をチェック
-    unawaited(_checkAndShowPreferencesDialog());
+    unawaited(_showHomeGuideThenPreferences());
   }
 
   @override
   void dispose() {
+    homeFeatureGuide.dispose();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();
@@ -169,6 +172,11 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       state = state.copyWith(currentIndex: index);
     }
     unawaited(_maybeShowHelpGuide(index));
+    if (index == 0) {
+      unawaited(
+        homeFeatureGuide.showIfNeeded(context, () => state.currentIndex == 0),
+      );
+    }
     if (index == 3) {
       unawaited(_maybeShowTimelineIntro());
     }
@@ -452,6 +460,11 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   }
 
   // 好みの設定が未設定の場合、ダイアログを表示
+  Future<void> _showHomeGuideThenPreferences() async {
+    await homeFeatureGuide.showIfNeeded(context, () => state.currentIndex == 0);
+    if (context.mounted) await _checkAndShowPreferencesDialog();
+  }
+
   Future<void> _checkAndShowPreferencesDialog() async {
     // 既にダイアログを表示済みの場合は表示しない
     if (state.hasShownPreferencesDialog) return;

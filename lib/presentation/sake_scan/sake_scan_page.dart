@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1179,9 +1180,13 @@ class _SakeScanPageState extends State<SakeScanPage>
     return _BottomCard(
       child: Row(
         children: [
-          const SizedBox.square(
+          SizedBox.square(
             dimension: 24,
-            child: CircularProgressIndicator(strokeWidth: 3),
+            child: Lottie.asset(
+              'assets/lottie/ai_loading.json',
+              fit: BoxFit.contain,
+              repeat: true,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1660,9 +1665,13 @@ class _SakeScanPageState extends State<SakeScanPage>
                     size: 20,
                   )
                 else
-                  const SizedBox.square(
+                  SizedBox.square(
                     dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                    child: Lottie.asset(
+                      'assets/lottie/ai_loading.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                    ),
                   ),
                 const SizedBox(width: 8),
                 Text(

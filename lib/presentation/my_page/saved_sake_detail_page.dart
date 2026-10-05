@@ -22,6 +22,7 @@ import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/place_picker_sheet.dart';
+import 'unlinked_saved_sake_page.dart';
 
 const double _blockSpacing = 16;
 const double _blockVerticalPadding = 20;
@@ -31,108 +32,24 @@ class SavedSakeDetailPage extends StatefulWidget {
 
   final Sake sake;
 
-  /// 保存済みの日本酒は、すべて客観情報と個人記録を一つにした詳細へ開く。
-  /// マスターIDがない過去の記録は、銘柄名からマスターを補完して表示する。
+  /// マスター未紐付けの保存酒は、ユーザーが候補を選んで紐付ける。
   static Widget forSake(Sake sake) {
-    return _SavedSakeMasterDetailResolver(sake: sake);
+    if ((sake.sakeId ?? 0) <= 0) return UnlinkedSavedSakePage(sake: sake);
+    return SakeMasterDetailPage(
+      venueSake: VenueSake(
+        sakeId: sake.sakeId,
+        name: sake.name ?? '名称不明',
+        brewery: sake.brewery,
+        type: sake.type,
+        primaryImageUrl: sake.primaryImageUrl,
+        thumbnailImageUrl: sake.thumbnailImageUrl,
+        recordCount: 0,
+      ),
+    );
   }
 
   @override
   State<SavedSakeDetailPage> createState() => _SavedSakeDetailPageState();
-}
-
-class _SavedSakeMasterDetailResolver extends StatefulWidget {
-  const _SavedSakeMasterDetailResolver({required this.sake});
-
-  final Sake sake;
-
-  @override
-  State<_SavedSakeMasterDetailResolver> createState() =>
-      _SavedSakeMasterDetailResolverState();
-}
-
-class _SavedSakeMasterDetailResolverState
-    extends State<_SavedSakeMasterDetailResolver> {
-  Future<VenueSake>? _future;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _future ??= _resolveMaster();
-  }
-
-  Future<VenueSake> _resolveMaster() async {
-    final sake = widget.sake;
-    if (sake.sakeId != null && sake.sakeId! > 0) {
-      return _asVenueSake(sake);
-    }
-
-    final name = sake.name?.trim() ?? '';
-    if (name.isEmpty) return _asVenueSake(sake);
-    try {
-      final results = await context
-          .read<PlaceMapRepository>()
-          .searchSakeMasters(name);
-      final normalizedName = name.replaceAll(RegExp(r'\s+'), '');
-      final matching = results.where(
-        (result) =>
-            result.sakeId != null &&
-            result.sakeId! > 0 &&
-            result.name.replaceAll(RegExp(r'\s+'), '') == normalizedName,
-      );
-      final exactBrewery = matching.where(
-        (result) =>
-            sake.brewery?.trim().isNotEmpty == true &&
-            result.brewery?.trim() == sake.brewery?.trim(),
-      );
-      final resolved = exactBrewery.isNotEmpty
-          ? exactBrewery.first
-          : matching.isNotEmpty
-          ? matching.first
-          : null;
-      if (resolved == null) return _asVenueSake(sake);
-      return VenueSake(
-        sakeId: resolved.sakeId,
-        searchToken: resolved.searchToken,
-        name: resolved.name,
-        brewery: resolved.brewery ?? sake.brewery,
-        type: resolved.type ?? sake.type,
-        primaryImageUrl: resolved.primaryImageUrl ?? sake.primaryImageUrl,
-        thumbnailImageUrl: resolved.thumbnailImageUrl ?? sake.thumbnailImageUrl,
-        recordCount: 0,
-      );
-    } catch (_) {
-      return _asVenueSake(sake);
-    }
-  }
-
-  VenueSake _asVenueSake(Sake sake) => VenueSake(
-    sakeId: sake.sakeId,
-    name: sake.name ?? '名称不明',
-    brewery: sake.brewery,
-    type: sake.type,
-    primaryImageUrl: sake.primaryImageUrl,
-    thumbnailImageUrl: sake.thumbnailImageUrl,
-    recordCount: 0,
-  );
-
-  @override
-  Widget build(BuildContext context) => FutureBuilder<VenueSake>(
-    future: _future,
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) {
-        return const Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
-      final sake = snapshot.requireData;
-      return SakeMasterDetailPage(
-        key: ValueKey('saved-sake-master-${sake.sakeId ?? sake.name}'),
-        venueSake: sake,
-      );
-    },
-  );
 }
 
 class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {

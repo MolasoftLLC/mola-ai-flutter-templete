@@ -110,6 +110,12 @@ abstract class AppLocalizations {
   /// **'検索'**
   String get navigationSearch;
 
+  /// No description provided for @navigationHome.
+  ///
+  /// In ja, this message translates to:
+  /// **'ホーム'**
+  String get navigationHome;
+
   /// No description provided for @navigationMap.
   ///
   /// In ja, this message translates to:
@@ -137,7 +143,7 @@ abstract class AppLocalizations {
   /// No description provided for @fastSearchShortcut.
   ///
   /// In ja, this message translates to:
-  /// **'高速検索'**
+  /// **'高速ラベル検索'**
   String get fastSearchShortcut;
 
   /// No description provided for @fastSearchShortcutDescription.

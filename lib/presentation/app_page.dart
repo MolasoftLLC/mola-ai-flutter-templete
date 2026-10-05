@@ -77,6 +77,8 @@ class AppPage extends StatelessWidget {
         currentPageIndex: currentIndex,
         onPageSelected: notifier.onTabTapped,
         onScanTap: () => openNewHomeScanner(context),
+        scanKey: notifier.homeFeatureGuide.bottomScanKey,
+        mapKey: notifier.homeFeatureGuide.mapKey,
       ),
     );
   }
@@ -87,6 +89,8 @@ class _NewHomeBottomNavigation extends StatelessWidget {
     required this.currentPageIndex,
     required this.onPageSelected,
     required this.onScanTap,
+    required this.scanKey,
+    required this.mapKey,
   });
 
   static const _backgroundColor = Color(0xFF143861);
@@ -94,6 +98,8 @@ class _NewHomeBottomNavigation extends StatelessWidget {
   final int currentPageIndex;
   final ValueChanged<int> onPageSelected;
   final VoidCallback onScanTap;
+  final GlobalKey scanKey;
+  final GlobalKey mapKey;
 
   @override
   Widget build(BuildContext context) {
@@ -112,12 +118,13 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                 child: Row(
                   children: [
                     _NavigationItem(
-                      icon: Icons.search,
-                      label: context.l10n.navigationSearch,
+                      icon: Icons.home_outlined,
+                      label: context.l10n.navigationHome,
                       selected: currentPageIndex == 0,
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
+                      key: mapKey,
                       icon: Icons.map_outlined,
                       label: context.l10n.navigationMap,
                       selected: currentPageIndex == 1,
@@ -146,6 +153,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
             child: Column(
               children: [
                 Material(
+                  key: scanKey,
                   color: Colors.white,
                   elevation: 2,
                   shape: const CircleBorder(
@@ -180,6 +188,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
 
 class _NavigationItem extends StatelessWidget {
   const _NavigationItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.selected,

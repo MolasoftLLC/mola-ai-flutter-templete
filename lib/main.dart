@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 import 'app_config.dart';
+import 'domain/notifier/recent_sake_history.dart';
 import 'common/access_url.dart';
 import 'common/localization/app_locale_controller.dart';
 import 'common/utils/ad_utils.dart';
@@ -66,10 +67,14 @@ void main() async {
   final localeController = AppLocaleController();
   await localeController.load();
 
+  final recentSakeHistory = RecentSakeHistory();
+  await recentSakeHistory.load();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: localeController),
+        ChangeNotifierProvider.value(value: recentSakeHistory),
         ...providerList,
       ],
       child: const MyApp(),

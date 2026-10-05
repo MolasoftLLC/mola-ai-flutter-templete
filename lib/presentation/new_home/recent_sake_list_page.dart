@@ -11,7 +11,9 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/notifier/recent_sake_history.dart';
 import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../sake_map/sake_master_detail_page.dart';
 
@@ -54,7 +56,10 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
         _scrollController.position.extentAfter > 400) {
       return;
     }
-    final total = context.read<SavedSakeState>().savedSakeList.length;
+    final total = context
+        .read<RecentSakeHistory>()
+        .merge(context.read<SavedSakeState>().savedSakeList)
+        .length;
     if (_visibleCount >= total) return;
     setState(() {
       _visibleCount = math.min(_visibleCount + _pageSize, total);
@@ -85,7 +90,20 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
   Future<void> _openDetail(Sake sake) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SavedSakeDetailPage.forSake(sake),
+        builder: (_) => sake.savedId != null
+            ? SavedSakeDetailPage.forSake(sake)
+            : SakeMasterDetailPage(
+                recordRecentView: true,
+                venueSake: VenueSake(
+                  sakeId: sake.sakeId,
+                  name: sake.name ?? '',
+                  brewery: sake.brewery,
+                  type: sake.type,
+                  recordCount: 0,
+                  primaryImageUrl: sake.primaryImageUrl,
+                  thumbnailImageUrl: sake.thumbnailImageUrl,
+                ),
+              ),
       ),
     );
     if (!mounted) return;
@@ -94,9 +112,10 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final allSakes = context.select(
+    final savedRecords = context.select(
       (SavedSakeState state) => state.savedSakeList,
     );
+    final allSakes = context.watch<RecentSakeHistory>().merge(savedRecords);
     final visibleSakes = allSakes.take(_visibleCount).toList(growable: false);
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
 
@@ -244,44 +263,49 @@ class _RecentSakeCard extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFE8EDF3)),
-          InkWell(
-            onTap: onToggleRecord,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  const Icon(Icons.edit_note, size: 19, color: _muted),
-                  const SizedBox(width: 7),
-                  const Expanded(
-                    child: Text(
-                      '記録した内容',
-                      style: TextStyle(
-                        color: _muted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+          if (sake.savedId != null) ...[
+            const Divider(height: 1, color: Color(0xFFE8EDF3)),
+            InkWell(
+              onTap: onToggleRecord,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_note, size: 19, color: _muted),
+                    const SizedBox(width: 7),
+                    const Expanded(
+                      child: Text(
+                        '記録した内容',
+                        style: TextStyle(
+                          color: _muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  AnimatedRotation(
-                    turns: isExpanded ? .5 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    child: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: _muted,
+                    AnimatedRotation(
+                      turns: isExpanded ? .5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: _muted,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            alignment: Alignment.topCenter,
-            child: isExpanded
-                ? _RecordedContent(sake: sake)
-                : const SizedBox(width: double.infinity),
-          ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              alignment: Alignment.topCenter,
+              child: isExpanded
+                  ? _RecordedContent(sake: sake)
+                  : const SizedBox(width: double.infinity),
+            ),
+          ],
         ],
       ),
     );

@@ -34,6 +34,7 @@ class _StoreNameDialogState extends State<StoreNameDialog> {
       title: Text(context.l10n.enterStoreName),
       content: TextField(
         controller: _controller,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         decoration: InputDecoration(
           hintText: context.l10n.enterStoreNameHint,
           border: const OutlineInputBorder(),
