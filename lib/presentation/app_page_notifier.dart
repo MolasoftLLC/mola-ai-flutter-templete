@@ -28,6 +28,7 @@ bool isVersionBelowMinimum({
 abstract class AppPageState with _$AppPageState {
   const factory AppPageState({
     @Default(0) int currentIndex,
+    @Default(true) bool isStartupGateLoading,
     @Default(false) bool needUpDate,
     @Default(false) bool hasShownPreferencesDialog,
     @Default(false) bool hasReadTimelineIntro,
@@ -88,13 +89,14 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     }
     final needUpDate = await isUpdateRequired(release);
     state = state.copyWith(
+      isStartupGateLoading: false,
       needUpDate: needUpDate,
       releaseSetting: release,
       startupPromotions: content?.startupPromotions ?? const [],
       homeBanners: content?.homeBanners ?? const [],
     );
 
-    if (needUpDate) return;
+    if (release?.maintenanceEnabled == true || needUpDate) return;
 
     await _maybeShowStartupPromotion();
 
@@ -308,7 +310,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   }
 
   Future<void> _maybeShowHelpGuide(int index) async {
-    if (state.needUpDate) {
+    if (state.needUpDate || state.releaseSetting?.maintenanceEnabled == true) {
       return;
     }
 
@@ -359,7 +361,9 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   }
 
   Future<void> _maybeShowTimelineIntro() async {
-    if (_hasAttemptedTimelineIntro || state.needUpDate) {
+    if (_hasAttemptedTimelineIntro ||
+        state.needUpDate ||
+        state.releaseSetting?.maintenanceEnabled == true) {
       return;
     }
 

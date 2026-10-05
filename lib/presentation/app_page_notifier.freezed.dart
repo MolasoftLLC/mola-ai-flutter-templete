@@ -17,6 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$AppPageState {
   int get currentIndex => throw _privateConstructorUsedError;
+  bool get isStartupGateLoading => throw _privateConstructorUsedError;
   bool get needUpDate => throw _privateConstructorUsedError;
   bool get hasShownPreferencesDialog => throw _privateConstructorUsedError;
   bool get hasReadTimelineIntro => throw _privateConstructorUsedError;
@@ -38,6 +39,7 @@ abstract class $AppPageStateCopyWith<$Res> {
   @useResult
   $Res call(
       {int currentIndex,
+      bool isStartupGateLoading,
       bool needUpDate,
       bool hasShownPreferencesDialog,
       bool hasReadTimelineIntro,
@@ -60,6 +62,7 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
   @override
   $Res call({
     Object? currentIndex = null,
+    Object? isStartupGateLoading = null,
     Object? needUpDate = null,
     Object? hasShownPreferencesDialog = null,
     Object? hasReadTimelineIntro = null,
@@ -72,6 +75,10 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
           ? _value.currentIndex
           : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      isStartupGateLoading: null == isStartupGateLoading
+          ? _value.isStartupGateLoading
+          : isStartupGateLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
       needUpDate: null == needUpDate
           ? _value.needUpDate
           : needUpDate // ignore: cast_nullable_to_non_nullable
@@ -110,6 +117,7 @@ abstract class _$$AppPageStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {int currentIndex,
+      bool isStartupGateLoading,
       bool needUpDate,
       bool hasShownPreferencesDialog,
       bool hasReadTimelineIntro,
@@ -130,6 +138,7 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? currentIndex = null,
+    Object? isStartupGateLoading = null,
     Object? needUpDate = null,
     Object? hasShownPreferencesDialog = null,
     Object? hasReadTimelineIntro = null,
@@ -142,6 +151,10 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
           ? _value.currentIndex
           : currentIndex // ignore: cast_nullable_to_non_nullable
               as int,
+      isStartupGateLoading: null == isStartupGateLoading
+          ? _value.isStartupGateLoading
+          : isStartupGateLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
       needUpDate: null == needUpDate
           ? _value.needUpDate
           : needUpDate // ignore: cast_nullable_to_non_nullable
@@ -175,6 +188,7 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
 class _$AppPageStateImpl implements _AppPageState {
   const _$AppPageStateImpl(
       {this.currentIndex = 0,
+      this.isStartupGateLoading = true,
       this.needUpDate = false,
       this.hasShownPreferencesDialog = false,
       this.hasReadTimelineIntro = false,
@@ -187,6 +201,9 @@ class _$AppPageStateImpl implements _AppPageState {
   @override
   @JsonKey()
   final int currentIndex;
+  @override
+  @JsonKey()
+  final bool isStartupGateLoading;
   @override
   @JsonKey()
   final bool needUpDate;
@@ -219,7 +236,7 @@ class _$AppPageStateImpl implements _AppPageState {
 
   @override
   String toString() {
-    return 'AppPageState(currentIndex: $currentIndex, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog, hasReadTimelineIntro: $hasReadTimelineIntro, releaseSetting: $releaseSetting, startupPromotions: $startupPromotions, homeBanners: $homeBanners)';
+    return 'AppPageState(currentIndex: $currentIndex, isStartupGateLoading: $isStartupGateLoading, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog, hasReadTimelineIntro: $hasReadTimelineIntro, releaseSetting: $releaseSetting, startupPromotions: $startupPromotions, homeBanners: $homeBanners)';
   }
 
   @override
@@ -229,6 +246,8 @@ class _$AppPageStateImpl implements _AppPageState {
             other is _$AppPageStateImpl &&
             (identical(other.currentIndex, currentIndex) ||
                 other.currentIndex == currentIndex) &&
+            (identical(other.isStartupGateLoading, isStartupGateLoading) ||
+                other.isStartupGateLoading == isStartupGateLoading) &&
             (identical(other.needUpDate, needUpDate) ||
                 other.needUpDate == needUpDate) &&
             (identical(other.hasShownPreferencesDialog,
@@ -248,6 +267,7 @@ class _$AppPageStateImpl implements _AppPageState {
   int get hashCode => Object.hash(
       runtimeType,
       currentIndex,
+      isStartupGateLoading,
       needUpDate,
       hasShownPreferencesDialog,
       hasReadTimelineIntro,
@@ -265,6 +285,7 @@ class _$AppPageStateImpl implements _AppPageState {
 abstract class _AppPageState implements AppPageState {
   const factory _AppPageState(
       {final int currentIndex,
+      final bool isStartupGateLoading,
       final bool needUpDate,
       final bool hasShownPreferencesDialog,
       final bool hasReadTimelineIntro,
@@ -274,6 +295,8 @@ abstract class _AppPageState implements AppPageState {
 
   @override
   int get currentIndex;
+  @override
+  bool get isStartupGateLoading;
   @override
   bool get needUpDate;
   @override

@@ -36,10 +36,21 @@ class AppPage extends StatelessWidget {
     final currentIndex = context.select(
       (AppPageState state) => state.currentIndex,
     );
+    final isStartupGateLoading = context.select(
+      (AppPageState state) => state.isStartupGateLoading,
+    );
     final needUpDate = context.select((AppPageState state) => state.needUpDate);
     final release = context.select(
       (AppPageState state) => state.releaseSetting,
     );
+
+    if (isStartupGateLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (release?.maintenanceEnabled == true) {
+      return maintenancePage(context, notifier, release!);
+    }
 
     if (needUpDate) {
       return requireUpdate(context, notifier, release);
@@ -208,6 +219,52 @@ class _NavigationItem extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget maintenancePage(
+  BuildContext context,
+  AppPageNotifier notifier,
+  AppReleaseSetting release,
+) {
+  return Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.build_circle_outlined,
+                size: 56,
+                color: Color(0xFF17344E),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                '現在メンテナンス中です',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                release.maintenanceMessage ??
+                    'ご不便をおかけしています。しばらくしてからもう一度お試しください。',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, height: 1.7),
+              ),
+              if (release.maintenanceUrl != null) ...[
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => notifier.launchURL(release.maintenanceUrl!),
+                  child: const Text('詳しく見る'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 Widget requireUpdate(

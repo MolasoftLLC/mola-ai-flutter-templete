@@ -4,6 +4,9 @@ class AppReleaseSetting {
     this.storeUrl,
     this.message,
     this.messageUrl,
+    this.maintenanceEnabled = false,
+    this.maintenanceMessage,
+    this.maintenanceUrl,
   });
 
   factory AppReleaseSetting.fromJson(Map<String, dynamic> json) =>
@@ -15,12 +18,18 @@ class AppReleaseSetting {
         storeUrl: _text(json['storeUrl']),
         message: _text(json['message']),
         messageUrl: _text(json['messageUrl']),
+        maintenanceEnabled: json['maintenanceEnabled'] == true,
+        maintenanceMessage: _text(json['maintenanceMessage']),
+        maintenanceUrl: _text(json['maintenanceUrl']),
       );
 
   final String minimumVersion;
   final String? storeUrl;
   final String? message;
   final String? messageUrl;
+  final bool maintenanceEnabled;
+  final String? maintenanceMessage;
+  final String? maintenanceUrl;
 }
 
 class AppPromotion {

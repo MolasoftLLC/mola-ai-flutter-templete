@@ -9,6 +9,9 @@ void main() {
         'storeUrl': 'https://example.com/store',
         'message': '重要なお知らせ',
         'messageUrl': 'https://example.com/news',
+        'maintenanceEnabled': true,
+        'maintenanceMessage': '現在メンテナンス中です。',
+        'maintenanceUrl': 'https://example.com/status',
       },
       'startupPromotions': [
         {
@@ -33,6 +36,9 @@ void main() {
 
     expect(content.release.minimumVersion, '5.1.0');
     expect(content.release.message, '重要なお知らせ');
+    expect(content.release.maintenanceEnabled, isTrue);
+    expect(content.release.maintenanceMessage, '現在メンテナンス中です。');
+    expect(content.release.maintenanceUrl, 'https://example.com/status');
     expect(content.startupPromotions.single.id, 1);
     expect(content.homeBanners.single.linkTarget, 'map');
   });
