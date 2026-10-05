@@ -448,6 +448,7 @@ class SakeMasterDetails {
     this.imageCurrency,
     this.rakutenOffer,
     this.amazonOffer,
+    this.amazonSearchUrl,
     this.detailViewCount = 0,
     this.category,
     this.specialDesignation,
@@ -490,6 +491,7 @@ class SakeMasterDetails {
       imageCurrency: _asNonEmptyString(json['imageCurrency']),
       rakutenOffer: SakeShopOffer.fromJson(json['rakutenOffer']),
       amazonOffer: AmazonShopOffer.fromJson(json['amazonOffer']),
+      amazonSearchUrl: _amazonUrl(json['amazonSearchUrl']),
       detailViewCount: _asInt(json['detailViewCount']) ?? 0,
       category: _asNonEmptyString(json['category']),
       specialDesignation: _asNonEmptyString(json['specialDesignation']),
@@ -548,6 +550,7 @@ class SakeMasterDetails {
   final String? imageCurrency;
   final SakeShopOffer? rakutenOffer;
   final AmazonShopOffer? amazonOffer;
+  final String? amazonSearchUrl;
   final int detailViewCount;
   final String? category;
   final String? specialDesignation;
@@ -576,6 +579,17 @@ class SakeMasterDetails {
   final List<SakeStyleDetails> styles;
   final List<SakeProductVariant> variants;
   final SakeTasteProfileDetails? tasteProfile;
+}
+
+String? _amazonUrl(dynamic value) {
+  final url = _asNonEmptyString(value);
+  final uri = Uri.tryParse(url ?? '');
+  final host = uri?.host.toLowerCase() ?? '';
+  return url != null &&
+          uri?.scheme == 'https' &&
+          (host == 'amazon.co.jp' || host.endsWith('.amazon.co.jp'))
+      ? url
+      : null;
 }
 
 class SakeStyleDetails {

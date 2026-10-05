@@ -1059,6 +1059,9 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                         amazonOffer: (_headerOverview ?? snapshot.data)
                             ?.master
                             .amazonOffer,
+                        amazonSearchUrl: (_headerOverview ?? snapshot.data)
+                            ?.master
+                            .amazonSearchUrl,
                       ),
                     ),
                     SliverPadding(
@@ -1809,7 +1812,7 @@ class _Details extends StatelessWidget {
                 url: 'https://developers.rakuten.com/',
                 label: 'Supported by Rakuten Developers',
               ),
-            if (master.amazonOffer != null)
+            if (master.amazonOffer != null || master.amazonSearchUrl != null)
               const Text(
                 'Amazonのアソシエイトとして、SAKEPEDIAは適格販売により収入を得ています。',
                 style: TextStyle(color: Color(0xFF647184), fontSize: 11),
@@ -3825,6 +3828,7 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
     this.yahooProductUrl,
     this.rakutenOffer,
     this.amazonOffer,
+    this.amazonSearchUrl,
   });
 
   final double? yahooPrice;
@@ -3832,6 +3836,7 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
   final String? yahooProductUrl;
   final SakeShopOffer? rakutenOffer;
   final AmazonShopOffer? amazonOffer;
+  final String? amazonSearchUrl;
 
   @override
   double get minExtent => 62;
@@ -3850,6 +3855,7 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
     yahooProductUrl: yahooProductUrl,
     rakutenOffer: rakutenOffer,
     amazonOffer: amazonOffer,
+    amazonSearchUrl: amazonSearchUrl,
   );
 
   @override
@@ -3858,7 +3864,8 @@ class _ShopPriceHeaderDelegate extends SliverPersistentHeaderDelegate {
       yahooCurrency != oldDelegate.yahooCurrency ||
       yahooProductUrl != oldDelegate.yahooProductUrl ||
       rakutenOffer != oldDelegate.rakutenOffer ||
-      amazonOffer != oldDelegate.amazonOffer;
+      amazonOffer != oldDelegate.amazonOffer ||
+      amazonSearchUrl != oldDelegate.amazonSearchUrl;
 }
 
 class _ShopPriceBar extends StatelessWidget {
@@ -3868,6 +3875,7 @@ class _ShopPriceBar extends StatelessWidget {
     this.yahooProductUrl,
     this.rakutenOffer,
     this.amazonOffer,
+    this.amazonSearchUrl,
   });
 
   final double? yahooPrice;
@@ -3875,6 +3883,7 @@ class _ShopPriceBar extends StatelessWidget {
   final String? yahooProductUrl;
   final SakeShopOffer? rakutenOffer;
   final AmazonShopOffer? amazonOffer;
+  final String? amazonSearchUrl;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -3885,8 +3894,10 @@ class _ShopPriceBar extends StatelessWidget {
         Expanded(
           child: _ShopPrice(
             name: 'Amazon',
-            price: _formatShopPrice(amazonOffer?.price, amazonOffer?.currency),
-            url: amazonOffer?.affiliateUrl,
+            price: amazonOffer == null
+                ? (amazonSearchUrl == null ? '—' : '探す')
+                : _formatShopPrice(amazonOffer?.price, amazonOffer?.currency),
+            url: amazonOffer?.affiliateUrl ?? amazonSearchUrl,
           ),
         ),
         Expanded(
