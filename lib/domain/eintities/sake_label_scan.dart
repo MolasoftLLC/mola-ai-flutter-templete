@@ -406,6 +406,39 @@ class SakeShopOffer {
   }
 }
 
+class AmazonShopOffer {
+  const AmazonShopOffer({
+    required this.price,
+    required this.affiliateUrl,
+    this.currency = 'JPY',
+  });
+
+  final double price;
+  final String affiliateUrl;
+  final String currency;
+
+  static AmazonShopOffer? fromJson(dynamic value) {
+    final json = _asStringMap(value);
+    final price = _asDouble(json['price']);
+    final url = _asNonEmptyString(json['affiliateUrl']);
+    final uri = Uri.tryParse(url ?? '');
+    final host = uri?.host.toLowerCase() ?? '';
+    if (price == null ||
+        !price.isFinite ||
+        price <= 0 ||
+        url == null ||
+        uri?.scheme != 'https' ||
+        (host != 'amazon.co.jp' && !host.endsWith('.amazon.co.jp'))) {
+      return null;
+    }
+    return AmazonShopOffer(
+      price: price,
+      affiliateUrl: url,
+      currency: _asNonEmptyString(json['currency']) ?? 'JPY',
+    );
+  }
+}
+
 class SakeMasterDetails {
   const SakeMasterDetails({
     this.categoryCode,
@@ -414,6 +447,7 @@ class SakeMasterDetails {
     this.imagePrice,
     this.imageCurrency,
     this.rakutenOffer,
+    this.amazonOffer,
     this.detailViewCount = 0,
     this.category,
     this.specialDesignation,
@@ -455,6 +489,7 @@ class SakeMasterDetails {
       imagePrice: _asDouble(json['imagePrice']),
       imageCurrency: _asNonEmptyString(json['imageCurrency']),
       rakutenOffer: SakeShopOffer.fromJson(json['rakutenOffer']),
+      amazonOffer: AmazonShopOffer.fromJson(json['amazonOffer']),
       detailViewCount: _asInt(json['detailViewCount']) ?? 0,
       category: _asNonEmptyString(json['category']),
       specialDesignation: _asNonEmptyString(json['specialDesignation']),
@@ -512,6 +547,7 @@ class SakeMasterDetails {
   final double? imagePrice;
   final String? imageCurrency;
   final SakeShopOffer? rakutenOffer;
+  final AmazonShopOffer? amazonOffer;
   final int detailViewCount;
   final String? category;
   final String? specialDesignation;
