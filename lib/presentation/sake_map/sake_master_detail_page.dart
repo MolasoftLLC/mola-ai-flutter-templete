@@ -53,6 +53,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   final ScrollController _scrollController = ScrollController();
   bool _initialized = false;
   bool _showCompactHeader = false;
+  bool _showFloatingReview = false;
   SakeOverview? _headerOverview;
   SavedSakeNotifier? _savedSakeNotifier;
   FavoriteNotifier? _favoriteNotifier;
@@ -194,10 +195,18 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   void _updateCompactHeaderVisibility() {
-    final shouldShow =
-        _scrollController.hasClients && _scrollController.offset >= 180;
-    if (shouldShow != _showCompactHeader && mounted) {
-      setState(() => _showCompactHeader = shouldShow);
+    final offset = _scrollController.hasClients
+        ? _scrollController.offset
+        : 0.0;
+    final shouldShow = offset >= 180;
+    final shouldShowReview = offset >= 320;
+    if (mounted &&
+        (shouldShow != _showCompactHeader ||
+            shouldShowReview != _showFloatingReview)) {
+      setState(() {
+        _showCompactHeader = shouldShow;
+        _showFloatingReview = shouldShowReview;
+      });
     }
   }
 
@@ -262,7 +271,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
       if (mounted && requestGeneration == _overviewRequestGeneration) {
         setState(() => _headerOverview = overview);
-        unawaited(_syncOverviewImagesToSavedRecord(overview));
+        unawaited(_syncOverviewToSavedRecord(overview));
         _scheduleMasterEnrichmentPolling(overview);
         _scheduleLensAnalysis(overview);
       }
@@ -300,7 +309,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
             .fetchOverview(sakeId);
         if (!mounted) return;
         setState(() => _headerOverview = refreshed);
-        unawaited(_syncOverviewImagesToSavedRecord(refreshed));
+        unawaited(_syncOverviewToSavedRecord(refreshed));
         if (!refreshed.masterEnrichmentPending ||
             refreshed.master.tasteProfile != null) {
           timer.cancel();
@@ -311,7 +320,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     });
   }
 
-  Future<void> _syncOverviewImagesToSavedRecord(SakeOverview overview) async {
+  Future<void> _syncOverviewToSavedRecord(SakeOverview overview) async {
     final notifier = _savedSakeNotifier;
     final record = _findSavedSake(notifier, overview.sake);
     if (notifier == null || record == null) return;
@@ -319,8 +328,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     if (savedId == null || savedId.isEmpty) return;
     final primary = overview.sake.primaryImageUrl?.trim();
     final thumbnail = overview.sake.thumbnailImageUrl?.trim();
+    final description = overview.sake.description?.trim();
     if ((primary == null || primary.isEmpty) &&
-        (thumbnail == null || thumbnail.isEmpty)) {
+        (thumbnail == null || thumbnail.isEmpty) &&
+        (description == null || description.isEmpty)) {
       return;
     }
     final nextPrimary = primary?.isNotEmpty == true
@@ -330,7 +341,10 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         ? thumbnail
         : record.thumbnailImageUrl;
     if (record.primaryImageUrl == nextPrimary &&
-        record.thumbnailImageUrl == nextThumbnail) {
+        record.thumbnailImageUrl == nextThumbnail &&
+        (description == null ||
+            description.isEmpty ||
+            record.description?.trim() == description)) {
       return;
     }
     await notifier.updateSavedSakeWithInfo(savedId, overview.sake);
@@ -1065,7 +1079,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       ),
                     ),
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
                       sliver: SliverToBoxAdapter(
                         child: _Details(
                           overview: _headerOverview ?? snapshot.data,
@@ -1085,6 +1099,19 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   ],
                 ),
               ),
+              if ((detailSake.sakeId ?? 0) > 0 && !snapshot.hasError)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _FloatingReviewCta(
+                    visible:
+                        _showFloatingReview &&
+                        MediaQuery.viewInsetsOf(context).bottom == 0,
+                    onPressed: () =>
+                        _openReviewEditor(detailSake, community.myReview),
+                  ),
+                ),
               if (snapshot.hasError)
                 Positioned(
                   right: 20,
@@ -1110,6 +1137,64 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingReviewCta extends StatelessWidget {
+  const _FloatingReviewCta({required this.visible, required this.onPressed});
+
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 280);
+    return IgnorePointer(
+      ignoring: !visible,
+      child: ExcludeSemantics(
+        excluding: !visible,
+        child: AnimatedSlide(
+          offset: visible ? Offset.zero : const Offset(0, 0.2),
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: duration,
+            curve: Curves.easeOut,
+            child: SafeArea(
+              top: false,
+              minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Center(
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: FilledButton.icon(
+                    key: const Key('sake-floating-review-button'),
+                    onPressed: visible ? onPressed : null,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      backgroundColor: _navy,
+                      foregroundColor: Colors.white,
+                      elevation: 6,
+                      shadowColor: _navy.withValues(alpha: 0.25),
+                      shape: const StadiumBorder(),
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    icon: const Icon(Icons.star_outline_rounded),
+                    label: const Text('このお酒を評価しよう！'),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -1537,13 +1622,6 @@ class _Details extends StatelessWidget {
                       ],
                     ],
                   ),
-                  if (overview?.isProvisional ?? false) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      '新発見！・商品情報は仮登録',
-                      style: TextStyle(color: Color(0xFF2E7D32)),
-                    ),
-                  ],
                   if (breweryName != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -1952,7 +2030,11 @@ class _MasterFavoriteButton extends StatelessWidget {
         }
         try {
           await favoriteNotifier.addOrRemoveFavorite(
-            FavoriteSake(name: sake.name ?? '', type: sake.type),
+            FavoriteSake(
+              name: sake.name ?? '',
+              type: sake.type,
+              sakeId: sake.sakeId,
+            ),
           );
         } on FavoriteGuestLimitReachedException {
           if (!context.mounted) return;

@@ -331,9 +331,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get bottleListClosingNotice => 'こちらの機能は保存酒とかぶってきたためひっそりとクローズ予定です。';
-
-  @override
   String get noBottleImages => '保存された酒瓶画像はありません';
 
   @override
@@ -977,9 +974,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String removedFromSaved(String name) {
     return '$name を保存リストから削除しました';
   }
-
-  @override
-  String get bottleList => '酒瓶リスト';
 
   @override
   String get sakeDetails => '日本酒詳細';

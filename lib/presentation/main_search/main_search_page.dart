@@ -666,6 +666,7 @@ class MainSearchPage extends StatelessWidget {
                   ),
                   onPressed: () async {
                     final favoriteSake = FavoriteSake(
+                      sakeId: sakeInfo.sakeId,
                       name: sakeInfo.name ?? context.l10n.unknown,
                       type: sakeInfo.type,
                     );

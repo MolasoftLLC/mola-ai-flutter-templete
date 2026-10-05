@@ -108,7 +108,7 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
         elevation: 0,
         title: const Text(
           '最近調べたお酒',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
       body: RefreshIndicator(

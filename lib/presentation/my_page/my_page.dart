@@ -23,8 +23,9 @@ import '../../common/utils/sake_image_utils.dart';
 import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
-import '../sake_bottle/sake_bottle_list_page.dart';
 import '../timeline/timeline_page.dart';
+import '../../domain/repository/place_map_repository.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'account_settings_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
@@ -510,54 +511,6 @@ class MyPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // 酒瓶リストセクション（保存酒の下）
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  SakeBottleListPage.wrapped(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.wine_bar,
-                                color: Colors.amber,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                context.l10n.bottleList,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Spacer(),
-                              const Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
                     // お気に入りのお酒セクション
                     Container(
                       width: MediaQuery.of(context).size.width,
@@ -623,6 +576,29 @@ class MyPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: ListTile(
+                                      onTap:
+                                          (myFavoriteSakeList[index].sakeId ??
+                                                  0) <=
+                                              0
+                                          ? null
+                                          : () {
+                                              final favorite =
+                                                  myFavoriteSakeList[index];
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                  builder: (_) =>
+                                                      SakeMasterDetailPage(
+                                                        venueSake: VenueSake(
+                                                          sakeId:
+                                                              favorite.sakeId,
+                                                          name: favorite.name,
+                                                          type: favorite.type,
+                                                          recordCount: 0,
+                                                        ),
+                                                      ),
+                                                ),
+                                              );
+                                            },
                                       title: Text(
                                         myFavoriteSakeList[index].name,
                                         style: const TextStyle(

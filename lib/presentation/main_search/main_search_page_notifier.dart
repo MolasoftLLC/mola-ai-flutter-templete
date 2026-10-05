@@ -19,7 +19,6 @@ import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/gemini_mola_api_repository.dart';
 import '../../domain/repository/mola_api_repository.dart';
-import '../../domain/repository/sake_bottle_image_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/repository/sake_user_repository.dart';
@@ -74,8 +73,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
   SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
       read<SakeMenuRecognitionRepository>();
-  SakeBottleImageRepository get sakeBottleImageRepository =>
-      read<SakeBottleImageRepository>();
   SavedSakeSyncRepository get savedSakeSyncRepository =>
       read<SavedSakeSyncRepository>();
   AuthRepository get authRepository => read<AuthRepository>();
@@ -884,19 +881,6 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         pendingSavedSakeIds: pendingIds,
         analyzingImagePath: inBackground ? null : state.analyzingImagePath,
       );
-
-      // Save the bottle image with sake name and type
-      try {
-        await sakeBottleImageRepository.saveSakeBottleImage(
-          analysisFile,
-          sakeName: sakeInfo.name,
-          type: sakeInfo.type,
-        );
-        logger.info('酒瓶画像を保存しました: ${sakeInfo.name}');
-      } catch (e) {
-        // 画像保存に失敗しても解析結果の表示には影響させない
-        logger.warning('酒瓶画像の保存に失敗しましたが、解析結果は表示されます: $e');
-      }
     } catch (e, stackTrace) {
       logger.shout('酒瓶解析に失敗: $e');
       logger.shout('スタックトレース: $stackTrace');

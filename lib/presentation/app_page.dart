@@ -5,6 +5,7 @@ import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/access_url.dart';
 import 'package:mola_gemini_flutter_template/presentation/favorite_search/favorite_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/new_home_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/my_page/my_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_map_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page.dart';
 import 'package:provider/provider.dart';
@@ -68,6 +69,7 @@ class AppPage extends StatelessWidget {
             SakeMapPage.wrapped(),
             FavoriteSearchPage.wrapped(),
             TimelinePage.wrapped(),
+            MyPage.wrapped(),
           ],
         ),
       ),
@@ -123,16 +125,16 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                     ),
                     const Expanded(child: SizedBox()),
                     _NavigationItem(
-                      icon: Icons.lightbulb_outline,
-                      label: context.l10n.navigationRecommendation,
-                      selected: currentPageIndex == 2,
-                      onTap: () => onPageSelected(2),
-                    ),
-                    _NavigationItem(
                       icon: Icons.timeline,
                       label: context.l10n.navigationTimeline,
                       selected: currentPageIndex == 3,
                       onTap: () => onPageSelected(3),
+                    ),
+                    _NavigationItem(
+                      icon: Icons.person_outline,
+                      label: context.l10n.navigationMyPage,
+                      selected: currentPageIndex == 4,
+                      onTap: () => onPageSelected(4),
                     ),
                   ],
                 ),

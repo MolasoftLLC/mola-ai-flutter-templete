@@ -346,10 +346,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get bottleListClosingNotice =>
-      'This feature overlaps with Saved Sake and is scheduled to be retired.';
-
-  @override
   String get noBottleImages => 'No bottle images have been saved';
 
   @override
@@ -1010,9 +1006,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String removedFromSaved(String name) {
     return 'Removed $name from saved sake';
   }
-
-  @override
-  String get bottleList => 'Bottle list';
 
   @override
   String get sakeDetails => 'Sake details';

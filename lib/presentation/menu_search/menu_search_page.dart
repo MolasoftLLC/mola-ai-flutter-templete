@@ -460,8 +460,9 @@ class MenuSearchPage extends StatelessWidget {
                                         : null,
                                     onToggleFavorite: () async {
                                       final favoriteSake = FavoriteSake(
-                                        name: detailedSake!.name ?? 'Unknown',
-                                        type: detailedSake!.type,
+                                        sakeId: detailedSake!.sakeId,
+                                        name: detailedSake.name ?? 'Unknown',
+                                        type: detailedSake.type,
                                       );
                                       if (!isFavorited &&
                                           favNotifier.hasReachedGuestLimit) {

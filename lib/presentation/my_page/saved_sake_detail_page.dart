@@ -2203,6 +2203,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     bool isFavorited,
   ) async {
     final favorite = FavoriteSake(
+      sakeId: _currentSake.sakeId,
       name: _currentSake.name ?? '名称不明',
       type: _currentSake.type,
     );

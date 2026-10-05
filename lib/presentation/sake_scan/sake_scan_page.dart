@@ -1322,12 +1322,10 @@ class _SakeScanPageState extends State<SakeScanPage>
                                             ),
                                           ),
                                         ),
-                                      if (item.officiallyVerified ||
-                                          item.isLensDiscovery)
+                                      if (item.officiallyVerified &&
+                                          !item.isLensDiscovery)
                                         Text(
-                                          item.isLensDiscovery
-                                              ? '新発見！'
-                                              : context.l10n.officiallyVerified,
+                                          context.l10n.officiallyVerified,
                                           style: const TextStyle(
                                             color: Color(0xFF2E7D32),
                                             fontSize: 11,

@@ -369,21 +369,24 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         isReportPending: isReportPending,
         onOpenDetails: (sake.sakeId ?? 0) <= 0
             ? null
-            : () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SakeMasterDetailPage(
-                    venueSake: VenueSake(
-                      sakeId: sake.sakeId,
-                      name: normalizedName,
-                      brewery: sake.brewery,
-                      type: sake.type,
-                      recordCount: 0,
-                      primaryImageUrl: sake.primaryImageUrl,
-                      thumbnailImageUrl: sake.thumbnailImageUrl,
+            : () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SakeMasterDetailPage(
+                      venueSake: VenueSake(
+                        sakeId: sake.sakeId,
+                        name: normalizedName,
+                        brewery: sake.brewery,
+                        type: sake.type,
+                        recordCount: 0,
+                        primaryImageUrl: sake.primaryImageUrl,
+                        thumbnailImageUrl: sake.thumbnailImageUrl,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+                if (context.mounted) await notifier.refresh();
+              },
         onToggleSaved: () async {
           if (!await ensureLoggedIn()) {
             return;
@@ -439,6 +442,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
             return;
           }
           final favoriteSake = FavoriteSake(
+            sakeId: sake.sakeId,
             name: normalizedName,
             type: sake.type,
           );
@@ -866,11 +870,7 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               clipBehavior: Clip.none,
               children: [
                 GestureDetector(
-                  onTap:
-                      widget.onOpenDetails ??
-                      ((imagePath == null || imagePath.isEmpty)
-                          ? null
-                          : () => _showImagePreview(context, imagePath)),
+                  onTap: widget.onOpenDetails,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: AspectRatio(
@@ -1172,57 +1172,6 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
 
   bool _isRemotePath(String path) {
     return path.startsWith('http://') || path.startsWith('https://');
-  }
-
-  void _showImagePreview(BuildContext context, String path) {
-    showDialog<void>(
-      context: context,
-      builder: (_) {
-        return Dialog(
-          backgroundColor: Colors.black87,
-          insetPadding: const EdgeInsets.all(16),
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: InteractiveViewer(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _isRemotePath(path)
-                    ? Image.network(
-                        path,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) {
-                            return child;
-                          }
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.white54,
-                            size: 48,
-                          ),
-                        ),
-                      )
-                    : _buildPreviewFile(path),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildPreviewFile(String path) {
-    final file = File(path);
-    if (!file.existsSync()) {
-      return const Center(
-        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
-      );
-    }
-    return Image.file(file, fit: BoxFit.contain);
   }
 }
 

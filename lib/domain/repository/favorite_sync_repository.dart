@@ -40,10 +40,10 @@ class FavoriteSyncRepository {
         }
         final type = item['type'];
         result.add(
-          FavoriteSake(
-            name: name,
-            type: type is String && type.isNotEmpty ? type : null,
-          ),
+          FavoriteSake.fromJson({
+            ...item,
+            'type': type is String && type.isNotEmpty ? type : null,
+          }),
         );
       }
 
@@ -55,7 +55,7 @@ class FavoriteSyncRepository {
     }
   }
 
-  Future<bool> addFavorite({
+  Future<FavoriteSake?> addFavorite({
     required String userId,
     required FavoriteSake sake,
   }) async {
@@ -64,6 +64,7 @@ class FavoriteSyncRepository {
         'userId': userId,
         'name': sake.name,
         'type': sake.type,
+        if ((sake.sakeId ?? 0) > 0) 'sakeId': sake.sakeId,
         'timestamp': DateTime.now().toIso8601String(),
       };
 
@@ -72,13 +73,19 @@ class FavoriteSyncRepository {
         logger.warning(
           'お気に入りの追加に失敗しました: status=${response.statusCode}, error=${response.error}',
         );
-        return false;
+        return null;
       }
-      return true;
+      final body = response.body;
+      if (body is Map && body['favorite'] is Map) {
+        return FavoriteSake.fromJson(
+          Map<String, dynamic>.from(body['favorite'] as Map),
+        );
+      }
+      return sake;
     } catch (error, stackTrace) {
       logger.warning('お気に入り追加処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
-      return false;
+      return null;
     }
   }
 

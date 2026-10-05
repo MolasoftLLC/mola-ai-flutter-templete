@@ -163,7 +163,11 @@ class _NewHomePageState extends State<NewHomePage> {
                           onTap: () async {
                             try {
                               await favoriteNotifier.addOrRemoveFavorite(
-                                FavoriteSake(name: name, type: sake.type),
+                                FavoriteSake(
+                                  name: name,
+                                  type: sake.type,
+                                  sakeId: sake.sakeId,
+                                ),
                               );
                             } on FavoriteGuestLimitReachedException {
                               if (!context.mounted) return;

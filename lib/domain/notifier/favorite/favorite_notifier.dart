@@ -20,20 +20,26 @@ part 'favorite_notifier.freezed.dart';
 class FavoriteSake {
   final String name;
   final String? type;
+  final int? sakeId;
 
-  FavoriteSake({required this.name, this.type});
+  FavoriteSake({required this.name, this.type, this.sakeId});
 
   // JSONからオブジェクトを生成
   factory FavoriteSake.fromJson(Map<String, dynamic> json) {
     return FavoriteSake(
       name: json['name'] as String,
       type: json['type'] as String?,
+      sakeId: int.tryParse('${json['sakeId'] ?? json['sake_id']}'),
     );
   }
 
   // オブジェクトをJSONに変換
   Map<String, dynamic> toJson() {
-    return {'name': name, 'type': type};
+    return {
+      'name': name,
+      'type': type,
+      if ((sakeId ?? 0) > 0) 'sakeId': sakeId,
+    };
   }
 
   @override
@@ -171,15 +177,15 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
           .toList();
       state = state.copyWith(myFavoriteList: updatedList);
     } else {
-      final success = await _favoriteSyncRepository.addFavorite(
+      final linkedFavorite = await _favoriteSyncRepository.addFavorite(
         userId: user.uid,
         sake: favoriteSake,
       );
-      if (!success) {
+      if (linkedFavorite == null) {
         logger.warning('お気に入りの追加に失敗しました (remote)');
         return;
       }
-      final updatedList = [...state.myFavoriteList, favoriteSake];
+      final updatedList = [...state.myFavoriteList, linkedFavorite];
       state = state.copyWith(myFavoriteList: updatedList);
     }
 
@@ -203,6 +209,11 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
   }
 
   Future<void> fetchFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey('favorites')) {
+      await _loadFavorites();
+      return;
+    }
     final favoriteStrings =
         await sharedPreference.getStringList(key: FAVORITE_SAKE_LIST) ?? [];
 
@@ -287,7 +298,7 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
         userId: userId,
         sake: favorite,
       );
-      if (!success) {
+      if (success == null) {
         logger.warning('お気に入りの移行に失敗しました: ${favorite.name}');
       }
     }

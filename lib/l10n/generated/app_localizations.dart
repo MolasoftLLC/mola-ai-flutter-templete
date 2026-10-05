@@ -704,12 +704,6 @@ abstract class AppLocalizations {
   /// **'ベータ版 {version}'**
   String betaVersion(String version);
 
-  /// No description provided for @bottleListClosingNotice.
-  ///
-  /// In ja, this message translates to:
-  /// **'こちらの機能は保存酒とかぶってきたためひっそりとクローズ予定です。'**
-  String get bottleListClosingNotice;
-
   /// No description provided for @noBottleImages.
   ///
   /// In ja, this message translates to:
@@ -1939,12 +1933,6 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'{name} を保存リストから削除しました'**
   String removedFromSaved(String name);
-
-  /// No description provided for @bottleList.
-  ///
-  /// In ja, this message translates to:
-  /// **'酒瓶リスト'**
-  String get bottleList;
 
   /// No description provided for @sakeDetails.
   ///
