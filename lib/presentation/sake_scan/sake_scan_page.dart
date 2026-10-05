@@ -552,16 +552,8 @@ class _SakeScanPageState extends State<SakeScanPage>
   Future<void> _startCandidateAnalysis() async {
     _resetAnalysisRecordDraft();
     final notifier = context.read<SakeScanNotifier>();
-    final opensExistingMaster =
-        (notifier.currentState.selectedCandidate?.sakeId ?? 0) > 0 ||
-        (notifier.currentState.selectedCandidate?.isLensDiscovery ?? false);
-    final sake = await notifier.confirmCandidate();
-    if (!mounted || sake == null || !opensExistingMaster) return;
-    if (widget.reassignTarget != null) {
-      Navigator.of(context).pop<Sake>(notifier.currentState.savedSake ?? sake);
-      return;
-    }
-    await _openAnalyzedDetail(notifier.currentState);
+    // 候補確定後も記録画面に留まり、感想と公開設定を確認してから進む。
+    await notifier.confirmCandidate();
   }
 
   Future<void> _openRecordPlacePicker() async {
@@ -1468,9 +1460,11 @@ class _SakeScanPageState extends State<SakeScanPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              '待っている間に、あなたの記録を残せます',
-              style: TextStyle(
+            Text(
+              analysisCompleted
+                  ? '感想や公開設定を確認して、詳細へ進めます'
+                  : '待っている間に、あなたの記録を残せます',
+              style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
