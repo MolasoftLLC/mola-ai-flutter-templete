@@ -544,6 +544,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get timelineIntroEnvyHint => 'うらやましい日本酒は気軽に👍ボタンしてあげよう。';
 
   @override
+  String get timelinePublishingTitle => 'タイムラインへの掲載について';
+
+  @override
+  String get timelinePublishingDescription =>
+      'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。';
+
+  @override
+  String get continueAnalysis => 'このまま解析';
+
+  @override
+  String get removeCheck => 'チェックを外す';
+
+  @override
   String get loginToToggleAutoPost => 'ログインすると自動投稿を切り替えられます。';
 
   @override
@@ -837,6 +850,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get takePhoto => 'カメラで撮影';
+
+  @override
+  String get shareToTimeline => 'タイムラインにも表示する';
+
+  @override
+  String get onlyFirstImageShared => '画像は1枚目だけ共有されます。';
 
   @override
   String get autoPostToX => 'Xに自動投稿';

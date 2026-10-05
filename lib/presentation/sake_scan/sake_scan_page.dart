@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
@@ -20,6 +21,7 @@ import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/repository/sake_user_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
@@ -74,6 +76,8 @@ class SakeScanPage extends StatefulWidget {
 
 class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
+  static const _timelineSharePreferenceKey =
+      'timeline_share_checkbox_preference';
   CameraController? _cameraController;
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
@@ -94,6 +98,9 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _recordSaved = false;
   bool _recordSaving = false;
   String? _recordSaveError;
+  bool _shareToTimeline = true;
+  bool _autoTweetEnabled = true;
+  bool _isAutoTweetUpdating = false;
   bool _initialReanalysisStarted = false;
 
   @override
@@ -101,12 +108,138 @@ class _SakeScanPageState extends State<SakeScanPage>
     super.initState();
     _recordImpressionController = TextEditingController();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_loadSharingSettings());
+    });
     if (widget.initialFrontImage == null) {
       unawaited(_initializeCamera());
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_startInitialReanalysis());
       });
+    }
+  }
+
+  Future<void> _loadSharingSettings() async {
+    var shareToTimeline = true;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      shareToTimeline =
+          preferences.getBool(_timelineSharePreferenceKey) ?? true;
+      if (!preferences.containsKey(_timelineSharePreferenceKey)) {
+        await preferences.setBool(_timelineSharePreferenceKey, true);
+      }
+    } catch (error, stackTrace) {
+      logger.warning('タイムライン共有設定の復元に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+
+    var autoTweetEnabled = true;
+    if (!mounted) return;
+    final user = context.read<AuthRepository>().currentUser;
+    final userRepository = context.read<SakeUserRepository>();
+    if (user != null) {
+      final remote = await userRepository.fetchUser(user.uid);
+      autoTweetEnabled = _parseBoolean(remote?['autoTweetEnabled']) ?? true;
+    }
+    if (!mounted) return;
+    final saved = context.read<SakeScanNotifier>().currentState.savedSake;
+    setState(() {
+      _shareToTimeline = shareToTimeline;
+      _autoTweetEnabled = autoTweetEnabled;
+      if (saved != null && saved.isPublic != shareToTimeline) {
+        _recordDirty = true;
+        _recordSaved = false;
+      }
+    });
+    context.read<SakeScanNotifier>().setShareToTimeline(shareToTimeline);
+  }
+
+  bool? _parseBoolean(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
+  }
+
+  Future<void> _onTimelineShareChanged(bool value) async {
+    if (!value) {
+      final shouldDisable = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(context.l10n.timelinePublishingTitle),
+          content: Text(context.l10n.timelinePublishingDescription),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.l10n.continueAnalysis),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(context.l10n.removeCheck),
+            ),
+          ],
+        ),
+      );
+      if (shouldDisable != true || !mounted) return;
+    }
+
+    setState(() {
+      _shareToTimeline = value;
+      _recordDirty = true;
+      _recordSaved = false;
+      _recordSaveError = null;
+    });
+    context.read<SakeScanNotifier>().setShareToTimeline(value);
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_timelineSharePreferenceKey, value);
+    } catch (error, stackTrace) {
+      logger.warning('タイムライン共有設定の保存に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+  }
+
+  Future<void> _onAutoTweetChanged(bool value) async {
+    if (_isAutoTweetUpdating) return;
+    if (!value) {
+      final shouldDisable = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(context.l10n.autoPostDialogTitle),
+          content: Text(context.l10n.autoPostDialogDescription),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.l10n.continuePosting),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(context.l10n.disableAutoPost),
+            ),
+          ],
+        ),
+      );
+      if (shouldDisable != true || !mounted) return;
+    }
+
+    setState(() => _isAutoTweetUpdating = true);
+    final response = await context.read<SakeUserRepository>().updateAutoTweet(
+      value,
+    );
+    if (!mounted) return;
+    setState(() {
+      _isAutoTweetUpdating = false;
+      if (response != null) _autoTweetEnabled = value;
+    });
+    if (response == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.autoPostUpdateFailed)),
+      );
     }
   }
 
@@ -475,11 +608,26 @@ class _SakeScanPageState extends State<SakeScanPage>
         place: placeName == null || placeName.isEmpty ? null : placeName,
         drinkingPlace: _recordPlace,
         userTags: _recordTags.isEmpty ? null : _recordTags.toList(),
-        isPublic: false,
+        isPublic: _shareToTimeline,
       );
-      await context.read<SavedSakeNotifier>().updateSavedSake(updated);
+      final savedNotifier = context.read<SavedSakeNotifier>();
+      await savedNotifier.updateSavedSake(updated);
+      if (saved.isPublic != _shareToTimeline) {
+        final visibilityUpdated = await savedNotifier.updateTimelineVisibility(
+          savedId: saved.savedId!,
+          isPublic: _shareToTimeline,
+          timelineComment: saved.timelineComment,
+        );
+        if (!visibilityUpdated) {
+          throw StateError('タイムライン公開設定を保存できませんでした');
+        }
+      }
       if (!mounted) return false;
-      context.read<SakeScanNotifier>().updateSavedRecord(updated);
+      final stored = savedNotifier.savedSakes.firstWhere(
+        (item) => item.savedId == saved.savedId,
+        orElse: () => updated,
+      );
+      context.read<SakeScanNotifier>().updateSavedRecord(stored);
       setState(() {
         _recordDirty = false;
         _recordSaved = true;
@@ -1457,6 +1605,43 @@ class _SakeScanPageState extends State<SakeScanPage>
                             borderSide: BorderSide.none,
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        value: _shareToTimeline,
+                        onChanged: _recordSaving
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  unawaited(_onTimelineShareChanged(value));
+                                }
+                              },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: const Color(0xFF1D3567),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          context.l10n.shareToTimeline,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(context.l10n.onlyFirstImageShared),
+                      ),
+                      CheckboxListTile(
+                        value: _autoTweetEnabled,
+                        onChanged: _isAutoTweetUpdating
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  unawaited(_onAutoTweetChanged(value));
+                                }
+                              },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: const Color(0xFF1D3567),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          context.l10n.autoPostToX,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(context.l10n.autoPostToXDescription),
                       ),
                       if (_recordSaveError != null) ...[
                         const SizedBox(height: 8),

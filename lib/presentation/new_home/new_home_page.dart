@@ -240,8 +240,27 @@ class _NewHomePageState extends State<NewHomePage> {
                       },
                       subtitleBuilder: (sake) =>
                           _displayUserName(context, sake),
-                      onTap: (_) =>
-                          context.read<AppPageNotifier>().onTabTapped(3),
+                      onTap: (sake) {
+                        if ((sake.sakeId ?? 0) <= 0) {
+                          context.read<AppPageNotifier>().onTabTapped(3);
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SakeMasterDetailPage(
+                              venueSake: VenueSake(
+                                sakeId: sake.sakeId,
+                                name: sake.name ?? '',
+                                brewery: sake.brewery,
+                                type: sake.type,
+                                recordCount: 0,
+                                primaryImageUrl: sake.primaryImageUrl,
+                                thumbnailImageUrl: sake.thumbnailImageUrl,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),

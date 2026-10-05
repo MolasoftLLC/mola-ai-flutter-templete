@@ -158,7 +158,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
     }
     final draft = sake.copyWith(
       imagePaths: savedPaths,
-      isPublic: false,
+      isPublic: isPublic,
       syncStatus: SavedSakeSyncStatus.localOnly,
     );
     final savedId = await _savedSakeNotifier.addSavedSake(draft);
@@ -195,7 +195,7 @@ class DefaultSakeScanPersistenceService implements SakeScanPersistenceService {
       drinkingPlace: latest.drinkingPlace,
       userTags: latest.userTags,
       personalTasteRatings: latest.personalTasteRatings,
-      isPublic: latest.isPublic,
+      isPublic: isPublic,
     );
     await _savedSakeNotifier.updateSavedSakeWithInfo(savedId, normalized);
     final stored = _savedSakeNotifier.savedSakes.firstWhere(

@@ -568,6 +568,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap 👍 when you see a sake worth envying.';
 
   @override
+  String get timelinePublishingTitle => 'Timeline publishing';
+
+  @override
+  String get timelinePublishingDescription =>
+      'Only the sake information and the first photo will appear on the timeline. Your private notes and impressions will not be shown.';
+
+  @override
+  String get continueAnalysis => 'Keep enabled';
+
+  @override
+  String get removeCheck => 'Turn off';
+
+  @override
   String get loginToToggleAutoPost => 'Sign in to change automatic posting.';
 
   @override
@@ -867,6 +880,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get takePhoto => 'Take a photo';
+
+  @override
+  String get shareToTimeline => 'Show on the timeline';
+
+  @override
+  String get onlyFirstImageShared => 'Only the first image will be shared.';
 
   @override
   String get autoPostToX => 'Automatically post to X';

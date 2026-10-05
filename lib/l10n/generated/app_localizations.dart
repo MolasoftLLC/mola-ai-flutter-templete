@@ -1106,6 +1106,30 @@ abstract class AppLocalizations {
   /// **'うらやましい日本酒は気軽に👍ボタンしてあげよう。'**
   String get timelineIntroEnvyHint;
 
+  /// No description provided for @timelinePublishingTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'タイムラインへの掲載について'**
+  String get timelinePublishingTitle;
+
+  /// No description provided for @timelinePublishingDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'タイムラインで表示されるのは日本酒情報と1枚目の写真だけです。あなたの感想やメモなどは表示されません。ぜひみんなが日本酒を知る機会にご協力ください。'**
+  String get timelinePublishingDescription;
+
+  /// No description provided for @continueAnalysis.
+  ///
+  /// In ja, this message translates to:
+  /// **'このまま解析'**
+  String get continueAnalysis;
+
+  /// No description provided for @removeCheck.
+  ///
+  /// In ja, this message translates to:
+  /// **'チェックを外す'**
+  String get removeCheck;
+
   /// No description provided for @loginToToggleAutoPost.
   ///
   /// In ja, this message translates to:
@@ -1669,6 +1693,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'カメラで撮影'**
   String get takePhoto;
+
+  /// No description provided for @shareToTimeline.
+  ///
+  /// In ja, this message translates to:
+  /// **'タイムラインにも表示する'**
+  String get shareToTimeline;
+
+  /// No description provided for @onlyFirstImageShared.
+  ///
+  /// In ja, this message translates to:
+  /// **'画像は1枚目だけ共有されます。'**
+  String get onlyFirstImageShared;
 
   /// No description provided for @autoPostToX.
   ///

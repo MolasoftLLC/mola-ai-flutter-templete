@@ -12,9 +12,11 @@ import '../../common/localization/localization_extensions.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'envy_result.dart';
 import 'timeline_envy_ranking_page.dart';
 import 'timeline_page_notifier.dart';
@@ -365,6 +367,23 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         envyCoachMarkKey: envyCoachMarkKey,
         envyCount: envyCount,
         isReportPending: isReportPending,
+        onOpenDetails: (sake.sakeId ?? 0) <= 0
+            ? null
+            : () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SakeMasterDetailPage(
+                    venueSake: VenueSake(
+                      sakeId: sake.sakeId,
+                      name: normalizedName,
+                      brewery: sake.brewery,
+                      type: sake.type,
+                      recordCount: 0,
+                      primaryImageUrl: sake.primaryImageUrl,
+                      thumbnailImageUrl: sake.thumbnailImageUrl,
+                    ),
+                  ),
+                ),
+              ),
         onToggleSaved: () async {
           if (!await ensureLoggedIn()) {
             return;
@@ -763,6 +782,7 @@ class _TimelineSakeCard extends StatefulWidget {
     required this.onToggleFavorite,
     this.onToggleEnvy,
     this.onReport,
+    this.onOpenDetails,
   });
 
   final Sake sake;
@@ -777,6 +797,7 @@ class _TimelineSakeCard extends StatefulWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback? onToggleEnvy;
   final VoidCallback? onReport;
+  final VoidCallback? onOpenDetails;
 
   @override
   State<_TimelineSakeCard> createState() => _TimelineSakeCardState();
@@ -828,247 +849,255 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
     final hasUserIcon = userIconUrl != null && userIconUrl.isNotEmpty;
     final shouldShowUserInfo = userName.isNotEmpty || hasUserIcon;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              GestureDetector(
-                onTap: (imagePath == null || imagePath.isEmpty)
-                    ? null
-                    : () => _showImagePreview(context, imagePath),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 3 / 2,
-                    child: _buildImage(imagePath),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onOpenDetails,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  onTap:
+                      widget.onOpenDetails ??
+                      ((imagePath == null || imagePath.isEmpty)
+                          ? null
+                          : () => _showImagePreview(context, imagePath)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 3 / 2,
+                      child: _buildImage(imagePath),
+                    ),
                   ),
                 ),
-              ),
-              if (widget.onReport != null)
+                if (widget.onReport != null)
+                  Positioned(
+                    right: -6,
+                    top: -8,
+                    child: _TimelineReportButton(
+                      isPending: widget.isReportPending,
+                      onPressed: widget.isReportPending
+                          ? null
+                          : widget.onReport,
+                    ),
+                  ),
+                if (shouldShowUserInfo)
+                  Positioned(
+                    left: -6,
+                    top: -8,
+                    child: _TimelineUserInfoBadge(
+                      username: userName,
+                      iconUrl: userIconUrl,
+                    ),
+                  ),
                 Positioned(
-                  right: -6,
-                  top: -8,
-                  child: _TimelineReportButton(
-                    isPending: widget.isReportPending,
-                    onPressed: widget.isReportPending ? null : widget.onReport,
-                  ),
-                ),
-              if (shouldShowUserInfo)
-                Positioned(
-                  left: -6,
-                  top: -8,
-                  child: _TimelineUserInfoBadge(
-                    username: userName,
-                    iconUrl: userIconUrl,
-                  ),
-                ),
-              Positioned(
-                left: 12,
-                bottom: 12,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TimelineCircleIconButton(
-                      icon: widget.isSaved
-                          ? Icons.bookmark
-                          : Icons.bookmark_outline,
-                      isActive: widget.isSaved,
-                      activeColor: Colors.amberAccent,
-                      onTap: widget.onToggleSaved,
-                    ),
-                    const SizedBox(height: 10),
-                    _TimelineCircleIconButton(
-                      icon: widget.isFavorite
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      isActive: widget.isFavorite,
-                      activeColor: Colors.pinkAccent,
-                      onTap: widget.onToggleFavorite,
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                right: 12,
-                bottom: 12,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: isInteractable ? widget.onToggleEnvy : null,
-                      child: AnimatedContainer(
-                        key: widget.envyCoachMarkKey,
-                        duration: const Duration(milliseconds: 180),
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: envyButtonColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.25),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: isEnvyPending
-                            ? const Padding(
-                                padding: EdgeInsets.all(11),
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white70,
-                                  ),
-                                  strokeWidth: 2.4,
-                                ),
-                              )
-                            : Icon(
-                                Icons.thumb_up_alt_rounded,
-                                color: envyIconColor,
-                                size: 22,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 44,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.55),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        '$displayedEnvyCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            sake.name?.trim().isNotEmpty == true
-                ? sake.name!.trim()
-                : context.l10n.unknownName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (typeText != null && typeText.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                typeText,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
-            ),
-          if (sake.brewery != null && sake.brewery!.trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                sake.brewery!,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-          if (hasTimelineComment)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                timelineComment!,
-                key: const Key('timeline-public-comment'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          if (hasTaste)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final tasteContent = context.l10n.tasteLabel(tasteText);
-                  final painter = TextPainter(
-                    text: TextSpan(text: tasteContent, style: bodyStyle),
-                    maxLines: 2,
-                    textDirection: Directionality.of(context),
-                  )..layout(maxWidth: constraints.maxWidth);
-                  final shouldShowToggle = painter.didExceedMaxLines;
-
-                  return Column(
+                  left: 12,
+                  bottom: 12,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        tasteContent,
-                        maxLines: _isTasteExpanded ? null : 2,
-                        overflow: _isTasteExpanded
-                            ? TextOverflow.visible
-                            : TextOverflow.ellipsis,
-                        style: bodyStyle,
+                      _TimelineCircleIconButton(
+                        icon: widget.isSaved
+                            ? Icons.bookmark
+                            : Icons.bookmark_outline,
+                        isActive: widget.isSaved,
+                        activeColor: Colors.amberAccent,
+                        onTap: widget.onToggleSaved,
                       ),
-                      if (shouldShowToggle)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _isTasteExpanded = !_isTasteExpanded;
-                              });
-                            },
-                            icon: Icon(
-                              _isTasteExpanded
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: Colors.white,
+                      const SizedBox(height: 10),
+                      _TimelineCircleIconButton(
+                        icon: widget.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        isActive: widget.isFavorite,
+                        activeColor: Colors.pinkAccent,
+                        onTap: widget.onToggleFavorite,
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: isInteractable ? widget.onToggleEnvy : null,
+                        child: AnimatedContainer(
+                          key: widget.envyCoachMarkKey,
+                          duration: const Duration(milliseconds: 180),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: envyButtonColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.25),
                             ),
-                            label: Text(
-                              _isTasteExpanded
-                                  ? context.l10n.close
-                                  : context.l10n.readMore,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
                               ),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              minimumSize: const Size(0, 32),
-                            ),
+                            ],
+                          ),
+                          child: isEnvyPending
+                              ? const Padding(
+                                  padding: EdgeInsets.all(11),
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white70,
+                                    ),
+                                    strokeWidth: 2.4,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.thumb_up_alt_rounded,
+                                  color: envyIconColor,
+                                  size: 22,
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 44,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '$displayedEnvyCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ),
                     ],
-                  );
-                },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              sake.name?.trim().isNotEmpty == true
+                  ? sake.name!.trim()
+                  : context.l10n.unknownName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ),
-        ],
+            if (typeText != null && typeText.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  typeText,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ),
+            if (sake.brewery != null && sake.brewery!.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  sake.brewery!,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            if (hasTimelineComment)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  timelineComment!,
+                  key: const Key('timeline-public-comment'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            if (hasTaste)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final tasteContent = context.l10n.tasteLabel(tasteText);
+                    final painter = TextPainter(
+                      text: TextSpan(text: tasteContent, style: bodyStyle),
+                      maxLines: 2,
+                      textDirection: Directionality.of(context),
+                    )..layout(maxWidth: constraints.maxWidth);
+                    final shouldShowToggle = painter.didExceedMaxLines;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tasteContent,
+                          maxLines: _isTasteExpanded ? null : 2,
+                          overflow: _isTasteExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: bodyStyle,
+                        ),
+                        if (shouldShowToggle)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _isTasteExpanded = !_isTasteExpanded;
+                                });
+                              },
+                              icon: Icon(
+                                _isTasteExpanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                _isTasteExpanded
+                                    ? context.l10n.close
+                                    : context.l10n.readMore,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                minimumSize: const Size(0, 32),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

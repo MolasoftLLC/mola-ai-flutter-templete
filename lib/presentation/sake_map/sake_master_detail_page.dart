@@ -1568,16 +1568,6 @@ class _Details extends StatelessWidget {
                   notifier: savedSakeNotifier,
                 ),
               ),
-            if ((detailSake.sakeId ?? 0) > 0)
-              _Section(
-                title: 'みんなの評価',
-                child: _CommunityReviewsSection(
-                  community:
-                      overview?.community ?? const SakeCommunitySummary(),
-                  onReview: onReview,
-                  onReportReview: onReportReview,
-                ),
-              ),
             if (!(overview?.isProvisional ?? false) &&
                 preferenceAxes == null &&
                 !isLoggedIn)
@@ -1641,6 +1631,16 @@ class _Details extends StatelessWidget {
                     height: 1.75,
                     color: Color(0xFF404A56),
                   ),
+                ),
+              ),
+            if ((detailSake.sakeId ?? 0) > 0)
+              _Section(
+                title: 'みんなの評価',
+                child: _CommunityReviewsSection(
+                  community:
+                      overview?.community ?? const SakeCommunitySummary(),
+                  onReview: onReview,
+                  onReportReview: onReportReview,
                 ),
               ),
             if (pairings.isNotEmpty)
