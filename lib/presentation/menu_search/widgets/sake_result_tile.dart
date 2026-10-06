@@ -12,7 +12,7 @@ import '../../../domain/eintities/sake_label_scan.dart';
 import '../../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../../common/sake/taste_match.dart';
 import '../../../common/sake/menu_taste_summary.dart';
-import '../../common/widgets/sake_taste_widgets.dart';
+import '../../common/widgets/sake_taste_match_preview.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
@@ -243,26 +243,14 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       ),
                     ),
                   ],
-                  if (matchPercent != null)
+                  if (matchPercent != null || profile != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF143861),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: SakePreferenceMatchSection(
-                          percent: matchPercent,
-                          fullWidth: true,
-                        ),
-                      ),
-                    ),
-                  if (profile != null && preference != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        menuRecommendationReason(profile, preference),
-                        style: const TextStyle(fontSize: 13, height: 1.5),
+                      child: SakeTasteMatchPreview(
+                        percent: matchPercent,
+                        profile: profile,
+                        preference: preference,
+                        radarSize: 128,
                       ),
                     ),
                 ],
@@ -300,36 +288,6 @@ class _SakeResultTileState extends State<SakeResultTile> {
               ),
               showTrailingIcon: false,
               children: [
-                if (profile != null) ...[
-                  Center(
-                    child: SakeTasteRadarChart(
-                      axes: [
-                        SakeTasteAxis('フルーティ', profile.fruity),
-                        SakeTasteAxis('甘み', profile.sweetness),
-                        SakeTasteAxis('酸味', profile.acidity),
-                        SakeTasteAxis('コク', profile.body ?? profile.umami),
-                        SakeTasteAxis('キレ', profile.kire),
-                        SakeTasteAxis('辛さ', profile.dryness),
-                      ],
-                      preferenceAxes: preference == null
-                          ? null
-                          : [
-                              SakeTasteAxis('フルーティ', preference.fruity),
-                              SakeTasteAxis('甘み', preference.sweetness),
-                              SakeTasteAxis('酸味', preference.acidity),
-                              SakeTasteAxis('コク', preference.umami),
-                              SakeTasteAxis('キレ', preference.kire),
-                              SakeTasteAxis('辛さ', preference.spiciness),
-                            ],
-                    ),
-                  ),
-                  if (preference != null) ...[
-                    const SizedBox(height: 8),
-                    const SakeTasteChartLegend(),
-                  ],
-                  const SizedBox(height: 12),
-                ],
-
                 if (widget.hasDetails)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
