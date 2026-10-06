@@ -11,10 +11,14 @@ import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_hist
 import 'package:mola_gemini_flutter_template/domain/repository/gemini_mola_api_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/menu_analysis_history_repository.dart';
 import 'package:state_notifier/state_notifier.dart';
+import 'package:provider/provider.dart';
 
 import '../../common/services/ad_counter_service.dart';
 
 import '../../common/logger.dart';
+import '../../common/localization/app_locale_resolver.dart';
+import '../../domain/repository/auth_repository.dart';
+import '../../infrastructure/api_client/api_client.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/ad_utils.dart';
 import '../../common/utils/custom_image_picker.dart';
@@ -74,9 +78,15 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     this.initialImage,
     MenuAnalysisHistoryRepository? historyRepository,
   }) : _historyRepository =
-           historyRepository ?? MenuAnalysisHistoryRepository(),
+           historyRepository ??
+           MenuAnalysisHistoryRepository(
+             ownerId: context.read<AuthRepository>().currentUser?.uid,
+           ),
        super(const MenuSearchPageState());
 
+  StreamSubscription<dynamic>? _historyAuthSubscription;
+  Timer? _cloudSyncTimer;
+  Timer? _syncSoonTimer;
   int _detailsGeneration = 0;
   bool _resolvingDetails = false;
   final Set<String> _selectedMenuNames = {};
@@ -103,7 +113,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     // await requestGemini(prompt2);
 
     // 初期化と移行を実行
+    _historyAuthSubscription = context
+        .read<AuthRepository>()
+        .authStateChanges()
+        .listen((user) {
+          if (mounted && user?.uid != _historyRepository.ownerId) {
+            state = state.copyWith(menuAnalysisHistory: const []);
+          }
+        });
     await _initializeWithMigration();
+    _cloudSyncTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(_syncHistory()),
+    );
+    unawaited(_syncHistory());
     final image = initialImage;
     if (mounted && image != null) {
       // Wait for the result route to finish its first frame before opening ads
@@ -150,8 +173,36 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
 
+  void _scheduleHistorySync() {
+    _syncSoonTimer?.cancel();
+    _syncSoonTimer = Timer(
+      const Duration(seconds: 2),
+      () => unawaited(_syncHistory()),
+    );
+  }
+
+  Future<void> _syncHistory() async {
+    if (!mounted || state.isExtractingInfo || state.isGettingDetails) return;
+    final uid = _historyRepository.ownerId;
+    if (uid == null) return;
+    bool isOwner() =>
+        mounted &&
+        context.mounted &&
+        context.read<AuthRepository>().currentUser?.uid == uid;
+    try {
+      await _historyRepository.synchronize(context.read<ApiClient>(), isOwner);
+      if (isOwner()) await loadMenuAnalysisHistory();
+    } catch (error) {
+      // Keep the local record and durable outbox; retry on the next interval.
+      logger.warning('メニュー履歴は端末に保存済み。サーバー同期を再試行します: $error');
+    }
+  }
+
   @override
   void dispose() {
+    _historyAuthSubscription?.cancel();
+    _cloudSyncTimer?.cancel();
+    _syncSoonTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();
@@ -823,11 +874,17 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   // メニュー解析履歴を読み込む
   Future<void> loadMenuAnalysisHistory() async {
     try {
+      final history = await _historyRepository.load();
+      if (!mounted) return;
+      final currentUid = context.read<AuthRepository>().currentUser?.uid;
       state = state.copyWith(
-        menuAnalysisHistory: await _historyRepository.load(),
+        menuAnalysisHistory: currentUid == _historyRepository.ownerId
+            ? history
+            : const [],
       );
     } catch (e) {
       logger.shout('メニュー解析履歴の読み込みに失敗しました: $e');
+      if (!mounted) return;
       state = state.copyWith(errorMessage: context.l10n.menuHistoryLoadFailed);
     }
   }
@@ -882,11 +939,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             .toList(growable: false),
         nameMapping: state.nameMapping,
         matchPercents: state.matchPercents,
+        details: {
+          for (final source in state.extractedSakes)
+            if (source.name != null)
+              for (final detail in state.sakes ?? const <Sake>[])
+                if (detail.name == state.nameMapping[source.name])
+                  source.name!: detail,
+        },
+        tasteProfiles: state.tasteProfiles,
       );
       final newHistoryItem = MenuAnalysisHistoryItem(
         id: analysisId,
         date: analysisDate,
         storeName: existing?.storeName,
+        drinkingPlace: existing?.drinkingPlace,
         sakes: savedSakes,
         imagePath: imagePath,
         analysisStatus:
@@ -903,6 +969,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 : 'partial'),
       );
       await _historyRepository.upsert(newHistoryItem);
+      _scheduleHistorySync();
       final updatedHistory = [
         newHistoryItem,
         ...state.menuAnalysisHistory.where((item) => item.id != analysisId),
@@ -942,6 +1009,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     if (pending == null) return;
     try {
       await _historyRepository.upsert(pending);
+      _scheduleHistorySync();
       final updated = [
         pending,
         ...state.menuAnalysisHistory.where((item) => item.id != pending.id),
@@ -967,6 +1035,103 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
 
+  final Set<String> _historyDetailsLoading = {};
+
+  Future<void> restoreHistoryDetails(String historyId) async {
+    final item = state.menuAnalysisHistory
+        .where((item) => item.id == historyId)
+        .firstOrNull;
+    if (item == null || !_historyDetailsLoading.add(historyId)) return;
+    try {
+      final ids = item.sakes
+          .where((sake) => sake.details == null || sake.tasteProfile == null)
+          .map((sake) => sake.sakeId)
+          .whereType<int>()
+          .where((id) => id > 0)
+          .toSet()
+          .take(50)
+          .toList();
+      if (ids.isEmpty) return;
+      final response = await read<ApiClient>().fetchMenuHistoryDetails({
+        'sakeIds': ids,
+        'locale': await resolveAppLocaleLanguageCode(),
+      });
+      if (!mounted || !response.isSuccessful) return;
+      final overviews = ((response.body as Map)['details'] as List)
+          .map(
+            (row) =>
+                SakeOverview.fromJson(Map<String, dynamic>.from(row as Map)),
+          )
+          .toList();
+      final latest = state.menuAnalysisHistory
+          .where((item) => item.id == historyId)
+          .firstOrNull;
+      if (latest == null) return;
+      final myPage = read<MyPageNotifier>().state;
+      final preference = menuTastePreference(
+        profile: myPage.tasteProfile,
+        preferences: myPage.preferences,
+      );
+      final sakes = latest.sakes.map((sake) {
+        final overview = overviews
+            .where((detail) => detail.sake.sakeId == sake.sakeId)
+            .firstOrNull;
+        if (overview == null) return sake;
+        final profile = sake.tasteProfile ?? overview.master.tasteProfile;
+        final percent =
+            sake.matchPercent ??
+            calculateOptionalSakeTasteMatchPercent(
+              profile: profile,
+              preference: preference,
+            );
+        return SavedSake(
+          name: sake.name,
+          type: sake.type,
+          extractedName: sake.extractedName,
+          sakeId: sake.sakeId,
+          matchPercent: percent,
+          recommendationBasis: sake.recommendationBasis,
+          isRecommended: percent == null ? sake.isRecommended : percent >= 70,
+          details: sake.details ?? overview.sake,
+          tasteProfile: profile,
+        );
+      }).toList();
+      final updated = latest.copyWith(sakes: sakes);
+      await _historyRepository.upsert(updated);
+      _scheduleHistorySync();
+      if (!mounted) return;
+      state = state.copyWith(
+        menuAnalysisHistory: state.menuAnalysisHistory
+            .map((item) => item.id == historyId ? updated : item)
+            .toList(),
+      );
+    } catch (error) {
+      logger.warning('以前のメニュー履歴の詳細補完に失敗しました: $error');
+    } finally {
+      _historyDetailsLoading.remove(historyId);
+    }
+  }
+
+  Future<void> setHistoryPlace(String historyId, DrinkingPlace? place) async {
+    final item = state.menuAnalysisHistory.firstWhere(
+      (item) => item.id == historyId,
+    );
+    final updated = item.copyWith(
+      drinkingPlace: place,
+      clearDrinkingPlace: place == null,
+      clearStoreName: place == null,
+      storeName: place?.displayName,
+    );
+    await _historyRepository.upsert(updated);
+    _scheduleHistorySync();
+    if (!mounted) return;
+    state = state.copyWith(
+      menuAnalysisHistory: state.menuAnalysisHistory
+          .map((item) => item.id == historyId ? updated : item)
+          .toList(),
+    );
+  }
+
   // 店舗名を設定する
   Future<void> setStoreName(String historyId, String storeName) async {
     try {
@@ -980,6 +1145,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         (item) => item.id == historyId,
       );
       await _historyRepository.upsert(updatedItem);
+      _scheduleHistorySync();
       state = state.copyWith(
         menuAnalysisHistory: updatedHistory,
         isEditingStoreName: false,
@@ -1010,6 +1176,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         orElse: () => throw Exception('削除対象の履歴項目が見つかりませんでした'),
       );
       await _historyRepository.delete(historyId);
+      _scheduleHistorySync();
 
       // ファイルが存在する場合は削除を試みる
       if (itemToDelete.imagePath != null) {

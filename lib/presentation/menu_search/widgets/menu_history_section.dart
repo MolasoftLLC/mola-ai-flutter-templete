@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page_notifier.dart';
-import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/store_name_dialog.dart';
 
 import '../../../common/localization/localization_extensions.dart';
+import '../../../common/sake/menu_taste_summary.dart';
+import '../../../domain/repository/place_map_repository.dart';
+import '../../my_page/widgets/place_picker_sheet.dart';
+import '../../sake_map/sake_master_detail_page.dart';
+import '../../common/widgets/sake_taste_widgets.dart';
 
 class MenuHistorySection extends StatelessWidget {
   const MenuHistorySection({Key? key}) : super(key: key);
@@ -141,6 +146,11 @@ class MenuHistorySection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ExpansionTile(
+                      key: PageStorageKey(historyItem.id),
+                      onExpansionChanged: (expanded) {
+                        if (expanded)
+                          notifier.restoreHistoryDetails(historyItem.id);
+                      },
                       leading:
                           (historyItem.imagePath != null ||
                               (historyItem.base64Image != null &&
@@ -196,22 +206,25 @@ class MenuHistorySection extends StatelessWidget {
                           ),
                           // 店舗名編集ボタン
                           IconButton(
+                            tooltip: context.l10n.placeConsumed,
                             icon: const Icon(
                               Icons.edit,
                               size: 20,
                               color: Color(0xFF1D3567),
                             ),
-                            onPressed: () {
-                              showStoreNameDialog(
-                                context: context,
-                                initialStoreName: historyItem.storeName,
-                                onSave: (storeName) {
-                                  notifier.setStoreName(
-                                    historyItem.id,
-                                    storeName,
-                                  );
-                                },
+                            onPressed: () async {
+                              final place = await PlacePickerSheet.show(
+                                context,
+                                initialPlace:
+                                    historyItem.drinkingPlace?.displayName ??
+                                    historyItem.storeName,
                               );
+                              if (place != null) {
+                                await notifier.setHistoryPlace(
+                                  historyItem.id,
+                                  place,
+                                );
+                              }
                             },
                           ),
                           // 削除ボタン
@@ -262,83 +275,62 @@ class MenuHistorySection extends StatelessWidget {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: historyItem.sakes.map((sake) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
+                            children: [
+                              if (historyItem.drinkingPlace != null) ...[
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: const Icon(
+                                    Icons.location_on_outlined,
+                                  ),
+                                  title: Text(
+                                    historyItem.drinkingPlace!.displayName,
+                                  ),
+                                  onTap: () {
+                                    final place = historyItem.drinkingPlace!;
+                                    final uri = Uri.https(
+                                      'www.google.com',
+                                      '/maps/search/',
+                                      {
+                                        'api': '1',
+                                        'query': place.displayName,
+                                        if (place.providerPlaceId != null)
+                                          'query_place_id':
+                                              place.providerPlaceId!,
+                                      },
+                                    );
+                                    launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  },
+                                  subtitle:
+                                      historyItem
+                                              .drinkingPlace!
+                                              .formattedAddress ==
+                                          null
+                                      ? null
+                                      : Text(
+                                          historyItem
+                                              .drinkingPlace!
+                                              .formattedAddress!,
+                                        ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => notifier.setHistoryPlace(
+                                      historyItem.id,
+                                      null,
+                                    ),
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            localizeLegacyMessage(
-                                              context.l10n,
-                                              sake.name,
-                                            ),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          if (sake.type != null)
-                                            Text(
-                                              sake.type!,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (sake.isRecommended)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.red.shade300,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.star,
-                                              color: Colors.red.shade700,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              context.l10n.recommended,
-                                              style: TextStyle(
-                                                color: Colors.red.shade700,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
+                                const SizedBox(height: 8),
+                              ],
+                              ...historyItem.sakes.map(
+                                (sake) => _HistorySakeTile(
+                                  sake: sake,
+                                  historyId: historyItem.id,
                                 ),
-                              );
-                            }).toList(),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -348,6 +340,116 @@ class MenuHistorySection extends StatelessWidget {
               },
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _HistorySakeTile extends StatelessWidget {
+  const _HistorySakeTile({required this.sake, required this.historyId});
+  final String historyId;
+  final SavedSake sake;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = sake.details;
+    final profile = sake.tasteProfile;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: ExpansionTile(
+          key: PageStorageKey(
+            'history-sake-$historyId-${sake.extractedName ?? sake.name}-${sake.sakeId}',
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sake.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (profile != null)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final tag in menuTasteTags(profile))
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Chip(
+                            label: Text(tag),
+                            visualDensity: VisualDensity.compact,
+                            side: BorderSide.none,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              if (sake.matchPercent != null) ...[
+                const SizedBox(height: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF143861),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SakePreferenceMatchSection(
+                    percent: sake.matchPercent!,
+                    fullWidth: true,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          subtitle: Text(sake.type ?? context.l10n.unknownType),
+          childrenPadding: const EdgeInsets.all(16),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (profile != null) ...[
+              Center(
+                child: SakeTasteRadarChart(
+                  axes: [
+                    SakeTasteAxis('フルーティ', profile.fruity),
+                    SakeTasteAxis('甘み', profile.sweetness),
+                    SakeTasteAxis('酸味', profile.acidity),
+                    SakeTasteAxis('コク', profile.body ?? profile.umami),
+                    SakeTasteAxis('キレ', profile.kire),
+                    SakeTasteAxis('辛さ', profile.dryness),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (details?.description?.isNotEmpty == true)
+              Text(details!.description!),
+            if (details?.brewery?.isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              Text(details!.brewery!),
+            ],
+            if (sake.sakeId != null && sake.sakeId! > 0)
+              TextButton.icon(
+                icon: const Icon(Icons.open_in_new),
+                label: Text(sake.name),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SakeMasterDetailPage(
+                      venueSake: VenueSake(
+                        sakeId: sake.sakeId!,
+                        name: sake.name,
+                        brewery: details?.brewery,
+                        type: sake.type,
+                        recordCount: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

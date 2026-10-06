@@ -6,6 +6,9 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/eintities/menu_analysis_history.dart';
+import '../api_client/api_client.dart';
+import '../../common/utils/image_utils.dart';
+import '../../common/logger.dart';
 import 'shared_key.dart';
 import 'shared_preference.dart';
 
@@ -21,6 +24,7 @@ class MenuAnalysisHistoryRepository {
     LegacyMenuHistoryClearer? legacyClearer,
     MenuHistoryWriter? writer,
     this.maxItems = 20,
+    this.ownerId,
   }) : _directoryProvider =
            directoryProvider ?? getApplicationDocumentsDirectory,
        _legacyReader =
@@ -39,6 +43,8 @@ class MenuAnalysisHistoryRepository {
   final LegacyMenuHistoryClearer _legacyClearer;
   final MenuHistoryWriter _writer;
   final int maxItems;
+  final String? ownerId;
+  bool _syncing = false;
   Future<void> _mutationQueue = Future<void>.value();
 
   Future<void> _serialize(Future<void> Function() action) {
@@ -56,9 +62,39 @@ class MenuAnalysisHistoryRepository {
 
   Future<Directory> _root() async {
     final documents = await _directoryProvider();
-    final root = Directory(
+    final base = Directory(
       path.join(documents.path, 'menu_analysis_history_v2'),
     );
+    if (!await base.exists()) await base.create(recursive: true);
+    final root = ownerId == null
+        ? (await File(path.join(base.path, '.account_claim')).exists()
+              ? Directory(path.join(base.path, 'accounts', 'guest'))
+              : base)
+        : Directory(path.join(base.path, 'accounts', _safeId(ownerId!)));
+    if (ownerId != null) {
+      await root.create(recursive: true);
+      final marker = File(path.join(root.path, '.account_migrated'));
+      if (!await marker.exists()) {
+        final claim = File(path.join(base.path, '.account_claim'));
+        if (!await claim.exists() || await claim.readAsString() == ownerId) {
+          final oldItems = Directory(path.join(base.path, 'items'));
+          if (await oldItems.exists()) {
+            final dest = Directory(path.join(root.path, 'items'));
+            await dest.create(recursive: true);
+            for (final item in await oldItems.list().toList()) {
+              if (item is File && item.path.endsWith('.json')) {
+                final target = File(
+                  path.join(dest.path, path.basename(item.path)),
+                );
+                if (!await target.exists()) await item.copy(target.path);
+              }
+            }
+          }
+          await _writeAtomically(claim, ownerId!);
+        }
+        await _writeAtomically(marker, 'complete');
+      }
+    }
     if (!await root.exists()) await root.create(recursive: true);
     return root;
   }
@@ -134,6 +170,7 @@ class MenuAnalysisHistoryRepository {
   Future<void> _upsert(MenuAnalysisHistoryItem item) async {
     final stored = item.copyWith(clearBase64Image: true);
     await _writer(await _itemFile(item.id), jsonEncode(stored.toJson()));
+    if (ownerId != null) await _queueCloud(item.id, stored.toJson());
     await _prune();
   }
 
@@ -141,6 +178,7 @@ class MenuAnalysisHistoryRepository {
 
   Future<void> _delete(String id) async {
     final file = await _itemFile(id);
+    if (ownerId != null) await _queueCloud(id, null);
     if (await file.exists()) await file.delete();
   }
 
@@ -180,10 +218,159 @@ class MenuAnalysisHistoryRepository {
     }
   }
 
+  Future<File> _outboxFile() async =>
+      File(path.join((await _root()).path, '.cloud_outbox.json'));
+
+  Future<Map<String, dynamic>> _outbox() async {
+    final file = await _outboxFile();
+    if (!await file.exists()) return {};
+    return Map<String, dynamic>.from(
+      jsonDecode(await file.readAsString()) as Map,
+    );
+  }
+
+  Future<void> _queueCloud(String id, Map<String, dynamic>? item) async {
+    final pending = await _outbox();
+    pending[id] = {
+      'ownerUid': ownerId,
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'deleted': item == null,
+      'item': item,
+    };
+    await _writer(await _outboxFile(), jsonEncode(pending));
+  }
+
+  /// Pending edits and deletions survive offline sessions. Remote updates never
+  /// overwrite an edit made locally while a request was in flight.
+  Future<void> synchronize(
+    ApiClient api,
+    bool Function() isCurrentOwner,
+  ) async {
+    if (ownerId == null || _syncing || !isCurrentOwner()) return;
+    _syncing = true;
+    try {
+      final first = await api.fetchMenuAnalysisHistory(ownerId!);
+      if (!first.isSuccessful) {
+        throw StateError('Menu history sync: ${first.statusCode}');
+      }
+      if (!isCurrentOwner()) return;
+      final remote = (first.body as Map)['histories'] as List;
+      final remoteIds = remote.map((row) => (row as Map)['id']).toSet();
+      final local = await load();
+      await _serialize(() async {
+        final pending = await _outbox();
+        for (final item in local) {
+          if (!remoteIds.contains(item.id) && !pending.containsKey(item.id)) {
+            await _queueCloud(item.id, item.toJson());
+          }
+        }
+      });
+      final pending = await _outbox();
+      for (final entry in pending.entries) {
+        if (!isCurrentOwner()) return;
+        final body = Map<String, dynamic>.from(entry.value as Map);
+        final item = body['item'];
+        if (item is Map) {
+          final filePath = item['imagePath'] as String?;
+          item['imagePath'] = null;
+          if (filePath != null && await File(filePath).exists()) {
+            File? compressed;
+            try {
+              compressed = await ImageUtils.compressForSakeScan(
+                File(filePath),
+                longEdge: 1200,
+                quality: 70,
+              );
+              final bytes = await compressed.readAsBytes();
+              if (bytes.length <= 700000) {
+                item['base64Image'] = base64Encode(bytes);
+              }
+            } catch (error) {
+              logger.warning('メニュー履歴の写真を送信できません。解析結果を先に同期します: $error');
+            } finally {
+              if (compressed != null &&
+                  compressed.path != filePath &&
+                  await compressed.exists()) {
+                await compressed.delete();
+              }
+            }
+          }
+        }
+        if (!isCurrentOwner()) return;
+        final response = await api.saveMenuAnalysisHistoryItem(entry.key, body);
+        if (!response.isSuccessful) {
+          throw StateError('Menu history sync: ${response.statusCode}');
+        }
+        await _serialize(() async {
+          final latest = await _outbox();
+          if ((latest[entry.key] as Map?)?['updatedAt'] ==
+              (entry.value as Map)['updatedAt']) {
+            latest.remove(entry.key);
+            await _writer(await _outboxFile(), jsonEncode(latest));
+          }
+        });
+      }
+      if (!isCurrentOwner()) return;
+      final response = await api.fetchMenuAnalysisHistory(ownerId!);
+      if (!response.isSuccessful) {
+        throw StateError('Menu history sync: ${response.statusCode}');
+      }
+      if (!isCurrentOwner()) return;
+      await _serialize(() async {
+        final unsent = await _outbox();
+        for (final raw in (response.body as Map)['histories'] as List) {
+          final row = Map<String, dynamic>.from(raw as Map);
+          final id = row['id'] as String;
+          if (unsent.containsKey(id)) continue;
+          final target = await _itemFile(id);
+          if (row['deleted'] == true) {
+            if (await target.exists()) await target.delete();
+            continue;
+          }
+          if (row['item'] == null) continue;
+          var item = MenuAnalysisHistoryItem.fromJson(
+            Map<String, dynamic>.from(row['item'] as Map),
+          );
+          String? imagePath;
+          if (await target.exists()) {
+            imagePath =
+                (jsonDecode(await target.readAsString()) as Map)['imagePath']
+                    as String?;
+            if (imagePath != null && !await File(imagePath).exists()) {
+              imagePath = null;
+            }
+          }
+          if (imagePath == null && item.base64Image?.isNotEmpty == true) {
+            final image = File(
+              path.join((await _images()).path, '${_safeId(id)}.jpg'),
+            );
+            await image.writeAsBytes(
+              base64Decode(item.base64Image!),
+              flush: true,
+            );
+            imagePath = image.path;
+          }
+          item = item.copyWith(imagePath: imagePath, clearBase64Image: true);
+          await _writer(target, jsonEncode(item.toJson()));
+        }
+        await _prune();
+      });
+    } finally {
+      _syncing = false;
+    }
+  }
+
   Future<void> migrateLegacy() async {
     final marker = File(path.join((await _root()).path, '.legacy_migrated'));
     if (await marker.exists()) return;
-    final legacy = await _legacyReader();
+    final base = await _directoryProvider();
+    final claim = File(
+      path.join(base.path, 'menu_analysis_history_v2', '.account_claim'),
+    );
+    final mayImportLegacy = ownerId == null
+        ? !await claim.exists()
+        : !await claim.exists() || await claim.readAsString() == ownerId;
+    final legacy = mayImportLegacy ? await _legacyReader() : null;
     if (legacy != null && legacy.trim().isNotEmpty) {
       try {
         final decoded = jsonDecode(legacy);
@@ -229,7 +416,7 @@ class MenuAnalysisHistoryRepository {
         // A malformed legacy blob must not hide already migrated v2 records.
       }
     }
-    await _legacyClearer();
+    if (mayImportLegacy) await _legacyClearer();
     await _writeAtomically(marker, DateTime.now().toIso8601String());
   }
 }

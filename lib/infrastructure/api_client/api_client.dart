@@ -42,6 +42,18 @@ abstract class ApiClient extends ChopperService {
   @Get(path: 'get_latest_version')
   Future<Response> getLatestVersion(@Query('platform') String platform);
 
+  @Post(path: 'menu-analysis-history/details')
+  Future<Response> fetchMenuHistoryDetails(@Body() Map<String, dynamic> body);
+
+  @Get(path: 'menu-analysis-history')
+  Future<Response> fetchMenuAnalysisHistory(@Query('ownerUid') String ownerUid);
+
+  @Put(path: 'menu-analysis-history/{id}')
+  Future<Response> saveMenuAnalysisHistoryItem(
+    @Path('id') String id,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Get(path: 'app-content')
   Future<Response> fetchAppContent(@Query('platform') String platform);
 

@@ -45,6 +45,10 @@ String apiURL() {
 /// DI repository
 List<SingleChildWidget> get _repositoryProviders {
   return <SingleChildWidget>[
+    Provider<ApiClient>(
+      create: (_) => ApiClient.create(chopperClient(url: apiURL())),
+      dispose: (_, api) => api.client.dispose(),
+    ),
     Provider<GeminiMolaApiRepository>(
       create: (_) => GeminiMolaApiRepository(
         ApiClient.create(chopperClient(url: apiURL())),

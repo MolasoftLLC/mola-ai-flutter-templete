@@ -1,3 +1,6 @@
+import 'sake_label_scan.dart';
+import 'response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
+
 class MenuAnalysisHistoryItem {
   final String id;
   final DateTime date;
@@ -6,6 +9,7 @@ class MenuAnalysisHistoryItem {
   final String? imagePath;
   final String? base64Image; // Add base64 encoded image data
   final String analysisStatus;
+  final DrinkingPlace? drinkingPlace;
 
   MenuAnalysisHistoryItem({
     required this.id,
@@ -15,6 +19,7 @@ class MenuAnalysisHistoryItem {
     this.imagePath,
     this.base64Image, // Add this parameter
     this.analysisStatus = 'complete',
+    this.drinkingPlace,
   });
 
   factory MenuAnalysisHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,11 @@ class MenuAnalysisHistoryItem {
       imagePath: json['imagePath'] as String?,
       base64Image: json['base64Image'] as String?, // Add this field
       analysisStatus: json['analysisStatus'] as String? ?? 'complete',
+      drinkingPlace: json['drinkingPlace'] is Map
+          ? DrinkingPlace.fromJson(
+              Map<String, dynamic>.from(json['drinkingPlace']),
+            )
+          : null,
     );
   }
 
@@ -40,24 +50,31 @@ class MenuAnalysisHistoryItem {
       'imagePath': imagePath,
       'base64Image': base64Image, // Add this field
       'analysisStatus': analysisStatus,
+      'drinkingPlace': drinkingPlace?.toJson(),
     };
   }
 
   MenuAnalysisHistoryItem copyWith({
     String? storeName,
+    bool clearStoreName = false,
     List<SavedSake>? sakes,
     String? imagePath,
     bool clearImagePath = false,
     bool clearBase64Image = false,
     String? analysisStatus,
+    DrinkingPlace? drinkingPlace,
+    bool clearDrinkingPlace = false,
   }) => MenuAnalysisHistoryItem(
     id: id,
     date: date,
-    storeName: storeName ?? this.storeName,
+    storeName: clearStoreName ? null : storeName ?? this.storeName,
     sakes: sakes ?? this.sakes,
     imagePath: clearImagePath ? null : imagePath ?? this.imagePath,
     base64Image: clearBase64Image ? null : base64Image,
     analysisStatus: analysisStatus ?? this.analysisStatus,
+    drinkingPlace: clearDrinkingPlace
+        ? null
+        : drinkingPlace ?? this.drinkingPlace,
   );
 }
 
@@ -69,6 +86,8 @@ class SavedSake {
   final int? matchPercent;
   final String? recommendationBasis;
   final String? extractedName;
+  final Sake? details;
+  final SakeTasteProfileDetails? tasteProfile;
 
   SavedSake({
     required this.name,
@@ -78,6 +97,8 @@ class SavedSake {
     this.matchPercent,
     this.recommendationBasis,
     this.extractedName,
+    this.details,
+    this.tasteProfile,
   });
 
   factory SavedSake.fromJson(Map<String, dynamic> json) {
@@ -89,6 +110,14 @@ class SavedSake {
       matchPercent: (json['matchPercent'] as num?)?.toInt(),
       recommendationBasis: json['recommendationBasis'] as String?,
       extractedName: json['extractedName'] as String?,
+      details: json['details'] is Map
+          ? Sake.fromJson(Map<String, dynamic>.from(json['details']))
+          : null,
+      tasteProfile: json['tasteProfile'] is Map
+          ? SakeTasteProfileDetails.tryFromJson(
+              Map<String, dynamic>.from(json['tasteProfile']),
+            )
+          : null,
     );
   }
 
@@ -101,6 +130,21 @@ class SavedSake {
       'matchPercent': matchPercent,
       'recommendationBasis': recommendationBasis,
       'extractedName': extractedName,
+      'details': details?.toJson(),
+      'tasteProfile': tasteProfile == null
+          ? null
+          : {
+              'fruity': tasteProfile!.fruity,
+              'sweetness': tasteProfile!.sweetness,
+              'acidity': tasteProfile!.acidity,
+              'umami': tasteProfile!.umami,
+              'kire': tasteProfile!.kire,
+              'dryness': tasteProfile!.dryness,
+              'body': tasteProfile!.body,
+              'aroma': tasteProfile!.aroma,
+              'sourceType': tasteProfile!.sourceType,
+              'confidence': tasteProfile!.confidence,
+            },
     };
   }
 }
@@ -110,6 +154,8 @@ List<SavedSake> buildMenuHistorySakes({
   required List<({int? sakeId, String name, String? type})> resolved,
   required Map<String, String> nameMapping,
   required Map<String, int> matchPercents,
+  Map<String, Sake> details = const {},
+  Map<String, SakeTasteProfileDetails> tasteProfiles = const {},
 }) => extracted
     .map((source) {
       final resolvedName = nameMapping[source.name];
@@ -125,6 +171,8 @@ List<SavedSake> buildMenuHistorySakes({
         matchPercent: percent,
         recommendationBasis: percent == null ? null : 'taste_profile_v1',
         isRecommended: percent != null && percent >= 70,
+        details: details[source.name],
+        tasteProfile: tasteProfiles[source.name],
       );
     })
     .toList(growable: false);
