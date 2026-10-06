@@ -167,9 +167,9 @@ class MenuHistorySection extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: ExpansionTile(
+                    child: _MenuHistoryCard(
                       key: PageStorageKey(historyItem.id),
-                      initiallyExpanded: historyId != null,
+                      alwaysExpanded: historyId != null,
                       onExpansionChanged: (expanded) {
                         if (expanded)
                           notifier.restoreHistoryDetails(historyItem.id);
@@ -364,6 +364,46 @@ class MenuHistorySection extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _MenuHistoryCard extends StatelessWidget {
+  const _MenuHistoryCard({
+    super.key,
+    required this.alwaysExpanded,
+    required this.title,
+    required this.subtitle,
+    required this.children,
+    required this.onExpansionChanged,
+    this.leading,
+  });
+
+  final bool alwaysExpanded;
+  final Widget? leading;
+  final Widget title;
+  final Widget subtitle;
+  final List<Widget> children;
+  final ValueChanged<bool> onExpansionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (alwaysExpanded) {
+      // A single-menu detail has no outer expansion animation or collapsed state.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(leading: leading, title: title, subtitle: subtitle),
+          ...children,
+        ],
+      );
+    }
+    return ExpansionTile(
+      leading: leading,
+      title: title,
+      subtitle: subtitle,
+      onExpansionChanged: onExpansionChanged,
+      children: children,
     );
   }
 }
