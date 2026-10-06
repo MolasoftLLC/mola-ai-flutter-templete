@@ -25,6 +25,7 @@ mixin _$AppPageState {
   List<AppPromotion> get startupPromotions =>
       throw _privateConstructorUsedError;
   List<AppPromotion> get homeBanners => throw _privateConstructorUsedError;
+  List<AppHomeNotice> get homeNotices => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $AppPageStateCopyWith<AppPageState> get copyWith =>
@@ -45,7 +46,8 @@ abstract class $AppPageStateCopyWith<$Res> {
       bool hasReadTimelineIntro,
       AppReleaseSetting? releaseSetting,
       List<AppPromotion> startupPromotions,
-      List<AppPromotion> homeBanners});
+      List<AppPromotion> homeBanners,
+      List<AppHomeNotice> homeNotices});
 }
 
 /// @nodoc
@@ -69,6 +71,7 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
     Object? releaseSetting = freezed,
     Object? startupPromotions = null,
     Object? homeBanners = null,
+    Object? homeNotices = null,
   }) {
     return _then(_value.copyWith(
       currentIndex: null == currentIndex
@@ -103,6 +106,10 @@ class _$AppPageStateCopyWithImpl<$Res, $Val extends AppPageState>
           ? _value.homeBanners
           : homeBanners // ignore: cast_nullable_to_non_nullable
               as List<AppPromotion>,
+      homeNotices: null == homeNotices
+          ? _value.homeNotices
+          : homeNotices // ignore: cast_nullable_to_non_nullable
+              as List<AppHomeNotice>,
     ) as $Val);
   }
 }
@@ -123,7 +130,8 @@ abstract class _$$AppPageStateImplCopyWith<$Res>
       bool hasReadTimelineIntro,
       AppReleaseSetting? releaseSetting,
       List<AppPromotion> startupPromotions,
-      List<AppPromotion> homeBanners});
+      List<AppPromotion> homeBanners,
+      List<AppHomeNotice> homeNotices});
 }
 
 /// @nodoc
@@ -145,6 +153,7 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
     Object? releaseSetting = freezed,
     Object? startupPromotions = null,
     Object? homeBanners = null,
+    Object? homeNotices = null,
   }) {
     return _then(_$AppPageStateImpl(
       currentIndex: null == currentIndex
@@ -179,6 +188,10 @@ class __$$AppPageStateImplCopyWithImpl<$Res>
           ? _value._homeBanners
           : homeBanners // ignore: cast_nullable_to_non_nullable
               as List<AppPromotion>,
+      homeNotices: null == homeNotices
+          ? _value._homeNotices
+          : homeNotices // ignore: cast_nullable_to_non_nullable
+              as List<AppHomeNotice>,
     ));
   }
 }
@@ -194,9 +207,11 @@ class _$AppPageStateImpl implements _AppPageState {
       this.hasReadTimelineIntro = false,
       this.releaseSetting,
       final List<AppPromotion> startupPromotions = const <AppPromotion>[],
-      final List<AppPromotion> homeBanners = const <AppPromotion>[]})
+      final List<AppPromotion> homeBanners = const <AppPromotion>[],
+      final List<AppHomeNotice> homeNotices = const <AppHomeNotice>[]})
       : _startupPromotions = startupPromotions,
-        _homeBanners = homeBanners;
+        _homeBanners = homeBanners,
+        _homeNotices = homeNotices;
 
   @override
   @JsonKey()
@@ -234,9 +249,18 @@ class _$AppPageStateImpl implements _AppPageState {
     return EqualUnmodifiableListView(_homeBanners);
   }
 
+  final List<AppHomeNotice> _homeNotices;
+  @override
+  @JsonKey()
+  List<AppHomeNotice> get homeNotices {
+    if (_homeNotices is EqualUnmodifiableListView) return _homeNotices;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_homeNotices);
+  }
+
   @override
   String toString() {
-    return 'AppPageState(currentIndex: $currentIndex, isStartupGateLoading: $isStartupGateLoading, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog, hasReadTimelineIntro: $hasReadTimelineIntro, releaseSetting: $releaseSetting, startupPromotions: $startupPromotions, homeBanners: $homeBanners)';
+    return 'AppPageState(currentIndex: $currentIndex, isStartupGateLoading: $isStartupGateLoading, needUpDate: $needUpDate, hasShownPreferencesDialog: $hasShownPreferencesDialog, hasReadTimelineIntro: $hasReadTimelineIntro, releaseSetting: $releaseSetting, startupPromotions: $startupPromotions, homeBanners: $homeBanners, homeNotices: $homeNotices)';
   }
 
   @override
@@ -260,7 +284,9 @@ class _$AppPageStateImpl implements _AppPageState {
             const DeepCollectionEquality()
                 .equals(other._startupPromotions, _startupPromotions) &&
             const DeepCollectionEquality()
-                .equals(other._homeBanners, _homeBanners));
+                .equals(other._homeBanners, _homeBanners) &&
+            const DeepCollectionEquality()
+                .equals(other._homeNotices, _homeNotices));
   }
 
   @override
@@ -273,7 +299,8 @@ class _$AppPageStateImpl implements _AppPageState {
       hasReadTimelineIntro,
       releaseSetting,
       const DeepCollectionEquality().hash(_startupPromotions),
-      const DeepCollectionEquality().hash(_homeBanners));
+      const DeepCollectionEquality().hash(_homeBanners),
+      const DeepCollectionEquality().hash(_homeNotices));
 
   @JsonKey(ignore: true)
   @override
@@ -291,7 +318,8 @@ abstract class _AppPageState implements AppPageState {
       final bool hasReadTimelineIntro,
       final AppReleaseSetting? releaseSetting,
       final List<AppPromotion> startupPromotions,
-      final List<AppPromotion> homeBanners}) = _$AppPageStateImpl;
+      final List<AppPromotion> homeBanners,
+      final List<AppHomeNotice> homeNotices}) = _$AppPageStateImpl;
 
   @override
   int get currentIndex;
@@ -309,6 +337,8 @@ abstract class _AppPageState implements AppPageState {
   List<AppPromotion> get startupPromotions;
   @override
   List<AppPromotion> get homeBanners;
+  @override
+  List<AppHomeNotice> get homeNotices;
   @override
   @JsonKey(ignore: true)
   _$$AppPageStateImplCopyWith<_$AppPageStateImpl> get copyWith =>

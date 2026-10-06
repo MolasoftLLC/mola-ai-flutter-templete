@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../domain/eintities/app_content.dart';
 
 /// ホームのお知らせを一定速度で右から左へ繰り返し流す。
 class HomeNoticeTicker extends StatefulWidget {
-  const HomeNoticeTicker({super.key, required this.message});
+  const HomeNoticeTicker({super.key, required this.notices});
 
-  final String message;
+  final List<AppHomeNotice> notices;
 
   @override
   State<HomeNoticeTicker> createState() => _HomeNoticeTickerState();
@@ -19,18 +21,61 @@ class _HomeNoticeTickerState extends State<HomeNoticeTicker>
     duration: const Duration(seconds: 20),
   );
 
+  Timer? _scheduleTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleNextChange();
+  }
+
+  @override
+  void didUpdateWidget(covariant HomeNoticeTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleNextChange();
+  }
+
+  void _scheduleNextChange() {
+    _scheduleTimer?.cancel();
+    final now = DateTime.now();
+    final dates =
+        widget.notices
+            .expand((notice) => [notice.startsAt, notice.endsAt])
+            .whereType<DateTime>()
+            .where((date) => date.isAfter(now))
+            .toList()
+          ..sort();
+    if (dates.isEmpty) return;
+    _scheduleTimer = Timer(dates.first.difference(now), () {
+      if (!mounted) return;
+      setState(() {});
+      _scheduleNextChange();
+    });
+  }
+
   @override
   void dispose() {
+    _scheduleTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final message = widget.notices
+        .where((notice) => notice.isVisibleAt(now))
+        .take(3)
+        .map((notice) => notice.message.trim().replaceAll(RegExp(r'\s+'), ' '))
+        .join('　　　／　　　');
+    if (message.isEmpty) {
+      _controller.stop();
+      return const SizedBox.shrink();
+    }
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final text = TextPainter(
       text: TextSpan(
-        text: widget.message,
+        text: message,
         style: const TextStyle(fontSize: 12, color: Color(0xFF143861)),
       ),
       textDirection: Directionality.of(context),
@@ -48,7 +93,7 @@ class _HomeNoticeTickerState extends State<HomeNoticeTicker>
     }
 
     return Semantics(
-      label: widget.message,
+      label: message,
       excludeSemantics: true,
       child: Container(
         height: 30,

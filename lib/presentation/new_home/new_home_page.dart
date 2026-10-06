@@ -744,8 +744,8 @@ class _HomeHeader extends StatelessWidget {
             enabled: context.select(
               (AppPageState state) => state.currentIndex == 0,
             ),
-            child: const HomeNoticeTicker(
-              message: '日本酒との新しい出会いを楽しもう！名前やラベルから検索して、気になるお酒を見つけてお気に入りに登録しよう。',
+            child: HomeNoticeTicker(
+              notices: context.select((AppPageState state) => state.homeNotices),
             ),
           ),
         ],

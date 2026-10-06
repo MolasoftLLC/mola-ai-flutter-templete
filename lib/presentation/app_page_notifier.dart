@@ -36,6 +36,7 @@ abstract class AppPageState with _$AppPageState {
     AppReleaseSetting? releaseSetting,
     @Default(<AppPromotion>[]) List<AppPromotion> startupPromotions,
     @Default(<AppPromotion>[]) List<AppPromotion> homeBanners,
+    @Default(<AppHomeNotice>[]) List<AppHomeNotice> homeNotices,
   }) = _AppPageState;
 }
 
@@ -59,6 +60,8 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   bool _hasAttemptedTimelineIntro = false;
   bool _isTimelineIntroDialogOpen = false;
   bool _isStartupPromotionOpen = false;
+  Timer? _homeNoticeRefreshTimer;
+  bool _refreshingHomeNotices = false;
 
   GlobalKey first = GlobalKey();
   GlobalKey keyBottomNavigation1 = GlobalKey();
@@ -71,6 +74,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   @override
   Future<void> initState() async {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     AppContent? content;
     try {
       content = await molaApiRepository.fetchAppContent(
@@ -90,13 +94,22 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       }
     }
     final needUpDate = await isUpdateRequired(release);
+    if (!mounted) return;
     state = state.copyWith(
       isStartupGateLoading: false,
       needUpDate: needUpDate,
       releaseSetting: release,
       startupPromotions: content?.startupPromotions ?? const [],
       homeBanners: content?.homeBanners ?? const [],
+      homeNotices: content?.homeNotices ?? const [],
     );
+
+    _homeNoticeRefreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (state.currentIndex == 0 &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        unawaited(_refreshHomeNotices());
+      }
+    });
 
     if (release?.maintenanceEnabled == true || needUpDate) return;
 
@@ -111,6 +124,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
   @override
   void dispose() {
+    _homeNoticeRefreshTimer?.cancel();
     homeFeatureGuide.dispose();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
@@ -164,7 +178,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (state == AppLifecycleState.resumed) {}
+    if (state == AppLifecycleState.resumed) await _refreshHomeNotices();
   }
 
   void onTabTapped(int index) {
@@ -173,12 +187,32 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     }
     unawaited(_maybeShowHelpGuide(index));
     if (index == 0) {
+      unawaited(_refreshHomeNotices());
       unawaited(
         homeFeatureGuide.showIfNeeded(context, () => state.currentIndex == 0),
       );
     }
     if (index == 3) {
       unawaited(_maybeShowTimelineIntro());
+    }
+  }
+
+  Future<void> _refreshHomeNotices() async {
+    if (!mounted || _refreshingHomeNotices || state.isStartupGateLoading) {
+      return;
+    }
+    _refreshingHomeNotices = true;
+    try {
+      final content = await molaApiRepository.fetchAppContent(
+        platform: Platform.isAndroid ? 'android' : 'ios',
+      );
+      if (mounted && content != null) {
+        state = state.copyWith(homeNotices: content.homeNotices);
+      }
+    } catch (error) {
+      logger.warning('ホームの流れる文字を更新できませんでした: $error');
+    } finally {
+      _refreshingHomeNotices = false;
     }
   }
 

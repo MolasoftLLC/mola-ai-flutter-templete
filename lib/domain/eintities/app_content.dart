@@ -62,11 +62,38 @@ class AppPromotion {
   final String? linkTarget;
 }
 
+class AppHomeNotice {
+  const AppHomeNotice({
+    required this.id,
+    required this.message,
+    this.startsAt,
+    this.endsAt,
+  });
+
+  factory AppHomeNotice.fromJson(Map<String, dynamic> json) => AppHomeNotice(
+    id: (json['id'] as num).toInt(),
+    message: json['message'] as String? ?? '',
+    startsAt: DateTime.tryParse(json['startsAt']?.toString() ?? ''),
+    endsAt: DateTime.tryParse(json['endsAt']?.toString() ?? ''),
+  );
+
+  final int id;
+  final String message;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+
+  bool isVisibleAt(DateTime now) =>
+      message.trim().isNotEmpty &&
+      (startsAt == null || !now.isBefore(startsAt!)) &&
+      (endsAt == null || now.isBefore(endsAt!));
+}
+
 class AppContent {
   const AppContent({
     required this.release,
     required this.startupPromotions,
     required this.homeBanners,
+    this.homeNotices = const [],
   });
 
   factory AppContent.fromJson(Map<String, dynamic> json) => AppContent(
@@ -75,11 +102,17 @@ class AppContent {
     ),
     startupPromotions: _promotions(json['startupPromotions']),
     homeBanners: _promotions(json['homeBanners']),
+    homeNotices: (json['homeNotices'] as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => AppHomeNotice.fromJson(Map<String, dynamic>.from(item)))
+        .take(3)
+        .toList(growable: false),
   );
 
   final AppReleaseSetting release;
   final List<AppPromotion> startupPromotions;
   final List<AppPromotion> homeBanners;
+  final List<AppHomeNotice> homeNotices;
 }
 
 class HomeSakeRecommendation {
