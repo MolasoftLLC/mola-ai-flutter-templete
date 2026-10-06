@@ -81,6 +81,7 @@ class AppPage extends StatelessWidget {
         onPageSelected: notifier.onTabTapped,
         onScanTap: () => openNewHomeScanner(context),
         scanKey: notifier.homeFeatureGuide.bottomScanKey,
+        menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
         mapKey: notifier.homeFeatureGuide.mapKey,
       ),
     );
@@ -93,6 +94,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
     required this.onPageSelected,
     required this.onScanTap,
     required this.scanKey,
+    required this.menuAnalysisKey,
     required this.mapKey,
   });
 
@@ -102,6 +104,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
   final ValueChanged<int> onPageSelected;
   final VoidCallback onScanTap;
   final GlobalKey scanKey;
+  final GlobalKey menuAnalysisKey;
   final GlobalKey mapKey;
 
   @override
@@ -127,6 +130,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
+                      focusKey: menuAnalysisKey,
                       icon: Icons.menu_book_outlined,
                       label: context.l10n.navigationMenuAnalysis,
                       selected: currentPageIndex == 1,

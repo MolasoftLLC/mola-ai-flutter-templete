@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// ホームの2つの撮影ボタンを同時に案内するフォーカスガイド。
+/// ホームの撮影・検索・メニュー解析などを案内するフォーカスガイド。
 class HomeFeatureGuide {
   final headerScanKey = GlobalKey();
   final bottomScanKey = GlobalKey();
   final searchKey = GlobalKey();
+  final menuAnalysisKey = GlobalKey();
   final mapKey = GlobalKey();
   final recommendationsKey = GlobalKey();
   final homeScrollController = ScrollController();
   bool _showing = false;
-  static const _preferenceKey = 'home_feature_guide_shown_v1';
+  static const _preferenceKey = 'home_feature_guide_shown_v2';
 
   void dispose() => homeScrollController.dispose();
 
@@ -84,10 +85,12 @@ class HomeFeatureGuide {
       final headerScan = bounds(headerScanKey);
       final bottomScan = bounds(bottomScanKey);
       final search = bounds(searchKey);
+      final menuAnalysis = bounds(menuAnalysisKey);
       final map = bounds(mapKey);
       if (headerScan == null ||
           bottomScan == null ||
           search == null ||
+          menuAnalysis == null ||
           map == null) {
         return;
       }
@@ -102,6 +105,7 @@ class HomeFeatureGuide {
           targets: [
             [headerScan, bottomScan],
             [search],
+            [menuAnalysis],
             [map],
           ],
         ),
@@ -132,29 +136,39 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
   Rect? _mapBounds;
   bool _scrolling = false;
   Rect? _recommendations;
+  static const _menuStep = 2;
+  static const _mapStep = 3;
+  static const _recommendationsStep = 4;
   static const _messages = [
     'ラベルから高速検索！今までの体感３倍の速度！',
     '名前やメニューからなど検索可能！',
+    'お店のメニューを撮影すると、日本酒の一覧とあなたの好みマッチ度を確認できます。撮影後に必要な部分を切り抜けます。解析履歴はマイページからも見られます！',
     '新機能なのでまだまだですが近くでどんな日本酒が飲めるかじきにわかるようになるはず！',
     'マイページから好きなお酒の傾向を登録するとあなたの好きな日本酒がここに表示されます！',
   ];
-  static const _titles = ['高速ラベル検索', 'いろいろな条件で検索', 'マップ機能', 'あなたが好きそうな日本酒'];
+  static const _titles = [
+    '高速ラベル検索',
+    'いろいろな条件で検索',
+    'メニュー解析',
+    'マップ機能',
+    'あなたが好きそうな日本酒',
+  ];
 
   Future<void> _next() async {
     if (_scrolling) return;
-    if (_step == 3) {
+    if (_step == _recommendationsStep) {
       Navigator.of(context).pop(true);
-    } else if (_step == 2) {
+    } else if (_step == _mapStep) {
       setState(() => _scrolling = true);
       final target = await widget.scrollToRecommendations();
       if (!mounted) return;
       setState(() {
         _recommendations = target;
         _scrolling = false;
-        _step = 3;
+        _step = _recommendationsStep;
       });
     } else {
-      if (_step == 1) {
+      if (_step == _menuStep) {
         await WidgetsBinding.instance.endOfFrame;
         if (!mounted) return;
         _mapBounds = widget.mapBounds();
@@ -176,21 +190,23 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
             painter: _HomeGuideFocusPainter(
               targets: _scrolling || _step == -1
                   ? const []
-                  : _step == 3
+                  : _step == _recommendationsStep
                   ? [if (_recommendations != null) _recommendations!]
-                  : _step == 2 && _mapBounds != null
+                  : _step == _mapStep && _mapBounds != null
                   ? [_mapBounds!]
                   : widget.targets[_step],
               circles: _step == 0,
-              outline: _step == 2,
+              outline: _step == _menuStep || _step == _mapStep,
             ),
           ),
         ),
         if (!_scrolling)
           Align(
-            alignment: _step == 3 ? Alignment.bottomCenter : Alignment.center,
+            alignment: _step == _recommendationsStep
+                ? Alignment.bottomCenter
+                : Alignment.center,
             child: Padding(
-              padding: _step == 3
+              padding: _step == _recommendationsStep
                   ? EdgeInsets.fromLTRB(
                       24,
                       24,
@@ -221,7 +237,7 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                     children: [
                       if (_step >= 0)
                         Text(
-                          '${_step + 1} / 4',
+                          '${_step + 1} / ${_titles.length}',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
@@ -274,7 +290,9 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                         alignment: Alignment.centerRight,
                         child: FilledButton(
                           onPressed: _next,
-                          child: Text(_step == 3 ? 'わかった' : '次へ'),
+                          child: Text(
+                            _step == _recommendationsStep ? 'わかった' : '次へ',
+                          ),
                         ),
                       ),
                     ],
