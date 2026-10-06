@@ -1632,4 +1632,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get showCaptureGuide => '補助枠を表示';
+
+  @override
+  String get labelSearchMode => 'ラベル検索';
+
+  @override
+  String get menuCaptureTitle => 'メニューを撮影';
+
+  @override
+  String get menuCaptureDescription => '日本酒の名前が読めるように、メニュー全体を撮影してください。';
 }

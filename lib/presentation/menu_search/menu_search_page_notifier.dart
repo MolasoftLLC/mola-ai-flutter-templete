@@ -71,6 +71,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     with LocatorMixin, RouteAware, WidgetsBindingObserver {
   MenuSearchPageNotifier({
     required this.context,
+    this.initialImage,
     MenuAnalysisHistoryRepository? historyRepository,
   }) : _historyRepository =
            historyRepository ?? MenuAnalysisHistoryRepository(),
@@ -81,6 +82,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   final Set<String> _selectedMenuNames = {};
 
   final BuildContext context;
+  final File? initialImage;
   final MenuAnalysisHistoryRepository _historyRepository;
   String? _activeAnalysisId;
   DateTime? _activeAnalysisDate;
@@ -102,6 +104,33 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
     // 初期化と移行を実行
     await _initializeWithMigration();
+    final image = initialImage;
+    if (mounted && image != null) {
+      // Wait for the result route to finish its first frame before opening ads
+      // or preference dialogs from the existing menu analysis flow.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && context.mounted) {
+          unawaited(_analyzeCapturedMenu(image));
+        }
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
+  }
+
+  Future<void> _analyzeCapturedMenu(File image) async {
+    File analysisImage = image;
+    try {
+      final path = await ImageCropperService.saveImagePermanently(
+        image,
+        'menu_captured',
+      );
+      if (path != null) analysisImage = File(path);
+    } catch (error) {
+      logger.warning('撮影したメニュー画像の永続保存に失敗しました: $error');
+    }
+    if (!mounted || !context.mounted) return;
+    state = state.copyWith(sakeImage: analysisImage);
+    await extractAndFetchSakeInfo(analysisImage);
   }
 
   Future<void> _initializeWithMigration() async {

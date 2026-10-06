@@ -537,5 +537,8 @@
   "scanMethodProgressiveLens": "段階Google Lens",
   "scanLensPreviewNotice": "検索で見つかった情報・照合中",
   "hideCaptureGuide": "補助枠を消す",
-  "showCaptureGuide": "補助枠を表示"
+  "showCaptureGuide": "補助枠を表示",
+  "labelSearchMode": "ラベル検索",
+  "menuCaptureTitle": "メニューを撮影",
+  "menuCaptureDescription": "日本酒の名前が読めるように、メニュー全体を撮影してください。"
 }

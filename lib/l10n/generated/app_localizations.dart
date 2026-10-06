@@ -3193,6 +3193,24 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'補助枠を表示'**
   String get showCaptureGuide;
+
+  /// No description provided for @labelSearchMode.
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベル検索'**
+  String get labelSearchMode;
+
+  /// No description provided for @menuCaptureTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'メニューを撮影'**
+  String get menuCaptureTitle;
+
+  /// No description provided for @menuCaptureDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'日本酒の名前が読めるように、メニュー全体を撮影してください。'**
+  String get menuCaptureDescription;
 }
 
 class _AppLocalizationsDelegate

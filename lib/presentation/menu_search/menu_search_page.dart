@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/utils/file_utils.dart';
@@ -24,11 +25,14 @@ class MenuSearchPage extends StatelessWidget {
 
   static final ScrollController _scrollController = ScrollController();
 
-  static Widget wrapped() {
+  static Widget wrapped({File? initialImage}) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<MenuSearchPageNotifier, MenuSearchPageState>(
-          create: (context) => MenuSearchPageNotifier(context: context),
+          create: (context) => MenuSearchPageNotifier(
+            context: context,
+            initialImage: initialImage,
+          ),
         ),
       ],
       child: const MenuSearchPage._(),

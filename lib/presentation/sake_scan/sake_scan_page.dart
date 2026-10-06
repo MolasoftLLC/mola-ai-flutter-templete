@@ -25,6 +25,7 @@ import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/sake_user_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
+import '../menu_search/menu_search_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_map/sake_master_detail_page.dart';
@@ -91,6 +92,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Timer? _focusRingTimer;
   bool _initializingCamera = false;
   bool _capturing = false;
+  bool _isMenuCapture = false;
   bool _isCloseUpMode = false;
   Offset? _focusRingPosition;
   double _minZoomLevel = 1;
@@ -784,6 +786,14 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _submitImage(File file) async {
+    if (_isMenuCapture) {
+      await Navigator.of(context).pushReplacement<void, void>(
+        MaterialPageRoute(
+          builder: (_) => MenuSearchPage.wrapped(initialImage: file),
+        ),
+      );
+      return;
+    }
     final notifier = context.read<SakeScanNotifier>();
     final state = notifier.currentState;
     final shouldSubmitBack =
@@ -855,6 +865,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                       ),
                       child: LabelCaptureGuide(
                         isBackLabel:
+                            _isMenuCapture ||
                             state.status == SakeScanViewStatus.backScanning,
                       ),
                     ),
@@ -897,10 +908,39 @@ class _SakeScanPageState extends State<SakeScanPage>
                 ),
               ),
             ),
+            if (state.status == SakeScanViewStatus.frontScanning &&
+                widget.reassignTarget == null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: TextButton.icon(
+                  onPressed: _capturing || state.isSubmitting
+                      ? null
+                      : () => setState(() => _isMenuCapture = !_isMenuCapture),
+                  icon: Icon(
+                    _isMenuCapture ? Icons.wine_bar_outlined : Icons.menu_book,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _isMenuCapture
+                        ? context.l10n.labelSearchMode
+                        : context.l10n.menuSearchPageTitle,
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white54,
+                    backgroundColor: Colors.black54,
+                  ),
+                ),
+              ),
             if (state.status == SakeScanViewStatus.frontScanning ||
                 state.status == SakeScanViewStatus.backScanning)
               Positioned(
-                top: 8,
+                top:
+                    state.status == SakeScanViewStatus.frontScanning &&
+                        widget.reassignTarget == null
+                    ? 56
+                    : 8,
                 right: 8,
                 child: TextButton.icon(
                   onPressed:
@@ -1050,13 +1090,19 @@ class _SakeScanPageState extends State<SakeScanPage>
   Widget _buildCameraHeader(SakeScanState state) {
     final isBack = state.status == SakeScanViewStatus.backScanning;
     return Positioned(
-      top: 72,
+      top:
+          state.status == SakeScanViewStatus.frontScanning &&
+              widget.reassignTarget == null
+          ? 112
+          : 72,
       left: 20,
       right: 20,
       child: Column(
         children: [
           Text(
-            isBack
+            _isMenuCapture
+                ? context.l10n.menuCaptureTitle
+                : isBack
                 ? context.l10n.backLabelScanTitle
                 : context.l10n.frontLabelScanTitle,
             textAlign: TextAlign.center,
@@ -1068,7 +1114,9 @@ class _SakeScanPageState extends State<SakeScanPage>
           ),
           const SizedBox(height: 4),
           Text(
-            isBack
+            _isMenuCapture
+                ? context.l10n.menuCaptureDescription
+                : isBack
                 ? context.l10n.backLabelScanDescription
                 : context.l10n.frontLabelScanDescription,
             textAlign: TextAlign.center,
@@ -1137,7 +1185,9 @@ class _SakeScanPageState extends State<SakeScanPage>
               children: [
                 Semantics(
                   button: true,
-                  label: context.l10n.captureLabel,
+                  label: _isMenuCapture
+                      ? context.l10n.menuCaptureTitle
+                      : context.l10n.captureLabel,
                   child: SizedBox.square(
                     dimension: 76,
                     child: FilledButton(

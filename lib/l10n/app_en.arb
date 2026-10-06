@@ -537,5 +537,8 @@
   "scanMethodProgressiveLens": "Progressive Google Lens",
   "scanLensPreviewNotice": "Search result · checking the label",
   "hideCaptureGuide": "Hide guide",
-  "showCaptureGuide": "Show guide"
+  "showCaptureGuide": "Show guide",
+  "labelSearchMode": "Label Scan",
+  "menuCaptureTitle": "Capture the menu",
+  "menuCaptureDescription": "Capture the whole menu so the sake names are readable."
 }

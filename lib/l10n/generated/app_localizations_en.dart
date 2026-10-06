@@ -1715,4 +1715,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showCaptureGuide => 'Show guide';
+
+  @override
+  String get labelSearchMode => 'Label Scan';
+
+  @override
+  String get menuCaptureTitle => 'Capture the menu';
+
+  @override
+  String get menuCaptureDescription =>
+      'Capture the whole menu so the sake names are readable.';
 }
