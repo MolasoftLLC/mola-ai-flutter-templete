@@ -176,7 +176,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
                                       const Icon(Icons.local_bar_outlined),
                                 ),
                               ),
-                        title: Text(candidate.canonicalProductName),
+                        title: Text(candidate.displayProductName),
                         subtitle: candidate.brewery == null
                             ? null
                             : Text(candidate.brewery!),

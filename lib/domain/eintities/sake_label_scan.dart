@@ -91,6 +91,29 @@ class SakeScanCandidate {
         : '$name $productType';
   }
 
+  // Display only: retain the original name for identity and confirmation APIs.
+  String get displayProductName {
+    final cleaned = canonicalProductName
+        .replaceAll(
+          RegExp(
+            r'(?<![A-Za-z0-9])(?:[RH]\s*\d{1,2}|(?:19|20)\d{2})\s*BY(?![A-Za-z0-9])',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'(?:令和|平成|昭和)[0-9０-９元一二三四五六七八九十]+\s*(?:酒造年度|年度|年(?:度)?\s*BY)|(?:19|20)\d{2}\s*(?:酒造年度|年度)',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'\(\s*\)|（\s*）|\[\s*\]|【\s*】'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return cleaned.isEmpty ? canonicalProductName : cleaned;
+  }
+
   Sake toSake() => Sake(
     sakeId: sakeId > 0 ? sakeId : null,
     brandId: brandId,

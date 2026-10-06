@@ -1277,7 +1277,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                               imageUrl: item.imageUrl,
                             ),
                             title: Text(
-                              item.canonicalProductName,
+                              item.displayProductName,
                               maxLines: null,
                               overflow: TextOverflow.visible,
                               style: const TextStyle(
