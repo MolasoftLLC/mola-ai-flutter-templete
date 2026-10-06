@@ -2390,9 +2390,9 @@ class _AuthCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _EnvyPointHighlight(count: envyPointCount),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         _MapContributionPointHighlight(count: mapContributionPointCount),
       ],
     );
@@ -2405,70 +2405,17 @@ class _MapContributionPointHighlight extends StatelessWidget {
   final int count;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF4FC3F7).withOpacity(0.25),
-            const Color(0xFF66BB6A).withOpacity(0.25),
-          ],
-        ),
-        border: Border.all(color: const Color(0xFF81D4FA).withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF81D4FA).withOpacity(0.18),
-            ),
-            child: const Icon(
-              Icons.add_location_alt_outlined,
-              color: Color(0xFF81D4FA),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.mapContributionPoints,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  context.l10n.mapContributionHint,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            context.l10n.mapContributionPointCount(count),
-            style: const TextStyle(
-              color: Color(0xFF81D4FA),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _CompactPointHighlight(
+    headline: context.l10n.mapContributionPoints,
+    detail: context.l10n.mapContributionHint,
+    points: context.l10n.mapContributionPointCount(count),
+    icon: Icons.add_location_alt_outlined,
+    highlightColor: const Color(0xFF81D4FA),
+    colors: [
+      const Color(0xFF4FC3F7).withValues(alpha: 0.25),
+      const Color(0xFF66BB6A).withValues(alpha: 0.25),
+    ],
+  );
 }
 
 class _EnvyPointHighlight extends StatelessWidget {
@@ -2478,95 +2425,115 @@ class _EnvyPointHighlight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasPoints = count > 0;
-    final headline = hasPoints
-        ? context.l10n.totalEnvyPoints
-        : context.l10n.collectEnvy;
-    final detail = hasPoints
-        ? context.l10n.envyEarnedCount(count)
-        : context.l10n.envyShareHint;
-    final highlightColor = hasPoints ? Colors.pinkAccent : Colors.white54;
+    final hasPoints = count > 0;
+    return _CompactPointHighlight(
+      headline: hasPoints
+          ? context.l10n.totalEnvyPoints
+          : context.l10n.collectEnvy,
+      detail: hasPoints
+          ? '${context.l10n.envyEarnedCount(count)}\n${context.l10n.everyonePraises}'
+          : '${context.l10n.envyShareHint}\n${context.l10n.tryCollecting}',
+      points: '$count pt',
+      icon: hasPoints ? Icons.favorite : Icons.favorite_border,
+      highlightColor: hasPoints ? Colors.pinkAccent : Colors.white54,
+      colors: hasPoints
+          ? [
+              const Color(0xFFFF7EB3).withValues(alpha: 0.35),
+              const Color(0xFFFFC371).withValues(alpha: 0.35),
+            ]
+          : [Colors.white10, Colors.white10],
+    );
+  }
+}
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+class _CompactPointHighlight extends StatelessWidget {
+  const _CompactPointHighlight({
+    required this.headline,
+    required this.detail,
+    required this.points,
+    required this.icon,
+    required this.highlightColor,
+    required this.colors,
+  });
+
+  final String headline;
+  final String detail;
+  final String points;
+  final IconData icon;
+  final Color highlightColor;
+  final List<Color> colors;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(12),
+    clipBehavior: Clip.antiAlias,
+    child: Ink(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: hasPoints
-              ? [
-                  const Color(0xFFFF7EB3).withOpacity(0.35),
-                  const Color(0xFFFFC371).withOpacity(0.35),
-                ]
-              : [Colors.white10, Colors.white10],
+          colors: colors,
         ),
-        border: Border.all(
-          color: hasPoints
-              ? Colors.pinkAccent.withOpacity(0.4)
-              : Colors.white12,
-        ),
+        border: Border.all(color: highlightColor.withValues(alpha: 0.35)),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: highlightColor.withOpacity(0.18),
-            ),
-            child: Icon(
-              hasPoints ? Icons.favorite : Icons.favorite_border,
-              color: highlightColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  headline,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  detail,
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$count pt',
-                style: TextStyle(
-                  color: highlightColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                hasPoints
-                    ? context.l10n.everyonePraises
-                    : context.l10n.tryCollecting,
-                style: const TextStyle(color: Colors.white60, fontSize: 10),
+      child: InkWell(
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(headline),
+            content: Text(detail),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(context.l10n.close),
               ),
             ],
           ),
-        ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: highlightColor.withValues(alpha: 0.18),
+                ),
+                child: Icon(icon, color: highlightColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  headline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                points,
+                style: TextStyle(
+                  color: highlightColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.info_outline, size: 14, color: Colors.white60),
+            ],
+          ),
+        ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _SavedSakeList extends StatelessWidget {
