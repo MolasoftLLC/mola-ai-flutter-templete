@@ -115,7 +115,10 @@ class SakeMenuRecognitionRepository {
     }
   }
 
-  Future<List<MenuSakeResolution>> resolveMenuSakes(List<Sake> sakes) async {
+  Future<List<MenuSakeResolution>> resolveMenuSakes(
+    List<Sake> sakes, {
+    bool masterOnly = false,
+  }) async {
     final response = await _apiClient.resolveMenuSakes({
       'sakes': sakes
           .where((sake) => isPlausibleRecognizedSakeName(sake.name))
@@ -123,14 +126,23 @@ class SakeMenuRecognitionRepository {
             (sake) => {
               'name': sake.name,
               if (sake.type?.trim().isNotEmpty == true) 'type': sake.type,
+              if (sake.brewery?.trim().isNotEmpty == true)
+                'brewery': sake.brewery,
+              if (sake.description?.trim().isNotEmpty == true)
+                'description': sake.description,
             },
           )
           .toList(growable: false),
       'locale': await resolveAppLocaleLanguageCode(),
+      if (masterOnly) 'phase': 'master',
     });
-    if (!response.isSuccessful || response.body == null) return const [];
+    if (!response.isSuccessful || response.body == null) {
+      throw const SakeCandidateResolutionException('メニューの商品情報を取得できませんでした');
+    }
     final rawResults = response.body!['results'];
-    if (rawResults is! List) return const [];
+    if (rawResults is! List) {
+      throw const SakeCandidateResolutionException('メニューの商品情報の形式が不正です');
+    }
     return rawResults
         .whereType<Map>()
         .map(

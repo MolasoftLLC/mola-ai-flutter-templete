@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/sake_community_repository.dart';
 import '../auth/email_link_auth_page.dart';
@@ -31,6 +32,29 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signIn()));
     if (signedIn != true || !context.mounted) return null;
+  }
+
+  final savedNotifier = context.read<SavedSakeNotifier>();
+  await savedNotifier.reloadLocal();
+  if (!context.mounted) return null;
+  if (savedNotifier.hasReachedMemberLimit) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('保存酒が上限に達しています'),
+        content: const Text(
+          '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで登録できます。'
+          '新しいお酒をスキャンするには、マイページから不要な保存酒を削除してください。',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+    return null;
   }
 
   final repository = context.read<SakeCommunityRepository>();

@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../../../domain/eintities/sake_label_scan.dart';
 import '../../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../../common/sake/taste_match.dart';
+import '../../../common/sake/menu_taste_summary.dart';
 import '../../common/widgets/sake_taste_widgets.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
@@ -100,7 +101,11 @@ class _SakeResultTileState extends State<SakeResultTile> {
     final hasPhoto =
         imageUri != null &&
         (imageUri.scheme == 'https' || imageUri.scheme == 'http');
-    final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
+    final myPage = Provider.of<MyPageState?>(context);
+    final preference = menuTastePreference(
+      profile: myPage?.tasteProfile,
+      preferences: myPage?.preferences,
+    );
     final matchPercent = profile == null
         ? widget.matchPercent
         : calculateOptionalSakeTasteMatchPercent(
@@ -173,14 +178,30 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         ),
                       ),
                     ),
-                  if (widget.isUnverified)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
-                      child: Text(
-                        'AI補完（未確認）',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
-                      ),
+                  if (profile != null) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final tag in menuTasteTags(profile))
+                          Chip(
+                            label: Text(tag),
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: const Color(0xFFEAF0F7),
+                            side: BorderSide.none,
+                          ),
+                      ],
                     ),
+                    if (preference != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          menuRecommendationReason(profile, preference),
+                          style: const TextStyle(fontSize: 13, height: 1.5),
+                        ),
+                      ),
+                  ],
                 ],
               ),
               subtitle: Column(
@@ -190,7 +211,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     widget.sake.type ?? context.l10n.unknownType,
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
-                  if (!widget.hasDetails && widget.candidates.isNotEmpty)
+                  if (widget.candidates.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: InkWell(
@@ -199,7 +220,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         child: const Padding(
                           padding: EdgeInsets.symmetric(vertical: 4),
                           child: Text(
-                            '候補が複数あります。商品を選択してください。',
+                            '商品詳細の候補を見る',
                             style: TextStyle(
                               color: Color(0xFF1D3567),
                               fontSize: 13,

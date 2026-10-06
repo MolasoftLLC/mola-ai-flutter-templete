@@ -114,7 +114,6 @@ class MenuSearchPage extends StatelessWidget {
       child: Scaffold(
         appBar: PrimaryAppBar(
           title: context.l10n.menuSearchPageTitle,
-          automaticallyImplyLeading: false,
           actions: [
             IconButton(
               tooltip: context.l10n.helpGuide,

@@ -27,6 +27,7 @@ class MenuSakeResolution {
     required this.candidates,
     this.inputType,
     this.fallback,
+    this.fallbackTasteProfile,
   });
 
   factory MenuSakeResolution.fromJson(Map<String, dynamic> json) {
@@ -48,6 +49,15 @@ class MenuSakeResolution {
       fallback: json['fallback'] is Map
           ? Sake.fromJson(Map<String, dynamic>.from(json['fallback'] as Map))
           : null,
+      fallbackTasteProfile:
+          json['fallback'] is Map &&
+              (json['fallback'] as Map)['tasteProfile'] is Map
+          ? SakeTasteProfileDetails.tryFromJson(
+              Map<String, dynamic>.from(
+                (json['fallback'] as Map)['tasteProfile'] as Map,
+              ),
+            )
+          : null,
     );
   }
 
@@ -56,4 +66,5 @@ class MenuSakeResolution {
   final MenuSakeResolutionStatus status;
   final List<MenuSakeCandidate> candidates;
   final Sake? fallback;
+  final SakeTasteProfileDetails? fallbackTasteProfile;
 }

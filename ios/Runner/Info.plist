@@ -44,7 +44,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>現在地周辺から飲んだお店を探すために位置情報を使用します</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>編集した画像をフォトライブラリに保存します</string>
+	<string>撮影したラベル画像や編集した画像をフォトライブラリに保存します</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>このアプリでは、より関連性の高い広告を表示するために、お客様のデータを使用します。</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

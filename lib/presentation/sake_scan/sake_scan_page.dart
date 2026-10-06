@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -413,6 +414,7 @@ class _SakeScanPageState extends State<SakeScanPage>
       final captured = await controller.takePicture();
       // ガイド枠は構図の目安にせず、プレビュー全体をそのままOCRへ渡す。
       final file = File(captured.path);
+      await _saveCapturedImageToGallery(file);
       if (!mounted) return;
       await HapticFeedback.mediumImpact();
       await _submitImage(file);
@@ -436,6 +438,26 @@ class _SakeScanPageState extends State<SakeScanPage>
       _capturing = false;
       if (mounted) setState(() {});
     }
+  }
+
+  Future<void> _saveCapturedImageToGallery(File image) async {
+    try {
+      final result = await ImageGallerySaverPlus.saveFile(image.path);
+      if (result is Map && result['isSuccess'] == true) {
+        logger.info('撮影したラベル画像を写真ライブラリに保存しました');
+        return;
+      }
+      logger.warning('撮影したラベル画像の写真ライブラリへの保存に失敗しました: $result');
+    } catch (error, stackTrace) {
+      logger.warning('撮影したラベル画像の写真ライブラリへの保存に失敗しました: $error');
+      logger.info(stackTrace.toString());
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('写真ライブラリに保存できませんでした。端末の設定で写真への追加を許可してください。解析は続けます。'),
+      ),
+    );
   }
 
   Future<void> _pickFromGallery() async {

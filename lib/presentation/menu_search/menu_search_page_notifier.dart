@@ -25,6 +25,7 @@ import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../common/sake/taste_match.dart';
+import '../../common/sake/menu_taste_summary.dart';
 import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 
@@ -74,6 +75,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }) : _historyRepository =
            historyRepository ?? MenuAnalysisHistoryRepository(),
        super(const MenuSearchPageState());
+
+  int _detailsGeneration = 0;
+  bool _resolvingDetails = false;
+  final Set<String> _selectedMenuNames = {};
 
   final BuildContext context;
   final MenuAnalysisHistoryRepository _historyRepository;
@@ -215,6 +220,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   void clearImage() {
+    _detailsGeneration++;
+    _resolvingDetails = false;
+    _selectedMenuNames.clear();
     _activeAnalysisId = null;
     _activeAnalysisDate = null;
     _pendingHistoryItem = null;
@@ -238,6 +246,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       return;
     }
 
+    _detailsGeneration++;
+    _resolvingDetails = false;
+    _selectedMenuNames.clear();
     _activeAnalysisId =
         'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
     _activeAnalysisDate = DateTime.now();
@@ -423,91 +434,151 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   /// 日本酒の詳細情報を取得する
   Future<void> _fetchSakeDetails(List<Sake> extractedSakes) async {
-    if (extractedSakes.isEmpty) return;
-
-    try {
-      final loading = <String, bool>{
+    if (extractedSakes.isEmpty || _resolvingDetails) return;
+    _resolvingDetails = true;
+    final generation = ++_detailsGeneration;
+    bool isCurrent() => mounted && generation == _detailsGeneration;
+    state = state.copyWith(
+      isGettingDetails: true,
+      sakeLoadingStatus: {
         for (final sake in extractedSakes)
           if (sake.name?.isNotEmpty == true) sake.name!: true,
-      };
-      state = state.copyWith(
-        isGettingDetails: true,
-        sakeLoadingStatus: loading,
-        resolutionCandidates: const {},
-        matchPercents: const {},
-        tasteProfiles: const {},
-        unverifiedNames: const [],
-      );
-
+      },
+      resolutionCandidates: const {},
+      matchPercents: const {},
+      tasteProfiles: const {},
+      unverifiedNames: const [],
+    );
+    try {
+      // DB-only pass: one slow external lookup cannot hold back known products.
       final resolutions = await sakeMenuRecognitionRepository.resolveMenuSakes(
         extractedSakes,
+        masterOnly: true,
       );
-      final nameMapping = <String, String>{};
-      final candidates = <String, List<MenuSakeCandidate>>{};
-      final matchPercents = <String, int>{};
-      final tasteProfiles = <String, SakeTasteProfileDetails>{};
-      final unverifiedNames = <String>[];
-      final resolvedSakes = <Sake>[];
-      final preference = read<MyPageNotifier>().state.tasteProfile;
-
-      for (final resolution in resolutions) {
-        MenuSakeCandidate? selected;
-        if (resolution.status == MenuSakeResolutionStatus.resolved &&
-            resolution.candidates.length == 1) {
-          selected = resolution.candidates.single;
-        } else if (resolution.status == MenuSakeResolutionStatus.multiple) {
-          candidates[resolution.inputName] = resolution.candidates;
+      if (!isCurrent()) return;
+      final pending = <Sake>[];
+      for (final source in extractedSakes) {
+        final resolution = resolutions
+            .where(
+              (item) =>
+                  item.inputName == source.name &&
+                  item.inputType == source.type,
+            )
+            .firstOrNull;
+        final hasTaste =
+            resolution != null &&
+            resolution.status == MenuSakeResolutionStatus.resolved &&
+            resolution.candidates.length == 1 &&
+            resolution.candidates.single.tasteProfile != null;
+        if (resolution != null) {
+          _applyMenuResolution(resolution, loading: !hasTaste);
         }
-
-        if (selected != null) {
-          final sake = selected.sake;
-          nameMapping[resolution.inputName] = sake.name ?? resolution.inputName;
-          resolvedSakes.add(sake);
-          if (selected.tasteProfile != null) {
-            tasteProfiles[resolution.inputName] = selected.tasteProfile!;
-          }
-          final matchPercent = calculateOptionalSakeTasteMatchPercent(
-            profile: selected.tasteProfile,
-            preference: preference,
-          );
-          if (matchPercent != null) {
-            matchPercents[resolution.inputName] = matchPercent;
-          }
-        } else if (resolution.fallback != null) {
-          final fallback = resolution.fallback!;
-          nameMapping[resolution.inputName] =
-              fallback.name ?? resolution.inputName;
-          resolvedSakes.add(fallback.copyWith(recommendationScore: null));
-          unverifiedNames.add(resolution.inputName);
-        }
+        if (!hasTaste && source.name?.isNotEmpty == true) pending.add(source);
       }
-
-      state = state.copyWith(
-        isGettingDetails: false,
-        sakes: resolvedSakes,
-        sakeLoadingStatus: {
-          for (final sake in extractedSakes)
-            if (sake.name?.isNotEmpty == true) sake.name!: false,
-        },
-        nameMapping: nameMapping,
-        resolutionCandidates: candidates,
-        matchPercents: matchPercents,
-        tasteProfiles: tasteProfiles,
-        unverifiedNames: unverifiedNames,
-      );
-
-      await addCurrentAnalysisToHistory();
-    } catch (e) {
-      logger.shout('詳細情報の取得中にエラーが発生しました: $e');
-      state = state.copyWith(
-        isGettingDetails: false,
-        errorMessage: context.l10n.errorSakeDetailFetch,
-      );
-      await addCurrentAnalysisToHistory(analysisStatus: 'partial');
+      await addCurrentAnalysisToHistory(analysisStatus: 'details_pending');
+      // The preference refresh can complete alongside AI enrichment.
+      unawaited(read<MyPageNotifier>().refreshTasteProfile());
+      for (final source in pending) {
+        if (!isCurrent()) return;
+        if (_selectedMenuNames.contains(source.name)) continue;
+        try {
+          final enriched = await sakeMenuRecognitionRepository.resolveMenuSakes(
+            [source],
+          );
+          if (!isCurrent()) return;
+          if (_selectedMenuNames.contains(source.name)) continue;
+          for (final resolution in enriched) {
+            _applyMenuResolution(resolution, loading: false);
+          }
+          if (enriched.isEmpty) _finishMenuRow(source.name!);
+        } catch (error) {
+          if (!isCurrent()) return;
+          logger.warning('メニューの商品情報取得に失敗しました: ${source.name}: $error');
+          _finishMenuRow(source.name!);
+        }
+        await addCurrentAnalysisToHistory(analysisStatus: 'partial');
+      }
+    } catch (error) {
+      if (!isCurrent()) return;
+      logger.warning('メニューマスター照合に失敗しました: $error');
+      if (context.mounted) {
+        state = state.copyWith(errorMessage: context.l10n.errorSakeDetailFetch);
+      }
+    } finally {
+      if (isCurrent()) {
+        _resolvingDetails = false;
+        state = state.copyWith(
+          isGettingDetails: false,
+          sakeLoadingStatus: {
+            for (final sake in extractedSakes)
+              if (sake.name?.isNotEmpty == true) sake.name!: false,
+          },
+        );
+        await addCurrentAnalysisToHistory();
+      }
     }
   }
 
+  void _finishMenuRow(String name) {
+    state = state.copyWith(
+      sakeLoadingStatus: {...state.sakeLoadingStatus, name: false},
+    );
+  }
+
+  void _applyMenuResolution(
+    MenuSakeResolution resolution, {
+    required bool loading,
+  }) {
+    final name = resolution.inputName;
+    final choices = {...state.resolutionCandidates};
+    if (resolution.status == MenuSakeResolutionStatus.multiple) {
+      choices[name] = resolution.candidates;
+    } else {
+      choices.remove(name);
+    }
+    final selected =
+        resolution.status == MenuSakeResolutionStatus.resolved &&
+            resolution.candidates.length == 1
+        ? resolution.candidates.single
+        : null;
+    final sake = selected?.sake ?? resolution.fallback;
+    final profile = selected?.tasteProfile ?? resolution.fallbackTasteProfile;
+    final mapped = {...state.nameMapping};
+    final profiles = {...state.tasteProfiles};
+    final scores = {...state.matchPercents};
+    final sakes = [...?state.sakes];
+    if (sake != null) {
+      final previousName = mapped[name];
+      sakes.removeWhere(
+        (item) => previousName != null && item.name == previousName,
+      );
+      sakes.add(sake);
+      mapped[name] = sake.name ?? name;
+    }
+    if (profile != null) {
+      profiles[name] = profile;
+      final myPage = read<MyPageNotifier>().state;
+      final percent = calculateOptionalSakeTasteMatchPercent(
+        profile: profile,
+        preference: menuTastePreference(
+          profile: myPage.tasteProfile,
+          preferences: myPage.preferences,
+        ),
+      );
+      if (percent != null) scores[name] = percent;
+    }
+    state = state.copyWith(
+      sakes: sakes,
+      nameMapping: mapped,
+      resolutionCandidates: choices,
+      tasteProfiles: profiles,
+      matchPercents: scores,
+      sakeLoadingStatus: {...state.sakeLoadingStatus, name: loading},
+    );
+  }
+
   void selectMenuCandidate(String inputName, MenuSakeCandidate candidate) {
+    _selectedMenuNames.add(inputName);
     final mapped = Map<String, String>.from(state.nameMapping);
     final previousName = mapped[inputName];
     mapped[inputName] = candidate.sake.name ?? inputName;
@@ -526,7 +597,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     } else {
       profiles.remove(inputName);
     }
-    final preference = read<MyPageNotifier>().state.tasteProfile;
+    final myPage = read<MyPageNotifier>().state;
+    final preference = menuTastePreference(
+      profile: myPage.tasteProfile,
+      preferences: myPage.preferences,
+    );
     final matchPercent = calculateOptionalSakeTasteMatchPercent(
       profile: candidate.tasteProfile,
       preference: preference,
@@ -545,8 +620,54 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       matchPercents: scores,
       tasteProfiles: profiles,
       resolutionCandidates: choices,
+      sakeLoadingStatus: {
+        ...state.sakeLoadingStatus,
+        inputName: candidate.tasteProfile == null,
+      },
     );
     unawaited(addCurrentAnalysisToHistory());
+    if (candidate.tasteProfile == null) {
+      unawaited(_enrichSelectedMenuCandidate(inputName, candidate));
+    }
+  }
+
+  Future<void> _enrichSelectedMenuCandidate(
+    String inputName,
+    MenuSakeCandidate candidate,
+  ) async {
+    final generation = _detailsGeneration;
+    try {
+      final results = await sakeMenuRecognitionRepository.resolveMenuSakes([
+        candidate.sake,
+      ]);
+      if (!mounted ||
+          generation != _detailsGeneration ||
+          state.nameMapping[inputName] != candidate.sake.name)
+        return;
+      final selected = results
+          .expand((result) => result.candidates)
+          .where((item) => item.sake.sakeId == candidate.sake.sakeId)
+          .firstOrNull;
+      if (selected != null) {
+        _applyMenuResolution(
+          MenuSakeResolution(
+            inputName: inputName,
+            status: MenuSakeResolutionStatus.resolved,
+            candidates: [selected],
+          ),
+          loading: false,
+        );
+      }
+    } catch (error) {
+      logger.warning('選択したメニュー商品の味情報取得に失敗しました: $error');
+    } finally {
+      if (mounted &&
+          generation == _detailsGeneration &&
+          state.nameMapping[inputName] == candidate.sake.name) {
+        _finishMenuRow(inputName);
+        await addCurrentAnalysisToHistory();
+      }
+    }
   }
 
   /// フォアグラウンドでメニュー解析を実行する
