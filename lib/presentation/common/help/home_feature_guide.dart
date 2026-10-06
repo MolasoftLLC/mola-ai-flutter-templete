@@ -98,6 +98,7 @@ class HomeFeatureGuide {
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => _HomeGuideOverlay(
           scrollToRecommendations: _scrollToRecommendations,
+          mapBounds: () => bounds(mapKey),
           targets: [
             [headerScan, bottomScan],
             [search],
@@ -116,8 +117,10 @@ class _HomeGuideOverlay extends StatefulWidget {
   const _HomeGuideOverlay({
     required this.targets,
     required this.scrollToRecommendations,
+    required this.mapBounds,
   });
   final Future<Rect?> Function() scrollToRecommendations;
+  final Rect? Function() mapBounds;
   final List<List<Rect>> targets;
 
   @override
@@ -125,7 +128,8 @@ class _HomeGuideOverlay extends StatefulWidget {
 }
 
 class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
-  int _step = 0;
+  int _step = -1;
+  Rect? _mapBounds;
   bool _scrolling = false;
   Rect? _recommendations;
   static const _messages = [
@@ -150,6 +154,11 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
         _step = 3;
       });
     } else {
+      if (_step == 1) {
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+        _mapBounds = widget.mapBounds();
+      }
       setState(() => _step++);
     }
   }
@@ -165,12 +174,15 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
           onTap: _next,
           child: CustomPaint(
             painter: _HomeGuideFocusPainter(
-              targets: _scrolling
+              targets: _scrolling || _step == -1
                   ? const []
                   : _step == 3
                   ? [if (_recommendations != null) _recommendations!]
+                  : _step == 2 && _mapBounds != null
+                  ? [_mapBounds!]
                   : widget.targets[_step],
               circles: _step == 0,
+              outline: _step == 2,
             ),
           ),
         ),
@@ -203,18 +215,42 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: _step == -1
+                        ? CrossAxisAlignment.stretch
+                        : CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${_step + 1} / 4',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
+                      if (_step >= 0)
+                        Text(
+                          '${_step + 1} / 4',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
+                      if (_step == -1) ...[
+                        Center(
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF143861),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Image.asset(
+                              'assets/images/sake_logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ] else
+                        const SizedBox(height: 8),
                       Text(
-                        _titles[_step],
+                        _step == -1 ? '新SAKEPEDIAへようこそ！' : _titles[_step],
+                        textAlign: _step == -1
+                            ? TextAlign.center
+                            : TextAlign.start,
                         style: const TextStyle(
                           color: Color(0xFF1D3567),
                           fontSize: 16,
@@ -223,7 +259,10 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _messages[_step],
+                        _step == -1 ? '新機能の説明を簡単にさせていただきます！' : _messages[_step],
+                        textAlign: _step == -1
+                            ? TextAlign.center
+                            : TextAlign.start,
                         style: const TextStyle(
                           color: Color(0xFF1D3567),
                           fontSize: 13,
@@ -258,9 +297,14 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
 }
 
 class _HomeGuideFocusPainter extends CustomPainter {
-  const _HomeGuideFocusPainter({required this.targets, required this.circles});
+  const _HomeGuideFocusPainter({
+    required this.targets,
+    required this.circles,
+    this.outline = false,
+  });
   final List<Rect> targets;
   final bool circles;
+  final bool outline;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -281,9 +325,22 @@ class _HomeGuideFocusPainter extends CustomPainter {
       shadow,
       Paint()..color = Colors.black.withValues(alpha: .85),
     );
+    if (outline) {
+      for (final target in targets) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(target.inflate(8), const Radius.circular(14)),
+          Paint()
+            ..color = const Color(0xFFFFD166)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2,
+        );
+      }
+    }
   }
 
   @override
   bool shouldRepaint(covariant _HomeGuideFocusPainter oldDelegate) =>
-      oldDelegate.targets != targets || oldDelegate.circles != circles;
+      oldDelegate.targets != targets ||
+      oldDelegate.circles != circles ||
+      oldDelegate.outline != outline;
 }

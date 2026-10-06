@@ -10,6 +10,7 @@ import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import 'saved_sake_detail_page.dart';
+import '../common/widgets/primary_app_bar.dart';
 
 /// 保存した表ラベルから候補を選び、同じ保存記録へマスターを紐付ける。
 class UnlinkedSavedSakePage extends StatefulWidget {
@@ -228,10 +229,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
         );
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('保存した日本酒'),
-        foregroundColor: const Color(0xFF143861),
-      ),
+      appBar: const PrimaryAppBar(title: '日本酒を改めて解析'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

@@ -660,31 +660,20 @@ class _HomeHeader extends StatelessWidget {
                 ),
                 Positioned(
                   right: 8,
-                  child: Tooltip(
-                    message: 'もう一度チュートリアルを見る',
-                    child: TextButton(
-                      onPressed: onTutorialTap,
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 4,
-                        ),
-                        minimumSize: const Size(48, 48),
-                      ),
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.help_outline_rounded, size: 23),
-                          SizedBox(height: 3),
-                          Text(
-                            'もう一度\nチュートリアルを見る',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 10, height: 1.2),
-                          ),
-                        ],
-                      ),
+                  child: PopupMenuButton<String>(
+                    tooltip: 'ヘルプ',
+                    icon: const Icon(
+                      Icons.help_outline_rounded,
+                      color: Color(0xFFFFD166),
+                      size: 25,
                     ),
+                    onSelected: (_) => onTutorialTap(),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'tutorial',
+                        child: Text('もう一度チュートリアルを見る'),
+                      ),
+                    ],
                   ),
                 ),
               ],

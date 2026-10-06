@@ -124,7 +124,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
-                      key: mapKey,
+                      focusKey: mapKey,
                       icon: Icons.map_outlined,
                       label: context.l10n.navigationMap,
                       selected: currentPageIndex == 1,
@@ -188,13 +188,14 @@ class _NewHomeBottomNavigation extends StatelessWidget {
 
 class _NavigationItem extends StatelessWidget {
   const _NavigationItem({
-    super.key,
+    this.focusKey,
     required this.icon,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
+  final GlobalKey? focusKey;
   final IconData icon;
   final String label;
   final bool selected;
@@ -211,6 +212,7 @@ class _NavigationItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
+          key: focusKey,
           padding: const EdgeInsets.only(top: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
