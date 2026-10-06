@@ -855,19 +855,12 @@ class _SakeScanPageState extends State<SakeScanPage>
                     state.status == SakeScanViewStatus.backScanning))
               Positioned.fill(
                 child: IgnorePointer(
-                  child: LayoutBuilder(
-                    builder: (_, constraints) => Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        32,
-                        constraints.maxHeight * 0.22,
-                        32,
-                        constraints.maxHeight * 0.30,
-                      ),
-                      child: LabelCaptureGuide(
-                        isBackLabel:
-                            _isMenuCapture ||
-                            state.status == SakeScanViewStatus.backScanning,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 136, 20, 166),
+                    child: LabelCaptureGuide(
+                      isBackLabel:
+                          _isMenuCapture ||
+                          state.status == SakeScanViewStatus.backScanning,
                     ),
                   ),
                 ),
@@ -925,38 +918,6 @@ class _SakeScanPageState extends State<SakeScanPage>
                     _isMenuCapture
                         ? context.l10n.labelSearchMode
                         : context.l10n.menuSearchPageTitle,
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white54,
-                    backgroundColor: Colors.black54,
-                  ),
-                ),
-              ),
-            if (state.status == SakeScanViewStatus.frontScanning ||
-                state.status == SakeScanViewStatus.backScanning)
-              Positioned(
-                top:
-                    state.status == SakeScanViewStatus.frontScanning &&
-                        widget.reassignTarget == null
-                    ? 56
-                    : 8,
-                right: 8,
-                child: TextButton.icon(
-                  onPressed:
-                      _captureGuideSettingsReady && !_savingCaptureGuideSetting
-                      ? () => unawaited(_toggleCaptureGuide())
-                      : null,
-                  icon: Icon(
-                    _showCaptureGuide
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _showCaptureGuide
-                        ? context.l10n.hideCaptureGuide
-                        : context.l10n.showCaptureGuide,
                   ),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -1090,11 +1051,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Widget _buildCameraHeader(SakeScanState state) {
     final isBack = state.status == SakeScanViewStatus.backScanning;
     return Positioned(
-      top:
-          state.status == SakeScanViewStatus.frontScanning &&
-              widget.reassignTarget == null
-          ? 112
-          : 72,
+      top: 64,
       left: 20,
       right: 20,
       child: Column(
@@ -1133,56 +1090,49 @@ class _SakeScanPageState extends State<SakeScanPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              if (selectCloseUpSakeScanCamera(_availableCameras) != null) ...[
-                _CameraCloseUpButton(
-                  label: context.l10n.closeUpMode,
-                  selected: _isCloseUpMode,
-                  onPressed: _initializingCamera
-                      ? null
-                      : () => unawaited(_toggleCloseUpMode()),
-                ),
-                const SizedBox(width: 12),
-              ],
-              const Icon(Icons.zoom_out, color: Colors.white70),
-              Expanded(
-                child: Slider(
-                  value: _currentZoomLevel,
-                  min: _minZoomLevel,
-                  max: _maxZoomLevel,
-                  divisions: ((_maxZoomLevel - _minZoomLevel) * 10)
-                      .round()
-                      .clamp(1, 90),
-                  onChanged: _maxZoomLevel > _minZoomLevel
-                      ? (value) => unawaited(_setZoomLevel(value))
-                      : null,
-                  activeColor: const Color(0xFFFFD54F),
-                  inactiveColor: Colors.white30,
-                ),
-              ),
-              const Icon(Icons.zoom_in, color: Colors.white70),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 40,
-                child: Text(
-                  '${_currentZoomLevel.toStringAsFixed(1)}×',
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          TextButton.icon(
+            onPressed: _captureGuideSettingsReady && !_savingCaptureGuideSetting
+                ? () => unawaited(_toggleCaptureGuide())
+                : null,
+            icon: Icon(
+              _showCaptureGuide
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              size: 18,
+            ),
+            label: Text(
+              _showCaptureGuide
+                  ? context.l10n.hideCaptureGuide
+                  : context.l10n.showCaptureGuide,
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              disabledForegroundColor: Colors.white54,
+              backgroundColor: Colors.black54,
+              minimumSize: const Size(0, 48),
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           SizedBox(
-            width: 220,
+            width: double.infinity,
             height: 76,
             child: Stack(
               alignment: Alignment.center,
               children: [
+                if (selectCloseUpSakeScanCamera(_availableCameras) != null)
+                  Positioned(
+                    left: 0,
+                    child: _CameraCloseUpButton(
+                      label: context.l10n.closeUpMode,
+                      selected: _isCloseUpMode,
+                      onPressed:
+                          _initializingCamera ||
+                              _capturing ||
+                              state.isSubmitting
+                          ? null
+                          : () => unawaited(_toggleCloseUpMode()),
+                    ),
+                  ),
                 Semantics(
                   button: true,
                   label: _isMenuCapture
