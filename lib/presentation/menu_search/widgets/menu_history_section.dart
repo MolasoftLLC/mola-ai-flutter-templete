@@ -14,7 +14,14 @@ import '../../sake_map/sake_master_detail_page.dart';
 import '../../common/widgets/sake_taste_widgets.dart';
 
 class MenuHistorySection extends StatelessWidget {
-  const MenuHistorySection({Key? key}) : super(key: key);
+  const MenuHistorySection({
+    super.key,
+    this.historyId,
+    this.showHeading = true,
+  });
+
+  final String? historyId;
+  final bool showHeading;
 
   // 削除確認ダイアログを表示する
   void showDeleteConfirmationDialog({
@@ -86,26 +93,35 @@ class MenuHistorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
-    final menuAnalysisHistory = context.select(
+    final histories = context.select(
       (MenuSearchPageState state) => state.menuAnalysisHistory,
     );
+    final menuAnalysisHistory = historyId == null
+        ? histories
+        : histories.where((item) => item.id == historyId).toList();
 
     return Container(
-      padding: const EdgeInsets.only(top: 42, left: 12, right: 12, bottom: 24),
+      padding: EdgeInsets.only(
+        top: showHeading ? 42 : 12,
+        left: 12,
+        right: 12,
+        bottom: 24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Text(
-              context.l10n.pastMenuAnalysis,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+          if (showHeading)
+            Center(
+              child: Text(
+                context.l10n.pastMenuAnalysis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+          if (showHeading) const SizedBox(height: 16),
           // 履歴がない場合のメッセージ
           if (menuAnalysisHistory.isEmpty)
             Container(
@@ -149,6 +165,7 @@ class MenuHistorySection extends StatelessWidget {
                     ),
                     child: ExpansionTile(
                       key: PageStorageKey(historyItem.id),
+                      initiallyExpanded: historyId != null,
                       onExpansionChanged: (expanded) {
                         if (expanded)
                           notifier.restoreHistoryDetails(historyItem.id);

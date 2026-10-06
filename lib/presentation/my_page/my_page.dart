@@ -29,6 +29,7 @@ import '../sake_map/sake_master_detail_page.dart';
 import 'account_settings_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
+import 'widgets/menu_history_preview.dart';
 
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
@@ -505,6 +506,7 @@ class MyPage extends StatelessWidget {
                       ),
                     ),
 
+                    MenuHistoryPreview.wrapped(ownerKey: authUser?.uid),
                     const SizedBox(height: 16),
                     _MyTimelineEntryTile(
                       isLoggedIn: isLoggedIn,
