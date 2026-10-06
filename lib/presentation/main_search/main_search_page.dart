@@ -1640,8 +1640,8 @@ void openPreferenceSearchTab(
   BuildContext context, {
   required VoidCallback onTabSelected,
 }) {
-  onTabSelected();
   Navigator.of(context).popUntil((route) => route.isFirst);
+  onTabSelected();
 }
 
 class _SakeCandidateImage extends StatelessWidget {

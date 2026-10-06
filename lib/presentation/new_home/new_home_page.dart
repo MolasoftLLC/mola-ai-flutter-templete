@@ -22,6 +22,7 @@ import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
+import '../my_page/my_page.dart';
 import '../sake_scan/sake_scan_entry.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import '../timeline/envy_result.dart';
@@ -318,7 +319,7 @@ class _NewHomePageState extends State<NewHomePage> {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MainSearchPage.wrapped(
-          onPreferenceSearchTap: () => appPageNotifier.onTabTapped(2),
+          onPreferenceSearchTap: appPageNotifier.openPreferenceSearch,
         ),
       ),
     );
@@ -609,7 +610,7 @@ Future<void> openNewHomeScanner(BuildContext context) async {
       MaterialPageRoute<void>(
         builder: (_) => MainSearchPage.wrapped(
           initialQuery: result,
-          onPreferenceSearchTap: () => appPageNotifier.onTabTapped(2),
+          onPreferenceSearchTap: appPageNotifier.openPreferenceSearch,
         ),
       ),
     );
@@ -659,7 +660,7 @@ class _HomeHeader extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 Positioned(
-                  right: 8,
+                  right: 56,
                   child: PopupMenuButton<String>(
                     tooltip: 'ヘルプ',
                     icon: const Icon(
@@ -674,6 +675,20 @@ class _HomeHeader extends StatelessWidget {
                         child: Text('もう一度チュートリアルを見る'),
                       ),
                     ],
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  child: IconButton(
+                    tooltip: context.l10n.navigationMyPage,
+                    icon: const Icon(
+                      Icons.person_outline,
+                      color: Color(0xFFFFD166),
+                      size: 25,
+                    ),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(builder: (_) => MyPage.wrapped()),
+                    ),
                   ),
                 ),
               ],
@@ -745,7 +760,9 @@ class _HomeHeader extends StatelessWidget {
               (AppPageState state) => state.currentIndex == 0,
             ),
             child: HomeNoticeTicker(
-              notices: context.select((AppPageState state) => state.homeNotices),
+              notices: context.select(
+                (AppPageState state) => state.homeNotices,
+              ),
             ),
           ),
         ],

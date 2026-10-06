@@ -21,10 +21,8 @@ import '../common/widgets/primary_app_bar.dart';
 import 'menu_search_page_notifier.dart';
 import 'widgets/menu_sake_detail_rows.dart';
 
-class MenuSearchPage extends StatelessWidget {
+class MenuSearchPage extends StatefulWidget {
   const MenuSearchPage._({Key? key}) : super(key: key);
-
-  static final ScrollController _scrollController = ScrollController();
 
   static Widget wrapped({File? initialImage}) {
     return MultiProvider(
@@ -38,6 +36,19 @@ class MenuSearchPage extends StatelessWidget {
       ],
       child: const MenuSearchPage._(),
     );
+  }
+
+  @override
+  State<MenuSearchPage> createState() => _MenuSearchPageState();
+}
+
+class _MenuSearchPageState extends State<MenuSearchPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override

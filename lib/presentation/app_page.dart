@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:mola_gemini_flutter_template/common/access_url.dart';
-import 'package:mola_gemini_flutter_template/presentation/favorite_search/favorite_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/new_home_page.dart';
-import 'package:mola_gemini_flutter_template/presentation/my_page/my_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_map_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/timeline/timeline_page.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../common/localization/localization_extensions.dart';
 import '../common/utils/snack_bar_utils.dart';
 import '../domain/eintities/app_content.dart';
+import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
 
 class AppPage extends StatelessWidget {
@@ -37,6 +37,7 @@ class AppPage extends StatelessWidget {
     final currentIndex = context.select(
       (AppPageState state) => state.currentIndex,
     );
+    final historyOwner = context.select((AuthState state) => state.user?.uid);
     final isStartupGateLoading = context.select(
       (AppPageState state) => state.isStartupGateLoading,
     );
@@ -66,10 +67,12 @@ class AppPage extends StatelessWidget {
           index: currentIndex,
           children: [
             NewHomePage.wrapped(),
+            KeyedSubtree(
+              key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
+              child: MenuSearchPage.wrapped(),
+            ),
             SakeMapPage.wrapped(),
-            FavoriteSearchPage.wrapped(),
             TimelinePage.wrapped(),
-            MyPage.wrapped(),
           ],
         ),
       ),
@@ -124,24 +127,24 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
-                      focusKey: mapKey,
-                      icon: Icons.map_outlined,
-                      label: context.l10n.navigationMap,
+                      icon: Icons.menu_book_outlined,
+                      label: context.l10n.navigationMenuAnalysis,
                       selected: currentPageIndex == 1,
                       onTap: () => onPageSelected(1),
                     ),
                     const Expanded(child: SizedBox()),
                     _NavigationItem(
+                      focusKey: mapKey,
+                      icon: Icons.map_outlined,
+                      label: context.l10n.navigationMap,
+                      selected: currentPageIndex == 2,
+                      onTap: () => onPageSelected(2),
+                    ),
+                    _NavigationItem(
                       icon: Icons.timeline,
                       label: context.l10n.navigationTimeline,
                       selected: currentPageIndex == 3,
                       onTap: () => onPageSelected(3),
-                    ),
-                    _NavigationItem(
-                      icon: Icons.person_outline,
-                      label: context.l10n.navigationMyPage,
-                      selected: currentPageIndex == 4,
-                      onTap: () => onPageSelected(4),
                     ),
                   ],
                 ),

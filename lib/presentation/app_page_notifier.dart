@@ -17,6 +17,7 @@ import '../domain/repository/mola_api_repository.dart';
 import 'common/dialogs/sake_preferences_dialog.dart';
 import 'common/help/help_guide_dialog.dart';
 import 'common/help/home_feature_guide.dart';
+import 'favorite_search/favorite_search_page.dart';
 
 part 'app_page_notifier.freezed.dart';
 
@@ -227,10 +228,13 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     final target = promotion.linkTarget;
     if (target == null) return;
     if (promotion.linkType == 'internal') {
+      if (target == 'recommendations') {
+        openPreferenceSearch();
+        return;
+      }
       final index = switch (target) {
         'home' => 0,
-        'map' => 1,
-        'recommendations' => 2,
+        'map' => 2,
         'timeline' => 3,
         _ => null,
       };
@@ -244,6 +248,13 @@ class AppPageNotifier extends StateNotifier<AppPageState>
       mode: promotion.linkType == 'webview'
           ? LaunchMode.inAppBrowserView
           : LaunchMode.externalApplication,
+    );
+  }
+
+  void openPreferenceSearch() {
+    if (!context.mounted) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => FavoriteSearchPage.wrapped()),
     );
   }
 
