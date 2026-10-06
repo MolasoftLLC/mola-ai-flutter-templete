@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ホームの撮影・検索・メニュー解析などを案内するフォーカスガイド。
@@ -77,21 +80,34 @@ class HomeFeatureGuide {
         return;
       }
       Rect? bounds(GlobalKey key) {
-        final box = key.currentContext?.findRenderObject();
+        final targetContext = key.currentContext;
+        final box = targetContext?.findRenderObject();
         if (box is! RenderBox || !box.attached || !box.hasSize) return null;
-        return box.localToGlobal(Offset.zero) & box.size;
+        final rect = box.localToGlobal(Offset.zero) & box.size;
+        if (key == recommendationsKey && targetContext != null) {
+          final viewport = Scrollable.maybeOf(
+            targetContext,
+          )?.context.findRenderObject();
+          if (viewport is RenderBox && viewport.attached && viewport.hasSize) {
+            return rect.intersect(
+              viewport.localToGlobal(Offset.zero) & viewport.size,
+            );
+          }
+        }
+        return rect;
       }
 
-      final headerScan = bounds(headerScanKey);
-      final bottomScan = bounds(bottomScanKey);
-      final search = bounds(searchKey);
-      final menuAnalysis = bounds(menuAnalysisKey);
-      final map = bounds(mapKey);
-      if (headerScan == null ||
-          bottomScan == null ||
-          search == null ||
-          menuAnalysis == null ||
-          map == null) {
+      final targetKeys = [
+        [headerScanKey, bottomScanKey],
+        [searchKey],
+        [menuAnalysisKey],
+        [mapKey],
+        [recommendationsKey],
+      ];
+      if (targetKeys
+          .take(4)
+          .expand((keys) => keys)
+          .any((key) => bounds(key) == null)) {
         return;
       }
       final completed = await showGeneralDialog<bool>(
@@ -101,12 +117,9 @@ class HomeFeatureGuide {
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => _HomeGuideOverlay(
           scrollToRecommendations: _scrollToRecommendations,
-          mapBounds: () => bounds(mapKey),
-          targets: [
-            [headerScan, bottomScan],
-            [search],
-            [menuAnalysis],
-            [map],
+          readTargets: (step) => [
+            for (final key in targetKeys[step])
+              if (bounds(key) case final Rect rect) rect,
           ],
         ),
       );
@@ -119,13 +132,11 @@ class HomeFeatureGuide {
 
 class _HomeGuideOverlay extends StatefulWidget {
   const _HomeGuideOverlay({
-    required this.targets,
+    required this.readTargets,
     required this.scrollToRecommendations,
-    required this.mapBounds,
   });
   final Future<Rect?> Function() scrollToRecommendations;
-  final Rect? Function() mapBounds;
-  final List<List<Rect>> targets;
+  final List<Rect> Function(int step) readTargets;
 
   @override
   State<_HomeGuideOverlay> createState() => _HomeGuideOverlayState();
@@ -133,9 +144,47 @@ class _HomeGuideOverlay extends StatefulWidget {
 
 class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
   int _step = -1;
-  Rect? _mapBounds;
   bool _scrolling = false;
-  Rect? _recommendations;
+  final GlobalKey _overlayKey = GlobalKey();
+  List<Rect> _focusRects = const [];
+  Timer? _focusTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Track late-loading content and viewport changes only while the guide is open.
+    _focusTimer = Timer.periodic(
+      const Duration(milliseconds: 200),
+      (_) => _refreshFocus(),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFocus());
+  }
+
+  @override
+  void dispose() {
+    _focusTimer?.cancel();
+    super.dispose();
+  }
+
+  void _refreshFocus() {
+    if (!mounted) return;
+    final overlay = _overlayKey.currentContext?.findRenderObject();
+    if (overlay is! RenderBox || !overlay.attached || !overlay.hasSize) return;
+    final viewport = Offset.zero & overlay.size;
+    final rects = <Rect>[];
+    if (!_scrolling && _step >= 0) {
+      for (final globalRect in widget.readTargets(_step)) {
+        final localRect = Rect.fromPoints(
+          overlay.globalToLocal(globalRect.topLeft),
+          overlay.globalToLocal(globalRect.bottomRight),
+        );
+        final visible = localRect.intersect(viewport);
+        if (!visible.isEmpty) rects.add(visible);
+      }
+    }
+    if (!listEquals(_focusRects, rects)) setState(() => _focusRects = rects);
+  }
+
   static const _menuStep = 2;
   static const _mapStep = 3;
   static const _recommendationsStep = 4;
@@ -160,27 +209,23 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
       Navigator.of(context).pop(true);
     } else if (_step == _mapStep) {
       setState(() => _scrolling = true);
-      final target = await widget.scrollToRecommendations();
+      await widget.scrollToRecommendations();
       if (!mounted) return;
       setState(() {
-        _recommendations = target;
         _scrolling = false;
         _step = _recommendationsStep;
       });
     } else {
-      if (_step == _menuStep) {
-        await WidgetsBinding.instance.endOfFrame;
-        if (!mounted) return;
-        _mapBounds = widget.mapBounds();
-      }
       setState(() => _step++);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFocus());
   }
 
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.transparent,
     child: Stack(
+      key: _overlayKey,
       fit: StackFit.expand,
       children: [
         GestureDetector(
@@ -188,13 +233,7 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
           onTap: _next,
           child: CustomPaint(
             painter: _HomeGuideFocusPainter(
-              targets: _scrolling || _step == -1
-                  ? const []
-                  : _step == _recommendationsStep
-                  ? [if (_recommendations != null) _recommendations!]
-                  : _step == _mapStep && _mapBounds != null
-                  ? [_mapBounds!]
-                  : widget.targets[_step],
+              targets: _scrolling ? const [] : _focusRects,
               circles: _step == 0,
               outline: _step == _menuStep || _step == _mapStep,
             ),
