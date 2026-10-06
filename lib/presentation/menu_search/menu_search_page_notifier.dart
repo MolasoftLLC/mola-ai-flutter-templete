@@ -41,6 +41,7 @@ abstract class MenuSearchPageState with _$MenuSearchPageState {
     @Default(false) bool isLoading,
     @Default(false) bool isExtractingInfo,
     @Default(false) bool isGettingDetails,
+    @Default(false) bool isMasterLookupComplete,
     @Default(false) bool isAdLoading,
     @Default(false) bool isAnalyzingInBackground,
     String? sakeName,
@@ -92,6 +93,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   final Set<String> _selectedMenuNames = {};
 
   final BuildContext context;
+  final GlobalKey resultsSectionKey = GlobalKey();
   final File? initialImage;
   final MenuAnalysisHistoryRepository _historyRepository;
   String? _activeAnalysisId;
@@ -308,6 +310,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     _pendingHistoryItem = null;
     state = state.copyWith(
       sakeImage: null,
+      isMasterLookupComplete: false,
       extractedSakes: [],
       sakeMenuRecognitionResponse: null,
       sakes: <Sake>[],
@@ -338,6 +341,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     state = state.copyWith(
       isLoading: true,
       isExtractingInfo: true,
+      isMasterLookupComplete: false,
       errorMessage: null,
       extractedSakes: [],
       sakes: <Sake>[],
@@ -520,6 +524,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     bool isCurrent() => mounted && generation == _detailsGeneration;
     state = state.copyWith(
       isGettingDetails: true,
+      isMasterLookupComplete: false,
       sakeLoadingStatus: {
         for (final sake in extractedSakes)
           if (sake.name?.isNotEmpty == true) sake.name!: true,
@@ -537,6 +542,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
       if (!isCurrent()) return;
       final pending = <Sake>[];
+      final ready = <Sake>[];
+      final known = <Sake>[];
+      final unresolved = <Sake>[];
       for (final source in extractedSakes) {
         final resolution = resolutions
             .where(
@@ -550,11 +558,26 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             resolution.status == MenuSakeResolutionStatus.resolved &&
             resolution.candidates.length == 1 &&
             resolution.candidates.single.tasteProfile != null;
+        final isKnown =
+            resolution?.status == MenuSakeResolutionStatus.resolved &&
+            resolution!.candidates.length == 1;
+        if (hasTaste) {
+          ready.add(source);
+        } else if (isKnown) {
+          known.add(source);
+        } else {
+          unresolved.add(source);
+        }
         if (resolution != null) {
           _applyMenuResolution(resolution, loading: !hasTaste);
         }
         if (!hasTaste && source.name?.isNotEmpty == true) pending.add(source);
       }
+      // Stable partition once after DB lookup; later enrichment never moves rows.
+      state = state.copyWith(
+        extractedSakes: [...ready, ...known, ...unresolved],
+        isMasterLookupComplete: true,
+      );
       await addCurrentAnalysisToHistory(analysisStatus: 'details_pending');
       // The preference refresh can complete alongside AI enrichment.
       unawaited(read<MyPageNotifier>().refreshTasteProfile());
@@ -589,6 +612,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         _resolvingDetails = false;
         state = state.copyWith(
           isGettingDetails: false,
+          isMasterLookupComplete: true,
           sakeLoadingStatus: {
             for (final sake in extractedSakes)
               if (sake.name?.isNotEmpty == true) sake.name!: false,

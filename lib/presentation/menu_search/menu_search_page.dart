@@ -53,6 +53,9 @@ class MenuSearchPage extends StatelessWidget {
     final isGettingDetails = context.select(
       (MenuSearchPageState state) => state.isGettingDetails,
     );
+    final isMasterLookupComplete = context.select(
+      (MenuSearchPageState state) => state.isMasterLookupComplete,
+    );
     final sakeImage = context.select(
       (MenuSearchPageState state) => state.sakeImage,
     );
@@ -103,11 +106,13 @@ class MenuSearchPage extends StatelessWidget {
     );
 
     if (extractedSakes.isNotEmpty &&
+        isMasterLookupComplete &&
         !isLoading &&
         !isExtractingInfo &&
         !hasScrolledToResults) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToResults();
+        if (!context.mounted) return;
+        _scrollToResults(notifier.resultsSectionKey);
         notifier.setHasScrolledToResults(true);
       });
     }
@@ -350,6 +355,7 @@ class MenuSearchPage extends StatelessWidget {
                         ),
                         if (extractedSakes.isNotEmpty)
                           Container(
+                            key: notifier.resultsSectionKey,
                             padding: const EdgeInsets.only(
                               top: 42,
                               left: 12,
@@ -368,10 +374,21 @@ class MenuSearchPage extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                if (!isMasterLookupComplete)
+                                  const Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xFFFFD54F),
+                                      ),
+                                    ),
+                                  ),
                                 ListView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: extractedSakes.length,
+                                  itemCount: isMasterLookupComplete
+                                      ? extractedSakes.length
+                                      : 0,
                                   itemBuilder: (context, index) {
                                     final sake = extractedSakes[index];
 
@@ -435,6 +452,9 @@ class MenuSearchPage extends StatelessWidget {
                                     );
 
                                     return SakeResultTile(
+                                      key: ValueKey(
+                                        '${sake.name}\u0000${sake.type}',
+                                      ),
                                       sake: sake,
                                       detailedSake: detailedSake,
                                       hasDetails: hasDetails,
@@ -597,12 +617,11 @@ class MenuSearchPage extends StatelessWidget {
     );
   }
 
-  static void _scrollToResults() {
-    if (_scrollController.hasClients) {
-      final double targetPosition =
-          _scrollController.position.maxScrollExtent * 0.6;
-      _scrollController.animateTo(
-        targetPosition,
+  static void _scrollToResults(GlobalKey resultsKey) {
+    final target = resultsKey.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
