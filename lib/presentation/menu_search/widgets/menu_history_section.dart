@@ -223,11 +223,11 @@ class MenuHistorySection extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // 店舗名編集ボタン
+                          // 飲んだ場所の登録ボタン
                           IconButton(
                             tooltip: context.l10n.placeConsumed,
                             icon: const Icon(
-                              Icons.edit,
+                              Icons.location_on_outlined,
                               size: 20,
                               color: Color(0xFF1D3567),
                             ),
