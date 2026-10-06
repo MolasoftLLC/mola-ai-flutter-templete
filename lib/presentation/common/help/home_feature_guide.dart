@@ -11,10 +11,11 @@ class HomeFeatureGuide {
   final searchKey = GlobalKey();
   final menuAnalysisKey = GlobalKey();
   final mapKey = GlobalKey();
+  final myPageKey = GlobalKey();
   final recommendationsKey = GlobalKey();
   final homeScrollController = ScrollController();
   bool _showing = false;
-  static const _preferenceKey = 'home_feature_guide_shown_v2';
+  static const _preferenceKey = 'home_feature_guide_shown_v3';
 
   void dispose() => homeScrollController.dispose();
 
@@ -102,10 +103,11 @@ class HomeFeatureGuide {
         [searchKey],
         [menuAnalysisKey],
         [mapKey],
+        [myPageKey],
         [recommendationsKey],
       ];
       if (targetKeys
-          .take(4)
+          .take(5)
           .expand((keys) => keys)
           .any((key) => bounds(key) == null)) {
         return;
@@ -115,8 +117,29 @@ class HomeFeatureGuide {
         barrierDismissible: false,
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 180),
-        pageBuilder: (_, __, ___) => _HomeGuideOverlay(
-          scrollToRecommendations: _scrollToRecommendations,
+        pageBuilder: (_, __, ___) => FeatureGuideOverlay(
+          bottomMessageStep: 5,
+          titles: const [
+            '高速ラベル検索',
+            'いろいろな条件で検索',
+            'メニュー解析',
+            'マップ機能',
+            'マイページ',
+            'あなたが好きそうな日本酒',
+          ],
+          messages: const [
+            'ラベルから高速検索！今までの体感３倍の速度！',
+            '名前やメニューからなど検索可能！',
+            'お店のメニューを撮影すると、日本酒の一覧とあなたの好みマッチ度を確認できます。撮影後に必要な部分を切り抜けます。解析履歴はマイページからも見られます！',
+            '近くでどんな日本酒が飲めるか、マップから探してみましょう。',
+            '保存したお酒やメニュー解析履歴はここから。好みの設定、ポイントやバッジもマイページで確認できます。',
+            'マイページで好きなお酒の傾向を登録すると、あなたに合いそうな日本酒がここに表示されます！',
+          ],
+          circleSteps: const {0, 4},
+          outlineSteps: const {2, 3},
+          prepareStep: (step) async {
+            if (step == 5) await _scrollToRecommendations();
+          },
           readTargets: (step) => [
             for (final key in targetKeys[step])
               if (bounds(key) case final Rect rect) rect,
@@ -130,19 +153,34 @@ class HomeFeatureGuide {
   }
 }
 
-class _HomeGuideOverlay extends StatefulWidget {
-  const _HomeGuideOverlay({
+class FeatureGuideOverlay extends StatefulWidget {
+  const FeatureGuideOverlay({
+    super.key,
     required this.readTargets,
-    required this.scrollToRecommendations,
+    required this.prepareStep,
+    required this.titles,
+    required this.messages,
+    this.circleSteps = const {},
+    this.outlineSteps = const {},
+    this.welcomeTitle = '新SAKEPEDIAへようこそ！',
+    this.welcomeMessage = '新機能の説明を簡単にさせていただきます！',
+    this.bottomMessageStep,
   });
-  final Future<Rect?> Function() scrollToRecommendations;
+  final Future<void> Function(int step) prepareStep;
+  final List<String> titles;
+  final List<String> messages;
+  final Set<int> circleSteps;
+  final Set<int> outlineSteps;
+  final String welcomeTitle;
+  final String welcomeMessage;
+  final int? bottomMessageStep;
   final List<Rect> Function(int step) readTargets;
 
   @override
-  State<_HomeGuideOverlay> createState() => _HomeGuideOverlayState();
+  State<FeatureGuideOverlay> createState() => FeatureGuideOverlayState();
 }
 
-class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
+class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
   int _step = -1;
   bool _scrolling = false;
   final GlobalKey _overlayKey = GlobalKey();
@@ -185,39 +223,20 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
     if (!listEquals(_focusRects, rects)) setState(() => _focusRects = rects);
   }
 
-  static const _menuStep = 2;
-  static const _mapStep = 3;
-  static const _recommendationsStep = 4;
-  static const _messages = [
-    'ラベルから高速検索！今までの体感３倍の速度！',
-    '名前やメニューからなど検索可能！',
-    'お店のメニューを撮影すると、日本酒の一覧とあなたの好みマッチ度を確認できます。撮影後に必要な部分を切り抜けます。解析履歴はマイページからも見られます！',
-    '新機能なのでまだまだですが近くでどんな日本酒が飲めるかじきにわかるようになるはず！',
-    'マイページから好きなお酒の傾向を登録するとあなたの好きな日本酒がここに表示されます！',
-  ];
-  static const _titles = [
-    '高速ラベル検索',
-    'いろいろな条件で検索',
-    'メニュー解析',
-    'マップ機能',
-    'あなたが好きそうな日本酒',
-  ];
-
   Future<void> _next() async {
     if (_scrolling) return;
-    if (_step == _recommendationsStep) {
+    if (_step == widget.titles.length - 1) {
       Navigator.of(context).pop(true);
-    } else if (_step == _mapStep) {
-      setState(() => _scrolling = true);
-      await widget.scrollToRecommendations();
-      if (!mounted) return;
-      setState(() {
-        _scrolling = false;
-        _step = _recommendationsStep;
-      });
-    } else {
-      setState(() => _step++);
+      return;
     }
+    final nextStep = _step + 1;
+    setState(() => _scrolling = true);
+    await widget.prepareStep(nextStep);
+    if (!mounted) return;
+    setState(() {
+      _scrolling = false;
+      _step = nextStep;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFocus());
   }
 
@@ -234,18 +253,18 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
           child: CustomPaint(
             painter: _HomeGuideFocusPainter(
               targets: _scrolling ? const [] : _focusRects,
-              circles: _step == 0,
-              outline: _step == _menuStep || _step == _mapStep,
+              circles: widget.circleSteps.contains(_step),
+              outline: widget.outlineSteps.contains(_step),
             ),
           ),
         ),
         if (!_scrolling)
           Align(
-            alignment: _step == _recommendationsStep
+            alignment: _step == widget.bottomMessageStep
                 ? Alignment.bottomCenter
                 : Alignment.center,
             child: Padding(
-              padding: _step == _recommendationsStep
+              padding: _step == widget.bottomMessageStep
                   ? EdgeInsets.fromLTRB(
                       24,
                       24,
@@ -276,7 +295,7 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                     children: [
                       if (_step >= 0)
                         Text(
-                          '${_step + 1} / ${_titles.length}',
+                          '${_step + 1} / ${widget.titles.length}',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
@@ -302,7 +321,9 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                       ] else
                         const SizedBox(height: 8),
                       Text(
-                        _step == -1 ? '新SAKEPEDIAへようこそ！' : _titles[_step],
+                        _step == -1
+                            ? widget.welcomeTitle
+                            : widget.titles[_step],
                         textAlign: _step == -1
                             ? TextAlign.center
                             : TextAlign.start,
@@ -314,7 +335,9 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _step == -1 ? '新機能の説明を簡単にさせていただきます！' : _messages[_step],
+                        _step == -1
+                            ? widget.welcomeMessage
+                            : widget.messages[_step],
                         textAlign: _step == -1
                             ? TextAlign.center
                             : TextAlign.start,
@@ -330,7 +353,7 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
                         child: FilledButton(
                           onPressed: _next,
                           child: Text(
-                            _step == _recommendationsStep ? 'わかった' : '次へ',
+                            _step == widget.titles.length - 1 ? 'わかった' : '次へ',
                           ),
                         ),
                       ),
@@ -342,7 +365,7 @@ class _HomeGuideOverlayState extends State<_HomeGuideOverlay> {
           ),
         Positioned(
           top: MediaQuery.paddingOf(context).top + 8,
-          right: 16,
+          left: 16,
           child: TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('スキップ', style: TextStyle(color: Colors.white)),

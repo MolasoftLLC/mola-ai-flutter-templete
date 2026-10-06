@@ -108,6 +108,10 @@ class _NewHomePageState extends State<NewHomePage> {
       body: Column(
         children: [
           _HomeHeader(
+            myPageKey: context
+                .read<AppPageNotifier>()
+                .homeFeatureGuide
+                .myPageKey,
             scanKey: context
                 .read<AppPageNotifier>()
                 .homeFeatureGuide
@@ -630,6 +634,7 @@ class _HomeHeader extends StatelessWidget {
     required this.scanKey,
     required this.searchKey,
     required this.onTutorialTap,
+    required this.myPageKey,
   });
 
   final VoidCallback onTutorialTap;
@@ -637,6 +642,7 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onScanTap;
   final GlobalKey scanKey;
   final GlobalKey searchKey;
+  final GlobalKey myPageKey;
 
   @override
   Widget build(BuildContext context) {
@@ -680,6 +686,7 @@ class _HomeHeader extends StatelessWidget {
                 Positioned(
                   right: 8,
                   child: IconButton(
+                    key: myPageKey,
                     tooltip: context.l10n.navigationMyPage,
                     icon: const Icon(
                       Icons.person_outline,

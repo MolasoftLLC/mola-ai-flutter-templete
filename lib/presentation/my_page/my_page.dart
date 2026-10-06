@@ -21,6 +21,7 @@ import '../../common/localization/app_locale_controller.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../common/help/my_page_feature_guide.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
 import '../timeline/timeline_page.dart';
@@ -34,11 +35,32 @@ import 'widgets/menu_history_preview.dart';
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
 
-class MyPage extends StatelessWidget {
+class MyPage extends StatefulWidget {
   const MyPage._({Key? key}) : super(key: key);
 
   static Widget wrapped() {
     return const MyPage._();
+  }
+
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  final _guide = MyPageFeatureGuide();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _guide.showIfNeeded(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    _guide.dispose();
+    super.dispose();
   }
 
   void _showToast(
@@ -210,15 +232,23 @@ class MyPage extends StatelessWidget {
           title: context.l10n.navigationMyPage,
           automaticallyImplyLeading: true,
           actions: [
-            IconButton(
+            PopupMenuButton<String>(
               tooltip: context.l10n.helpGuide,
               icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
-              onPressed: () {
-                HelpGuideDialog.showForType(
-                  context,
-                  type: HelpGuideType.myPage,
-                );
+              onSelected: (value) {
+                if (value == 'tutorial') {
+                  _guide.showIfNeeded(context, force: true);
+                } else {
+                  HelpGuideDialog.showForType(
+                    context,
+                    type: HelpGuideType.myPage,
+                  );
+                }
               },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'tutorial', child: Text('もう一度チュートリアルを見る')),
+                PopupMenuItem(value: 'help', child: Text('使い方を見る')),
+              ],
             ),
             IconButton(
               icon: const Icon(Icons.settings, color: Colors.white),
@@ -242,6 +272,7 @@ class MyPage extends StatelessWidget {
             backgroundColor: const Color(0xFF1D3567),
             onRefresh: handleRefresh,
             child: SingleChildScrollView(
+              controller: _guide.scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               // キーボードが表示されたときにスクロール可能にする
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -250,6 +281,7 @@ class MyPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Padding(
+                      key: _guide.accountKey,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 16,
@@ -324,6 +356,7 @@ class MyPage extends StatelessWidget {
                       child: Column(
                         children: [
                           Padding(
+                            key: _guide.savedKey,
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
@@ -506,7 +539,12 @@ class MyPage extends StatelessWidget {
                       ),
                     ),
 
-                    MenuHistoryPreview.wrapped(ownerKey: authUser?.uid),
+                    KeyedSubtree(
+                      key: _guide.historyKey,
+                      child: MenuHistoryPreview.wrapped(
+                        ownerKey: authUser?.uid,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     _MyTimelineEntryTile(
                       isLoggedIn: isLoggedIn,
@@ -525,6 +563,7 @@ class MyPage extends StatelessWidget {
                       child: Column(
                         children: [
                           Padding(
+                            key: _guide.favoritesKey,
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
@@ -709,6 +748,7 @@ class MyPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            key: _guide.preferencesKey,
                             children: [
                               const Icon(
                                 Icons.wine_bar,
