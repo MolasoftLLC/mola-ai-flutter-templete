@@ -97,9 +97,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
     final matchPercent = profile == null
         ? widget.matchPercent
         : calculateOptionalSakeTasteMatchPercent(
-            profile: profile,
-            preference: preference,
-          );
+                profile: profile,
+                preference: preference,
+              ) ??
+              widget.matchPercent;
 
     final actions = widget.hasDetails
         ? Row(

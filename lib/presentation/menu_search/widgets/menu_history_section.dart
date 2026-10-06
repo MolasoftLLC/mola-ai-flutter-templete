@@ -7,11 +7,15 @@ import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_hist
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_search_page_notifier.dart';
 
 import '../../../common/localization/localization_extensions.dart';
-import '../../../common/sake/menu_taste_summary.dart';
+import '../../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../../domain/repository/place_map_repository.dart';
 import '../../my_page/widgets/place_picker_sheet.dart';
 import '../../sake_map/sake_master_detail_page.dart';
-import '../../common/widgets/sake_taste_widgets.dart';
+import '../../common/widgets/guest_limit_dialog.dart';
+import 'sake_result_tile.dart';
+import 'menu_sake_detail_rows.dart';
 
 class MenuHistorySection extends StatelessWidget {
   const MenuHistorySection({
@@ -291,7 +295,7 @@ class MenuHistorySection extends StatelessWidget {
                       ),
                       children: [
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -372,104 +376,96 @@ class _HistorySakeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = sake.details;
-    final profile = sake.tasteProfile;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: ExpansionTile(
-          key: PageStorageKey(
-            'history-sake-$historyId-${sake.extractedName ?? sake.name}-${sake.sakeId}',
-          ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                sake.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if (profile != null)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final tag in menuTasteTags(profile))
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: Chip(
-                            label: Text(tag),
-                            visualDensity: VisualDensity.compact,
-                            side: BorderSide.none,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              if (sake.matchPercent != null) ...[
-                const SizedBox(height: 8),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF143861),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SakePreferenceMatchSection(
-                    percent: sake.matchPercent!,
-                    fullWidth: true,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          subtitle: Text(sake.type ?? context.l10n.unknownType),
-          childrenPadding: const EdgeInsets.all(16),
-          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (profile != null) ...[
-              Center(
-                child: SakeTasteRadarChart(
-                  axes: [
-                    SakeTasteAxis('フルーティ', profile.fruity),
-                    SakeTasteAxis('甘み', profile.sweetness),
-                    SakeTasteAxis('酸味', profile.acidity),
-                    SakeTasteAxis('コク', profile.body ?? profile.umami),
-                    SakeTasteAxis('キレ', profile.kire),
-                    SakeTasteAxis('辛さ', profile.dryness),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (details?.description?.isNotEmpty == true)
-              Text(details!.description!),
-            if (details?.brewery?.isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              Text(details!.brewery!),
-            ],
-            if (sake.sakeId != null && sake.sakeId! > 0)
-              TextButton.icon(
-                icon: const Icon(Icons.open_in_new),
-                label: Text(sake.name),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SakeMasterDetailPage(
-                      venueSake: VenueSake(
-                        sakeId: sake.sakeId!,
-                        name: sake.name,
-                        brewery: details?.brewery,
-                        type: sake.type,
-                        recordCount: 0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+    final displaySake =
+        details ?? Sake(sakeId: sake.sakeId, name: sake.name, type: sake.type);
+    final favorites = context.watch<FavoriteState>().myFavoriteList;
+    final saved = context.watch<SavedSakeState>().savedSakeList;
+    final favoriteNotifier = context.read<FavoriteNotifier>();
+    final savedNotifier = context.read<SavedSakeNotifier>();
+    final isFavorited = favorites.any(
+      (item) => item.name == displaySake.name && item.type == displaySake.type,
+    );
+    final isSaved = saved.any(
+      (item) => item.name == displaySake.name && item.type == displaySake.type,
+    );
+    final hasDetails =
+        details != null || sake.tasteProfile != null || (sake.sakeId ?? 0) > 0;
+    return SakeResultTile(
+      key: ValueKey(
+        'history-sake-$historyId-${sake.extractedName ?? sake.name}-${sake.sakeId}',
       ),
+      sake: displaySake,
+      detailedSake: displaySake,
+      hasDetails: hasDetails,
+      isItemLoading: false,
+      hasFailed: !hasDetails,
+      isFavorited: isFavorited,
+      isSaved: isSaved,
+      isLoading: false,
+      matchPercent: sake.matchPercent,
+      tasteProfile: sake.tasteProfile,
+      isUnverified: false,
+      candidates: const [],
+      onCandidateSelected: (_) {},
+      onOpenDetails: (displaySake.sakeId ?? 0) > 0
+          ? () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SakeMasterDetailPage(
+                  venueSake: VenueSake(
+                    sakeId: displaySake.sakeId,
+                    name: displaySake.name ?? sake.name,
+                    brewery: displaySake.brewery,
+                    type: displaySake.type,
+                    recordCount: 0,
+                    primaryImageUrl: displaySake.primaryImageUrl,
+                    thumbnailImageUrl: displaySake.thumbnailImageUrl,
+                  ),
+                ),
+              ),
+            )
+          : null,
+      onToggleFavorite: () async {
+        try {
+          await favoriteNotifier.addOrRemoveFavorite(
+            FavoriteSake(
+              sakeId: displaySake.sakeId,
+              name: displaySake.name ?? sake.name,
+              type: displaySake.type,
+            ),
+          );
+        } on FavoriteGuestLimitReachedException {
+          if (!context.mounted) return;
+          await GuestLimitDialog.showFavoriteLimit(
+            context,
+            maxCount: FavoriteNotifier.guestFavoriteLimit,
+          );
+        }
+      },
+      onSave: () async {
+        try {
+          await savedNotifier.toggleSavedSake(displaySake);
+          return !isSaved;
+        } on SavedSakeGuestLimitReachedException {
+          if (!context.mounted) return false;
+          await GuestLimitDialog.showSavedSakeLimit(
+            context,
+            maxCount: SavedSakeNotifier.guestSavedLimit,
+          );
+        } on SavedSakeMemberLimitReachedException {
+          if (!context.mounted) return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.l10n.savedSakeLimit(SavedSakeNotifier.memberSavedLimit),
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return false;
+      },
+      buildInfoRow: buildMenuSakeInfoRow,
+      buildTypesRow: (types) => buildMenuSakeTypesRow(context, types),
     );
   }
 }
