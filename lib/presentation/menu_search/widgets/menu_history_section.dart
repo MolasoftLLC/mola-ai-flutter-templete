@@ -136,7 +136,9 @@ class MenuHistorySection extends StatelessWidget {
                 final dateFormat = DateFormat.yMd(
                   Localizations.localeOf(context).toLanguageTag(),
                 ).add_Hm();
-                final formattedDate = dateFormat.format(historyItem.date);
+                final formattedDate = dateFormat.format(
+                  historyItem.date.toLocal(),
+                );
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),

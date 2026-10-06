@@ -44,7 +44,7 @@ class MenuAnalysisHistoryItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'date': date.toIso8601String(),
+      'date': date.toUtc().toIso8601String(),
       'storeName': storeName,
       'sakes': sakes.map((e) => e.toJson()).toList(),
       'imagePath': imagePath,
