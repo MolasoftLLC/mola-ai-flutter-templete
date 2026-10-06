@@ -535,5 +535,7 @@
   "menuHistoryPartial": "Partially resolved",
   "menuHistoryPending": "Details pending",
   "scanMethodProgressiveLens": "Progressive Google Lens",
-  "scanLensPreviewNotice": "Search result · checking the label"
+  "scanLensPreviewNotice": "Search result · checking the label",
+  "hideCaptureGuide": "Hide guide",
+  "showCaptureGuide": "Show guide"
 }

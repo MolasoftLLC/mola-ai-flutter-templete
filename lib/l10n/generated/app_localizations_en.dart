@@ -1709,4 +1709,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanLensPreviewNotice => 'Search result · checking the label';
+
+  @override
+  String get hideCaptureGuide => 'Hide guide';
+
+  @override
+  String get showCaptureGuide => 'Show guide';
 }

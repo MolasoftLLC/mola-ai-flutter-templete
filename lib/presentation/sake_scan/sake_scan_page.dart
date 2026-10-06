@@ -30,6 +30,7 @@ import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
 import 'widgets/lens_progress_toasts.dart';
+import 'widgets/label_capture_guide.dart';
 
 class SakeScanPage extends StatefulWidget {
   const SakeScanPage._({
@@ -80,6 +81,11 @@ class _SakeScanPageState extends State<SakeScanPage>
     with WidgetsBindingObserver {
   static const _timelineSharePreferenceKey =
       'timeline_share_checkbox_preference';
+  static const _captureGuidePreferenceKey =
+      'sake_scan_capture_guide_visible_v1';
+  bool _showCaptureGuide = true;
+  bool _captureGuideSettingsReady = false;
+  bool _savingCaptureGuideSetting = false;
   CameraController? _cameraController;
   List<CameraDescription> _availableCameras = const [];
   Timer? _focusRingTimer;
@@ -109,6 +115,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     super.initState();
     _recordImpressionController = TextEditingController();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadCaptureGuideSetting());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_loadSharingSettings());
     });
@@ -118,6 +125,38 @@ class _SakeScanPageState extends State<SakeScanPage>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_startInitialReanalysis());
       });
+    }
+  }
+
+  Future<void> _loadCaptureGuideSetting() async {
+    var visible = true;
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      visible = preferences.getBool(_captureGuidePreferenceKey) ?? true;
+    } catch (error) {
+      logger.warning('撮影補助枠の設定復元に失敗しました: $error');
+    }
+    if (!mounted) return;
+    setState(() {
+      _showCaptureGuide = visible;
+      _captureGuideSettingsReady = true;
+    });
+  }
+
+  Future<void> _toggleCaptureGuide() async {
+    if (!_captureGuideSettingsReady || _savingCaptureGuideSetting) return;
+    final visible = !_showCaptureGuide;
+    setState(() {
+      _showCaptureGuide = visible;
+      _savingCaptureGuideSetting = true;
+    });
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(_captureGuidePreferenceKey, visible);
+    } catch (error) {
+      logger.warning('撮影補助枠の設定保存に失敗しました: $error');
+    } finally {
+      if (mounted) setState(() => _savingCaptureGuideSetting = false);
     }
   }
 
@@ -411,7 +450,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (mounted) setState(() {});
     try {
       final captured = await controller.takePicture();
-      // ガイド枠は構図の目安にせず、プレビュー全体をそのままOCRへ渡す。
+      // 補助枠は表示のみ。枠による切り取りをせず、撮影画像全体を渡す。
       final file = File(captured.path);
       await _saveCapturedImageToGallery(file);
       if (!mounted) return;
@@ -800,6 +839,28 @@ class _SakeScanPageState extends State<SakeScanPage>
                 ),
               ),
             ),
+            if (_showCaptureGuide &&
+                _captureGuideSettingsReady &&
+                (state.status == SakeScanViewStatus.frontScanning ||
+                    state.status == SakeScanViewStatus.backScanning))
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: LayoutBuilder(
+                    builder: (_, constraints) => Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        32,
+                        constraints.maxHeight * 0.22,
+                        32,
+                        constraints.maxHeight * 0.30,
+                      ),
+                      child: LabelCaptureGuide(
+                        isBackLabel:
+                            state.status == SakeScanViewStatus.backScanning,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (state.status == SakeScanViewStatus.frontScanning ||
                 state.status == SakeScanViewStatus.backScanning)
               _buildCameraHeader(state),
@@ -836,6 +897,34 @@ class _SakeScanPageState extends State<SakeScanPage>
                 ),
               ),
             ),
+            if (state.status == SakeScanViewStatus.frontScanning ||
+                state.status == SakeScanViewStatus.backScanning)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: TextButton.icon(
+                  onPressed:
+                      _captureGuideSettingsReady && !_savingCaptureGuideSetting
+                      ? () => unawaited(_toggleCaptureGuide())
+                      : null,
+                  icon: Icon(
+                    _showCaptureGuide
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _showCaptureGuide
+                        ? context.l10n.hideCaptureGuide
+                        : context.l10n.showCaptureGuide,
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white54,
+                    backgroundColor: Colors.black54,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

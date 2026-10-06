@@ -3181,6 +3181,18 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'検索で見つかった情報・照合中'**
   String get scanLensPreviewNotice;
+
+  /// No description provided for @hideCaptureGuide.
+  ///
+  /// In ja, this message translates to:
+  /// **'補助枠を消す'**
+  String get hideCaptureGuide;
+
+  /// No description provided for @showCaptureGuide.
+  ///
+  /// In ja, this message translates to:
+  /// **'補助枠を表示'**
+  String get showCaptureGuide;
 }
 
 class _AppLocalizationsDelegate

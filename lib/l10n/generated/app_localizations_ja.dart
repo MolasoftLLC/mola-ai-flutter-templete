@@ -1626,4 +1626,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scanLensPreviewNotice => '検索で見つかった情報・照合中';
+
+  @override
+  String get hideCaptureGuide => '補助枠を消す';
+
+  @override
+  String get showCaptureGuide => '補助枠を表示';
 }
