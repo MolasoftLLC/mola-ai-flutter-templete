@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 const _navy = Color(0xFF143861);
 
-class SakePreferenceMatchSection extends StatefulWidget {
+class SakePreferenceMatchSection extends StatelessWidget {
   const SakePreferenceMatchSection({
     super.key,
     required this.percent,
@@ -15,66 +15,26 @@ class SakePreferenceMatchSection extends StatefulWidget {
   final bool fullWidth;
 
   @override
-  State<SakePreferenceMatchSection> createState() =>
-      _SakePreferenceMatchSectionState();
-}
-
-class _SakePreferenceMatchSectionState
-    extends State<SakePreferenceMatchSection> {
-  ScrollPosition? _scrollPosition;
-  var _hasEnteredViewport = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final nextPosition = Scrollable.maybeOf(context)?.position;
-    if (identical(_scrollPosition, nextPosition)) return;
-    _scrollPosition?.removeListener(_checkViewport);
-    _scrollPosition = nextPosition;
-    _scrollPosition?.addListener(_checkViewport);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkViewport());
-  }
-
-  @override
-  void dispose() {
-    _scrollPosition?.removeListener(_checkViewport);
-    super.dispose();
-  }
-
-  void _checkViewport() {
-    if (!mounted || _hasEnteredViewport) return;
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.hasSize) return;
-    final top = renderObject.localToGlobal(Offset.zero).dy;
-    final bottom = top + renderObject.size.height;
-    final viewportHeight = MediaQuery.sizeOf(context).height;
-    if (top >= viewportHeight * 0.9 || bottom <= 0) return;
-    setState(() => _hasEnteredViewport = true);
-  }
-
-  @override
   Widget build(BuildContext context) => TweenAnimationBuilder<double>(
     key: const Key('taste-preference-match'),
     duration: const Duration(milliseconds: 900),
     curve: Curves.easeOutCubic,
-    tween: Tween<double>(
-      end: _hasEnteredViewport ? widget.percent.toDouble() : 0,
-    ),
+    tween: Tween<double>(begin: 0, end: percent.clamp(0, 100).toDouble()),
     builder: (context, value, _) {
-      final shownPercent = value.round();
+      final shownPercent = percent.clamp(0, 100);
       return Semantics(
         label: 'あなたの好みマッチ度 $shownPercent%',
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: Column(
-            crossAxisAlignment: widget.fullWidth
+            crossAxisAlignment: fullWidth
                 ? CrossAxisAlignment.start
                 : CrossAxisAlignment.center,
             children: [
               Text(
                 'あなたの好みマッチ度',
-                textAlign: widget.fullWidth ? TextAlign.left : TextAlign.center,
+                textAlign: fullWidth ? TextAlign.left : TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,

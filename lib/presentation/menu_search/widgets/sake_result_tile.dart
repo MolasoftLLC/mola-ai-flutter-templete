@@ -73,18 +73,6 @@ class _SakeResultTileState extends State<SakeResultTile> {
   }
 
   @override
-  void didUpdateWidget(covariant SakeResultTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.tasteProfile == null && widget.tasteProfile != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_expansionController.isExpanded) {
-          _expansionController.expand();
-        }
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final profile = widget.tasteProfile;
     final imagePath = preferredSakeImagePath(
@@ -113,6 +101,77 @@ class _SakeResultTileState extends State<SakeResultTile> {
             preference: preference,
           );
 
+    final actions = widget.hasDetails
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: '商品詳細を開く',
+                icon: const Icon(Icons.open_in_new, size: 21),
+                onPressed: widget.onOpenDetails,
+              ),
+              IconButton(
+                tooltip: widget.isSaved
+                    ? context.l10n.removeSavedSake
+                    : context.l10n.saveSake,
+                icon: Icon(
+                  widget.isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                  color: widget.isSaved ? const Color(0xFF1D3567) : Colors.grey,
+                  size: 22,
+                ),
+                onPressed: () async {
+                  final wasSaved = widget.isSaved;
+                  final success = await widget.onSave();
+                  if (success && !wasSaved) {
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: context.l10n.savedToMyPage,
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                tooltip: widget.isFavorited
+                    ? context.l10n.removeFavorite
+                    : context.l10n.favorite,
+                icon: Icon(
+                  widget.isFavorited ? Icons.favorite : Icons.favorite_border,
+                  color: widget.isFavorited ? Colors.red : Colors.grey,
+                  size: 22,
+                ),
+                onPressed: () {
+                  unawaited(widget.onToggleFavorite());
+                },
+              ),
+            ],
+          )
+        : widget.candidates.isNotEmpty
+        ? IconButton(
+            tooltip: '候補を選択',
+            icon: const Icon(Icons.rule, color: Color(0xFF1D3567)),
+            onPressed: () => _showCandidatePicker(context),
+          )
+        : !widget.hasFailed
+        ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF1D3567),
+            ),
+          )
+        : widget.isLoading
+        ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF1D3567),
+            ),
+          )
+        : Icon(Icons.error_outline, color: Colors.red.shade700);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, top: 0),
       child: Stack(
@@ -123,7 +182,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: ExpansionTile(
-              initiallyExpanded: profile != null,
+              initiallyExpanded: false,
               controller: _expansionController,
               tilePadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -164,6 +223,26 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       ),
                     ],
                   ),
+                  if (profile != null) ...[
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final tag in menuTasteTags(profile))
+                            Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Chip(
+                                label: Text(tag),
+                                visualDensity: VisualDensity.compact,
+                                backgroundColor: const Color(0xFFEAF0F7),
+                                side: BorderSide.none,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (matchPercent != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -178,30 +257,14 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         ),
                       ),
                     ),
-                  if (profile != null) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final tag in menuTasteTags(profile))
-                          Chip(
-                            label: Text(tag),
-                            visualDensity: VisualDensity.compact,
-                            backgroundColor: const Color(0xFFEAF0F7),
-                            side: BorderSide.none,
-                          ),
-                      ],
-                    ),
-                    if (preference != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          menuRecommendationReason(profile, preference),
-                          style: const TextStyle(fontSize: 13, height: 1.5),
-                        ),
+                  if (profile != null && preference != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        menuRecommendationReason(profile, preference),
+                        style: const TextStyle(fontSize: 13, height: 1.5),
                       ),
-                  ],
+                    ),
                 ],
               ),
               subtitle: Column(
@@ -231,86 +294,11 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         ),
                       ),
                     ),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                  const SizedBox(height: 16),
                 ],
               ),
-              trailing: widget.hasDetails
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: '商品詳細を開く',
-                          icon: const Icon(Icons.open_in_new, size: 21),
-                          onPressed: widget.onOpenDetails,
-                        ),
-                        IconButton(
-                          tooltip: widget.isSaved
-                              ? context.l10n.removeSavedSake
-                              : context.l10n.saveSake,
-                          icon: Icon(
-                            widget.isSaved
-                                ? Icons.bookmark
-                                : Icons.bookmark_outline,
-                            color: widget.isSaved
-                                ? const Color(0xFF1D3567)
-                                : Colors.grey,
-                            size: 22,
-                          ),
-                          onPressed: () async {
-                            final wasSaved = widget.isSaved;
-                            final success = await widget.onSave();
-                            if (success && !wasSaved) {
-                              SnackBarUtils.showInfoSnackBar(
-                                context,
-                                message: context.l10n.savedToMyPage,
-                              );
-                            }
-                          },
-                        ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          tooltip: widget.isFavorited
-                              ? context.l10n.removeFavorite
-                              : context.l10n.favorite,
-                          icon: Icon(
-                            widget.isFavorited
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: widget.isFavorited
-                                ? Colors.red
-                                : Colors.grey,
-                            size: 22,
-                          ),
-                          onPressed: () {
-                            unawaited(widget.onToggleFavorite());
-                          },
-                        ),
-                      ],
-                    )
-                  : widget.candidates.isNotEmpty
-                  ? IconButton(
-                      tooltip: '候補を選択',
-                      icon: const Icon(Icons.rule, color: Color(0xFF1D3567)),
-                      onPressed: () => _showCandidatePicker(context),
-                    )
-                  : !widget.hasFailed
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF1D3567),
-                      ),
-                    )
-                  : widget.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF1D3567),
-                      ),
-                    )
-                  : Icon(Icons.error_outline, color: Colors.red.shade700),
+              showTrailingIcon: false,
               children: [
                 if (profile != null) ...[
                   Center(
