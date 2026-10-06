@@ -1222,7 +1222,6 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
       text: normalizedQuery,
       selection: TextSelection.collapsed(offset: normalizedQuery.length),
     );
-    _focusNode.requestFocus();
     _onChanged(normalizedQuery);
   }
 
@@ -1385,7 +1384,7 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
             key: const ValueKey('masterSakeNameSearchField'),
             controller: _controller,
             focusNode: _focusNode,
-            autofocus: true,
+            autofocus: false,
             textInputAction: TextInputAction.search,
             onChanged: _onChanged,
             onSubmitted: (_) => _search(),

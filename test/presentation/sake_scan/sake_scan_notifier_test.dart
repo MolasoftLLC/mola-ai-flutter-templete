@@ -64,15 +64,6 @@ void main() {
       expect(notifier.currentState.scanSessionId, 'scan_test');
     });
 
-    test('選択したChatGPT画像解析方式を正面ラベルAPIへ渡す', () async {
-      final repository = _FakeScanRepository(frontResult: _candidatesResult());
-      final notifier = _buildNotifier(repository);
-
-      await notifier.submitFront(image, method: SakeFrontScanMethod.chatGpt);
-
-      expect(repository.lastFrontMethod, SakeFrontScanMethod.chatGpt);
-    });
-
     test('公式サイト由来の未登録候補は選択後にAI詳細解析へ進む', () async {
       final repository = _FakeScanRepository(
         frontResult: const SakeScanResult(
@@ -643,7 +634,6 @@ class _FakeScanRepository
   int fallbackCalls = 0;
   Object? fallbackError;
   File? lastBackImage;
-  SakeFrontScanMethod? lastFrontMethod;
   int confirmCalls = 0;
   List<int>? rejectedSakeIds;
 
@@ -653,12 +643,8 @@ class _FakeScanRepository
   ) async => <int, SakeTasteProfileDetails>{};
 
   @override
-  Future<SakeScanResult> scanFront(
-    File image, {
-    SakeFrontScanMethod method = SakeFrontScanMethod.googleLens,
-  }) async {
+  Future<SakeScanResult> scanFront(File image) async {
     frontCalls++;
-    lastFrontMethod = method;
     if (frontError != null) throw frontError!;
     if (frontCompleter != null) return frontCompleter!.future;
     return frontResult!;

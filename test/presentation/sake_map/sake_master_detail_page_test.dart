@@ -1264,10 +1264,7 @@ class _FakeSakeScanRepository implements SakeScanRepository {
   }
 
   @override
-  Future<SakeScanResult> scanFront(
-    File image, {
-    SakeFrontScanMethod method = SakeFrontScanMethod.googleLens,
-  }) => throw UnimplementedError();
+  Future<SakeScanResult> scanFront(File image) => throw UnimplementedError();
 
   @override
   Future<SakeScanResult> scanBack(String scanSessionId, File image) =>

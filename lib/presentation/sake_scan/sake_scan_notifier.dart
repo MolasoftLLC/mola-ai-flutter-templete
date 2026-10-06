@@ -125,10 +125,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     state = state.copyWith(savedSake: sake, shareToTimeline: sake.isPublic);
   }
 
-  Future<void> submitFront(
-    File image, {
-    SakeFrontScanMethod method = SakeFrontScanMethod.googleLens,
-  }) async {
+  Future<void> submitFront(File image) async {
     if (!_beginSubmission()) return;
     final operation = ++_operation;
     _emit(
@@ -144,9 +141,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     );
     try {
       final repository = _scanRepository;
-      final result =
-          method == SakeFrontScanMethod.progressiveLens &&
-              repository is ProgressiveSakeScanRepository
+      final result = repository is ProgressiveSakeScanRepository
           ? await (repository as ProgressiveSakeScanRepository)
                 .scanFrontProgressively(
                   image,
@@ -156,7 +151,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
                     }
                   },
                 )
-          : await repository.scanFront(image, method: method);
+          : await repository.scanFront(image);
       if (!_isCurrent(operation)) return;
       _applyScanResult(result);
     } catch (error, stackTrace) {

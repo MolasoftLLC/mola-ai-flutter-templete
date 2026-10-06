@@ -220,60 +220,6 @@ class _$SakeMenuRecognitionApiClient extends SakeMenuRecognitionApiClient {
   }
 
   @override
-  Future<Response<Map<String, dynamic>>> scanSakeFrontLabelWithLensCandidates(
-    MultipartFile image,
-    String locale,
-  ) {
-    final Uri $url = Uri.parse('/api/sake-bottle/scan/front/lens-candidates');
-    final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'locale',
-        locale,
-      ),
-      PartValueFile<MultipartFile>(
-        'image',
-        image,
-      ),
-    ];
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      parts: $parts,
-      multipart: true,
-    );
-    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
-  }
-
-  @override
-  Future<Response<Map<String, dynamic>>>
-      scanSakeFrontLabelWithChatGptCandidates(
-    MultipartFile image,
-    String locale,
-  ) {
-    final Uri $url =
-        Uri.parse('/api/sake-bottle/scan/front/chatgpt-candidates');
-    final List<PartValue> $parts = <PartValue>[
-      PartValue<String>(
-        'locale',
-        locale,
-      ),
-      PartValueFile<MultipartFile>(
-        'image',
-        image,
-      ),
-    ];
-    final Request $request = Request(
-      'POST',
-      $url,
-      client.baseUrl,
-      parts: $parts,
-      multipart: true,
-    );
-    return client.send<Map<String, dynamic>, Map<String, dynamic>>($request);
-  }
-
-  @override
   Future<Response<Map<String, dynamic>>> startSakeBackLabelFallback() {
     final Uri $url = Uri.parse('/api/sake-bottle/scan/back-fallback');
     final Request $request = Request(

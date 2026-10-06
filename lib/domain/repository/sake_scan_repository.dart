@@ -16,10 +16,7 @@ import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/sake_label_scan.dart';
 
 abstract class SakeScanRepository {
-  Future<SakeScanResult> scanFront(
-    File image, {
-    SakeFrontScanMethod method = SakeFrontScanMethod.googleLens,
-  });
+  Future<SakeScanResult> scanFront(File image);
 
   Future<SakeScanResult> scanBack(String scanSessionId, File image);
 
@@ -54,8 +51,6 @@ abstract interface class ProgressiveSakeScanRepository {
   });
 }
 
-enum SakeFrontScanMethod { googleLens, chatGpt, progressiveLens }
-
 class SakeDetailViewMemory {
   final Set<int> _viewedSakeIds = <int>{};
 
@@ -86,29 +81,8 @@ class SakeScanApiRepository
   final SakeDetailViewMemory _detailViewMemory;
 
   @override
-  Future<SakeScanResult> scanFront(
-    File image, {
-    SakeFrontScanMethod method = SakeFrontScanMethod.googleLens,
-  }) async {
-    final compressed = await _prepareImage(image);
-    try {
-      final locale = await resolveAppLocaleLanguageCode();
-      final imagePart = await _jpegPart(compressed);
-      final response = switch (method) {
-        SakeFrontScanMethod.progressiveLens => throw StateError(
-          'Use scanFrontProgressively for streaming scans',
-        ),
-        SakeFrontScanMethod.googleLens =>
-          _apiClient.scanSakeFrontLabelWithLensCandidates(imagePart, locale),
-        SakeFrontScanMethod.chatGpt =>
-          _apiClient.scanSakeFrontLabelWithChatGptCandidates(imagePart, locale),
-      };
-      final completedResponse = await response.timeout(frontCandidateTimeout);
-      return SakeScanResult.fromJson(_requireBody(completedResponse));
-    } finally {
-      await _deleteTemporaryFile(compressed);
-    }
-  }
+  Future<SakeScanResult> scanFront(File image) =>
+      scanFrontProgressively(image, onLensResults: (_) {});
 
   @override
   Future<SakeScanResult> scanFrontProgressively(
