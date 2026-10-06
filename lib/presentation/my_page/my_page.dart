@@ -259,6 +259,14 @@ class MyPage extends StatelessWidget {
                         userIconUrl: userIconUrl,
                         envyPointCount: envyPointCount,
                         mapContributionPointCount: mapContributionPointCount,
+                        badges: isLoggedIn
+                            ? _AchievementsCard(
+                                loginCount: loginCount,
+                                analyzedBottleCount: analyzedBottleCount,
+                                menuAnalysisCount: menuAnalysisCount,
+                                envyPointCount: envyPointCount,
+                              )
+                            : null,
                         onAuthenticate: openLogin,
                         onOpenAccountSettings: () {
                           authNotifier.clearMessages();
@@ -301,13 +309,6 @@ class MyPage extends StatelessWidget {
                         },
                       ),
                     ),
-                    if (isLoggedIn)
-                      _AchievementsCard(
-                        loginCount: loginCount,
-                        analyzedBottleCount: analyzedBottleCount,
-                        menuAnalysisCount: menuAnalysisCount,
-                        envyPointCount: envyPointCount,
-                      ),
                     // 保存したお酒セクション
                     Container(
                       width: MediaQuery.of(context).size.width,
@@ -1745,55 +1746,55 @@ class _AchievementsCardState extends State<_AchievementsCard>
   Widget build(BuildContext context) {
     final achievements = _buildAchievements();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF253766), Color(0xFF0C1428)],
-          ),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.emoji_events,
-                    color: Colors.amberAccent,
-                    size: 22,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: achievements.map((achievement) {
+        return Expanded(
+          child: Semantics(
+            button: true,
+            label: '${achievement.title}、${_tierLabel(achievement.tier)}',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _showAchievementDetails(achievement),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.badges,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    children: [
+                      SizedBox.square(
+                        dimension: 56,
+                        child: FittedBox(
+                          child: _MedalBadge(
+                            animation: _shine,
+                            asset: achievement.asset,
+                            tier: achievement.tier,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        achievement.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-              ...achievements.map(_buildAchievementRow),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
@@ -1895,142 +1896,59 @@ class _AchievementsCardState extends State<_AchievementsCard>
     return _MedalTier.none;
   }
 
-  Widget _buildAchievementRow(_AchievementData achievement) {
-    final tier = achievement.tier;
-    final remaining = achievement.remaining;
-    final hasProgress = achievement.hasProgress;
-    final displayCurrent = achievement.target <= 0
-        ? achievement.current
-        : math.min(achievement.current, achievement.target);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _showAchievementDetails(_AchievementData achievement) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF253766),
+        title: Text(
+          achievement.title,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Column(
-                children: [
-                  _MedalBadge(
-                    animation: _shine,
-                    asset: achievement.asset,
-                    tier: tier,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _tierLabel(tier),
-                    style: TextStyle(
-                      color: tier == _MedalTier.none
-                          ? Colors.white60
-                          : Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              _MedalBadge(
+                animation: _shine,
+                asset: achievement.asset,
+                tier: achievement.tier,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            achievement.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${displayCurrent}/${achievement.target}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      achievement.description,
-                      style: TextStyle(
-                        color: hasProgress ? Colors.white60 : Colors.white38,
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        minHeight: 8,
-                        value: achievement.progress,
-                        backgroundColor: Colors.white.withOpacity(0.12),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _progressColorForTier(tier, achievement.progress),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      achievement.isComplete
-                          ? context.l10n.badgeComplete
-                          : hasProgress
-                          ? context.l10n.badgeRemaining(remaining)
-                          : context.l10n.badgeStart,
-                      style: TextStyle(
-                        color: tier == _MedalTier.none
-                            ? Colors.white60
-                            : Colors.amberAccent,
-                        fontSize: 11,
-                        fontWeight: tier == _MedalTier.none
-                            ? FontWeight.w500
-                            : FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 8),
+              Text(
+                _tierLabel(achievement.tier),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                achievement.description,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${math.min(achievement.current, achievement.target)}/${achievement.target}',
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                achievement.isComplete
+                    ? context.l10n.badgeComplete
+                    : achievement.hasProgress
+                    ? context.l10n.badgeRemaining(achievement.remaining)
+                    : context.l10n.badgeStart,
+                style: const TextStyle(color: Colors.amberAccent),
               ),
             ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.l10n.close),
           ),
         ],
       ),
     );
-  }
-
-  Color _progressColorForTier(_MedalTier tier, double progress) {
-    switch (tier) {
-      case _MedalTier.gold:
-        return Color.lerp(
-              const Color(0xFFFFA726),
-              const Color(0xFFFFD54F),
-              progress.clamp(0, 1),
-            ) ??
-            const Color(0xFFFFD54F);
-      case _MedalTier.silver:
-        return Color.lerp(
-              const Color(0xFF90A4AE),
-              const Color(0xFFCFD8DC),
-              progress.clamp(0, 1),
-            ) ??
-            const Color(0xFFCFD8DC);
-      case _MedalTier.bronze:
-        return Color.lerp(
-              const Color(0xFF8D6E63),
-              const Color(0xFFBCAAA4),
-              progress.clamp(0, 1),
-            ) ??
-            const Color(0xFFBCAAA4);
-      case _MedalTier.none:
-        return Colors.white38;
-    }
   }
 
   String _tierLabel(_MedalTier tier) {
@@ -2211,6 +2129,7 @@ class _AuthCard extends StatelessWidget {
     this.userIconUrl,
     this.envyPointCount = 0,
     this.mapContributionPointCount = 0,
+    this.badges,
     required this.onAuthenticate,
     required this.onOpenAccountSettings,
   });
@@ -2220,6 +2139,7 @@ class _AuthCard extends StatelessWidget {
   final String? userIconUrl;
   final int envyPointCount;
   final int mapContributionPointCount;
+  final Widget? badges;
   final VoidCallback onAuthenticate;
   final VoidCallback onOpenAccountSettings;
 
@@ -2394,6 +2314,7 @@ class _AuthCard extends StatelessWidget {
         _EnvyPointHighlight(count: envyPointCount),
         const SizedBox(height: 6),
         _MapContributionPointHighlight(count: mapContributionPointCount),
+        if (badges != null) ...[const SizedBox(height: 12), badges!],
       ],
     );
   }
