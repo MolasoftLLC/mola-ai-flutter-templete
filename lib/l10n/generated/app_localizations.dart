@@ -1055,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapContributionHint.
   ///
   /// In ja, this message translates to:
-  /// **'店舗と日本酒の登録で5pt、写真公開で追加10pt'**
+  /// **'店舗と日本酒の登録で10pt。同じ店舗・同じお酒は初回のみ加算されます。'**
   String get mapContributionHint;
 
   /// No description provided for @collectEnvy.
@@ -2117,7 +2117,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopContributionNotice.
   ///
   /// In ja, this message translates to:
-  /// **'店舗を選ぶと、この店舗と日本酒が匿名でマップに登録され、5ptを獲得します。'**
+  /// **'店舗を選ぶと、この店舗と日本酒、撮影した写真が匿名でマップに登録されます。初回登録で10ptを獲得します。'**
   String get shopContributionNotice;
 
   /// No description provided for @findPlaceNearby.

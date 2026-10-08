@@ -34,6 +34,7 @@ class PlaceCandidate {
     formattedAddress: formattedAddress,
     latitude: latitude,
     longitude: longitude,
+    mapPhotoPublic: true,
   );
 }
 
@@ -269,7 +270,7 @@ class PlaceMapRepository implements SakeMapDataSource {
   }) async {
     final response = await _apiClient.saveSavedSakePlace(savedId, {
       'providerPlaceId': place.providerPlaceId,
-      'mapPhotoPublic': place.mapPhotoPublic,
+      'mapPhotoPublic': true,
       'locale': await resolveAppLocaleLanguageCode(),
     });
     if (!response.isSuccessful) {

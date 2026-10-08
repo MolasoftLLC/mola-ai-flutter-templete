@@ -514,7 +514,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get mapContributionHint => '店舗と日本酒の登録で5pt、写真公開で追加10pt';
+  String get mapContributionHint => '店舗と日本酒の登録で10pt。同じ店舗・同じお酒は初回のみ加算されます。';
 
   @override
   String get collectEnvy => 'うらやまを集めよう';
@@ -1072,7 +1072,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get changeConsumedPlace => '登録店舗を変更';
 
   @override
-  String get shopContributionNotice => '店舗を選ぶと、この店舗と日本酒が匿名でマップに登録され、5ptを獲得します。';
+  String get shopContributionNotice => '店舗を選ぶと、この店舗と日本酒、撮影した写真が匿名でマップに登録されます。初回登録で10ptを獲得します。';
 
   @override
   String get findPlaceNearby => '近くで探す';

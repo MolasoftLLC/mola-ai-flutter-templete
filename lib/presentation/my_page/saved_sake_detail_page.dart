@@ -778,27 +778,6 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
             ),
           ),
           if (_currentSake.drinkingPlace != null) ...[
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              activeThumbColor: Colors.amber,
-              title: const Text(
-                '写真をマップに表示',
-                style: TextStyle(color: Colors.white),
-              ),
-              subtitle: Text(
-                _currentSake.drinkingPlace!.mapPhotoPublic
-                    ? '店舗のマップにこの写真を表示します'
-                    : '店舗と日本酒の情報だけがマップに登録されます',
-                style: const TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-              value: _currentSake.drinkingPlace!.mapPhotoPublic,
-              onChanged:
-                  !_isSyncing &&
-                      (_imagePaths.isNotEmpty ||
-                          _currentSake.drinkingPlace!.mapPhotoPublic)
-                  ? _updateMapPhotoVisibility
-                  : null,
-            ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
@@ -1334,33 +1313,9 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       return;
     }
 
-    var mapPhotoPublic = false;
-    if (_imagePaths.isNotEmpty) {
-      final publishPhoto = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('この写真をマップに表示しますか？'),
-          content: const Text(
-            '表示しない場合も、この店舗と日本酒の情報はマップに登録され、5ptを獲得します。写真を表示すると、さらに10ptを獲得できます。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('写真は表示しない'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('写真を表示する（+10pt）'),
-            ),
-          ],
-        ),
-      );
-      if (!mounted || publishPhoto == null) return;
-      mapPhotoPublic = publishPhoto;
-    }
     place = place.copyWith(
       visibility: PlaceVisibility.public,
-      mapPhotoPublic: mapPhotoPublic,
+      mapPhotoPublic: true,
     );
     _placeController.text = place.displayName.trim();
     _placeDirty = true;
@@ -1371,41 +1326,6 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       ),
     );
     await _saveMemo();
-  }
-
-  Future<void> _updateMapPhotoVisibility(bool makePublic) async {
-    final savedId = _currentSake.savedId;
-    final currentPlace = _currentSake.drinkingPlace;
-    if (savedId == null || savedId.isEmpty || currentPlace == null) return;
-    setState(() => _isSyncing = true);
-    MapContributionSaveResult? result;
-    try {
-      result = await context
-          .read<PlaceMapRepository>()
-          .updateMapPhotoVisibility(
-            savedId: savedId,
-            mapPhotoPublic: makePublic,
-          );
-    } catch (error) {
-      logger.warning('マップ写真の公開設定変更に失敗しました: $error');
-    }
-    if (!mounted) return;
-    setState(() => _isSyncing = false);
-    if (result == null) {
-      _showSnack(context.l10n.errorVisibilityUpdate);
-      return;
-    }
-    _applySakeUpdate(
-      _currentSake.copyWith(drinkingPlace: result.drinkingPlace),
-      toastMessage: result.pointsAwarded > 0
-          ? '写真をマップに公開しました（+${result.pointsAwarded}pt）'
-          : makePublic
-          ? '写真をマップに表示します'
-          : '写真をマップから非表示にしました',
-    );
-    if (result.pointsAwarded > 0) {
-      unawaited(context.read<MyPageNotifier>().loadAchievementStats());
-    }
   }
 
   Future<void> _deleteDrinkingPlace() async {

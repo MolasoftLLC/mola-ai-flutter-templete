@@ -535,7 +535,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapContributionHint =>
-      'Earn 5 pt for adding a shop and sake, plus 10 pt for sharing a photo';
+      'Earn 10 pt for adding a shop and sake, once per shop and sake.';
 
   @override
   String get collectEnvy => 'Collect envy';
@@ -1108,7 +1108,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopContributionNotice =>
-      'Selecting a shop anonymously adds this shop and sake to the map and earns 5 pt.';
+      'Selecting a shop anonymously adds the shop, sake and captured photos to the map. Earn 10 pt for the first registration.';
 
   @override
   String get findPlaceNearby => 'Nearby';
