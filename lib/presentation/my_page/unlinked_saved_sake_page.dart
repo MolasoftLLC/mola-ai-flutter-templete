@@ -229,7 +229,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
         );
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const PrimaryAppBar(title: '日本酒を改めて解析'),
+      appBar: const PrimaryAppBar(title: 'お酒の詳細を確認'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -260,7 +260,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text('マスターと紐づけると、このお酒の詳細を表示できます。'),
+            const Text('保存した写真からお酒を探します。候補から同じお酒を選ぶと、詳しい情報や味わいを確認できます。'),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _busy ? null : _link,
@@ -270,8 +270,8 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
                       height: 24,
                       child: Lottie.asset('assets/lottie/ai_loading.json'),
                     )
-                  : const Icon(Icons.link),
-              label: Text(_busy ? '日本酒を検索しています…' : 'マスターと紐づける'),
+                  : const Icon(Icons.search),
+              label: Text(_busy ? '写真からお酒を探しています…' : '写真からお酒を探す'),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF143861),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -281,7 +281,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
               const Padding(
                 padding: EdgeInsets.only(top: 16),
                 child: Text(
-                  '紐付けができませんでした。',
+                  'お酒の詳細を確認できませんでした。時間をおいて、もう一度お試しください。',
                   style: TextStyle(color: Color(0xFF647184)),
                 ),
               ),

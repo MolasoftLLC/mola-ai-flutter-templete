@@ -87,7 +87,7 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
             children: [
               const Text(
-                '産地と味わいから、日本酒マスターを絞り込みます。',
+                '産地と味わいから、気になる日本酒を探せます。',
                 style: TextStyle(color: Colors.white, fontSize: 13),
               ),
               const SizedBox(height: 28),

@@ -1320,7 +1320,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   Future<void> _openPlacePicker() async {
     FocusScope.of(context).unfocus();
     if (_currentSake.sakeId == null) {
-      _showSnack('日本酒マスターと紐付いたお酒だけ店舗へ登録できます。');
+      _showSnack('お酒の詳細を確認してから、飲んだ場所を登録してください。');
       return;
     }
     var place = await PlacePickerSheet.show(
