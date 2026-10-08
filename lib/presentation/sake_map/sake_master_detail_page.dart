@@ -268,7 +268,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         final analyzed = await context
             .read<SakeMenuRecognitionRepository>()
             .resolveSakeCandidateOverview(widget.venueSake.searchToken!);
-        if (analyzed == null || (analyzed.sake.sakeId ?? 0) <= 0) {
+        if (analyzed == null) {
           throw StateError('AI候補の詳細情報を取得できませんでした');
         }
         overview = analyzed;
@@ -332,6 +332,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<void> _syncOverviewToSavedRecord(SakeOverview overview) async {
+    if ((overview.sake.sakeId ?? 0) <= 0) return;
     final notifier = _savedSakeNotifier;
     final record = _findSavedSake(notifier, overview.sake);
     if (notifier == null || record == null) return;
@@ -1613,7 +1614,7 @@ class _Details extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (overview != null) ...[
+                      if (overview != null && (detailSake.sakeId ?? 0) > 0) ...[
                         const SizedBox(width: 8),
                         IconButton(
                           key: const Key('sake-product-correction-menu'),

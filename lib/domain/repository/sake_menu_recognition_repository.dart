@@ -186,7 +186,8 @@ class SakeMenuRecognitionRepository {
       return null;
     }
     final overview = SakeOverview.fromJson(response.body!);
-    if ((overview.sake.sakeId ?? 0) <= 0 ||
+    final hasCandidateDetail = response.body!['candidateDetail'] == true;
+    if (((overview.sake.sakeId ?? 0) <= 0 && !hasCandidateDetail) ||
         !isPlausibleRecognizedSakeName(overview.sake.name)) {
       return null;
     }
