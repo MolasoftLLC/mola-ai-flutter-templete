@@ -94,7 +94,7 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '人物の顔、氏名、住所、伝票などの個人情報が写らないよう、酒瓶のラベルだけを撮影してください。投稿後は、お酒の詳細画面から自分の画像を削除できます。',
+                  '人物の顔、氏名、住所、伝票などの個人情報が写らないよう、酒瓶のラベルだけを撮影してください。投稿後は、お酒の詳細画面から自分の画像を削除できます。ただし、削除前にAIの学習・精度向上に利用された結果を取り消すことはできません。',
                 ),
                 const SizedBox(height: 8),
                 CheckboxListTile(
