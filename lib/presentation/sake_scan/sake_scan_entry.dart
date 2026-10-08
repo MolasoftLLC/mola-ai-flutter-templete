@@ -90,11 +90,11 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
                 const SizedBox(height: 12),
                 const Text('・このお酒の詳細画面で、他のユーザーにも表示'),
                 const Text(
-                  '・AIラベル照合機能の学習・精度向上のため、Google Cloud Vision Product Searchへ参照画像として登録',
+                  '・AIラベル照合機能の学習・精度向上',
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '人物の顔、氏名、住所、伝票などの個人情報が写らないよう、酒瓶のラベルだけを撮影してください。投稿後は自分の画像を削除できます。',
+                  '人物の顔、氏名、住所、伝票などの個人情報が写らないよう、酒瓶のラベルだけを撮影してください。投稿後は、お酒の詳細画面から自分の画像を削除できます。',
                 ),
                 const SizedBox(height: 8),
                 CheckboxListTile(
