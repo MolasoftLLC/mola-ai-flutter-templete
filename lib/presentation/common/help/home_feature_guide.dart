@@ -388,23 +388,27 @@ class _HomeGuideFocusPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final shadow = Path()..addRect(Offset.zero & size);
-    for (final target in targets) {
-      final rect = target.inflate(8);
-      final hole = Path();
-      if (circles) {
-        hole.addOval(rect);
-      } else {
-        hole.addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(14)));
-      }
-      final cutout = Path.combine(PathOperation.difference, shadow, hole);
-      shadow.reset();
-      shadow.addPath(cutout, Offset.zero);
-    }
-    canvas.drawPath(
-      shadow,
+    // Draw the dimming into its own layer, then erase each focus area.
+    // This keeps the cutout transparent on every renderer and also handles
+    // overlapping targets without depending on Path.combine's fill rule.
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawRect(
+      Offset.zero & size,
       Paint()..color = Colors.black.withValues(alpha: .85),
     );
+    final clearPaint = Paint()..blendMode = BlendMode.clear;
+    for (final target in targets) {
+      final rect = target.inflate(8);
+      if (circles) {
+        canvas.drawOval(rect, clearPaint);
+      } else {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(14)),
+          clearPaint,
+        );
+      }
+    }
+    canvas.restore();
     if (outline) {
       for (final target in targets) {
         canvas.drawRRect(
