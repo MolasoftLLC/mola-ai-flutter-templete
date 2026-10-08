@@ -499,82 +499,252 @@ class _SakeMapPageState extends State<SakeMapPage> {
     SakeMapPageNotifier notifier,
     MapVenue venue,
   ) async {
+    // Keep one request while the sheet is resized or rebuilt.
+    final sakesFuture = notifier.loadVenueSakes(venue.venueId);
     await showModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => FutureBuilder<List<VenueSake>>(
-        future: notifier.loadVenueSakes(venue.venueId),
-        builder: (sheetContentContext, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 260,
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final sakes = snapshot.data ?? const <VenueSake>[];
-          return SafeArea(
-            child: SizedBox(
-              height: 420,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          venue.displayName,
-                          style: Theme.of(
-                            sheetContentContext,
-                          ).textTheme.titleLarge,
-                        ),
-                        const Text('この店舗に登録されている日本酒'),
-                      ],
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF5F7FA),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .58,
+        minChildSize: .35,
+        maxChildSize: .9,
+        builder: (_, scrollController) => SafeArea(
+          top: false,
+          child: FutureBuilder<List<VenueSake>>(
+            future: sakesFuture,
+            builder: (sheetContentContext, snapshot) {
+              final sakes = snapshot.data ?? const <VenueSake>[];
+              final loading = snapshot.connectionState != ConnectionState.done;
+              return CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 12, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 18),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFCBD2DC),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE7EEF6),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(
+                                  Icons.storefront_outlined,
+                                  color: Color(0xFF143861),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      venue.displayName,
+                                      style: const TextStyle(
+                                        color: Color(0xFF143861),
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'この店舗に登録されている日本酒',
+                                      style: TextStyle(
+                                        color: Color(0xFF647184),
+                                        fontSize: 12,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: '閉じる',
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Color(0xFF647184),
+                                  size: 22,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!loading &&
+                              !snapshot.hasError &&
+                              sakes.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16),
+                              child: Text(
+                                '${sakes.length}種類の日本酒',
+                                style: const TextStyle(
+                                  color: Color(0xFF143861),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: sakes.isEmpty
-                        ? const Center(child: Text('公開された日本酒記録はありません。'))
-                        : ListView.separated(
-                            itemCount: sakes.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (itemContext, index) {
-                              final sake = sakes[index];
-                              return ListTile(
-                                leading: _SakeThumbnail(
-                                  imageUrl: preferredSakeImagePath(
-                                    thumbnailImageUrl: sake.thumbnailImageUrl,
-                                    primaryImageUrl: sake.primaryImageUrl,
-                                  ),
-                                ),
-                                title: Text(sake.name),
-                                subtitle: Text(
-                                  [
-                                    if (sake.brewery != null) sake.brewery!,
-                                    if (sake.type != null) sake.type!,
-                                  ].join('・'),
-                                ),
-                                trailing: Text('${sake.recordCount}件'),
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          SakeMasterDetailPage(venueSake: sake),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
+                  if (loading)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(48),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF143861),
                           ),
-                  ),
+                        ),
+                      ),
+                    )
+                  else if (snapshot.hasError || sakes.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          snapshot.hasError
+                              ? '日本酒の一覧を読み込めませんでした。もう一度店舗を開いてください。'
+                              : '公開された日本酒記録はありません。',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFF647184),
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                      sliver: SliverList.separated(
+                        itemCount: sakes.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, index) {
+                          final sake = sakes[index];
+                          final subtitle = [
+                            if (sake.brewery?.trim().isNotEmpty == true)
+                              sake.brewery!,
+                            if (sake.type?.trim().isNotEmpty == true)
+                              sake.type!,
+                          ].join('・');
+                          return Material(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.of(sheetContext).pop();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        SakeMasterDetailPage(venueSake: sake),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  children: [
+                                    _SakeThumbnail(
+                                      imageUrl: preferredSakeImagePath(
+                                        thumbnailImageUrl:
+                                            sake.thumbnailImageUrl,
+                                        primaryImageUrl: sake.primaryImageUrl,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            sake.name,
+                                            style: const TextStyle(
+                                              color: Color(0xFF143861),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          if (subtitle.isNotEmpty) ...[
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              subtitle,
+                                              style: const TextStyle(
+                                                color: Color(0xFF647184),
+                                                fontSize: 12,
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ],
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFEFF4FA),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '${sake.recordCount}件の登録',
+                                              style: const TextStyle(
+                                                color: Color(0xFF143861),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Color(0xFF9CA6B4),
+                                      size: 22,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -710,10 +880,13 @@ class _SakeThumbnail extends StatelessWidget {
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => const Icon(Icons.wine_bar_outlined),
     );
-    return CircleAvatar(
-      backgroundColor: const Color(0xFFF2F2F2),
-      child: ClipOval(
-        child: SizedBox.expand(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 64,
+        height: 84,
+        child: ColoredBox(
+          color: const Color(0xFFE7EBEF),
           child: imageUrl == null
               ? fallback
               : Image.network(
