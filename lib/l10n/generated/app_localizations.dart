@@ -908,10 +908,22 @@ abstract class AppLocalizations {
   /// **'お気に入りデータがそろったら、あなた専用のチャートをここに表示します。'**
   String get tasteTrendSampleDescription;
 
+  /// No description provided for @editTasteProfile.
+  ///
+  /// In ja, this message translates to:
+  /// **'自分で編集'**
+  String get editTasteProfile;
+
+  /// No description provided for @editTasteProfileTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'好きなお酒の傾向を編集'**
+  String get editTasteProfileTitle;
+
   /// No description provided for @tasteTrendDescription.
   ///
   /// In ja, this message translates to:
-  /// **'お気に入りの日本酒から算出した平均傾向です。あくまでAIの解析なのでお手柔らかに。'**
+  /// **'あなたの好みの傾向です。自分で調整して、マッチ度に反映できます。'**
   String get tasteTrendDescription;
 
   /// No description provided for @signedInUsersOnly.

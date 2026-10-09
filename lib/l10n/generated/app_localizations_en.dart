@@ -451,8 +451,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your personalized chart will appear here once you have enough favorite sake data.';
 
   @override
+  String get editTasteProfile => 'Edit yourself';
+
+  @override
+  String get editTasteProfileTitle => 'Edit your taste preferences';
+
+  @override
   String get tasteTrendDescription =>
-      'This average profile is calculated from your favorite sake. Please remember that it is an AI-generated estimate.';
+      'Your taste preferences. Adjust them to update your sake match scores.';
 
   @override
   String get signedInUsersOnly => 'Signed-in users only';

@@ -398,6 +398,25 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     state = state.copyWith(userName: resolvedName, userIconUrl: resolvedIcon);
   }
 
+  int _tasteProfileRevision = 0;
+
+  Future<bool> saveTasteProfile(TastePreferenceProfile profile) async {
+    final userId = _authRepository.currentUser?.uid;
+    if (userId == null) return false;
+    final saved = await _userPreferenceRepository.updateTasteProfile(
+      userId: userId,
+      profile: profile,
+    );
+    if (!mounted ||
+        _authRepository.currentUser?.uid != userId ||
+        saved == null) {
+      return false;
+    }
+    _tasteProfileRevision++;
+    state = state.copyWith(tasteProfile: saved);
+    return true;
+  }
+
   Future<void> refreshTasteProfile() async {
     final user = _authRepository.currentUser;
     if (user == null) {
@@ -405,7 +424,13 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return;
     }
 
+    final revision = _tasteProfileRevision;
     final profile = await _userPreferenceRepository.fetchTasteProfile(user.uid);
+    if (!mounted ||
+        _authRepository.currentUser?.uid != user.uid ||
+        revision != _tasteProfileRevision) {
+      return;
+    }
     if (profile == null) {
       logger.info('味覚プロファイルはまだ算出されていませんでした');
       return;

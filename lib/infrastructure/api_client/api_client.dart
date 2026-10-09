@@ -219,6 +219,9 @@ abstract class ApiClient extends ChopperService {
   @Get(path: 'preferences/taste-profile')
   Future<Response> fetchTasteProfile(@Query('userId') String userId);
 
+  @Put(path: 'preferences/taste-profile')
+  Future<Response> updateTasteProfile(@Body() Map<String, dynamic> body);
+
   @Post(path: 'preferences/taste-profile/analyze')
   Future<Response> analyzeTasteProfile(@Body() Map<String, dynamic> body);
 

@@ -436,8 +436,13 @@ class AppLocalizationsJa extends AppLocalizations {
       'お気に入りデータがそろったら、あなた専用のチャートをここに表示します。';
 
   @override
-  String get tasteTrendDescription =>
-      'お気に入りの日本酒から算出した平均傾向です。あくまでAIの解析なのでお手柔らかに。';
+  String get editTasteProfile => '自分で編集';
+
+  @override
+  String get editTasteProfileTitle => '好きなお酒の傾向を編集';
+
+  @override
+  String get tasteTrendDescription => 'あなたの好みの傾向です。自分で調整して、マッチ度に反映できます。';
 
   @override
   String get signedInUsersOnly => 'ログインユーザー限定';

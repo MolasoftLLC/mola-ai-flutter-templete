@@ -730,6 +730,19 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> updateTasteProfile(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/preferences/taste-profile');
+    final $body = body;
+    final Request $request = Request(
+      'PUT',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> analyzeTasteProfile(Map<String, dynamic> body) {
     final Uri $url = Uri.parse('/preferences/taste-profile/analyze');
     final $body = body;

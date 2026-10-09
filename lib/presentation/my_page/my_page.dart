@@ -31,6 +31,7 @@ import 'account_settings_page.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
 import 'widgets/menu_history_preview.dart';
+import 'widgets/taste_profile_edit_dialog.dart';
 
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
@@ -1001,6 +1002,33 @@ class _MyPageState extends State<MyPage> {
           ),
           const SizedBox(height: 16),
           Center(child: _PreferenceRadarChart(axes: axes)),
+          const SizedBox(height: 16),
+          Center(
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white54),
+              ),
+              icon: const Icon(Icons.tune, size: 18),
+              label: Text(context.l10n.editTasteProfile),
+              onPressed: () async {
+                final notifier = context.read<MyPageNotifier>();
+                final saved = await showDialog<bool>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => TasteProfileEditDialog(
+                    profile: effectiveProfile,
+                    onSave: notifier.saveTasteProfile,
+                  ),
+                );
+                if (saved == true && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.preferencesSaved)),
+                  );
+                }
+              },
+            ),
+          ),
         ],
       ),
     );

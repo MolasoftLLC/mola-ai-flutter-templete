@@ -89,6 +89,28 @@ class UserPreferenceRepository {
     }
   }
 
+  Future<TastePreferenceProfile?> updateTasteProfile({
+    required String userId,
+    required TastePreferenceProfile profile,
+  }) async {
+    try {
+      final response = await _apiClient.updateTasteProfile({
+        'userId': userId,
+        'profile': profile.toJson(),
+      });
+      if (response.isSuccessful && response.body is Map<String, dynamic>) {
+        return TastePreferenceProfile.fromJson(
+          response.body as Map<String, dynamic>,
+        );
+      }
+      logger.warning('好みの保存に失敗しました: status=${response.statusCode}');
+    } catch (error, stackTrace) {
+      logger.warning('好みの保存処理で例外が発生しました: $error');
+      logger.info(stackTrace.toString());
+    }
+    return null;
+  }
+
   Future<TastePreferenceProfile?> analyzeTasteProfile({
     required String userId,
     required List<Map<String, dynamic>> favorites,
