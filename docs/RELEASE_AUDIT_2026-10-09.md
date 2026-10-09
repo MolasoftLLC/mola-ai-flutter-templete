@@ -12,8 +12,9 @@
 - 公開URL: https://molasoft-ai-central.com/assets/sakepedia-privacy.html （App Store ConnectのポリシーURL欄にも使用する）。ストア管理画面への設定変更は未実施。
 - 退会時にスキャン情報・回数管理情報・ブロック関係も削除。期限切れスキャンと利用回数の一時記録は、7日間の猶予をおいて定期削除する。保存酒や商品データをこの定期削除の対象には含めない。
 - メニュー履歴の「最新20件」表示を追加。
-- 静的解析のerrorは0、サーバーTypeScriptビルドとiOS Archive作成は成功。再試行・同時実行・日付境界・ストリーミング・旧APIの迂回防止の自動確認を追加。
-- アプリ135のアップロードはMac画面取得ができず保留。CLIも `Failed to Use Accounts` で停止したため、完成済みArchiveをOrganizerで送信する段階が残る。
+- 静的解析のerrorは0、サーバーTypeScriptビルドとiOS Archive作成は成功。再試行・同時実行・日付境界・ストリーミング・旧APIの迂回防止を含むCIの112件が成功。
+- 本番は `96d6d6de5fa208d6e9565698fbb43a4a4f8ec82e` を反映済み。追加3テーブルとマイグレーションを読み取り確認。2026-10-10 01:08 JSTにhealth・ポリシーURLは200、未認証のメニュー解析・旧ラベル解析・AI検索・ブロック一覧は401を確認。
+- アプリ5.0.22 (135)はOrganizerからApp Store Connectへアップロード完了。`App upload complete` と `5.0.22 (135) uploaded` を確認（2026-10-10 01:13 JST）。CLIの `Failed to Use Accounts` はOrganizerで回避した。Apple側の処理完了・TestFlight表示は未確認。ブラウザの管理画面はログインが必要なため、ストア側ポリシーURL・プライバシー申告等の設定確認は残る。公開審査には提出していない。
 
 ## 配信（2026-10-09 時点）
 
