@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
@@ -415,6 +416,22 @@ class _SakeMapPageState extends State<SakeMapPage> {
     );
   }
 
+  Future<void> _openVenueInMaps(MapVenue venue) async {
+    final uri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': '${venue.latitude},${venue.longitude}',
+    });
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (error) {
+      logger.warning('店舗の地図を開けませんでした: $error');
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('地図を開けませんでした。もう一度お試しください。')));
+  }
+
   void _showLocationWarning(String message, {SnackBarAction? action}) {
     SnackBarUtils.showSnackBar(
       context,
@@ -571,12 +588,23 @@ class _SakeMapPageState extends State<SakeMapPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Text(
-                                      'この店舗に登録されている日本酒',
-                                      style: TextStyle(
-                                        color: Color(0xFF647184),
-                                        fontSize: 12,
-                                        height: 1.4,
+                                    TextButton.icon(
+                                      onPressed: () => _openVenueInMaps(venue),
+                                      icon: const Icon(
+                                        Icons.open_in_new,
+                                        size: 14,
+                                      ),
+                                      label: const Text('マップで開く'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: const Color(
+                                          0xFF143861,
+                                        ),
+                                        textStyle: const TextStyle(
+                                          fontSize: 12,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: const Size(0, 48),
+                                        alignment: Alignment.centerLeft,
                                       ),
                                     ),
                                   ],
