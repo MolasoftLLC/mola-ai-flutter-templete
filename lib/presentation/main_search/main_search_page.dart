@@ -1695,6 +1695,7 @@ class _SearchShortcuts extends StatelessWidget {
             child: _SearchShortcutCard(
               icon: Icons.menu_book_outlined,
               title: context.l10n.menuSearchPageTitle,
+              badgeLabel: context.l10n.convenientFeatureBadge,
               description: context.l10n.menuPhotoDescription,
               onTap: onMenuSearchTap,
             ),
@@ -1704,6 +1705,7 @@ class _SearchShortcuts extends StatelessWidget {
             child: _SearchShortcutCard(
               icon: Icons.document_scanner_outlined,
               title: context.l10n.fastSearchShortcut,
+              badgeLabel: context.l10n.newFeatureBadge,
               description: context.l10n.fastSearchShortcutDescription,
               onTap: onFastSearchTap,
             ),
@@ -1726,6 +1728,7 @@ class _SearchShortcuts extends StatelessWidget {
             child: _SearchShortcutCard(
               icon: Icons.map_outlined,
               title: context.l10n.mapSearchShortcut,
+              badgeLabel: context.l10n.newFeatureBadge,
               description: context.l10n.mapSearchShortcutDescription,
               onTap: onMapTap,
             ),
@@ -1742,12 +1745,14 @@ class _SearchShortcutCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.onTap,
+    this.badgeLabel,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final VoidCallback onTap;
+  final String? badgeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1798,36 +1803,40 @@ class _SearchShortcutCard extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            top: -9,
-            right: -7,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF7A1A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+          if (badgeLabel != null)
+            Positioned(
+              top: -9,
+              right: -7,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF7A1A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
                   ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                child: Text(
-                  context.l10n.newFeatureBadge,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
+                  child: Text(
+                    badgeLabel!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

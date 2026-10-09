@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newFeatureBadge => 'NEW & HANDY';
 
   @override
+  String get convenientFeatureBadge => 'HANDY';
+
+  @override
   String get mapSearchShortcut => 'Map search';
 
   @override

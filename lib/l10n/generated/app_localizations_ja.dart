@@ -24,6 +24,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get newFeatureBadge => 'NEW&便利';
 
   @override
+  String get convenientFeatureBadge => '便利';
+
+  @override
   String get mapSearchShortcut => '地図検索';
 
   @override
@@ -1072,7 +1075,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get changeConsumedPlace => '登録店舗を変更';
 
   @override
-  String get shopContributionNotice => '店舗を選ぶと、この店舗と日本酒、撮影した写真が匿名でマップに登録されます。初回登録で10ptを獲得します。';
+  String get shopContributionNotice =>
+      '店舗を選ぶと、この店舗と日本酒、撮影した写真が匿名でマップに登録されます。初回登録で10ptを獲得します。';
 
   @override
   String get findPlaceNearby => '近くで探す';

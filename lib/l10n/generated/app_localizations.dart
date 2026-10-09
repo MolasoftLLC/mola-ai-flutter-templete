@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'NEW&便利'**
   String get newFeatureBadge;
 
+  /// No description provided for @convenientFeatureBadge.
+  ///
+  /// In ja, this message translates to:
+  /// **'便利'**
+  String get convenientFeatureBadge;
+
   /// No description provided for @mapSearchShortcut.
   ///
   /// In ja, this message translates to:
