@@ -114,6 +114,13 @@ class MenuHistorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              '最新20件の解析履歴を表示します。',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
           if (showHeading)
             Center(
               child: Text(

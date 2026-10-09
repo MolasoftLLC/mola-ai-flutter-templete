@@ -28,6 +28,7 @@ import '../timeline/timeline_page.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'account_settings_page.dart';
+import 'widgets/blocked_users_dialog.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
 import 'widgets/menu_history_preview.dart';
@@ -1278,6 +1279,41 @@ class _MyPageState extends State<MyPage> {
                   Navigator.pop(context); // 設定メニューを閉じる
                   await Navigator.of(context, rootNavigator: true).push<void>(
                     CupertinoPageRoute(builder: (_) => const HowToUse()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.privacy_tip_outlined,
+                  color: Color(0xFF1D3567),
+                ),
+                title: const Text('プライバシーポリシー'),
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://molasoft-ai-central.com/assets/sakepedia-privacy.html',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.mail_outline,
+                  color: Color(0xFF1D3567),
+                ),
+                title: const Text('お問い合わせ・通報について'),
+                onTap: () => launchUrl(
+                  Uri.parse('https://molasoft.jp/contact/'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Color(0xFF1D3567)),
+                title: const Text('ブロックしたユーザー'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await showDialog<void>(
+                    context: pageContext,
+                    builder: (_) => const BlockedUsersDialog(),
                   );
                 },
               ),

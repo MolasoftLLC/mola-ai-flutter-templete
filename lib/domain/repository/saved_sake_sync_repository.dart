@@ -286,6 +286,36 @@ class SavedSakeSyncRepository {
     }
   }
 
+  Future<dynamic> _blockRequest(String method, String route) async {
+    final response = await _apiClient.client
+        .send<dynamic, dynamic>(
+          Request(
+            method,
+            Uri.parse('/api/saved-sakes/$route'),
+            _apiClient.client.baseUrl,
+            body: method == 'POST' ? <String, dynamic>{} : null,
+          ),
+        )
+        .timeout(const Duration(seconds: 30));
+    if (!response.isSuccessful) throw StateError('ブロック設定を変更できませんでした。');
+    return response.body;
+  }
+
+  Future<void> blockTimelineUser(String savedId) async {
+    await _blockRequest('POST', '${Uri.encodeComponent(savedId)}/block-user');
+  }
+
+  Future<List<Map<String, dynamic>>> blockedUsers() async {
+    final body = await _blockRequest('GET', 'blocked-users');
+    return (body['users'] as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<void> unblockUser(String id) async {
+    await _blockRequest('DELETE', 'blocked-users/${Uri.encodeComponent(id)}');
+  }
+
   Future<bool> reportSavedSake({
     required String userId,
     required String savedId,

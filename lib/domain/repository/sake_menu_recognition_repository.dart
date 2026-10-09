@@ -55,6 +55,8 @@ class SakeMenuRecognitionRepository {
   }
 
   /// メニュー画像から日本酒名と種類のみを抽出する
+  String? _menuAnalysisId;
+
   Future<List<Sake>?> extractSakeInfo(File file) async {
     // リトライ回数
     const maxRetries = 3;
@@ -63,11 +65,21 @@ class SakeMenuRecognitionRepository {
     while (retryCount < maxRetries) {
       try {
         final baseFile = await ImageUtils.compressAndEncodeImage(file);
-        final response = await _apiClient.extractSakeInfo(baseFile);
+        final response = await _apiClient.extractSakeInfoJson({
+          'file': baseFile,
+        });
+        if (response.statusCode == 401 ||
+            response.statusCode == 429 ||
+            response.statusCode == 409) {
+          throw SakeCandidateResolutionException(
+            _extractBottleErrorMessage(response.error),
+          );
+        }
 
         if (response.isSuccessful) {
           logger.shout(response.body);
           final responseBodyJson = response.body as Map<String, dynamic>;
+          _menuAnalysisId = responseBodyJson['analysisId'] as String?;
 
           // 'sakes'キーから日本酒リストを取得
           final sakesList =
@@ -83,6 +95,8 @@ class SakeMenuRecognitionRepository {
           // 少し待機してからリトライ
           await Future.delayed(Duration(milliseconds: 500 * retryCount));
         }
+      } on SakeCandidateResolutionException {
+        rethrow;
       } catch (e) {
         logger.shout('例外発生: $e');
         retryCount++;
@@ -120,6 +134,7 @@ class SakeMenuRecognitionRepository {
     bool masterOnly = false,
   }) async {
     final response = await _apiClient.resolveMenuSakes({
+      if (_menuAnalysisId != null) 'analysisId': _menuAnalysisId,
       'sakes': sakes
           .where((sake) => isPlausibleRecognizedSakeName(sake.name))
           .map(
@@ -137,7 +152,9 @@ class SakeMenuRecognitionRepository {
       if (masterOnly) 'phase': 'master',
     });
     if (!response.isSuccessful || response.body == null) {
-      throw const SakeCandidateResolutionException('メニューの商品情報を取得できませんでした');
+      throw SakeCandidateResolutionException(
+        _extractBottleErrorMessage(response.error),
+      );
     }
     final rawResults = response.body!['results'];
     if (rawResults is! List) {

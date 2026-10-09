@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../common/localization/localization_extensions.dart';
 import '../../common/widgets/primary_app_bar.dart';
@@ -32,6 +33,34 @@ class HowToUse extends StatelessWidget {
             _TermsParagraph(context.l10n.termsContentPolicy),
             _TermsParagraph(context.l10n.termsServiceAvailability),
             _TermsParagraph(context.l10n.termsClosing),
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse(
+                  'https://molasoft-ai-central.com/assets/sakepedia-privacy.html',
+                ),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: const Text(
+                'プライバシーポリシー',
+                style: TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => launchUrl(
+                Uri.parse('https://molasoft.jp/contact/'),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: const Text(
+                'お問い合わせ',
+                style: TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
           ],
         ),
       ),

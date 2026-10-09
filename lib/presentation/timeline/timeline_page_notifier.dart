@@ -85,6 +85,12 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
       read<SavedSakeSyncRepository>();
   AuthRepository get _authRepository => read<AuthRepository>();
 
+  Future<void> blockUser(Sake sake) async {
+    if (!isLoggedIn || sake.savedId == null) throw StateError('ログインしてください。');
+    await _savedSakeSyncRepository.blockTimelineUser(sake.savedId!);
+    await fetchTimeline(isRefresh: true);
+  }
+
   bool get isLoggedIn => _authRepository.currentUser != null;
 
   static const _reportedSavedIdsKey = 'timeline_reported_saved_ids';

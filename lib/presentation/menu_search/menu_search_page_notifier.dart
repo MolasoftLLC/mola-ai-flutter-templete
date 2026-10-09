@@ -27,6 +27,7 @@ import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/widgets/ad_consent_dialog.dart';
+import '../auth/email_link_auth_page.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../common/sake/taste_match.dart';
 import '../../common/sake/menu_taste_summary.dart';
@@ -326,6 +327,31 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       return;
     }
 
+    if (read<AuthRepository>().currentUser == null) {
+      final login = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('メニュー解析にはログインが必要です'),
+          content: const Text('解析結果の保存と利用回数の管理のため、ログインしてください。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('ログイン'),
+            ),
+          ],
+        ),
+      );
+      if (login != true || !context.mounted) return;
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signIn()),
+      );
+      if (!context.mounted || read<AuthRepository>().currentUser == null)
+        return;
+    }
     if (!await _ensureSakePreferencesReady()) {
       return;
     }
@@ -488,7 +514,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isGettingDetails: false,
         isAdLoading: false,
         isAnalyzingInBackground: false,
-        errorMessage: context.l10n.errorMenuExtraction,
+        errorMessage: e is SakeCandidateResolutionException
+            ? e.message
+            : context.l10n.errorMenuExtraction,
       );
     }
   }
@@ -824,7 +852,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isGettingDetails: false,
         isAdLoading: false,
         isAnalyzingInBackground: false,
-        errorMessage: context.l10n.errorMenuExtraction,
+        errorMessage: e is SakeCandidateResolutionException
+            ? e.message
+            : context.l10n.errorMenuExtraction,
       );
     }
   }
@@ -886,7 +916,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         isLoading: false,
         isExtractingInfo: false,
         isAnalyzingInBackground: false,
-        errorMessage: context.l10n.errorMenuExtraction,
+        errorMessage: e is SakeCandidateResolutionException
+            ? e.message
+            : context.l10n.errorMenuExtraction,
       );
     }
   }

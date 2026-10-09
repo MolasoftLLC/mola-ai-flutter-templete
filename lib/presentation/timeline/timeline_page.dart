@@ -491,6 +491,45 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                     break;
                 }
               },
+        onBlock: !canReport
+            ? null
+            : () async {
+                if (!await ensureLoggedIn() || !context.mounted) return;
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('このユーザーをブロックしますか？'),
+                    content: const Text(
+                      'このユーザーの投稿が表示されなくなります。マイページの設定から解除できます。',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('キャンセル'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('ブロックする'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true || !context.mounted) return;
+                try {
+                  await notifier.blockUser(sake);
+                  if (context.mounted)
+                    SnackBarUtils.showInfoSnackBar(
+                      context,
+                      message: 'ブロックしました。',
+                    );
+                } catch (_) {
+                  if (context.mounted)
+                    SnackBarUtils.showWarningSnackBar(
+                      context,
+                      message: 'ブロックできませんでした。もう一度お試しください。',
+                    );
+                }
+              },
         onReport: !canReport
             ? null
             : () async {
@@ -786,6 +825,7 @@ class _TimelineSakeCard extends StatefulWidget {
     required this.onToggleFavorite,
     this.onToggleEnvy,
     this.onReport,
+    this.onBlock,
     this.onOpenDetails,
   });
 
@@ -801,6 +841,7 @@ class _TimelineSakeCard extends StatefulWidget {
   final VoidCallback onToggleFavorite;
   final VoidCallback? onToggleEnvy;
   final VoidCallback? onReport;
+  final VoidCallback? onBlock;
   final VoidCallback? onOpenDetails;
 
   @override
@@ -887,7 +928,36 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                       isPending: widget.isReportPending,
                       onPressed: widget.isReportPending
                           ? null
-                          : widget.onReport,
+                          : () async {
+                              final action = await showModalBottomSheet<String>(
+                                context: context,
+                                builder: (context) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.flag_outlined,
+                                        ),
+                                        title: const Text('投稿を通報する'),
+                                        onTap: () =>
+                                            Navigator.pop(context, 'report'),
+                                      ),
+                                      if (widget.onBlock != null)
+                                        ListTile(
+                                          leading: const Icon(Icons.block),
+                                          title: const Text('ユーザーをブロックする'),
+                                          onTap: () =>
+                                              Navigator.pop(context, 'block'),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                              if (!mounted) return;
+                              if (action == 'report') widget.onReport?.call();
+                              if (action == 'block') widget.onBlock?.call();
+                            },
                     ),
                   ),
                 if (shouldShowUserInfo)
