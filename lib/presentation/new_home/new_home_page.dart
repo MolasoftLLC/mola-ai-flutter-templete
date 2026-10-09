@@ -688,10 +688,18 @@ class _HomeHeader extends StatelessWidget {
                   child: IconButton(
                     key: myPageKey,
                     tooltip: context.l10n.navigationMyPage,
-                    icon: const Icon(
-                      Icons.person_outline,
-                      color: Color(0xFFFFD166),
-                      size: 25,
+                    icon: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.person_outline,
+                        color: _brandColor,
+                        size: 25,
+                      ),
                     ),
                     onPressed: () => Navigator.of(context).push<void>(
                       MaterialPageRoute(builder: (_) => MyPage.wrapped()),
