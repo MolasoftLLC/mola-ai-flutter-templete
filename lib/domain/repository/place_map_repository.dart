@@ -71,6 +71,7 @@ class MapVenue {
     required this.recordCount,
     this.ownRecordCount = 0,
     this.latestImageUrl,
+    this.providerPlaceId,
   });
 
   factory MapVenue.fromJson(Map<String, dynamic> json) {
@@ -80,6 +81,7 @@ class MapVenue {
         : const <String, dynamic>{};
     return MapVenue(
       venueId: json['venueId'] as String,
+      providerPlaceId: _nonEmptyString(json['providerPlaceId']),
       displayName: json['displayName'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
@@ -93,6 +95,7 @@ class MapVenue {
   }
 
   final String venueId;
+  final String? providerPlaceId;
   final String displayName;
   final double latitude;
   final double longitude;

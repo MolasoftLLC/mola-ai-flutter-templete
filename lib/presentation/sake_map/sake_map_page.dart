@@ -15,10 +15,15 @@ import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/auth_repository.dart';
+import '../../domain/eintities/menu_analysis_history.dart';
+import '../../infrastructure/api_client/api_client.dart';
+import '../../infrastructure/local_database/menu_analysis_history_repository.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'sake_map_marker_icon.dart';
 import 'sake_map_page_notifier.dart';
 import 'sake_master_detail_page.dart';
+import 'venue_menu_carousel.dart';
 
 class SakeMapPage extends StatefulWidget {
   const SakeMapPage._({this.initialSake});
@@ -511,6 +516,39 @@ class _SakeMapPageState extends State<SakeMapPage> {
   String _markerKey(MapVenue venue) =>
       '${venue.latestImageUrl ?? 'fallback'}#${venue.recordCount}';
 
+  Stream<List<MenuAnalysisHistoryItem>> _watchVenueMenus(
+    MapVenue venue,
+    AuthRepository auth,
+    ApiClient api,
+  ) async* {
+    final ownerId = auth.currentUser?.uid;
+    final repository = MenuAnalysisHistoryRepository(ownerId: ownerId);
+    bool isOwner() => auth.currentUser?.uid == ownerId;
+    Future<List<MenuAnalysisHistoryItem>> load() async {
+      final histories = await repository.load();
+      if (!isOwner()) return [];
+      return histories.where((item) {
+        final place = item.drinkingPlace;
+        final sameVenue =
+            place?.venueId == venue.venueId ||
+            (venue.providerPlaceId != null &&
+                place?.providerPlaceId == venue.providerPlaceId);
+        return sameVenue &&
+            (item.imagePath?.isNotEmpty == true ||
+                item.base64Image?.isNotEmpty == true);
+      }).toList()..sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    yield await load();
+    if (ownerId == null || !isOwner()) return;
+    try {
+      await repository.synchronize(api, isOwner);
+      yield await load();
+    } catch (error) {
+      logger.warning('店舗のメニュー画像を同期できませんでした: $error');
+    }
+  }
+
   Future<void> _showVenueSakes(
     BuildContext context,
     SakeMapPageNotifier notifier,
@@ -518,6 +556,11 @@ class _SakeMapPageState extends State<SakeMapPage> {
   ) async {
     // Keep one request while the sheet is resized or rebuilt.
     final sakesFuture = notifier.loadVenueSakes(venue.venueId);
+    final menusStream = _watchVenueMenus(
+      venue,
+      context.read<AuthRepository>(),
+      context.read<ApiClient>(),
+    );
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -622,24 +665,31 @@ class _SakeMapPageState extends State<SakeMapPage> {
                               ),
                             ],
                           ),
-                          if (!loading &&
-                              !snapshot.hasError &&
-                              sakes.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: Text(
-                                '${sakes.length}種類の日本酒',
-                                style: const TextStyle(
-                                  color: Color(0xFF143861),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: StreamBuilder<List<MenuAnalysisHistoryItem>>(
+                      stream: menusStream,
+                      builder: (_, menus) =>
+                          VenueMenuCarousel(menus: menus.data ?? const []),
+                    ),
+                  ),
+                  if (!loading && !snapshot.hasError && sakes.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: Text(
+                          '${sakes.length}種類の日本酒',
+                          style: const TextStyle(
+                            color: Color(0xFF143861),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
                   if (loading)
                     const SliverToBoxAdapter(
                       child: Padding(
