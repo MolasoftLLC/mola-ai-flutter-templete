@@ -20,6 +20,7 @@ import '../common/help/help_guide_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'menu_search_page_notifier.dart';
 import 'widgets/menu_sake_detail_rows.dart';
+import 'widgets/menu_result_place_field.dart';
 
 class MenuSearchPage extends StatefulWidget {
   const MenuSearchPage._({Key? key}) : super(key: key);
@@ -54,6 +55,13 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
   @override
   Widget build(BuildContext context) {
     final notifier = context.watch<MenuSearchPageNotifier>();
+    final history = context.select(
+      (MenuSearchPageState state) => state.menuAnalysisHistory,
+    );
+    final currentHistoryId = notifier.currentAnalysisHistoryId;
+    final currentHistory = history
+        .where((item) => item.id == currentHistoryId)
+        .firstOrNull;
     final favNotifier = context.watch<FavoriteNotifier>();
     final savedNotifier = context.watch<SavedSakeNotifier>();
     final isLoading = context.select(
@@ -383,6 +391,20 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 20,
+                                    bottom: 20,
+                                  ),
+                                  child: MenuResultPlaceField(
+                                    key: ValueKey(currentHistoryId),
+                                    history: currentHistory,
+                                    onSave: (place) => notifier.setHistoryPlace(
+                                      currentHistory!.id,
+                                      place,
                                     ),
                                   ),
                                 ),

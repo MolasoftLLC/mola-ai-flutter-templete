@@ -99,6 +99,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   String? _activeAnalysisId;
   DateTime? _activeAnalysisDate;
   MenuAnalysisHistoryItem? _pendingHistoryItem;
+  String? get currentAnalysisHistoryId => _activeAnalysisId;
   bool get hasPendingHistorySave => _pendingHistoryItem != null;
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   GeminiMolaApiRepository get geminiMolaApiRepository =>
@@ -924,8 +925,26 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
 
+  Future<void> _historyWriteQueue = Future<void>.value();
+
+  Future<void> _writeHistory(Future<void> Function() action) {
+    final next = _historyWriteQueue.then((_) => action());
+    _historyWriteQueue = next.catchError((Object error, StackTrace stackTrace) {
+      logger.warning('メニュー履歴の更新に失敗しました: $error');
+    });
+    return next;
+  }
+
   // 現在の解析結果をメニュー解析履歴に追加する
-  Future<void> addCurrentAnalysisToHistory({String? analysisStatus}) async {
+  Future<void> addCurrentAnalysisToHistory({String? analysisStatus}) {
+    final generation = _detailsGeneration;
+    return _writeHistory(() async {
+      if (!mounted || generation != _detailsGeneration) return;
+      await _addCurrentAnalysisToHistory(analysisStatus: analysisStatus);
+    });
+  }
+
+  Future<void> _addCurrentAnalysisToHistory({String? analysisStatus}) async {
     if (state.extractedSakes.isEmpty) return;
     final analysisId = _activeAnalysisId ??=
         'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
@@ -1136,7 +1155,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
   }
 
-  Future<void> setHistoryPlace(String historyId, DrinkingPlace? place) async {
+  Future<void> setHistoryPlace(String historyId, DrinkingPlace? place) =>
+      _writeHistory(() => _setHistoryPlace(historyId, place));
+
+  Future<void> _setHistoryPlace(String historyId, DrinkingPlace? place) async {
     final item = state.menuAnalysisHistory.firstWhere(
       (item) => item.id == historyId,
     );
