@@ -75,10 +75,7 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
     final selectedDesigns = state.selectedDesigns ?? const <String>[];
 
     return Scaffold(
-      appBar: PrimaryAppBar(
-        title: context.l10n.searchByRegion,
-        automaticallyImplyLeading: false,
-      ),
+      appBar: PrimaryAppBar(title: context.l10n.searchByRegion),
       body: ColoredBox(
         color: const Color(0xFF1D3567),
         child: SafeArea(
