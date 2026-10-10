@@ -1514,6 +1514,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scanBackPromptAction => '裏ラベルを撮影する';
 
   @override
+  String get scanRetakeFrontAction => '表ラベルをもう一度撮影する';
+
+  @override
   String get captureLabel => 'ラベルを撮影';
 
   @override

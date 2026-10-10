@@ -946,20 +946,35 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanBackLabelReason.lowConfidence =>
         context.l10n.scanBackPromptLowConfidence,
     };
-    await showDialog<void>(
+    final retakeFront = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: Text(context.l10n.scanBackPromptTitle),
         content: Text(message),
         actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(context.l10n.scanBackPromptAction),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.scanBackPromptAction),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.l10n.scanRetakeFrontAction),
+              ),
+            ],
           ),
         ],
       ),
     );
+    if (retakeFront == true && mounted) {
+      _promptedBackLabelSessionId = null;
+      context.read<SakeScanNotifier>().retakeFrontLabel();
+    }
   }
 
   Widget _buildBottomPanel(SakeScanState state) {

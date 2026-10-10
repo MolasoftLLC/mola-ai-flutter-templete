@@ -272,6 +272,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     state = SakeScanState(shareToTimeline: state.shareToTimeline);
   }
 
+  void retakeFrontLabel() {
+    if (_disposed || state.status != SakeScanViewStatus.backScanning) return;
+    ++_operation;
+    state = SakeScanState(shareToTimeline: state.shareToTimeline);
+  }
+
   Future<Sake?> confirmCandidate() async {
     final candidate = state.selectedCandidate;
     final sessionId = state.scanSessionId;

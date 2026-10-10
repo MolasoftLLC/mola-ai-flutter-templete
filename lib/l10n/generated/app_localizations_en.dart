@@ -1587,6 +1587,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanBackPromptAction => 'Capture back label';
 
   @override
+  String get scanRetakeFrontAction => 'Retake front label';
+
+  @override
   String get captureLabel => 'Capture label';
 
   @override

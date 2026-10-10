@@ -498,6 +498,7 @@
   "scanBackPromptNoCatalogMatch": "We couldn't identify the product from the front label alone. Capture the back label showing the product name and producer.",
   "scanBackPromptLowConfidence": "The front label didn't provide enough information to narrow down the product. Capture the back label to confirm it.",
   "scanBackPromptAction": "Capture back label",
+  "scanRetakeFrontAction": "Retake front label",
   "captureLabel": "Capture label",
   "closeUpMode": "Close-up",
   "selectFromGallery": "Choose from gallery",

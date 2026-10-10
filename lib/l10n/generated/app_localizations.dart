@@ -2960,6 +2960,12 @@ abstract class AppLocalizations {
   /// **'裏ラベルを撮影する'**
   String get scanBackPromptAction;
 
+  /// No description provided for @scanRetakeFrontAction.
+  ///
+  /// In ja, this message translates to:
+  /// **'表ラベルをもう一度撮影する'**
+  String get scanRetakeFrontAction;
+
   /// No description provided for @captureLabel.
   ///
   /// In ja, this message translates to:

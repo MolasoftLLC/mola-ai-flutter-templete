@@ -498,6 +498,7 @@
   "scanBackPromptNoCatalogMatch": "正面ラベルだけでは商品を特定できませんでした。商品名や製造者が書かれた裏ラベルを撮影してください。",
   "scanBackPromptLowConfidence": "正面ラベルの情報だけでは候補を絞り切れませんでした。確認のため裏ラベルを撮影してください。",
   "scanBackPromptAction": "裏ラベルを撮影する",
+  "scanRetakeFrontAction": "表ラベルをもう一度撮影する",
   "captureLabel": "ラベルを撮影",
   "closeUpMode": "近接",
   "selectFromGallery": "ギャラリーから選ぶ",
