@@ -291,7 +291,7 @@ class SavedSakeSyncRepository {
         .send<dynamic, dynamic>(
           Request(
             method,
-            Uri.parse('/api/saved-sakes/$route'),
+            Uri.parse('/saved-sakes/$route'),
             _apiClient.client.baseUrl,
             body: method == 'POST' ? <String, dynamic>{} : null,
           ),
