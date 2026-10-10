@@ -13,16 +13,17 @@ class HomeFeatureGuide {
   final mapKey = GlobalKey();
   final myPageKey = GlobalKey();
   final recommendationsKey = GlobalKey();
+  final timelineKey = GlobalKey();
   final homeScrollController = ScrollController();
   bool _showing = false;
-  static const _preferenceKey = 'home_feature_guide_shown_v3';
+  static const _preferenceKey = 'home_feature_guide_shown_v4';
 
   void dispose() => homeScrollController.dispose();
 
-  Future<Rect?> _scrollToRecommendations() async {
+  Future<Rect?> _scrollToSection(GlobalKey targetKey) async {
     if (!homeScrollController.hasClients) return null;
     // ListView の画面外の子が構築されるまで少しずつ進める。
-    for (var i = 0; recommendationsKey.currentContext == null && i < 12; i++) {
+    for (var i = 0; targetKey.currentContext == null && i < 12; i++) {
       final position = homeScrollController.position;
       final next = (position.pixels + position.viewportDimension * .6).clamp(
         position.minScrollExtent,
@@ -37,7 +38,7 @@ class HomeFeatureGuide {
       await WidgetsBinding.instance.endOfFrame;
       if (!homeScrollController.hasClients) return null;
     }
-    final targetContext = recommendationsKey.currentContext;
+    final targetContext = targetKey.currentContext;
     if (targetContext == null || !targetContext.mounted) return null;
     await Scrollable.ensureVisible(
       targetContext,
@@ -46,7 +47,7 @@ class HomeFeatureGuide {
       curve: Curves.easeInOutCubic,
     );
     await WidgetsBinding.instance.endOfFrame;
-    final box = recommendationsKey.currentContext?.findRenderObject();
+    final box = targetKey.currentContext?.findRenderObject();
     if (box is! RenderBox || !box.attached || !box.hasSize) return null;
     return box.localToGlobal(Offset.zero) & box.size;
   }
@@ -85,7 +86,8 @@ class HomeFeatureGuide {
         final box = targetContext?.findRenderObject();
         if (box is! RenderBox || !box.attached || !box.hasSize) return null;
         final rect = box.localToGlobal(Offset.zero) & box.size;
-        if (key == recommendationsKey && targetContext != null) {
+        if ((key == recommendationsKey || key == timelineKey) &&
+            targetContext != null) {
           final viewport = Scrollable.maybeOf(
             targetContext,
           )?.context.findRenderObject();
@@ -105,6 +107,7 @@ class HomeFeatureGuide {
         [mapKey],
         [myPageKey],
         [recommendationsKey],
+        [timelineKey],
       ];
       if (targetKeys
           .take(5)
@@ -118,7 +121,7 @@ class HomeFeatureGuide {
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => FeatureGuideOverlay(
-          bottomMessageStep: 5,
+          bottomMessageSteps: const {5, 6},
           titles: const [
             '高速ラベル検索',
             'いろいろな条件で検索',
@@ -126,6 +129,7 @@ class HomeFeatureGuide {
             'マップ機能',
             'マイページ',
             'あなたが好きそうな日本酒',
+            'タイムライン',
           ],
           messages: const [
             'ラベルから高速検索！今までの体感３倍の速度！',
@@ -134,11 +138,13 @@ class HomeFeatureGuide {
             '近くでどんな日本酒が飲めるか、マップから探してみましょう。',
             '保存したお酒やメニュー解析履歴はここから。好みの設定、ポイントやバッジもマイページで確認できます。',
             'マイページで好きなお酒の傾向を登録すると、あなたに合いそうな日本酒がここに表示されます！',
+            'みんなが飲んだ日本酒を見られます。左右にスライドして気になるお酒を探してみましょう。「もっと見る」をタップすると、さらに多くの投稿を見られます！',
           ],
           circleSteps: const {0, 4},
           outlineSteps: const {2, 3},
           prepareStep: (step) async {
-            if (step == 5) await _scrollToRecommendations();
+            if (step == 5) await _scrollToSection(recommendationsKey);
+            if (step == 6) await _scrollToSection(timelineKey);
           },
           readTargets: (step) => [
             for (final key in targetKeys[step])
@@ -164,7 +170,7 @@ class FeatureGuideOverlay extends StatefulWidget {
     this.outlineSteps = const {},
     this.welcomeTitle = '新SAKEPEDIAへようこそ！',
     this.welcomeMessage = '新機能の説明を簡単にさせていただきます！',
-    this.bottomMessageStep,
+    this.bottomMessageSteps = const {},
   });
   final Future<void> Function(int step) prepareStep;
   final List<String> titles;
@@ -173,7 +179,7 @@ class FeatureGuideOverlay extends StatefulWidget {
   final Set<int> outlineSteps;
   final String welcomeTitle;
   final String welcomeMessage;
-  final int? bottomMessageStep;
+  final Set<int> bottomMessageSteps;
   final List<Rect> Function(int step) readTargets;
 
   @override
@@ -260,11 +266,11 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
         ),
         if (!_scrolling)
           Align(
-            alignment: _step == widget.bottomMessageStep
+            alignment: widget.bottomMessageSteps.contains(_step)
                 ? Alignment.bottomCenter
                 : Alignment.center,
             child: Padding(
-              padding: _step == widget.bottomMessageStep
+              padding: widget.bottomMessageSteps.contains(_step)
                   ? EdgeInsets.fromLTRB(
                       24,
                       24,
