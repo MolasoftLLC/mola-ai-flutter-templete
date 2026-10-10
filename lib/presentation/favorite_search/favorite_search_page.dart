@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:provider/provider.dart';
@@ -36,6 +37,7 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
   List<SakeMapSearchResult> _results = const [];
 
   Future<void> _search(FavoriteSearchPageState state) async {
+    AppAnalytics.instance.event('search', 'search_origin', kind: 'start');
     setState(() {
       _isSearching = true;
       _errorMessage = null;
@@ -51,10 +53,16 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
           );
       if (!mounted) return;
       setState(() {
+        AppAnalytics.instance.event(
+          'search',
+          results.isEmpty ? 'search_empty' : 'search_result',
+          kind: 'success',
+        );
         _results = results;
         _hasSearched = true;
       });
     } catch (_) {
+      AppAnalytics.instance.event('search', 'search_result', kind: 'failure');
       if (!mounted) return;
       setState(() {
         _results = const [];
@@ -74,72 +82,78 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
     final selectedTastes = state.selectedTastes ?? const <String>[];
     final selectedDesigns = state.selectedDesigns ?? const <String>[];
 
-    return Scaffold(
-      appBar: PrimaryAppBar(title: context.l10n.searchByRegion),
-      body: ColoredBox(
-        color: const Color(0xFF1D3567),
-        child: SafeArea(
-          top: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-            children: [
-              const Text(
-                '産地と味わいから、気になる日本酒を探せます。',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-              const SizedBox(height: 28),
-              _SectionLabel(label: context.l10n.region),
-              const SizedBox(height: 10),
-              _PrefectureDropdown(
-                value: state.selectedPrefecture,
-                onChanged: notifier.setPrefecture,
-              ),
-              const SizedBox(height: 28),
-              _FilterGrid(
-                label: context.l10n.flavorGroupOne,
-                choices: Sake.flavors,
-                selected: selectedFlavors,
-                onTap: notifier.toggleSelectedFlavor,
-              ),
-              const SizedBox(height: 28),
-              _FilterGrid(
-                label: context.l10n.flavorGroupTwo,
-                choices: Sake.tastes,
-                selected: selectedTastes,
-                onTap: notifier.toggleSelectedTaste,
-              ),
-              const SizedBox(height: 28),
-              _FilterGrid(
-                label: context.l10n.specificDesignation,
-                choices: Sake.designs,
-                selected: selectedDesigns,
-                onTap: notifier.toggleSelectedDesigns,
-              ),
-              const SizedBox(height: 32),
-              FilledButton.icon(
-                onPressed: _isSearching ? null : () => _search(state),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  backgroundColor: const Color(0xFFFF7A1A),
-                  foregroundColor: Colors.white,
+    return AnalyticsScreen(
+      name: 'search',
+      child: Scaffold(
+        appBar: PrimaryAppBar(title: context.l10n.searchByRegion),
+        body: ColoredBox(
+          color: const Color(0xFF1D3567),
+          child: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+              children: [
+                const Text(
+                  '産地と味わいから、気になる日本酒を探せます。',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
                 ),
-                icon: _isSearching
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.search),
-                label: Text(_isSearching ? '検索中…' : 'この条件で検索'),
-              ),
-              if (_hasSearched) ...[
+                const SizedBox(height: 28),
+                _SectionLabel(label: context.l10n.region),
+                const SizedBox(height: 10),
+                _PrefectureDropdown(
+                  value: state.selectedPrefecture,
+                  onChanged: notifier.setPrefecture,
+                ),
+                const SizedBox(height: 28),
+                _FilterGrid(
+                  label: context.l10n.flavorGroupOne,
+                  choices: Sake.flavors,
+                  selected: selectedFlavors,
+                  onTap: notifier.toggleSelectedFlavor,
+                ),
+                const SizedBox(height: 28),
+                _FilterGrid(
+                  label: context.l10n.flavorGroupTwo,
+                  choices: Sake.tastes,
+                  selected: selectedTastes,
+                  onTap: notifier.toggleSelectedTaste,
+                ),
+                const SizedBox(height: 28),
+                _FilterGrid(
+                  label: context.l10n.specificDesignation,
+                  choices: Sake.designs,
+                  selected: selectedDesigns,
+                  onTap: notifier.toggleSelectedDesigns,
+                ),
                 const SizedBox(height: 32),
-                _SearchResults(results: _results, errorMessage: _errorMessage),
+                FilledButton.icon(
+                  onPressed: _isSearching ? null : () => _search(state),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                    backgroundColor: const Color(0xFFFF7A1A),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: _isSearching
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.search),
+                  label: Text(_isSearching ? '検索中…' : 'この条件で検索'),
+                ),
+                if (_hasSearched) ...[
+                  const SizedBox(height: 32),
+                  _SearchResults(
+                    results: _results,
+                    errorMessage: _errorMessage,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

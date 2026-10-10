@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -109,6 +110,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
   // 好みの設定を保存する
   Future<void> savePreferences() async {
+    AppAnalytics.instance.event('my_page', 'profile');
     if (state.preferences != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('sake_preferences', state.preferences!);

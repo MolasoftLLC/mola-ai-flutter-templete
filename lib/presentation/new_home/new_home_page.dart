@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -150,17 +151,25 @@ class _NewHomePageState extends State<NewHomePage> {
                   const _ObiDivider(topPadding: 0),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
-                    onMoreTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const RecentSakeListPage(),
-                      ),
-                    ),
+                    onMoreTap: () {
+                      AppAnalytics.instance.event(
+                        'home',
+                        'home_recent',
+                        source: 'more',
+                      );
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const RecentSakeListPage(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   if (savedSakes.isEmpty)
                     _EmptySection(message: context.l10n.savedSakeEmpty)
                   else
                     _SakeCardRail(
+                      analyticsTarget: 'home_recent',
                       compact: true,
                       sakes: savedSakes.take(10).toList(),
                       profilesFuture: _profilesFor(
@@ -249,8 +258,14 @@ class _NewHomePageState extends State<NewHomePage> {
                     children: [
                       _SectionTitle(
                         title: context.l10n.newHomeTimeline,
-                        onMoreTap: () =>
-                            context.read<AppPageNotifier>().onTabTapped(3),
+                        onMoreTap: () {
+                          AppAnalytics.instance.event(
+                            'home',
+                            'home_timeline',
+                            source: 'more',
+                          );
+                          context.read<AppPageNotifier>().onTabTapped(3);
+                        },
                       ),
                       const SizedBox(height: 10),
                       if (isTimelineLoading && timelineSakes.isEmpty)
@@ -271,6 +286,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         _EmptySection(message: context.l10n.publicTimelineEmpty)
                       else
                         _SakeCardRail(
+                          analyticsTarget: 'home_timeline',
                           sakes: timelineSakes.take(10).toList(),
                           profilesFuture: _profilesFor(
                             timelineSakes.take(10).toList(),
@@ -326,6 +342,7 @@ class _NewHomePageState extends State<NewHomePage> {
   }
 
   Future<void> _openSearch(BuildContext context) {
+    AppAnalytics.instance.event('home', 'search');
     final appPageNotifier = context.read<AppPageNotifier>();
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -510,6 +527,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
   }
 
   Future<void> _refresh() async {
+    AppAnalytics.instance.event('home', 'refresh');
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     try {
@@ -588,6 +606,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                 else if (sakes.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   _SakeCardRail(
+                    analyticsTarget: 'home_recommendations',
                     sakes: sakes,
                     profilesFuture: widget.profilesFor(sakes),
                     subtitleBuilder: (sake) => sake.brewery,
@@ -879,10 +898,12 @@ class _SakeCardRail extends StatelessWidget {
     required this.onTap,
     this.footerBuilder,
     this.compact = false,
+    required this.analyticsTarget,
   });
 
   final List<Sake> sakes;
   final bool compact;
+  final String analyticsTarget;
   final Future<Map<int, SakeTasteProfileDetails>> profilesFuture;
   final String? Function(Sake sake) subtitleBuilder;
   final String? Function(Sake sake)? footerBuilder;
@@ -891,30 +912,40 @@ class _SakeCardRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: compact
-          ? 134 + MediaQuery.textScalerOf(context).scale(13) * 4.2
-          : _sakeCardRailHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        physics: const BouncingScrollPhysics(),
-        itemCount: sakes.length,
-        separatorBuilder: (_, __) => SizedBox(width: compact ? 16 : 30),
-        itemBuilder: (context, index) {
-          final sake = sakes[index];
-          return _SakeCard(
-            compact: compact,
-            sake: sake,
-            profileFuture: sake.sakeId == null
-                ? null
-                : profilesFuture.then((profiles) => profiles[sake.sakeId!]),
-            subtitle: subtitleBuilder(sake),
-            footer: footerBuilder?.call(sake),
-            action: actionBuilder(sake),
-            onTap: () => onTap(sake),
-          );
-        },
+    return AnalyticsExposure(
+      target: analyticsTarget,
+      child: SizedBox(
+        height: compact
+            ? 134 + MediaQuery.textScalerOf(context).scale(13) * 4.2
+            : _sakeCardRailHeight,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          physics: const BouncingScrollPhysics(),
+          itemCount: sakes.length,
+          separatorBuilder: (_, __) => SizedBox(width: compact ? 16 : 30),
+          itemBuilder: (context, index) {
+            final sake = sakes[index];
+            return _SakeCard(
+              compact: compact,
+              sake: sake,
+              profileFuture: sake.sakeId == null
+                  ? null
+                  : profilesFuture.then((profiles) => profiles[sake.sakeId!]),
+              subtitle: subtitleBuilder(sake),
+              footer: footerBuilder?.call(sake),
+              action: actionBuilder(sake),
+              onTap: () {
+                AppAnalytics.instance.event(
+                  'home',
+                  analyticsTarget,
+                  source: 'home',
+                );
+                onTap(sake);
+              },
+            );
+          },
+        ),
       ),
     );
   }

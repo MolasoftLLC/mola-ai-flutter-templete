@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -121,125 +122,133 @@ class MainSearchPage extends StatelessWidget {
       ),
     );
 
-    return Scaffold(
-      appBar: PrimaryAppBar(
-        title: context.l10n.searchPageTitle,
-        automaticallyImplyLeading: true,
-        actions: [
-          IconButton(
-            tooltip: context.l10n.helpGuide,
-            icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
-            onPressed: () {
-              HelpGuideDialog.showForType(
-                context,
-                type: HelpGuideType.mainSearch,
-              );
-            },
-          ),
-        ],
-      ),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: const BoxDecoration(color: Color(0xFF1D3567)),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: showLoadingIndicator
-                ? const NeverScrollableScrollPhysics()
-                : const BouncingScrollPhysics(),
-            child: showLoadingIndicator
-                ? loadingContent
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 16),
+    return AnalyticsScreen(
+      name: 'search',
+      child: Scaffold(
+        appBar: PrimaryAppBar(
+          title: context.l10n.searchPageTitle,
+          automaticallyImplyLeading: true,
+          actions: [
+            IconButton(
+              tooltip: context.l10n.helpGuide,
+              icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
+              onPressed: () {
+                HelpGuideDialog.showForType(
+                  context,
+                  type: HelpGuideType.mainSearch,
+                );
+              },
+            ),
+          ],
+        ),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: Container(
+            height: MediaQuery.of(context).size.height,
+            decoration: const BoxDecoration(color: Color(0xFF1D3567)),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: showLoadingIndicator
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
+              child: showLoadingIndicator
+                  ? loadingContent
+                  : Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 16),
 
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: MasterSakeSearchPanel(
-                            key: _masterSakeSearchPanelKey,
-                            initialQuery: initialQuery,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _SearchShortcuts(
-                            onMapTap: () => _openMap(context),
-                            onMenuSearchTap: () => _openMenuSearch(context),
-                            onFastSearchTap: () =>
-                                _openFastSearch(context, notifier),
-                            onPreferenceSearchTap: () =>
-                                _openPreferenceSearch(context),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: _buildBottleSearchUI(
-                            context,
-                            notifier,
-                            sakeImage,
-                            isAnalyzingInBackground,
-                            isLoggedIn,
-                            autoTweetEnabled,
-                            isAutoTweetUpdating,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        if (manualSearchSuggested &&
-                            manualSearchQuery != null &&
-                            manualSearchQuery.trim().isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: _ManualSakeSearchSuggestion(
-                              query: manualSearchQuery,
-                              onTap: () => _openManualNameSearch(
-                                notifier,
-                                manualSearchQuery,
-                              ),
+                            child: MasterSakeSearchPanel(
+                              key: _masterSakeSearchPanelKey,
+                              initialQuery: initialQuery,
                             ),
                           ),
-                        if (manualSearchSuggested &&
-                            manualSearchQuery != null &&
-                            manualSearchQuery.trim().isNotEmpty)
+                          const SizedBox(height: 16),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: _SearchShortcuts(
+                              onMapTap: () => _openMap(context),
+                              onMenuSearchTap: () => _openMenuSearch(context),
+                              onFastSearchTap: () =>
+                                  _openFastSearch(context, notifier),
+                              onPreferenceSearchTap: () =>
+                                  _openPreferenceSearch(context),
+                            ),
+                          ),
                           const SizedBox(height: 18),
 
-                        // 検索結果表示
-                        if (sakeInfo != null)
-                          Container(
-                            key: _resultSectionKey,
-                            child: _buildSakeInfoCard(
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: _buildBottleSearchUI(
                               context,
                               notifier,
-                              favNotifier,
-                              savedNotifier,
-                              sakeInfo,
-                              myFavoriteList,
-                              savedSakeList,
+                              sakeImage,
+                              isAnalyzingInBackground,
+                              isLoggedIn,
+                              autoTweetEnabled,
+                              isAutoTweetUpdating,
                             ),
                           ),
+                          const SizedBox(height: 18),
 
-                        if (errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              localizeLegacyMessage(context.l10n, errorMessage),
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
+                          if (manualSearchSuggested &&
+                              manualSearchQuery != null &&
+                              manualSearchQuery.trim().isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: _ManualSakeSearchSuggestion(
+                                query: manualSearchQuery,
+                                onTap: () => _openManualNameSearch(
+                                  notifier,
+                                  manualSearchQuery,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                          if (manualSearchSuggested &&
+                              manualSearchQuery != null &&
+                              manualSearchQuery.trim().isNotEmpty)
+                            const SizedBox(height: 18),
+
+                          // 検索結果表示
+                          if (sakeInfo != null)
+                            Container(
+                              key: _resultSectionKey,
+                              child: _buildSakeInfoCard(
+                                context,
+                                notifier,
+                                favNotifier,
+                                savedNotifier,
+                                sakeInfo,
+                                myFavoriteList,
+                                savedSakeList,
+                              ),
+                            ),
+
+                          if (errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                localizeLegacyMessage(
+                                  context.l10n,
+                                  errorMessage,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),
@@ -259,19 +268,27 @@ class MainSearchPage extends StatelessWidget {
   }
 
   Future<void> _openMap(BuildContext context) {
-    return Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => SakeMapPage.wrapped()));
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            AnalyticsScreen(name: 'map', child: SakeMapPage.wrapped()),
+      ),
+    );
   }
 
   void _openPreferenceSearch(BuildContext context) {
+    AppAnalytics.instance.event('search', 'search_origin');
     openPreferenceSearchTab(context, onTabSelected: onPreferenceSearchTap);
   }
 
   Future<void> _openMenuSearch(BuildContext context) {
-    return Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => MenuSearchPage.wrapped()));
+    AppAnalytics.instance.event('search', 'search_menu');
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            AnalyticsScreen(name: 'menu', child: MenuSearchPage.wrapped()),
+      ),
+    );
   }
 
   Future<void> _openFastSearch(
@@ -1248,6 +1265,7 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     final query = _controller.text.trim();
     if (query.isEmpty) return;
 
+    AppAnalytics.instance.event('search', 'search_name', kind: 'start');
     final requestId = ++_requestId;
     setState(() {
       _isLoading = true;
@@ -1260,6 +1278,11 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
           .searchSakeMasters(query);
       if (!mounted || requestId != _requestId) return;
       setState(() {
+        AppAnalytics.instance.event(
+          'search',
+          results.isEmpty ? 'search_empty' : 'search_result',
+          kind: 'success',
+        );
         _results = results;
         _isLoading = false;
         _hasSearched = true;
@@ -1344,6 +1367,7 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
   }
 
   void _openDetail(SakeMapSearchResult sake) {
+    AppAnalytics.instance.event('search', 'detail');
     unawaited(_saveRecentSearch(sake));
     _focusNode.unfocus();
     Navigator.of(context).push(

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +12,7 @@ class VenueMenuCarousel extends StatelessWidget {
   final List<MenuAnalysisHistoryItem> menus;
 
   void _openPhoto(BuildContext context, MenuAnalysisHistoryItem menu) {
+    AppAnalytics.instance.event('map', 'history');
     showDialog<void>(
       context: context,
       builder: (context) => Dialog.fullscreen(

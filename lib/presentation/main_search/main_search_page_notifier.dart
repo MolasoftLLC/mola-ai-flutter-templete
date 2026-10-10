@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -112,6 +113,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   }
 
   Future<void> searchSake() async {
+    AppAnalytics.instance.event('search', 'search_name');
     final sakeName = state.sakeName;
     if (sakeName == null || sakeName.isEmpty) {
       state = state.copyWith(errorMessage: context.l10n.errorEnterSakeName);
@@ -222,8 +224,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         return;
       }
 
+      AppAnalytics.instance.event('search', 'search_result', kind: 'success');
       state = state.copyWith(isLoading: false, sakeInfo: sakeInfo);
     } catch (e) {
+      AppAnalytics.instance.event('search', 'search_result', kind: 'failure');
       logger.info('日本酒情報の取得に失敗: $e');
       state = state.copyWith(
         isLoading: false,
@@ -272,10 +276,12 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
 
   // 検索モードを切り替える
   void setSearchMode(SearchMode mode) {
+    AppAnalytics.instance.event('search', 'search');
     state = state.copyWith(searchMode: mode);
   }
 
   Future<void> promptWithText() async {
+    AppAnalytics.instance.event('search', 'search_preference');
     if (state.sakeName == null) {
       return;
     }

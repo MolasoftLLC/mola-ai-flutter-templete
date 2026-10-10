@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -204,6 +205,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   @override
   void dispose() {
+    if (_usageFlow != null && !_usageExtractionDone)
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_analysis',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
+    if (_resolvingDetails)
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_details',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
     _historyAuthSubscription?.cancel();
     _cloudSyncTimer?.cancel();
     _syncSoonTimer?.cancel();
@@ -223,6 +238,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   Future<void> pickImageFromGallery() async {
+    AppAnalytics.instance.event('menu', 'gallery');
     // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
     final imageFile = await CustomImagePicker.pickImage(
       source: ImageSource.gallery,
@@ -262,6 +278,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   Future<void> pickImageFromCamera() async {
+    AppAnalytics.instance.event('menu', 'camera');
     // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
     final imageFile = await CustomImagePicker.pickImage(
       source: ImageSource.camera,
@@ -304,6 +321,24 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   void clearImage() {
+    if (_usageFlow != null && !_usageExtractionDone) {
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_analysis',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
+    }
+    if (_resolvingDetails) {
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_details',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
+    }
+    _usageFlow = null;
+    _usageExtractionDone = true;
     _detailsGeneration++;
     _resolvingDetails = false;
     _selectedMenuNames.clear();
@@ -322,6 +357,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     );
   }
 
+  String? _usageFlow;
+  bool _usageExtractionDone = false;
   Future<void> extractAndFetchSakeInfo(File? imageFile) async {
     if (imageFile == null) {
       return;
@@ -356,6 +393,14 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       return;
     }
 
+    _usageFlow = analyticsId();
+    _usageExtractionDone = false;
+    AppAnalytics.instance.event(
+      'menu',
+      'menu_analysis',
+      kind: 'start',
+      flowId: _usageFlow,
+    );
     _detailsGeneration++;
     _resolvingDetails = false;
     _selectedMenuNames.clear();
@@ -548,6 +593,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   /// 日本酒の詳細情報を取得する
   Future<void> _fetchSakeDetails(List<Sake> extractedSakes) async {
     if (extractedSakes.isEmpty || _resolvingDetails) return;
+    final usageFlow = _usageFlow;
+    AppAnalytics.instance.event(
+      'menu',
+      'menu_details',
+      kind: 'start',
+      flowId: usageFlow,
+    );
     _resolvingDetails = true;
     final generation = ++_detailsGeneration;
     bool isCurrent() => mounted && generation == _detailsGeneration;
@@ -625,13 +677,32 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           if (enriched.isEmpty) _finishMenuRow(source.name!);
         } catch (error) {
           if (!isCurrent()) return;
+          AppAnalytics.instance.event(
+            'menu',
+            'menu_details',
+            kind: 'failure',
+            flowId: usageFlow,
+          );
           logger.warning('メニューの商品情報取得に失敗しました: ${source.name}: $error');
           _finishMenuRow(source.name!);
         }
         await addCurrentAnalysisToHistory(analysisStatus: 'partial');
       }
+      if (isCurrent())
+        AppAnalytics.instance.event(
+          'menu',
+          'menu_details',
+          kind: 'success',
+          flowId: usageFlow,
+        );
     } catch (error) {
       if (!isCurrent()) return;
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_details',
+        kind: 'failure',
+        flowId: usageFlow,
+      );
       logger.warning('メニューマスター照合に失敗しました: $error');
       if (context.mounted) {
         state = state.copyWith(errorMessage: context.l10n.errorSakeDetailFetch);
@@ -805,12 +876,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   /// フォアグラウンドでメニュー解析を実行する
   Future<void> _extractSakeInfoInForeground(File imageFile) async {
+    final usageFlow = _usageFlow;
     try {
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
       final extractedSakes = await sakeMenuRecognitionRepository
           .extractSakeInfo(imageFile);
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
+        if (_usageFlow == usageFlow) _usageExtractionDone = true;
+        AppAnalytics.instance.event(
+          'menu',
+          'search_empty',
+          kind: 'failure',
+          flowId: usageFlow,
+        );
         state = state.copyWith(
           isLoading: false,
           isExtractingInfo: false,
@@ -821,6 +900,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         return;
       }
 
+      if (_usageFlow == usageFlow) _usageExtractionDone = true;
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_analysis',
+        kind: 'success',
+        flowId: usageFlow,
+      );
       // 抽出した日本酒情報を表示用に保存し、ローディングを終了
       // 各日本酒の読み込み状態を初期化
       final Map<String, bool> initialLoadingStatus = {};
@@ -845,6 +931,17 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       // 詳細情報を取得
       await _fetchSakeDetails(extractedSakes);
     } catch (e) {
+      if (_usageFlow == usageFlow) _usageExtractionDone = true;
+      AppAnalytics.instance.event(
+        'menu',
+        e is SakeCandidateResolutionException && e.statusCode == 429
+            ? 'quota'
+            : 'menu_analysis',
+        kind: e is SakeCandidateResolutionException && e.statusCode == 429
+            ? 'blocked'
+            : 'failure',
+        flowId: usageFlow,
+      );
       logger.shout('メニュー解析中にエラーが発生しました: $e');
       state = state.copyWith(
         isLoading: false,
@@ -861,6 +958,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   /// バックグラウンドでメニュー解析を実行する（広告表示中に実行）
   Future<void> _extractSakeInfoInBackground(File imageFile) async {
+    final usageFlow = _usageFlow;
     try {
       logger.info('バックグラウンドでメニュー解析を開始します');
 
@@ -869,6 +967,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           .extractSakeInfo(imageFile);
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
+        if (_usageFlow == usageFlow) _usageExtractionDone = true;
+        AppAnalytics.instance.event(
+          'menu',
+          'search_empty',
+          kind: 'failure',
+          flowId: usageFlow,
+        );
         state = state.copyWith(
           isLoading: false,
           isExtractingInfo: false,
@@ -878,6 +983,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         return;
       }
 
+      if (_usageFlow == usageFlow) _usageExtractionDone = true;
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_analysis',
+        kind: 'success',
+        flowId: usageFlow,
+      );
       // 抽出した日本酒情報を表示用に保存
       // 各日本酒の読み込み状態を初期化
       final Map<String, bool> initialLoadingStatus = {};
@@ -911,6 +1023,17 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         await _fetchSakeDetails(extractedSakes);
       }
     } catch (e) {
+      if (_usageFlow == usageFlow) _usageExtractionDone = true;
+      AppAnalytics.instance.event(
+        'menu',
+        e is SakeCandidateResolutionException && e.statusCode == 429
+            ? 'quota'
+            : 'menu_analysis',
+        kind: e is SakeCandidateResolutionException && e.statusCode == 429
+            ? 'blocked'
+            : 'failure',
+        flowId: usageFlow,
+      );
       logger.shout('バックグラウンド解析中にエラーが発生しました: $e');
       state = state.copyWith(
         isLoading: false,
@@ -1237,6 +1360,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   // 履歴項目を選択する
   void selectHistoryItem(String? historyId) {
+    AppAnalytics.instance.event('menu', 'history');
     state = state.copyWith(selectedHistoryItemId: historyId);
   }
 

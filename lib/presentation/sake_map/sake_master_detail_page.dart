@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show lerpDouble;
@@ -286,7 +287,11 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         _scheduleMasterEnrichmentPolling(overview);
         _scheduleLensAnalysis(overview);
       }
+      AppAnalytics.instance.event('detail', 'detail', kind: 'success');
       return overview;
+    } catch (_) {
+      AppAnalytics.instance.event('detail', 'detail', kind: 'failure');
+      rethrow;
     } finally {
       if (mounted && requestGeneration == _overviewRequestGeneration) {
         setState(() => _isFetchingDetails = false);
@@ -823,6 +828,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<void> _selectHeaderPlace() async {
+    AppAnalytics.instance.event('detail', 'place');
     final notifier = _savedSakeNotifier;
     final overviewSake = _headerOverview?.sake;
     final detailSake = overviewSake ?? _asSake(widget.venueSake);
@@ -877,6 +883,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<void> _openTimelineShare(Sake sake) async {
+    AppAnalytics.instance.event('detail', 'timeline_post');
     if (_isSharingTimeline) return;
     final currentUser = context.read<AuthRepository>().currentUser;
     if (currentUser == null) {
@@ -998,157 +1005,161 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       fallback: widget.venueSake,
       communityImagePaths: community.images.map((image) => image.imageUrl),
     );
-    return Scaffold(
-      backgroundColor: Colors.white,
-      bottomNavigationBar: isPendingAiCandidate
-          ? null
-          : _MasterRecordCta(sake: detailSake, notifier: _savedSakeNotifier),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: FocusManager.instance.primaryFocus?.unfocus,
-        child: FutureBuilder<SakeOverview>(
-          future: _future,
-          builder: (context, snapshot) => Stack(
-            children: [
-              RefreshIndicator(
-                onRefresh: _reload,
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  slivers: [
-                    SliverAppBar(
-                      pinned: true,
-                      stretch: true,
-                      collapsedHeight: 98,
-                      expandedHeight: heroExpandedHeight,
-                      backgroundColor: _navy,
-                      elevation: 0,
-                      iconTheme: const IconThemeData(color: Colors.white),
-                      actions: [
-                        if (!isPendingAiCandidate) ...[
-                          _MasterSaveButton(
-                            sake: detailSake,
-                            notifier: _savedSakeNotifier,
-                          ),
-                          _MasterFavoriteButton(
-                            sake: detailSake,
-                            notifier: _favoriteNotifier,
-                          ),
-                        ],
-                        if (_showCompactHeader)
-                          IconButton(
-                            tooltip: '飲んだ場所・買った場所を選ぶ',
-                            icon: const Icon(Icons.location_on_outlined),
-                            onPressed: _selectHeaderPlace,
-                          ),
-                      ],
-                      flexibleSpace: _CollapsingSakeHero(
-                        name: displayName,
-                        imagePaths: headerImagePaths,
-                        matchPercent: matchPercent,
-                        community: community,
-                        onImageAction: _handleCommunityImage,
-                        isProfileEnrichmentPending: isProfileEnrichmentPending,
-                        isFetchingDetails:
-                            _isFetchingDetails || _isLensAnalyzing,
+    return AnalyticsScreen(
+      name: 'detail',
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        bottomNavigationBar: isPendingAiCandidate
+            ? null
+            : _MasterRecordCta(sake: detailSake, notifier: _savedSakeNotifier),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: FocusManager.instance.primaryFocus?.unfocus,
+          child: FutureBuilder<SakeOverview>(
+            future: _future,
+            builder: (context, snapshot) => Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: _reload,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    slivers: [
+                      SliverAppBar(
+                        pinned: true,
+                        stretch: true,
+                        collapsedHeight: 98,
                         expandedHeight: heroExpandedHeight,
-                      ),
-                    ),
-                    if (snapshot.hasError)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          child: Text(_detailErrorMessage(snapshot.error)),
+                        backgroundColor: _navy,
+                        elevation: 0,
+                        iconTheme: const IconThemeData(color: Colors.white),
+                        actions: [
+                          if (!isPendingAiCandidate) ...[
+                            _MasterSaveButton(
+                              sake: detailSake,
+                              notifier: _savedSakeNotifier,
+                            ),
+                            _MasterFavoriteButton(
+                              sake: detailSake,
+                              notifier: _favoriteNotifier,
+                            ),
+                          ],
+                          if (_showCompactHeader)
+                            IconButton(
+                              tooltip: '飲んだ場所・買った場所を選ぶ',
+                              icon: const Icon(Icons.location_on_outlined),
+                              onPressed: _selectHeaderPlace,
+                            ),
+                        ],
+                        flexibleSpace: _CollapsingSakeHero(
+                          name: displayName,
+                          imagePaths: headerImagePaths,
+                          matchPercent: matchPercent,
+                          community: community,
+                          onImageAction: _handleCommunityImage,
+                          isProfileEnrichmentPending:
+                              isProfileEnrichmentPending,
+                          isFetchingDetails:
+                              _isFetchingDetails || _isLensAnalyzing,
+                          expandedHeight: heroExpandedHeight,
                         ),
                       ),
-                    const SliverToBoxAdapter(child: _ShopPriceTitle()),
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _ShopPriceHeaderDelegate(
-                        yahooPrice: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .imagePrice,
-                        yahooCurrency: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .imageCurrency,
-                        yahooProductUrl: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .imageProductUrl,
-                        rakutenOffer: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .rakutenOffer,
-                        amazonOffer: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .amazonOffer,
-                        amazonSearchUrl: (_headerOverview ?? snapshot.data)
-                            ?.master
-                            .amazonSearchUrl,
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
-                      sliver: SliverToBoxAdapter(
-                        child: _Details(
-                          overview: _headerOverview ?? snapshot.data,
-                          fallback: widget.venueSake,
-                          savedSakeNotifier: _savedSakeNotifier,
-                          preferredName: displayName,
-                          isCorrectingProduct:
-                              _isCorrectingProduct || _isSharingTimeline,
-                          onCorrection: (overview, record) =>
-                              _openSakeActionsMenu(overview, record),
-                          onReview: (current) =>
-                              _openReviewEditor(detailSake, current),
-                          onReportReview: _reportCommunityReview,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if ((detailSake.sakeId ?? 0) > 0 && !snapshot.hasError)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: _FloatingReviewCta(
-                    visible:
-                        _showFloatingReview &&
-                        MediaQuery.viewInsetsOf(context).bottom == 0,
-                    onPressed: () =>
-                        _openReviewEditor(detailSake, community.myReview),
-                  ),
-                ),
-              if (snapshot.hasError)
-                Positioned(
-                  right: 20,
-                  bottom: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (snapshot.error is SakeCandidateResolutionException)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: FilledButton.tonalIcon(
-                            onPressed: () => Navigator.maybePop(context),
-                            icon: const Icon(Icons.arrow_back),
-                            label: const Text('候補を選び直す'),
+                      if (snapshot.hasError)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            child: Text(_detailErrorMessage(snapshot.error)),
                           ),
                         ),
-                      FilledButton.icon(
-                        onPressed: _reload,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('再試行'),
+                      const SliverToBoxAdapter(child: _ShopPriceTitle()),
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _ShopPriceHeaderDelegate(
+                          yahooPrice: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .imagePrice,
+                          yahooCurrency: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .imageCurrency,
+                          yahooProductUrl: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .imageProductUrl,
+                          rakutenOffer: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .rakutenOffer,
+                          amazonOffer: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .amazonOffer,
+                          amazonSearchUrl: (_headerOverview ?? snapshot.data)
+                              ?.master
+                              .amazonSearchUrl,
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
+                        sliver: SliverToBoxAdapter(
+                          child: _Details(
+                            overview: _headerOverview ?? snapshot.data,
+                            fallback: widget.venueSake,
+                            savedSakeNotifier: _savedSakeNotifier,
+                            preferredName: displayName,
+                            isCorrectingProduct:
+                                _isCorrectingProduct || _isSharingTimeline,
+                            onCorrection: (overview, record) =>
+                                _openSakeActionsMenu(overview, record),
+                            onReview: (current) =>
+                                _openReviewEditor(detailSake, current),
+                            onReportReview: _reportCommunityReview,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-            ],
+                if ((detailSake.sakeId ?? 0) > 0 && !snapshot.hasError)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _FloatingReviewCta(
+                      visible:
+                          _showFloatingReview &&
+                          MediaQuery.viewInsetsOf(context).bottom == 0,
+                      onPressed: () =>
+                          _openReviewEditor(detailSake, community.myReview),
+                    ),
+                  ),
+                if (snapshot.hasError)
+                  Positioned(
+                    right: 20,
+                    bottom: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (snapshot.error is SakeCandidateResolutionException)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: FilledButton.tonalIcon(
+                              onPressed: () => Navigator.maybePop(context),
+                              icon: const Icon(Icons.arrow_back),
+                              label: const Text('候補を選び直す'),
+                            ),
+                          ),
+                        FilledButton.icon(
+                          onPressed: _reload,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('再試行'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2829,6 +2840,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _save() async {
+    AppAnalytics.instance.event('detail', 'impression');
     if (_isSaving) return;
     setState(() {
       _isSaving = true;
@@ -2884,6 +2896,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _selectPlace() async {
+    AppAnalytics.instance.event('detail', 'place');
     FocusScope.of(context).unfocus();
     final place = await PlacePickerSheet.show(
       context,
@@ -3959,6 +3972,7 @@ class _ShopPrice extends StatelessWidget {
       key: Key('shop-price-link-$name'),
       borderRadius: BorderRadius.circular(8),
       onTap: () async {
+        AppAnalytics.instance.event('detail', 'purchase');
         try {
           final opened = await launchUrl(
             uri,

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -136,135 +137,142 @@ class _RecentSakeListPageState extends State<RecentSakeListPage> {
     final allSakes = context.watch<RecentSakeHistory>().merge(savedRecords);
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: PrimaryAppBar(
-        title: '最近調べたお酒',
-        actions: [
-          PopupMenuButton<_RecentSakeOrder>(
-            tooltip: '並び替え：${_order.label}',
-            initialValue: _order,
-            icon: const Icon(Icons.sort, color: Colors.white),
-            onSelected: (order) {
-              if (order == _order) return;
-              setState(() {
-                _order = order;
-                _visibleCount = _pageSize;
-              });
-              if (_scrollController.hasClients) _scrollController.jumpTo(0);
-            },
-            itemBuilder: (_) => [
-              for (final order in _RecentSakeOrder.values)
-                CheckedPopupMenuItem(
-                  value: order,
-                  checked: order == _order,
-                  child: Text(order.label),
-                ),
-            ],
-          ),
-        ],
-      ),
-      body: FutureBuilder<Map<int, SakeTasteProfileDetails>>(
-        future: _order == _RecentSakeOrder.match
-            ? _profilesFor(allSakes)
-            : null,
-        builder: (context, snapshot) {
-          if (_order == _RecentSakeOrder.match && allSakes.isNotEmpty) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(
-                child: CircularProgressIndicator(color: _navy),
-              );
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: TextButton(
-                  onPressed: () => setState(() => _profileCache.clear()),
-                  child: const Text('マッチ度を取得できませんでした。再試行'),
-                ),
-              );
-            }
-          }
-          final profiles =
-              snapshot.data ?? const <int, SakeTasteProfileDetails>{};
-          final sortedSakes = allSakes.toList();
-          if (_order == _RecentSakeOrder.oldest) {
-            sortedSakes.setAll(0, allSakes.reversed);
-          } else if (_order == _RecentSakeOrder.match) {
-            int score(Sake sake) {
-              final profile = profiles[sake.sakeId];
-              if (profile == null || preference == null) return -1;
-              return calculateSakeTastePreferenceMatchPercent(
-                profile: profile,
-                preference: preference,
-              );
-            }
-
-            final scores = {for (final sake in allSakes) sake: score(sake)};
-            final positions = {
-              for (var i = 0; i < allSakes.length; i++) allSakes[i]: i,
-            };
-            sortedSakes.sort((a, b) {
-              final comparison = scores[b]!.compareTo(scores[a]!);
-              return comparison != 0
-                  ? comparison
-                  : positions[a]!.compareTo(positions[b]!);
-            });
-          }
-          final visibleSakes = sortedSakes
-              .take(_visibleCount)
-              .toList(growable: false);
-          final profilesFuture = _profilesFor(
-            _order == _RecentSakeOrder.match ? allSakes : visibleSakes,
-          );
-          return RefreshIndicator(
-            color: _navy,
-            onRefresh: _refresh,
-            child: allSakes.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 180),
-                      Center(
-                        child: Text(
-                          '調べたお酒はまだありません',
-                          style: TextStyle(color: _muted),
-                        ),
-                      ),
-                    ],
-                  )
-                : ListView.separated(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
-                    itemCount: visibleSakes.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final sake = visibleSakes[index];
-                      final recordKey =
-                          sake.savedId ?? 'sake:${sake.sakeId ?? index}';
-                      return _RecentSakeCard(
-                        key: ValueKey(recordKey),
-                        sake: sake,
-                        profileFuture: sake.sakeId == null
-                            ? null
-                            : profilesFuture.then(
-                                (profiles) => profiles[sake.sakeId!],
-                              ),
-                        preference: preference,
-                        isExpanded: _expandedRecordKeys.contains(recordKey),
-                        onOpen: () => _openDetail(sake),
-                        onToggleRecord: () => setState(() {
-                          if (!_expandedRecordKeys.add(recordKey)) {
-                            _expandedRecordKeys.remove(recordKey);
-                          }
-                        }),
-                      );
-                    },
+    return AnalyticsScreen(
+      name: 'recent',
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: PrimaryAppBar(
+          title: '最近調べたお酒',
+          actions: [
+            PopupMenuButton<_RecentSakeOrder>(
+              tooltip: '並び替え：${_order.label}',
+              initialValue: _order,
+              icon: const Icon(Icons.sort, color: Colors.white),
+              onSelected: (order) {
+                AppAnalytics.instance.event('recent', 'sort_${order.name}');
+                if (order == _order) return;
+                setState(() {
+                  _order = order;
+                  _visibleCount = _pageSize;
+                });
+                if (_scrollController.hasClients) _scrollController.jumpTo(0);
+              },
+              itemBuilder: (_) => [
+                for (final order in _RecentSakeOrder.values)
+                  CheckedPopupMenuItem(
+                    value: order,
+                    checked: order == _order,
+                    child: Text(order.label),
                   ),
-          );
-        },
+              ],
+            ),
+          ],
+        ),
+        body: FutureBuilder<Map<int, SakeTasteProfileDetails>>(
+          future: _order == _RecentSakeOrder.match
+              ? _profilesFor(allSakes)
+              : null,
+          builder: (context, snapshot) {
+            if (_order == _RecentSakeOrder.match && allSakes.isNotEmpty) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(
+                  child: CircularProgressIndicator(color: _navy),
+                );
+              }
+              if (snapshot.hasError) {
+                return Center(
+                  child: TextButton(
+                    onPressed: () => setState(() => _profileCache.clear()),
+                    child: const Text('マッチ度を取得できませんでした。再試行'),
+                  ),
+                );
+              }
+            }
+            final profiles =
+                snapshot.data ?? const <int, SakeTasteProfileDetails>{};
+            final sortedSakes = allSakes.toList();
+            if (_order == _RecentSakeOrder.oldest) {
+              sortedSakes.setAll(0, allSakes.reversed);
+            } else if (_order == _RecentSakeOrder.match) {
+              int score(Sake sake) {
+                final profile = profiles[sake.sakeId];
+                if (profile == null || preference == null) return -1;
+                return calculateSakeTastePreferenceMatchPercent(
+                  profile: profile,
+                  preference: preference,
+                );
+              }
+
+              final scores = {for (final sake in allSakes) sake: score(sake)};
+              final positions = {
+                for (var i = 0; i < allSakes.length; i++) allSakes[i]: i,
+              };
+              sortedSakes.sort((a, b) {
+                final comparison = scores[b]!.compareTo(scores[a]!);
+                return comparison != 0
+                    ? comparison
+                    : positions[a]!.compareTo(positions[b]!);
+              });
+            }
+            final visibleSakes = sortedSakes
+                .take(_visibleCount)
+                .toList(growable: false);
+            final profilesFuture = _profilesFor(
+              _order == _RecentSakeOrder.match ? allSakes : visibleSakes,
+            );
+            return RefreshIndicator(
+              color: _navy,
+              onRefresh: _refresh,
+              child: allSakes.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 180),
+                        Center(
+                          child: Text(
+                            '調べたお酒はまだありません',
+                            style: TextStyle(color: _muted),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+                      itemCount: visibleSakes.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final sake = visibleSakes[index];
+                        final recordKey =
+                            sake.savedId ?? 'sake:${sake.sakeId ?? index}';
+                        return _RecentSakeCard(
+                          key: ValueKey(recordKey),
+                          sake: sake,
+                          profileFuture: sake.sakeId == null
+                              ? null
+                              : profilesFuture.then(
+                                  (profiles) => profiles[sake.sakeId!],
+                                ),
+                          preference: preference,
+                          isExpanded: _expandedRecordKeys.contains(recordKey),
+                          onOpen: () {
+                            AppAnalytics.instance.event('recent', 'detail');
+                            _openDetail(sake);
+                          },
+                          onToggleRecord: () => setState(() {
+                            if (!_expandedRecordKeys.add(recordKey)) {
+                              _expandedRecordKeys.remove(recordKey);
+                            }
+                          }),
+                        );
+                      },
+                    ),
+            );
+          },
+        ),
       ),
     );
   }

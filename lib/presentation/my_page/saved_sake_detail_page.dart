@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -178,97 +179,100 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
       featureWidgets.add(_buildTypesSection(_currentSake.types!));
     }
 
-    return Scaffold(
-      appBar: PrimaryAppBar(
-        title: _currentSake.name ?? context.l10n.sakeDetails,
-        titleFontSize: 21,
-        actions: [
-          IconButton(
-            icon: Icon(
-              isFavorited ? Icons.favorite : Icons.favorite_border,
-              color: isFavorited ? Colors.redAccent : Colors.white,
-            ),
-            onPressed: () async =>
-                await _toggleFavorite(favoriteNotifier, isFavorited),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildMemoCtaFooter(),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(gradient: gradient),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeaderCard(
-                    themeColor,
-                    showSyncButton: isLoggedIn && isLocalOnly,
-                    isLoggedIn: isLoggedIn,
-                  ),
-                  if (infoRows.isNotEmpty)
-                    _buildSection(
-                      title: context.l10n.basicInformation,
-                      children: infoRows,
-                    ),
-                  if (featureWidgets.isNotEmpty)
-                    _buildSection(
-                      title: context.l10n.tasteAndFeatures,
-                      children: featureWidgets,
-                    ),
-                  if (_currentSake.community?.isNotEmpty ?? false)
-                    _buildCommunitySection(_currentSake.community!),
-                  if (_currentSake.sameBrandSakes?.isNotEmpty ?? false)
-                    _buildSameBrandSection(_currentSake.sameBrandSakes!),
-                  if (infoRows.isEmpty &&
-                      featureWidgets.isEmpty &&
-                      !(_currentSake.community?.isNotEmpty ?? false) &&
-                      !(_currentSake.sameBrandSakes?.isNotEmpty ?? false))
-                    Container(
-                      margin: const EdgeInsets.only(top: _blockSpacing),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: _blockVerticalPadding,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        context.l10n.noDetailedInformation,
-                        style: const TextStyle(color: Colors.white70),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  _buildImageGallerySection(),
-                  _buildMemoSection(),
-                ],
+    return AnalyticsScreen(
+      name: 'detail',
+      child: Scaffold(
+        appBar: PrimaryAppBar(
+          title: _currentSake.name ?? context.l10n.sakeDetails,
+          titleFontSize: 21,
+          actions: [
+            IconButton(
+              icon: Icon(
+                isFavorited ? Icons.favorite : Icons.favorite_border,
+                color: isFavorited ? Colors.redAccent : Colors.white,
               ),
+              onPressed: () async =>
+                  await _toggleFavorite(favoriteNotifier, isFavorited),
             ),
-          ),
-          if (_isImageProcessing || _isSyncing)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.45),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 12),
-                      Text(
-                        _progressMessage ?? context.l10n.processing,
-                        style: const TextStyle(color: Colors.white70),
+          ],
+        ),
+        bottomNavigationBar: _buildMemoCtaFooter(),
+        body: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(gradient: gradient),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeaderCard(
+                      themeColor,
+                      showSyncButton: isLoggedIn && isLocalOnly,
+                      isLoggedIn: isLoggedIn,
+                    ),
+                    if (infoRows.isNotEmpty)
+                      _buildSection(
+                        title: context.l10n.basicInformation,
+                        children: infoRows,
                       ),
-                    ],
-                  ),
+                    if (featureWidgets.isNotEmpty)
+                      _buildSection(
+                        title: context.l10n.tasteAndFeatures,
+                        children: featureWidgets,
+                      ),
+                    if (_currentSake.community?.isNotEmpty ?? false)
+                      _buildCommunitySection(_currentSake.community!),
+                    if (_currentSake.sameBrandSakes?.isNotEmpty ?? false)
+                      _buildSameBrandSection(_currentSake.sameBrandSakes!),
+                    if (infoRows.isEmpty &&
+                        featureWidgets.isEmpty &&
+                        !(_currentSake.community?.isNotEmpty ?? false) &&
+                        !(_currentSake.sameBrandSakes?.isNotEmpty ?? false))
+                      Container(
+                        margin: const EdgeInsets.only(top: _blockSpacing),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: _blockVerticalPadding,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          context.l10n.noDetailedInformation,
+                          style: const TextStyle(color: Colors.white70),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    _buildImageGallerySection(),
+                    _buildMemoSection(),
+                  ],
                 ),
               ),
             ),
-        ],
+            if (_isImageProcessing || _isSyncing)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.45),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          _progressMessage ?? context.l10n.processing,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1297,6 +1301,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   }
 
   Future<void> _openPlacePicker() async {
+    AppAnalytics.instance.event('detail', 'place');
     FocusScope.of(context).unfocus();
     if (_currentSake.sakeId == null) {
       _showSnack('お酒の詳細を確認してから、飲んだ場所を登録してください。');
@@ -1364,6 +1369,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   }
 
   Future<void> _saveMemo() async {
+    AppAnalytics.instance.event('detail', 'impression');
     FocusScope.of(context).unfocus();
     final isLoggedIn = context.read<AuthState>().user != null;
     final enteredPlace = _placeController.text.trim();

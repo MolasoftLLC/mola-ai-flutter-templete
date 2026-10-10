@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
@@ -213,6 +214,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _onTimelineShareChanged(bool value) async {
+    AppAnalytics.instance.event('scan', 'timeline_post');
     if (!value) {
       final shouldDisable = await showDialog<bool>(
         context: context,
@@ -252,6 +254,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _onAutoTweetChanged(bool value) async {
+    AppAnalytics.instance.event('scan', 'x_post');
     if (_isAutoTweetUpdating) return;
     if (!value) {
       final shouldDisable = await showDialog<bool>(
@@ -447,6 +450,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _capture() async {
+    AppAnalytics.instance.event('scan', 'camera');
     final controller = _cameraController;
     final scanState = context.read<SakeScanNotifier>().currentState;
     if (_capturing ||
@@ -509,6 +513,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _pickFromGallery() async {
+    AppAnalytics.instance.event('scan', 'gallery');
     final scanState = context.read<SakeScanNotifier>().currentState;
     if (_capturing || scanState.isSubmitting) return;
     _capturing = true;
@@ -628,6 +633,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _openRecordPlacePicker() async {
+    AppAnalytics.instance.event('scan', 'place');
     FocusScope.of(context).unfocus();
     final place = await PlacePickerSheet.show(
       context,
@@ -722,6 +728,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _postScanToX(Sake sake) async {
+    AppAnalytics.instance.event('scan', 'x_post', kind: 'start');
     if (!_autoTweetEnabled) return;
     final savedId = sake.savedId;
     if (savedId == null ||
@@ -739,6 +746,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _openAnalyzedDetailAndPost(SakeScanState state) async {
+    AppAnalytics.instance.event('scan', 'detail');
     FocusScope.of(context).unfocus();
     if (_recordDirty) {
       final saved = await _saveAnalysisRecord(state);
@@ -832,13 +840,21 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   Future<void> _submitImage(File file) async {
     if (_isMenuCapture) {
+      AppAnalytics.instance.event('scan', 'crop', kind: 'start');
       final croppedFile = await ImageCropperService.cropAndRotateImage(
         file.path,
       );
-      if (!mounted || croppedFile == null) return;
+      if (!mounted || croppedFile == null) {
+        AppAnalytics.instance.event('scan', 'crop', kind: 'cancel');
+        return;
+      }
+      AppAnalytics.instance.event('scan', 'crop', kind: 'success');
       await Navigator.of(context).pushReplacement<void, void>(
         MaterialPageRoute(
-          builder: (_) => MenuSearchPage.wrapped(initialImage: croppedFile),
+          builder: (_) => AnalyticsScreen(
+            name: 'menu',
+            child: MenuSearchPage.wrapped(initialImage: croppedFile),
+          ),
         ),
       );
       return;
@@ -874,108 +890,116 @@ class _SakeScanPageState extends State<SakeScanPage>
         if (mounted) unawaited(_showBackLabelPrompt(state.backLabelReason!));
       });
     }
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A1428),
-      body: SafeArea(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildCameraSurface(state),
-            const IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: <Color>[
-                      Colors.black54,
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black54,
-                    ],
-                    stops: <double>[0, 0.22, 0.62, 1],
-                  ),
-                ),
-              ),
-            ),
-            if (_showCaptureGuide &&
-                _captureGuideSettingsReady &&
-                (state.status == SakeScanViewStatus.frontScanning ||
-                    state.status == SakeScanViewStatus.backScanning))
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 136, 20, 166),
-                    child: LabelCaptureGuide(
-                      isBackLabel:
-                          _isMenuCapture ||
-                          state.status == SakeScanViewStatus.backScanning,
+    return AnalyticsScreen(
+      name: 'scan',
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0A1428),
+        body: SafeArea(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildCameraSurface(state),
+              const IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: <Color>[
+                        Colors.black54,
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black54,
+                      ],
+                      stops: <double>[0, 0.22, 0.62, 1],
                     ),
                   ),
                 ),
               ),
-            if (state.status == SakeScanViewStatus.frontScanning ||
-                state.status == SakeScanViewStatus.backScanning)
-              _buildCameraHeader(state),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                child: KeyedSubtree(
-                  key: bottomPanelKey,
-                  child: _buildBottomPanel(state),
+              if (_showCaptureGuide &&
+                  _captureGuideSettingsReady &&
+                  (state.status == SakeScanViewStatus.frontScanning ||
+                      state.status == SakeScanViewStatus.backScanning))
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 136, 20, 166),
+                      child: LabelCaptureGuide(
+                        isBackLabel:
+                            _isMenuCapture ||
+                            state.status == SakeScanViewStatus.backScanning,
+                      ),
+                    ),
+                  ),
+                ),
+              if (state.status == SakeScanViewStatus.frontScanning ||
+                  state.status == SakeScanViewStatus.backScanning)
+                _buildCameraHeader(state),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: KeyedSubtree(
+                    key: bottomPanelKey,
+                    child: _buildBottomPanel(state),
+                  ),
                 ),
               ),
-            ),
-            if (state.status == SakeScanViewStatus.searchingFront &&
-                state.lensPreviewTitles.isNotEmpty)
-              Positioned(
-                top: 64,
-                left: 20,
-                right: 20,
-                child: LensProgressToasts(titles: state.lensPreviewTitles),
-              ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: IconButton(
-                onPressed: () => _closeScan(state),
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                icon: const Icon(Icons.close_rounded),
-                style: IconButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.black54,
+              if (state.status == SakeScanViewStatus.searchingFront &&
+                  state.lensPreviewTitles.isNotEmpty)
+                Positioned(
+                  top: 64,
+                  left: 20,
+                  right: 20,
+                  child: LensProgressToasts(titles: state.lensPreviewTitles),
                 ),
-              ),
-            ),
-            if (state.status == SakeScanViewStatus.frontScanning &&
-                widget.reassignTarget == null)
               Positioned(
                 top: 8,
-                right: 8,
-                child: TextButton.icon(
-                  onPressed: _capturing || state.isSubmitting
-                      ? null
-                      : () => setState(() => _isMenuCapture = !_isMenuCapture),
-                  icon: Icon(
-                    _isMenuCapture ? Icons.wine_bar_outlined : Icons.menu_book,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _isMenuCapture
-                        ? context.l10n.labelSearchMode
-                        : context.l10n.menuSearchPageTitle,
-                  ),
-                  style: TextButton.styleFrom(
+                left: 8,
+                child: IconButton(
+                  onPressed: () => _closeScan(state),
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  icon: const Icon(Icons.close_rounded),
+                  style: IconButton.styleFrom(
                     foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white54,
                     backgroundColor: Colors.black54,
                   ),
                 ),
               ),
-          ],
+              if (state.status == SakeScanViewStatus.frontScanning &&
+                  widget.reassignTarget == null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: TextButton.icon(
+                    onPressed: _capturing || state.isSubmitting
+                        ? null
+                        : () {
+                            AppAnalytics.instance.event('scan', 'menu_switch');
+                            setState(() => _isMenuCapture = !_isMenuCapture);
+                          },
+                    icon: Icon(
+                      _isMenuCapture
+                          ? Icons.wine_bar_outlined
+                          : Icons.menu_book,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _isMenuCapture
+                          ? context.l10n.labelSearchMode
+                          : context.l10n.menuSearchPageTitle,
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white54,
+                      backgroundColor: Colors.black54,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

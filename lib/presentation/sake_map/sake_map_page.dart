@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:math' as math;
@@ -422,6 +423,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
   }
 
   Future<void> _openVenueInMaps(MapVenue venue) async {
+    AppAnalytics.instance.event('map', 'map');
     final uri = Uri.https('www.google.com', '/maps/search/', {
       'api': '1',
       'query': '${venue.latitude},${venue.longitude}',
@@ -554,6 +556,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
     SakeMapPageNotifier notifier,
     MapVenue venue,
   ) async {
+    AppAnalytics.instance.event('map', 'place');
     // Keep one request while the sheet is resized or rebuilt.
     final sakesFuture = notifier.loadVenueSakes(venue.venueId);
     final menusStream = _watchVenueMenus(
@@ -737,6 +740,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
                               onTap: () {
+                                AppAnalytics.instance.event('map', 'detail');
                                 Navigator.of(sheetContext).pop();
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(

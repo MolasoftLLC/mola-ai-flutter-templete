@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -61,6 +62,7 @@ class FavoriteSearchPageNotifier extends StateNotifier<FavoriteSearchPageState>
   }
 
   Future<void> promptWithFavorite() async {
+    AppAnalytics.instance.event('search', 'search_origin');
     state = state.copyWith(isLoading: true);
     final isEmpty = checkEmpty();
     if (isEmpty) {

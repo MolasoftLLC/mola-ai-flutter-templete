@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import 'package:intl/intl.dart';
@@ -21,6 +22,10 @@ class MenuHistoryPreview extends StatelessWidget {
       );
 
   Future<void> _openHistory(BuildContext context, {String? historyId}) async {
+    AppAnalytics.instance.event(
+      'my_page',
+      historyId == null ? 'more' : 'history',
+    );
     final notifier = context.read<MenuSearchPageNotifier>();
     if (historyId != null) {
       // Populate missing details in older histories without another AI analysis.
@@ -34,13 +39,16 @@ class MenuHistoryPreview extends StatelessWidget {
               MenuSearchPageState
             >.value(
               value: notifier,
-              child: Scaffold(
-                backgroundColor: const Color(0xFF1D3567),
-                appBar: PrimaryAppBar(title: context.l10n.pastMenuAnalysis),
-                body: SingleChildScrollView(
-                  child: MenuHistorySection(
-                    historyId: historyId,
-                    showHeading: false,
+              child: AnalyticsScreen(
+                name: 'menu',
+                child: Scaffold(
+                  backgroundColor: const Color(0xFF1D3567),
+                  appBar: PrimaryAppBar(title: context.l10n.pastMenuAnalysis),
+                  body: SingleChildScrollView(
+                    child: MenuHistorySection(
+                      historyId: historyId,
+                      showHeading: false,
+                    ),
                   ),
                 ),
               ),

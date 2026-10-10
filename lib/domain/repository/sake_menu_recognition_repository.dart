@@ -12,7 +12,9 @@ import '../eintities/menu_sake_resolution.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 
 class SakeCandidateResolutionException implements Exception {
-  const SakeCandidateResolutionException(this.message);
+  const SakeCandidateResolutionException(this.message, {this.statusCode});
+
+  final int? statusCode;
 
   final String message;
 
@@ -73,6 +75,7 @@ class SakeMenuRecognitionRepository {
             response.statusCode == 409) {
           throw SakeCandidateResolutionException(
             _extractBottleErrorMessage(response.error),
+            statusCode: response.statusCode,
           );
         }
 

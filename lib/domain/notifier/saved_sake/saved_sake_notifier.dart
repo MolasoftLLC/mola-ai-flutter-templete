@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -173,6 +174,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   }
 
   Future<void> toggleSavedSake(Sake sake) async {
+    AppAnalytics.instance.event(AppAnalytics.instance.screen, 'save');
     final exists = state.savedSakeList.any(
       (item) => _isSameSakeProduct(item, sake),
     );
@@ -734,10 +736,12 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     if (state.isGridView == isGrid) {
       return;
     }
+    AppAnalytics.instance.event('my_page', isGrid ? 'view_grid' : 'view_list');
     state = state.copyWith(isGridView: isGrid);
   }
 
   void setFilterTags(List<String> tags) {
+    AppAnalytics.instance.event('my_page', 'filter');
     final sanitized = _sanitizeTags(tags);
     state = state.copyWith(activeFilterTags: sanitized);
   }

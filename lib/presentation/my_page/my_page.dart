@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -318,6 +319,7 @@ class _MyPageState extends State<MyPage> {
                             : null,
                         onAuthenticate: openLogin,
                         onOpenAccountSettings: () {
+                          AppAnalytics.instance.event('my_page', 'profile');
                           authNotifier.clearMessages();
                           final navigator = Navigator.of(context);
                           FocusScope.of(context).unfocus();
@@ -500,6 +502,10 @@ class _MyPageState extends State<MyPage> {
                                   ? _SavedSakeGrid(
                                       savedSakeList: filteredSakeList,
                                       onTap: (sake) {
+                                        AppAnalytics.instance.event(
+                                          'my_page',
+                                          'detail',
+                                        );
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
@@ -526,6 +532,10 @@ class _MyPageState extends State<MyPage> {
                                   : _SavedSakeList(
                                       savedSakeList: filteredSakeList,
                                       onTap: (sake) {
+                                        AppAnalytics.instance.event(
+                                          'my_page',
+                                          'detail',
+                                        );
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
@@ -3023,13 +3033,19 @@ class _MyTimelineEntryTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            AppAnalytics.instance.event('my_page', 'my_posts');
             if (!isLoggedIn) {
               onLoginRequested();
               return;
             }
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => TimelinePage.myPosts()),
+              MaterialPageRoute(
+                builder: (_) => AnalyticsScreen(
+                  name: 'timeline',
+                  child: TimelinePage.myPosts(),
+                ),
+              ),
             );
           },
           child: Container(

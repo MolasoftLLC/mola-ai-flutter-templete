@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -370,6 +371,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         onOpenDetails: (sake.sakeId ?? 0) <= 0
             ? null
             : () async {
+                AppAnalytics.instance.event('timeline', 'detail');
                 await Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => SakeMasterDetailPage(

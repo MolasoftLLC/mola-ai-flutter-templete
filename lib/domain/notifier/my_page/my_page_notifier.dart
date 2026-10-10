@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -401,6 +402,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   int _tasteProfileRevision = 0;
 
   Future<bool> saveTasteProfile(TastePreferenceProfile profile) async {
+    AppAnalytics.instance.event('my_page', 'profile_edit');
     final userId = _authRepository.currentUser?.uid;
     if (userId == null) return false;
     final saved = await _userPreferenceRepository.updateTasteProfile(

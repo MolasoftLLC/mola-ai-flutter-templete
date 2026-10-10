@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -61,6 +62,7 @@ void main() async {
   HttpOverrides.global = MyHttpOverrides();
   await dotenv.load(fileName: ".env");
   await configure();
+  await AppAnalytics.instance.initialize(apiURL());
 
   // DIコンテナからプロバイダーを取得
   final providerList = await providers;
@@ -102,6 +104,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<AppLocaleController>().locale;
     return MaterialApp(
+      navigatorObservers: [analyticsRouteObserver],
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,

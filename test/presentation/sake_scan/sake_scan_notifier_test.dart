@@ -117,7 +117,8 @@ void main() {
       expect(notifier.currentState.sake?.sakeId, 101);
       expect(analysis.calls, 0);
       expect(persistence.completedSakes.single.sakeId, 101);
-      expect(persistence.completedSakes.single.isPublic, isFalse);
+      // Timeline sharing is enabled by default, including cached scan results.
+      expect(persistence.completedSakes.single.isPublic, isTrue);
     });
 
     test('キャッシュなしの場合も基本情報を保存して詳細画面へ渡す', () async {

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,8 +9,10 @@ import '../auth/email_link_auth_page.dart';
 import 'sake_scan_page.dart';
 
 Future<Object?> openSakeLabelScanner(BuildContext context) async {
+  AppAnalytics.instance.event('app', 'scan');
   final authRepository = context.read<AuthRepository>();
   if (authRepository.currentUser == null) {
+    AppAnalytics.instance.event('scan', 'login', kind: 'blocked');
     final login = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -38,6 +41,7 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
   await savedNotifier.reloadLocal();
   if (!context.mounted) return null;
   if (savedNotifier.hasReachedMemberLimit) {
+    AppAnalytics.instance.event('scan', 'saved_limit', kind: 'blocked');
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -89,9 +93,7 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
                 ),
                 const SizedBox(height: 12),
                 const Text('・このお酒の詳細画面で、他のユーザーにも表示'),
-                const Text(
-                  '・AIラベル照合機能の学習・精度向上',
-                ),
+                const Text('・AIラベル照合機能の学習・精度向上'),
                 const SizedBox(height: 12),
                 const Text(
                   '人物の顔、氏名、住所、伝票などの個人情報が写らないよう、酒瓶のラベルだけを撮影してください。投稿後は、お酒の詳細画面から自分の画像を削除できます。ただし、削除前にAIの学習・精度向上に利用された結果を取り消すことはできません。',
@@ -122,6 +124,11 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
           ],
         ),
       ),
+    );
+    AppAnalytics.instance.event(
+      'scan',
+      'consent',
+      kind: accepted == true ? 'success' : 'cancel',
     );
     if (accepted != true || !context.mounted) return null;
     try {

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 
 import 'package:state_notifier/state_notifier.dart';
@@ -115,6 +116,9 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   SakeScanState get currentState => state;
 
+  String? _usageFlow;
+  bool _usageComplete = false;
+
   void setShareToTimeline(bool value) {
     if (_disposed) return;
     state = state.copyWith(shareToTimeline: value);
@@ -127,6 +131,28 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   Future<void> submitFront(File image) async {
     if (!_beginSubmission()) return;
+    if (_usageFlow != null && !_usageComplete) {
+      AppAnalytics.instance.event(
+        'scan',
+        'label_analysis',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
+    }
+    _usageFlow = analyticsId();
+    _usageComplete = false;
+    AppAnalytics.instance.event(
+      'scan',
+      'label_analysis',
+      kind: 'start',
+      flowId: _usageFlow,
+    );
+    AppAnalytics.instance.event(
+      'scan',
+      'camera_front',
+      kind: 'start',
+      flowId: _usageFlow,
+    );
     final operation = ++_operation;
     _emit(
       state.copyWith(
@@ -177,6 +203,12 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   Future<void> submitBack(File image) async {
+    AppAnalytics.instance.event(
+      'scan',
+      'camera_back',
+      kind: 'start',
+      flowId: _usageFlow,
+    );
     if (!_beginSubmission()) return;
     var sessionId = state.scanSessionId;
     final operation = ++_operation;
@@ -211,6 +243,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   void selectCandidate(int index) {
+    AppAnalytics.instance.event('scan', 'candidate', flowId: _usageFlow);
     if (state.isSubmitting || index < 0 || index >= state.candidates.length) {
       return;
     }
@@ -273,12 +306,14 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   void retakeFrontLabel() {
+    AppAnalytics.instance.event('scan', 'retake', flowId: _usageFlow);
     if (_disposed || state.status != SakeScanViewStatus.backScanning) return;
     ++_operation;
     state = SakeScanState(shareToTimeline: state.shareToTimeline);
   }
 
   Future<Sake?> confirmCandidate() async {
+    AppAnalytics.instance.event('scan', 'confirm', flowId: _usageFlow);
     final candidate = state.selectedCandidate;
     final sessionId = state.scanSessionId;
     if (candidate == null || sessionId == null || !_beginSubmission()) {
@@ -643,6 +678,16 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   void _fail(SakeScanException exception) {
+    AppAnalytics.instance.event(
+      'scan',
+      exception.kind == SakeScanErrorKind.rateLimited
+          ? 'quota'
+          : 'label_analysis',
+      kind: exception.kind == SakeScanErrorKind.rateLimited
+          ? 'blocked'
+          : 'failure',
+      flowId: _usageFlow,
+    );
     _emit(
       state.copyWith(
         status: SakeScanViewStatus.error,
@@ -653,11 +698,30 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   void _emit(SakeScanState next) {
-    if (!_disposed) state = next;
+    if (!_disposed) {
+      if (next.status == SakeScanViewStatus.completed && !_usageComplete) {
+        _usageComplete = true;
+        AppAnalytics.instance.event(
+          'scan',
+          'label_analysis',
+          kind: 'success',
+          flowId: _usageFlow,
+        );
+      }
+      state = next;
+    }
   }
 
   @override
   void dispose() {
+    if (_usageFlow != null && !_usageComplete) {
+      AppAnalytics.instance.event(
+        'scan',
+        'label_analysis',
+        kind: 'cancel',
+        flowId: _usageFlow,
+      );
+    }
     _disposed = true;
     ++_operation;
     super.dispose();

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -109,7 +110,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
               IconButton(
                 tooltip: '商品詳細を開く',
                 icon: const Icon(Icons.open_in_new, size: 21),
-                onPressed: widget.onOpenDetails,
+                onPressed: widget.onOpenDetails == null
+                    ? null
+                    : () {
+                        AppAnalytics.instance.event('menu', 'detail');
+                        widget.onOpenDetails!.call();
+                      },
               ),
               IconButton(
                 tooltip: widget.isSaved

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:state_notifier/state_notifier.dart';
@@ -263,6 +264,7 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
   }
 
   Future<EnvyResult> incrementEnvy(Sake sake) async {
+    AppAnalytics.instance.event(AppAnalytics.instance.screen, 'envy');
     final key = envyKey(sake);
     if (key.isEmpty) {
       logger.warning('うらやま対象のキーが生成できませんでした');

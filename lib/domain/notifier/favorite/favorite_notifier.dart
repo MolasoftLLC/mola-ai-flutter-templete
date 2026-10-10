@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -121,6 +122,7 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
 
   // お気に入りに追加または削除
   Future<void> addOrRemoveFavorite(FavoriteSake favoriteSake) async {
+    AppAnalytics.instance.event(AppAnalytics.instance.screen, 'favorite');
     // 既に同じ名前とタイプの組み合わせが存在するか確認
     final exists = state.myFavoriteList.any(
       (item) =>

@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/localization/localization_extensions.dart';
@@ -24,6 +25,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
   bool _failed = false;
 
   Future<void> _pickPlace() async {
+    AppAnalytics.instance.event('menu', 'place');
     if (_saving || widget.history == null) return;
     final place = await PlacePickerSheet.show(
       context,

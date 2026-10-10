@@ -1,3 +1,4 @@
+import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -72,21 +73,53 @@ class AppPage extends StatelessWidget {
           child: IndexedStack(
             index: currentIndex,
             children: [
-              NewHomePage.wrapped(),
+              AnalyticsScreen(
+                name: 'home',
+                active: currentIndex == 0,
+                child: NewHomePage.wrapped(),
+              ),
               KeyedSubtree(
                 key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
-                child: MenuSearchPage.wrapped(),
+                child: AnalyticsScreen(
+                  name: 'menu',
+                  active: currentIndex == 1,
+                  child: MenuSearchPage.wrapped(),
+                ),
               ),
-              SakeMapPage.wrapped(),
+              AnalyticsScreen(
+                name: 'map',
+                active: currentIndex == 2,
+                child: SakeMapPage.wrapped(),
+              ),
               // Preserve timeline links and its intro while the rightmost tab is My Page.
-              TimelinePage.wrapped(),
-              MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
+              AnalyticsScreen(
+                name: 'timeline',
+                active: currentIndex == 3,
+                child: TimelinePage.wrapped(),
+              ),
+              AnalyticsScreen(
+                name: 'my_page',
+                active: currentIndex == 4,
+                child: MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
+              ),
             ],
           ),
         ),
         bottomNavigationBar: _NewHomeBottomNavigation(
           currentPageIndex: currentIndex,
-          onPageSelected: notifier.onTabTapped,
+          onPageSelected: (index) {
+            AppAnalytics.instance.event(
+              'app',
+              const {
+                0: 'home',
+                1: 'menu',
+                2: 'map',
+                3: 'timeline',
+                4: 'my_page',
+              }[index]!,
+            );
+            notifier.onTabTapped(index);
+          },
           onScanTap: () => openNewHomeScanner(context),
           scanKey: notifier.homeFeatureGuide.bottomScanKey,
           menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
