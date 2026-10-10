@@ -1637,43 +1637,6 @@ class _SakeScanPageState extends State<SakeScanPage>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      CheckboxListTile(
-                        value: _shareToTimeline,
-                        onChanged: _recordSaving
-                            ? null
-                            : (value) {
-                                if (value != null) {
-                                  unawaited(_onTimelineShareChanged(value));
-                                }
-                              },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: const Color(0xFF1D3567),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          context.l10n.shareToTimeline,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(context.l10n.onlyFirstImageShared),
-                      ),
-                      CheckboxListTile(
-                        value: _autoTweetEnabled,
-                        onChanged: _isAutoTweetUpdating
-                            ? null
-                            : (value) {
-                                if (value != null) {
-                                  unawaited(_onAutoTweetChanged(value));
-                                }
-                              },
-                        controlAffinity: ListTileControlAffinity.leading,
-                        activeColor: const Color(0xFF1D3567),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          context.l10n.autoPostToX,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(context.l10n.autoPostToXDescription),
-                      ),
                       if (_recordSaveError != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -1689,7 +1652,62 @@ class _SakeScanPageState extends State<SakeScanPage>
                 ),
               ),
             ),
-            const Divider(height: 20),
+            const Divider(height: 12),
+            CheckboxListTile(
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              value: _shareToTimeline,
+              onChanged: _recordSaving
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        unawaited(_onTimelineShareChanged(value));
+                      }
+                    },
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: const Color(0xFF1D3567),
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                context.l10n.shareToTimeline,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                context.l10n.onlyFirstImageShared,
+                style: const TextStyle(fontSize: 10, height: 1.2),
+              ),
+            ),
+            CheckboxListTile(
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              value: _autoTweetEnabled,
+              onChanged: _isAutoTweetUpdating
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        unawaited(_onAutoTweetChanged(value));
+                      }
+                    },
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: const Color(0xFF1D3567),
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                context.l10n.autoPostToX,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                context.l10n.autoPostToXDescription,
+                style: const TextStyle(fontSize: 10, height: 1.2),
+              ),
+            ),
+            const SizedBox(height: 6),
             Row(
               children: [
                 if (analysisCompleted)
