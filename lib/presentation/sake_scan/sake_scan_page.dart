@@ -1379,7 +1379,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                             trailing: Icon(
                               selected
                                   ? Icons.check_circle
-                                  : Icons.chevron_right,
+                                  : Icons.radio_button_unchecked,
                               color: selected
                                   ? const Color(0xFFFF7A1A)
                                   : const Color(0xFF697386),
@@ -1391,9 +1391,6 @@ class _SakeScanPageState extends State<SakeScanPage>
                                         .read<SakeScanNotifier>()
                                         .selectCandidate(index);
                                     unawaited(HapticFeedback.selectionClick());
-                                    if (item.isLensDiscovery) {
-                                      unawaited(_startCandidateAnalysis());
-                                    }
                                   },
                           ),
                         );
