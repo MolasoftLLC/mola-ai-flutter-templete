@@ -559,19 +559,14 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
               )
               .toList(growable: false);
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF0F7),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFD4E0EF)),
-            ),
+            color: const Color(0xFFEAF0F7),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionTitle(
                   title: 'あなたが好きそうな日本酒',
-                  emphasized: true,
                   onMoreTap: sakes.isEmpty ? null : _refresh,
                   actionLabel: _isRefreshing ? '更新中…' : '再選定',
                   actionAsButton: true,
@@ -805,14 +800,12 @@ class _SectionTitle extends StatelessWidget {
     this.onMoreTap,
     this.actionLabel = 'もっとみる',
     this.actionAsButton = false,
-    this.emphasized = false,
   });
 
   final String title;
   final VoidCallback? onMoreTap;
   final String actionLabel;
   final bool actionAsButton;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -820,18 +813,14 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(
-            width: 5,
-            height: emphasized ? 22 : 17,
-            color: emphasized ? _scanColor : const Color(0xFF494949),
-          ),
+          Container(width: 5, height: 17, color: const Color(0xFF494949)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
-                color: emphasized ? _brandColor : _bodyTextColor,
-                fontSize: emphasized ? 20 : 17,
+              style: const TextStyle(
+                color: _bodyTextColor,
+                fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
             ),
