@@ -348,7 +348,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+			shellScript = "set -e\n/bin/sh \"$SRCROOT/Flutter/check_maps_key.sh\"\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
 		};
 		C9CE8C615BDA3B1B436B886D /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;

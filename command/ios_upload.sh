@@ -65,6 +65,15 @@ if [[ "${archive_version}" != "${version_name}" || "${archive_build}" != "${buil
   exit 1
 fi
 
+maps_key="$(plutil -extract GOOGLE_MAPS_API_KEY raw "${app_info}")"
+case "${maps_key}" in
+  ''|*'$('*|YOUR_*)
+    echo "アーカイブの地図設定が不足しています。アップロードを中止します。" >&2
+    exit 1
+    ;;
+esac
+unset maps_key
+
 upload_dir="$(mktemp -d "${TMPDIR:-/tmp}/sakepedia-ios-upload.XXXXXX")"
 cleanup() {
   case "${upload_dir}" in

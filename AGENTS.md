@@ -2,6 +2,8 @@
 日本語で簡潔かつ丁寧に回答してください
 
 ## iOS TestFlight delivery on this Mac
+- Release clones must include the ignored `ios/Flutter/MapsKeys.xcconfig`, as well as `.env` and `ios/Runner/GoogleService-Info.plist`. Build 137 crashed in Google Maps because the maps configuration was omitted. Never print or commit secret values.
+- Before any Organizer or CLI upload, verify the archive's `Runner.app/Info.plist` contains a nonempty, resolved `GOOGLE_MAPS_API_KEY`. A successful archive alone is insufficient. The Xcode build phase also rejects missing map configuration; do not bypass it.
 - Prefer Xcode Organizer cloud signing: open the completed `build/ios/archive/Runner.xcarchive`, verify version/build, then `Distribute App` → `TestFlight Internal Only` → `Distribute`. This succeeded for builds 112 and 113 (October 2–3, 2026).
 - CLI export may report `No Accounts`, `Failed to Use Accounts`, or missing `iOS Distribution` even while Organizer is signed in and can upload. These errors alone do not establish that the user must log in again or create a certificate. Check Organizer and use the successful cloud-signing route before declaring a blocker.
 - Reuse the completed archive when only export/upload failed. Do not recreate/revoke certificates merely to address the CLI error.
