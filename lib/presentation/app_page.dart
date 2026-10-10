@@ -14,6 +14,7 @@ import '../common/utils/snack_bar_utils.dart';
 import '../domain/eintities/app_content.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
+import 'my_page/my_page.dart';
 
 class AppPage extends StatelessWidget {
   const AppPage._({Key? key}) : super(key: key);
@@ -58,31 +59,40 @@ class AppPage extends StatelessWidget {
       return requireUpdate(context, notifier, release);
     }
 
-    return Scaffold(
-      body: SnackBarAvoidanceScope(
-        // Scaffoldがナビ本体とSafe Areaを避けるため、本文側へ張り出す
-        // 中央撮影ボタンの高さだけを追加で退避する。
-        bottomObstacleHeight: snackBarBottomObstacleHeight,
-        child: IndexedStack(
-          index: currentIndex,
-          children: [
-            NewHomePage.wrapped(),
-            KeyedSubtree(
-              key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
-              child: MenuSearchPage.wrapped(),
-            ),
-            SakeMapPage.wrapped(),
-            TimelinePage.wrapped(),
-          ],
+    return PopScope(
+      canPop: currentIndex != 3,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && currentIndex == 3) notifier.onTabTapped(0);
+      },
+      child: Scaffold(
+        body: SnackBarAvoidanceScope(
+          // Scaffoldがナビ本体とSafe Areaを避けるため、本文側へ張り出す
+          // 中央撮影ボタンの高さだけを追加で退避する。
+          bottomObstacleHeight: snackBarBottomObstacleHeight,
+          child: IndexedStack(
+            index: currentIndex,
+            children: [
+              NewHomePage.wrapped(),
+              KeyedSubtree(
+                key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
+                child: MenuSearchPage.wrapped(),
+              ),
+              SakeMapPage.wrapped(),
+              // Preserve timeline links and its intro while the rightmost tab is My Page.
+              TimelinePage.wrapped(),
+              MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: _NewHomeBottomNavigation(
-        currentPageIndex: currentIndex,
-        onPageSelected: notifier.onTabTapped,
-        onScanTap: () => openNewHomeScanner(context),
-        scanKey: notifier.homeFeatureGuide.bottomScanKey,
-        menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
-        mapKey: notifier.homeFeatureGuide.mapKey,
+        bottomNavigationBar: _NewHomeBottomNavigation(
+          currentPageIndex: currentIndex,
+          onPageSelected: notifier.onTabTapped,
+          onScanTap: () => openNewHomeScanner(context),
+          scanKey: notifier.homeFeatureGuide.bottomScanKey,
+          menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
+          mapKey: notifier.homeFeatureGuide.mapKey,
+          myPageKey: notifier.homeFeatureGuide.myPageKey,
+        ),
       ),
     );
   }
@@ -96,6 +106,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
     required this.scanKey,
     required this.menuAnalysisKey,
     required this.mapKey,
+    required this.myPageKey,
   });
 
   static const _backgroundColor = Color(0xFF143861);
@@ -106,6 +117,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
   final GlobalKey scanKey;
   final GlobalKey menuAnalysisKey;
   final GlobalKey mapKey;
+  final GlobalKey myPageKey;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +138,7 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                     _NavigationItem(
                       icon: Icons.home_outlined,
                       label: context.l10n.navigationHome,
-                      selected: currentPageIndex == 0,
+                      selected: currentPageIndex == 0 || currentPageIndex == 3,
                       onTap: () => onPageSelected(0),
                     ),
                     _NavigationItem(
@@ -145,10 +157,11 @@ class _NewHomeBottomNavigation extends StatelessWidget {
                       onTap: () => onPageSelected(2),
                     ),
                     _NavigationItem(
-                      icon: Icons.timeline,
-                      label: context.l10n.navigationTimeline,
-                      selected: currentPageIndex == 3,
-                      onTap: () => onPageSelected(3),
+                      focusKey: myPageKey,
+                      icon: Icons.person_outline,
+                      label: context.l10n.navigationMyPage,
+                      selected: currentPageIndex == 4,
+                      onTap: () => onPageSelected(4),
                     ),
                   ],
                 ),

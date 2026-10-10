@@ -667,7 +667,23 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           ).push(MaterialPageRoute(builder: (_) => TimelinePage.myPosts()));
         },
       );
-      leadingWidth = 90;
+      // The public feed is reached from Home; keep a way back alongside My posts.
+      final appState = Provider.of<AppPageState?>(context);
+      if (appState?.currentIndex == 3) {
+        leadingButton = Row(
+          children: [
+            IconButton(
+              tooltip: context.l10n.navigationHome,
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+              onPressed: () => context.read<AppPageNotifier>().onTabTapped(0),
+            ),
+            Expanded(child: leadingButton),
+          ],
+        );
+        leadingWidth = 138;
+      } else {
+        leadingWidth = 90;
+      }
     } else if (showBackButton) {
       leadingButton = _TimelineHeaderShortcutButton(
         icon: Icons.arrow_back_ios_new,

@@ -38,10 +38,14 @@ bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
 
 class MyPage extends StatefulWidget {
-  const MyPage._({Key? key}) : super(key: key);
+  const MyPage._({Key? key, this.isTab = false, this.isActive = true})
+    : super(key: key);
 
-  static Widget wrapped() {
-    return const MyPage._();
+  final bool isTab;
+  final bool isActive;
+
+  static Widget wrapped({bool isTab = false, bool isActive = true}) {
+    return MyPage._(isTab: isTab, isActive: isActive);
   }
 
   @override
@@ -55,8 +59,18 @@ class _MyPageState extends State<MyPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _guide.showIfNeeded(context);
+      if (mounted && widget.isActive) _guide.showIfNeeded(context);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant MyPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.isActive) _guide.showIfNeeded(context);
+      });
+    }
   }
 
   @override
@@ -232,7 +246,7 @@ class _MyPageState extends State<MyPage> {
       child: Scaffold(
         appBar: PrimaryAppBar(
           title: context.l10n.navigationMyPage,
-          automaticallyImplyLeading: true,
+          automaticallyImplyLeading: !widget.isTab,
           actions: [
             PopupMenuButton<String>(
               tooltip: context.l10n.helpGuide,

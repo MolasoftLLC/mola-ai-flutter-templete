@@ -16,7 +16,7 @@ class HomeFeatureGuide {
   final timelineKey = GlobalKey();
   final homeScrollController = ScrollController();
   bool _showing = false;
-  static const _preferenceKey = 'home_feature_guide_shown_v4';
+  static const _preferenceKey = 'home_feature_guide_shown_v5';
 
   void dispose() => homeScrollController.dispose();
 
@@ -140,8 +140,8 @@ class HomeFeatureGuide {
             'マイページで好きなお酒の傾向を登録すると、あなたに合いそうな日本酒がここに表示されます！',
             'みんなが飲んだ日本酒を見られます。左右にスライドして気になるお酒を探してみましょう。「もっと見る」をタップすると、さらに多くの投稿を見られます！',
           ],
-          circleSteps: const {0, 4},
-          outlineSteps: const {2, 3},
+          circleSteps: const {0},
+          outlineSteps: const {2, 3, 4},
           prepareStep: (step) async {
             if (step == 5) await _scrollToSection(recommendationsKey);
             if (step == 6) await _scrollToSection(timelineKey);

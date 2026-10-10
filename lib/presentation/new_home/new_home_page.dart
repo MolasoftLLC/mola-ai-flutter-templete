@@ -22,7 +22,6 @@ import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
-import '../my_page/my_page.dart';
 import '../sake_scan/sake_scan_entry.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import '../timeline/envy_result.dart';
@@ -108,10 +107,6 @@ class _NewHomePageState extends State<NewHomePage> {
       body: Column(
         children: [
           _HomeHeader(
-            myPageKey: context
-                .read<AppPageNotifier>()
-                .homeFeatureGuide
-                .myPageKey,
             scanKey: context
                 .read<AppPageNotifier>()
                 .homeFeatureGuide
@@ -166,6 +161,7 @@ class _NewHomePageState extends State<NewHomePage> {
                     _EmptySection(message: context.l10n.savedSakeEmpty)
                   else
                     _SakeCardRail(
+                      compact: true,
                       sakes: savedSakes.take(10).toList(),
                       profilesFuture: _profilesFor(
                         savedSakes.take(10).toList(),
@@ -234,7 +230,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         }
                       },
                     ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 16),
                   _HomeRecommendations(
                     key: context
                         .read<AppPageNotifier>()
@@ -562,54 +558,63 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                 ),
               )
               .toList(growable: false);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _ObiDivider(),
-              _SectionTitle(
-                title: 'あなたが好きそうな日本酒',
-                onMoreTap: sakes.isEmpty ? null : _refresh,
-                actionLabel: _isRefreshing ? '更新中…' : '再選定',
-                actionAsButton: true,
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(29, 4, 20, 0),
-                child: Text(
-                  '「好きなお酒の傾向」を登録すると表示されます。おすすめは月1回入れ替えられます。',
-                  style: TextStyle(color: Color(0xFF777777), fontSize: 13),
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF0F7),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFD4E0EF)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionTitle(
+                  title: 'あなたが好きそうな日本酒',
+                  emphasized: true,
+                  onMoreTap: sakes.isEmpty ? null : _refresh,
+                  actionLabel: _isRefreshing ? '更新中…' : '再選定',
+                  actionAsButton: true,
                 ),
-              ),
-              if (snapshot.connectionState != ConnectionState.done)
-                const SizedBox(
-                  height: 110,
-                  child: Center(
-                    child: CircularProgressIndicator(color: _brandColor),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(29, 4, 20, 0),
+                  child: Text(
+                    '「好きなお酒の傾向」を登録すると表示されます。おすすめは月1回入れ替えられます。',
+                    style: TextStyle(color: Color(0xFF777777), fontSize: 13),
                   ),
-                )
-              else if (sakes.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _SakeCardRail(
-                  sakes: sakes,
-                  profilesFuture: widget.profilesFor(sakes),
-                  subtitleBuilder: (sake) => sake.brewery,
-                  actionBuilder: (_) => const SizedBox.shrink(),
-                  onTap: (sake) => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => SakeMasterDetailPage(
-                        venueSake: VenueSake(
-                          sakeId: sake.sakeId,
-                          name: sake.name ?? '',
-                          brewery: sake.brewery,
-                          type: sake.type,
-                          recordCount: 0,
-                          primaryImageUrl: sake.primaryImageUrl,
+                ),
+                if (snapshot.connectionState != ConnectionState.done)
+                  const SizedBox(
+                    height: 110,
+                    child: Center(
+                      child: CircularProgressIndicator(color: _brandColor),
+                    ),
+                  )
+                else if (sakes.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _SakeCardRail(
+                    sakes: sakes,
+                    profilesFuture: widget.profilesFor(sakes),
+                    subtitleBuilder: (sake) => sake.brewery,
+                    actionBuilder: (_) => const SizedBox.shrink(),
+                    onTap: (sake) => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SakeMasterDetailPage(
+                          venueSake: VenueSake(
+                            sakeId: sake.sakeId,
+                            name: sake.name ?? '',
+                            brewery: sake.brewery,
+                            type: sake.type,
+                            recordCount: 0,
+                            primaryImageUrl: sake.primaryImageUrl,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           );
         },
       );
@@ -645,7 +650,6 @@ class _HomeHeader extends StatelessWidget {
     required this.scanKey,
     required this.searchKey,
     required this.onTutorialTap,
-    required this.myPageKey,
   });
 
   final VoidCallback onTutorialTap;
@@ -653,7 +657,6 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onScanTap;
   final GlobalKey scanKey;
   final GlobalKey searchKey;
-  final GlobalKey myPageKey;
 
   @override
   Widget build(BuildContext context) {
@@ -677,7 +680,7 @@ class _HomeHeader extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 Positioned(
-                  right: 56,
+                  right: 8,
                   child: PopupMenuButton<String>(
                     tooltip: 'ヘルプ',
                     icon: const Icon(
@@ -692,29 +695,6 @@ class _HomeHeader extends StatelessWidget {
                         child: Text('もう一度チュートリアルを見る'),
                       ),
                     ],
-                  ),
-                ),
-                Positioned(
-                  right: 8,
-                  child: IconButton(
-                    key: myPageKey,
-                    tooltip: context.l10n.navigationMyPage,
-                    icon: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_outline,
-                        color: _brandColor,
-                        size: 25,
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(builder: (_) => MyPage.wrapped()),
-                    ),
                   ),
                 ),
               ],
@@ -825,12 +805,14 @@ class _SectionTitle extends StatelessWidget {
     this.onMoreTap,
     this.actionLabel = 'もっとみる',
     this.actionAsButton = false,
+    this.emphasized = false,
   });
 
   final String title;
   final VoidCallback? onMoreTap;
   final String actionLabel;
   final bool actionAsButton;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -838,14 +820,18 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Container(width: 5, height: 17, color: const Color(0xFF494949)),
+          Container(
+            width: 5,
+            height: emphasized ? 22 : 17,
+            color: emphasized ? _scanColor : const Color(0xFF494949),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: _bodyTextColor,
-                fontSize: 17,
+              style: TextStyle(
+                color: emphasized ? _brandColor : _bodyTextColor,
+                fontSize: emphasized ? 20 : 17,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -903,9 +889,11 @@ class _SakeCardRail extends StatelessWidget {
     required this.actionBuilder,
     required this.onTap,
     this.footerBuilder,
+    this.compact = false,
   });
 
   final List<Sake> sakes;
+  final bool compact;
   final Future<Map<int, SakeTasteProfileDetails>> profilesFuture;
   final String? Function(Sake sake) subtitleBuilder;
   final String? Function(Sake sake)? footerBuilder;
@@ -915,16 +903,19 @@ class _SakeCardRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: _sakeCardRailHeight,
+      height: compact
+          ? 134 + MediaQuery.textScalerOf(context).scale(13) * 4.2
+          : _sakeCardRailHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         physics: const BouncingScrollPhysics(),
         itemCount: sakes.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 30),
+        separatorBuilder: (_, __) => SizedBox(width: compact ? 16 : 30),
         itemBuilder: (context, index) {
           final sake = sakes[index];
           return _SakeCard(
+            compact: compact,
             sake: sake,
             profileFuture: sake.sakeId == null
                 ? null
@@ -948,9 +939,11 @@ class _SakeCard extends StatelessWidget {
     required this.action,
     required this.onTap,
     this.footer,
+    this.compact = false,
   });
 
   final Sake sake;
+  final bool compact;
   final Future<SakeTasteProfileDetails?>? profileFuture;
   final String? subtitle;
   final String? footer;
@@ -960,7 +953,7 @@ class _SakeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 137,
+      width: compact ? 96 : 137,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(19),
@@ -970,8 +963,8 @@ class _SakeCard extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 SizedBox(
-                  width: 137,
-                  height: 203,
+                  width: compact ? 96 : 137,
+                  height: compact ? 126 : 203,
                   child: _SakeImage(sake: sake),
                 ),
                 if (profileFuture != null)
@@ -988,9 +981,9 @@ class _SakeCard extends StatelessWidget {
               _displayName(context, sake),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _bodyTextColor,
-                fontSize: 16,
+                fontSize: compact ? 13 : 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
