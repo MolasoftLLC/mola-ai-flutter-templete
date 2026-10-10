@@ -899,6 +899,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autoPostToX => 'Automatically post to X';
 
   @override
+  String get scanPostToX => 'Post to X too';
+
+  @override
+  String get scanPostToXDescription =>
+      'Tap View details to post this sake and one photo to X.';
+
+  @override
   String get autoPostToXDescription =>
       'Automatically post the result to X when analysis finishes.';
 

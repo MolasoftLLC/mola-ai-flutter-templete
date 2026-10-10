@@ -869,6 +869,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get autoPostToX => 'Xに自動投稿';
 
   @override
+  String get scanPostToX => 'Xにも投稿する';
+
+  @override
+  String get scanPostToXDescription => '「詳細を見る」を押すと、写真1枚とこのお酒をXに投稿します。';
+
+  @override
   String get autoPostToXDescription => '解析完了時に結果をXにも自動投稿します。';
 
   @override

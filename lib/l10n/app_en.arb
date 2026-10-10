@@ -281,6 +281,8 @@
   "shareToTimeline": "Show on the timeline",
   "onlyFirstImageShared": "Only the first image will be shared.",
   "autoPostToX": "Automatically post to X",
+  "scanPostToX": "Post to X too",
+  "scanPostToXDescription": "Tap View details to post this sake and one photo to X.",
   "autoPostToXDescription": "Automatically post the result to X when analysis finishes.",
   "loginToChangeSetting": "Sign in to change this setting.",
   "loadingAutoPostSetting": "Loading the auto-post setting...",

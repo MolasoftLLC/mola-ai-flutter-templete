@@ -25,6 +25,7 @@ import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/sake_user_repository.dart';
+import '../../domain/repository/saved_sake_sync_repository.dart';
 import '../../domain/services/sake_scan_services.dart';
 import '../menu_search/menu_search_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
@@ -110,6 +111,8 @@ class _SakeScanPageState extends State<SakeScanPage>
   String? _recordSaveError;
   bool _shareToTimeline = true;
   bool _autoTweetEnabled = true;
+  bool _openingDetail = false;
+  String? _xPostError;
   bool _isAutoTweetUpdating = false;
   bool _initialReanalysisStarted = false;
 
@@ -233,6 +236,7 @@ class _SakeScanPageState extends State<SakeScanPage>
 
     setState(() {
       _shareToTimeline = value;
+      _xPostError = null;
       _recordDirty = true;
       _recordSaved = false;
       _recordSaveError = null;
@@ -277,7 +281,10 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (!mounted) return;
     setState(() {
       _isAutoTweetUpdating = false;
-      if (response != null) _autoTweetEnabled = value;
+      if (response != null) {
+        _autoTweetEnabled = value;
+        _xPostError = null;
+      }
     });
     if (response == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -698,7 +705,40 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _openAnalyzedDetail(SakeScanState state) async {
-    if (_recordSaving) return;
+    if (_openingDetail || _recordSaving || _isAutoTweetUpdating) return;
+    setState(() {
+      _openingDetail = true;
+      _xPostError = null;
+    });
+    try {
+      await _openAnalyzedDetailAndPost(state);
+    } on SavedSakeXPostException catch (error) {
+      if (mounted) setState(() => _xPostError = error.message);
+    } catch (_) {
+      if (mounted) setState(() => _xPostError = '記録を保存できませんでした。もう一度お試しください。');
+    } finally {
+      if (mounted) setState(() => _openingDetail = false);
+    }
+  }
+
+  Future<void> _postScanToX(Sake sake) async {
+    if (!_autoTweetEnabled) return;
+    final savedId = sake.savedId;
+    if (savedId == null ||
+        savedId.isEmpty ||
+        context.read<AuthRepository>().currentUser == null) {
+      throw const SavedSakeXPostException('Xに投稿するにはログインとお酒の保存が必要です。');
+    }
+    final synced = await context
+        .read<SavedSakeNotifier>()
+        .syncSavedSakeToServer(savedId);
+    if (synced == null || !mounted) {
+      throw const SavedSakeXPostException('写真の保存が完了していません。もう一度お試しください。');
+    }
+    await context.read<SavedSakeSyncRepository>().postSavedSakeToX(savedId);
+  }
+
+  Future<void> _openAnalyzedDetailAndPost(SakeScanState state) async {
     FocusScope.of(context).unfocus();
     if (_recordDirty) {
       final saved = await _saveAnalysisRecord(state);
@@ -708,6 +748,8 @@ class _SakeScanPageState extends State<SakeScanPage>
     var sake = currentState.savedSake ?? currentState.sake;
     if (sake == null) return;
     if (widget.reassignTarget != null) {
+      await _postScanToX(sake);
+      if (!mounted) return;
       Navigator.of(context).pop<Sake>(sake);
       return;
     }
@@ -744,6 +786,8 @@ class _SakeScanPageState extends State<SakeScanPage>
       sake = currentState.savedSake ?? currentState.sake;
       if (sake == null) return;
     }
+    await _postScanToX(sake);
+    if (!mounted) return;
     final detailPage = (sake.sakeId ?? 0) > 0
         ? SakeMasterDetailPage(
             venueSake: VenueSake(
@@ -1658,7 +1702,7 @@ class _SakeScanPageState extends State<SakeScanPage>
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               value: _shareToTimeline,
-              onChanged: _recordSaving
+              onChanged: _recordSaving || _openingDetail
                   ? null
                   : (value) {
                       if (value != null) {
@@ -1685,7 +1729,7 @@ class _SakeScanPageState extends State<SakeScanPage>
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               value: _autoTweetEnabled,
-              onChanged: _isAutoTweetUpdating
+              onChanged: _isAutoTweetUpdating || _openingDetail
                   ? null
                   : (value) {
                       if (value != null) {
@@ -1696,17 +1740,25 @@ class _SakeScanPageState extends State<SakeScanPage>
               activeColor: const Color(0xFF1D3567),
               contentPadding: EdgeInsets.zero,
               title: Text(
-                context.l10n.autoPostToX,
+                context.l10n.scanPostToX,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               subtitle: Text(
-                context.l10n.autoPostToXDescription,
+                context.l10n.scanPostToXDescription,
                 style: const TextStyle(fontSize: 10, height: 1.2),
               ),
             ),
+            if (_xPostError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _xPostError!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                ),
+              ),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -1737,7 +1789,7 @@ class _SakeScanPageState extends State<SakeScanPage>
             ),
             const SizedBox(height: 10),
             FilledButton(
-              onPressed: _recordSaving
+              onPressed: _recordSaving || _openingDetail || _isAutoTweetUpdating
                   ? null
                   : analysisCompleted
                   ? () => unawaited(_openAnalyzedDetail(state))
@@ -1752,7 +1804,9 @@ class _SakeScanPageState extends State<SakeScanPage>
                 disabledForegroundColor: const Color(0xFF697386),
               ),
               child: Text(
-                actionLabel,
+                _openingDetail
+                    ? (_autoTweetEnabled ? 'Xへの投稿を確認中…' : '保存中…')
+                    : actionLabel,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),

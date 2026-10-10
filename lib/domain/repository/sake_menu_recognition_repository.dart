@@ -361,6 +361,7 @@ class SakeMenuRecognitionRepository {
   Future<SakeBottleComprehensiveResponse?> comprehensiveSakeBottleAnalysis(
     File file, {
     String? preferences,
+    bool deferXPost = false,
     int? sakeId,
     String? scanSessionId,
     String? confirmedName,
@@ -371,6 +372,7 @@ class SakeMenuRecognitionRepository {
       final baseFile = await ImageUtils.compressAndEncodeImage(file);
       final payload = <String, dynamic>{
         'file': baseFile,
+        if (deferXPost) 'deferXPost': true,
         'locale': await resolveAppLocaleLanguageCode(),
       };
       if (preferences != null && preferences.isNotEmpty) {

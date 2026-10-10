@@ -281,6 +281,8 @@
   "shareToTimeline": "タイムラインにも表示する",
   "onlyFirstImageShared": "画像は1枚目だけ共有されます。",
   "autoPostToX": "Xに自動投稿",
+  "scanPostToX": "Xにも投稿する",
+  "scanPostToXDescription": "「詳細を見る」を押すと、写真1枚とこのお酒をXに投稿します。",
   "autoPostToXDescription": "解析完了時に結果をXにも自動投稿します。",
   "loginToChangeSetting": "ログインすると設定を変更できます。",
   "loadingAutoPostSetting": "自動投稿の設定を取得中です...",

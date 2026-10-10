@@ -64,6 +64,7 @@ class DefaultSakeScanAnalysisService implements SakeScanAnalysisService {
     final SakeBottleComprehensiveResponse? response = await _repository
         .comprehensiveSakeBottleAnalysis(
           image,
+          deferXPost: true,
           preferences: preferences == null || preferences.isEmpty
               ? null
               : preferences,

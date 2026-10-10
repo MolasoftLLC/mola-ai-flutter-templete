@@ -74,6 +74,11 @@ extension SavedSakeSyncStageValue on SavedSakeSyncStage {
   }
 }
 
+class SavedSakeXPostException implements Exception {
+  const SavedSakeXPostException(this.message);
+  final String message;
+}
+
 class SavedSakeSyncRepository {
   SavedSakeSyncRepository(this._apiClient);
 
@@ -283,6 +288,37 @@ class SavedSakeSyncRepository {
       logger.warning('うらやまカウント更新処理で例外が発生しました: $error');
       logger.info(stackTrace.toString());
       return false;
+    }
+  }
+
+  Future<void> postSavedSakeToX(String savedId) async {
+    try {
+      final response = await _apiClient.client
+          .send<dynamic, dynamic>(
+            Request(
+              'POST',
+              Uri.parse(
+                '/saved-sakes/${Uri.encodeComponent(savedId)}/post-to-x',
+              ),
+              _apiClient.client.baseUrl,
+              body: <String, dynamic>{'consent': true},
+            ),
+          )
+          .timeout(const Duration(seconds: 90));
+      if (!response.isSuccessful) {
+        final body = response.error;
+        throw SavedSakeXPostException(
+          body is Map && body['error'] is String
+              ? body['error'] as String
+              : 'Xに投稿できませんでした。再度お試しいただくか、チェックを外して詳細へ進んでください。',
+        );
+      }
+    } on SavedSakeXPostException {
+      rethrow;
+    } catch (_) {
+      throw const SavedSakeXPostException(
+        'Xへの投稿結果を確認できませんでした。もう一度「詳細を見る」を押すと投稿状況を確認します。',
+      );
     }
   }
 

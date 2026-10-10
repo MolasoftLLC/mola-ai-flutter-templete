@@ -1730,6 +1730,18 @@ abstract class AppLocalizations {
   /// **'Xに自動投稿'**
   String get autoPostToX;
 
+  /// No description provided for @scanPostToX.
+  ///
+  /// In ja, this message translates to:
+  /// **'Xにも投稿する'**
+  String get scanPostToX;
+
+  /// No description provided for @scanPostToXDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'「詳細を見る」を押すと、写真1枚とこのお酒をXに投稿します。'**
+  String get scanPostToXDescription;
+
   /// No description provided for @autoPostToXDescription.
   ///
   /// In ja, this message translates to:
