@@ -114,6 +114,12 @@ abstract class ApiClient extends ChopperService {
     @Body() Map<String, dynamic> body,
   );
 
+  @Patch(path: 'saved-sakes/{savedId}/bookmark')
+  Future<Response> updateSavedSakeBookmark(
+    @Path('savedId') String savedId,
+    @Body() Map<String, dynamic> body,
+  );
+
   @Post(path: 'saved-sakes/{savedId}/remove')
   Future<Response> removeSavedSake(
     @Path('savedId') String savedId,

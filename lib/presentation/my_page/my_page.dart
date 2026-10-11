@@ -156,7 +156,7 @@ class _MyPageState extends State<MyPage> {
     final favNotifier = context.watch<FavoriteNotifier>();
     final savedNotifier = context.watch<SavedSakeNotifier>();
     final savedSakeList = context.select(
-      (SavedSakeState state) => state.savedSakeList,
+      (SavedSakeState state) => state.bookmarkedSakes,
     );
     final isGridView = context.select(
       (SavedSakeState state) => state.isGridView,
@@ -511,8 +511,22 @@ class _MyPageState extends State<MyPage> {
                                           ),
                                         );
                                       },
-                                      onRemove: (sake) {
-                                        savedNotifier.toggleSavedSake(sake);
+                                      onRemove: (sake) async {
+                                        final changed = await savedNotifier
+                                            .toggleSavedSake(sake);
+                                        if (!context.mounted) return;
+                                        if (!changed) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                '保存解除できませんでした。もう一度お試しください。',
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         _showToast(
                                           context,
                                           message: context.l10n
@@ -541,8 +555,22 @@ class _MyPageState extends State<MyPage> {
                                           ),
                                         );
                                       },
-                                      onRemove: (sake) {
-                                        savedNotifier.toggleSavedSake(sake);
+                                      onRemove: (sake) async {
+                                        final changed = await savedNotifier
+                                            .toggleSavedSake(sake);
+                                        if (!context.mounted) return;
+                                        if (!changed) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                '保存解除できませんでした。もう一度お試しください。',
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                         _showToast(
                                           context,
                                           message: context.l10n

@@ -426,7 +426,7 @@ class _HistorySakeTile extends StatelessWidget {
     final displaySake =
         details ?? Sake(sakeId: sake.sakeId, name: sake.name, type: sake.type);
     final favorites = context.watch<FavoriteState>().myFavoriteList;
-    final saved = context.watch<SavedSakeState>().savedSakeList;
+    final saved = context.watch<SavedSakeState>().bookmarkedSakes;
     final favoriteNotifier = context.read<FavoriteNotifier>();
     final savedNotifier = context.read<SavedSakeNotifier>();
     final isFavorited = favorites.any(
@@ -490,7 +490,16 @@ class _HistorySakeTile extends StatelessWidget {
       },
       onSave: () async {
         try {
-          await savedNotifier.toggleSavedSake(displaySake);
+          final changed = await savedNotifier.toggleSavedSake(displaySake);
+          if (!context.mounted) {
+            return isSaved;
+          }
+          if (!changed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('保存状態を変更できませんでした。もう一度お試しください。')),
+            );
+            return isSaved;
+          }
           return !isSaved;
         } on SavedSakeGuestLimitReachedException {
           if (!context.mounted) return false;

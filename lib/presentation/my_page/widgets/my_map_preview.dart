@@ -170,12 +170,12 @@ class _MyMapPreviewState extends State<MyMapPreview> {
                       zoomControlsEnabled: false,
                       gestureRecognizers: {
                         Factory<OneSequenceGestureRecognizer>(
-                          () => ScaleGestureRecognizer(),
+                          () => EagerGestureRecognizer(),
                         ),
                       },
                       myLocationButtonEnabled: false,
                       mapToolbarEnabled: false,
-                      scrollGesturesEnabled: false,
+                      scrollGesturesEnabled: true,
                       zoomGesturesEnabled: true,
                       rotateGesturesEnabled: false,
                       tiltGesturesEnabled: false,

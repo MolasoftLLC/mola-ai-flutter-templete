@@ -756,6 +756,22 @@ class SavedSakeSyncRepository {
     }
   }
 
+  Future<bool> updateBookmark({
+    required String userId,
+    required String savedId,
+    required bool isBookmarked,
+  }) async {
+    try {
+      final response = await _apiClient.updateSavedSakeBookmark(savedId, {
+        'userId': userId,
+        'isBookmarked': isBookmarked,
+      });
+      return response.isSuccessful;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> deleteSavedSakeRecord({
     required String userId,
     required String savedId,

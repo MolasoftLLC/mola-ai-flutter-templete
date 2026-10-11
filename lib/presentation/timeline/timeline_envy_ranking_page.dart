@@ -64,7 +64,7 @@ class TimelineEnvyRankingPage extends StatelessWidget {
     final authRepository = context.read<AuthRepository>();
     final savedNotifier = context.read<SavedSakeNotifier>();
     final savedList = context.select(
-      (SavedSakeState state) => state.savedSakeList,
+      (SavedSakeState state) => state.bookmarkedSakes,
     );
 
     Future<bool> ensureLoggedIn() async {
@@ -129,7 +129,16 @@ class TimelineEnvyRankingPage extends StatelessWidget {
       );
       final shouldShowSavedToast = !isSaved;
       try {
-        await savedNotifier.toggleSavedSake(normalized);
+        final changed = await savedNotifier.toggleSavedSake(normalized);
+        if (!context.mounted) {
+          return;
+        }
+        if (!changed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('保存状態を変更できませんでした。もう一度お試しください。')),
+          );
+          return;
+        }
         if (!context.mounted) {
           return;
         }

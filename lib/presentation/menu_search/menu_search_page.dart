@@ -87,7 +87,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
       (FavoriteState state) => state.myFavoriteList,
     );
     final mySavedList = context.select(
-      (SavedSakeState state) => state.savedSakeList,
+      (SavedSakeState state) => state.bookmarkedSakes,
     );
     final errorMessage = context.select(
       (MenuSearchPageState state) => state.errorMessage,
@@ -600,9 +600,21 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                           return false;
                                         }
                                         try {
-                                          await savedNotifier.toggleSavedSake(
-                                            detailedSake!,
-                                          );
+                                          final changed = await savedNotifier
+                                              .toggleSavedSake(detailedSake!);
+                                          if (!changed) {
+                                            if (context.mounted)
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    '保存状態を変更できませんでした。もう一度お試しください。',
+                                                  ),
+                                                ),
+                                              );
+                                            return isSaved;
+                                          }
                                         } on SavedSakeGuestLimitReachedException {
                                           await GuestLimitDialog.showSavedSakeLimit(
                                             context,

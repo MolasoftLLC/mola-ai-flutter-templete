@@ -77,6 +77,7 @@ _$SakeImpl _$$SakeImplFromJson(Map<String, dynamic> json) => _$SakeImpl(
           (json['personalTasteRatings'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ),
+      isBookmarked: json['isBookmarked'] as bool? ?? true,
       savedId: json['savedId'] as String?,
       imagePaths: (json['imagePaths'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -117,6 +118,7 @@ Map<String, dynamic> _$$SakeImplToJson(_$SakeImpl instance) =>
       'drinkingPlace': instance.drinkingPlace,
       'userTags': instance.userTags,
       'personalTasteRatings': instance.personalTasteRatings,
+      'isBookmarked': instance.isBookmarked,
       'savedId': instance.savedId,
       'imagePaths': instance.imagePaths,
       'username': instance.username,

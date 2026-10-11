@@ -67,7 +67,7 @@ class MainSearchPage extends StatelessWidget {
       (FavoriteState state) => state.myFavoriteList,
     );
     final savedSakeList = context.select(
-      (SavedSakeState state) => state.savedSakeList,
+      (SavedSakeState state) => state.bookmarkedSakes,
     );
     final isLoading = context.select(
       (MainSearchPageState state) => state.isLoading,
@@ -679,7 +679,20 @@ class MainSearchPage extends StatelessWidget {
                     }
                     final shouldShowSavedToast = !isSaved;
                     try {
-                      await savedNotifier.toggleSavedSake(sakeInfo);
+                      final changed = await savedNotifier.toggleSavedSake(
+                        sakeInfo,
+                      );
+                      if (!context.mounted) {
+                        return;
+                      }
+                      if (!changed) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('保存状態を変更できませんでした。もう一度お試しください。'),
+                          ),
+                        );
+                        return;
+                      }
                     } on SavedSakeGuestLimitReachedException {
                       await GuestLimitDialog.showSavedSakeLimit(
                         context,

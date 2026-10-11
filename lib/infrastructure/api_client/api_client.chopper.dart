@@ -390,6 +390,22 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> updateSavedSakeBookmark(
+    String savedId,
+    Map<String, dynamic> body,
+  ) {
+    final Uri $url = Uri.parse('/saved-sakes/${savedId}/bookmark');
+    final $body = body;
+    final Request $request = Request(
+      'PATCH',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> removeSavedSake(
     String savedId,
     Map<String, dynamic> body,

@@ -60,6 +60,7 @@ class Sake with _$Sake {
     DrinkingPlace? drinkingPlace,
     List<String>? userTags,
     Map<String, int>? personalTasteRatings,
+    @Default(true) bool isBookmarked,
     String? savedId,
     List<String>? imagePaths,
     String? username,

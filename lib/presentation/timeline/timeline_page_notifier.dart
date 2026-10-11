@@ -208,6 +208,12 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
 
   Future<void> refresh() => fetchTimeline(isRefresh: true);
 
+  void removePost(String savedId) {
+    state = state.copyWith(
+      sakes: state.sakes.where((sake) => sake.savedId != savedId).toList(),
+    );
+  }
+
   Future<void> loadMore() async {
     if (state.isLoadingMore || state.isLoading || state.isRefreshing) {
       return;

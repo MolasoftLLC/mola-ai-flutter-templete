@@ -69,6 +69,49 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
   bool _isTutorialVisible = false;
   bool _isTutorialScheduled = false;
   bool _hasLoadedTutorialPreference = false;
+  final Set<String> _deletingPostIds = {};
+
+  Future<void> _deletePost(Sake sake) async {
+    final id = sake.savedId;
+    if (id == null || id.isEmpty || _deletingPostIds.contains(id)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('タイムラインから削除しますか？'),
+        content: const Text('保存したお酒・写真・感想などの記録は残ります。Xに投稿済みの内容は削除されません。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('削除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true || _deletingPostIds.contains(id)) return;
+    setState(() => _deletingPostIds.add(id));
+    try {
+      final success = await context
+          .read<SavedSakeNotifier>()
+          .updateTimelineVisibility(savedId: id, isPublic: false);
+      if (!mounted) return;
+      if (!success) throw StateError('投稿を削除できませんでした。');
+      context.read<TimelinePageNotifier>().removePost(id);
+      SnackBarUtils.showInfoSnackBar(context, message: 'タイムラインから削除しました。');
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '削除できませんでした。もう一度お試しください。',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deletingPostIds.remove(id));
+    }
+  }
 
   bool _isTimelineTabActive(BuildContext context) {
     try {
@@ -253,7 +296,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
     final savedNotifier = context.read<SavedSakeNotifier>();
     final favoriteNotifier = context.read<FavoriteNotifier>();
     final savedList = context.select(
-      (SavedSakeState state) => state.savedSakeList,
+      (SavedSakeState state) => state.bookmarkedSakes,
     );
     final favoriteList = context.select(
       (FavoriteState state) => state.myFavoriteList,
@@ -361,6 +404,10 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
 
       return _TimelineSakeCard(
         sake: sake,
+        onDelete: isMyPosts && savedId != null && savedId.isNotEmpty
+            ? () => _deletePost(sake)
+            : null,
+        isDeleting: _deletingPostIds.contains(savedId),
         isSaved: isSaved,
         isFavorite: isFavorite,
         isEnvied: isEnvied,
@@ -418,7 +465,16 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           );
           final shouldShowSavedToast = !isSaved;
           try {
-            await savedNotifier.toggleSavedSake(normalized);
+            final changed = await savedNotifier.toggleSavedSake(normalized);
+            if (!context.mounted) {
+              return;
+            }
+            if (!changed) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('保存状態を変更できませんでした。もう一度お試しください。')),
+              );
+              return;
+            }
             if (shouldShowSavedToast) {
               SnackBarUtils.showInfoSnackBar(
                 context,
@@ -845,6 +901,8 @@ class _TimelineSakeCard extends StatefulWidget {
     this.onReport,
     this.onBlock,
     this.onOpenDetails,
+    this.onDelete,
+    this.isDeleting = false,
   });
 
   final Sake sake;
@@ -861,6 +919,8 @@ class _TimelineSakeCard extends StatefulWidget {
   final VoidCallback? onReport;
   final VoidCallback? onBlock;
   final VoidCallback? onOpenDetails;
+  final VoidCallback? onDelete;
+  final bool isDeleting;
 
   @override
   State<_TimelineSakeCard> createState() => _TimelineSakeCardState();
@@ -938,6 +998,30 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
                     ),
                   ),
                 ),
+                if (widget.onDelete != null)
+                  Positioned(
+                    right: -6,
+                    top: -8,
+                    child: Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      child: IconButton(
+                        tooltip: 'タイムラインから削除',
+                        onPressed: widget.isDeleting ? null : widget.onDelete,
+                        icon: widget.isDeleting
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                      ),
+                    ),
+                  ),
                 if (widget.onReport != null)
                   Positioned(
                     right: -6,

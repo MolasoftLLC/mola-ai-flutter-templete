@@ -493,6 +493,7 @@ mixin _$Sake {
   List<String>? get userTags => throw _privateConstructorUsedError;
   Map<String, int>? get personalTasteRatings =>
       throw _privateConstructorUsedError;
+  bool get isBookmarked => throw _privateConstructorUsedError;
   String? get savedId => throw _privateConstructorUsedError;
   List<String>? get imagePaths => throw _privateConstructorUsedError;
   String? get username => throw _privateConstructorUsedError;
@@ -537,6 +538,7 @@ abstract class $SakeCopyWith<$Res> {
       DrinkingPlace? drinkingPlace,
       List<String>? userTags,
       Map<String, int>? personalTasteRatings,
+      bool isBookmarked,
       String? savedId,
       List<String>? imagePaths,
       String? username,
@@ -584,6 +586,7 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
     Object? personalTasteRatings = freezed,
+    Object? isBookmarked = null,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
     Object? username = freezed,
@@ -663,6 +666,10 @@ class _$SakeCopyWithImpl<$Res, $Val extends Sake>
           ? _value.personalTasteRatings
           : personalTasteRatings // ignore: cast_nullable_to_non_nullable
               as Map<String, int>?,
+      isBookmarked: null == isBookmarked
+          ? _value.isBookmarked
+          : isBookmarked // ignore: cast_nullable_to_non_nullable
+              as bool,
       savedId: freezed == savedId
           ? _value.savedId
           : savedId // ignore: cast_nullable_to_non_nullable
@@ -755,6 +762,7 @@ abstract class _$$SakeImplCopyWith<$Res> implements $SakeCopyWith<$Res> {
       DrinkingPlace? drinkingPlace,
       List<String>? userTags,
       Map<String, int>? personalTasteRatings,
+      bool isBookmarked,
       String? savedId,
       List<String>? imagePaths,
       String? username,
@@ -800,6 +808,7 @@ class __$$SakeImplCopyWithImpl<$Res>
     Object? drinkingPlace = freezed,
     Object? userTags = freezed,
     Object? personalTasteRatings = freezed,
+    Object? isBookmarked = null,
     Object? savedId = freezed,
     Object? imagePaths = freezed,
     Object? username = freezed,
@@ -879,6 +888,10 @@ class __$$SakeImplCopyWithImpl<$Res>
           ? _value._personalTasteRatings
           : personalTasteRatings // ignore: cast_nullable_to_non_nullable
               as Map<String, int>?,
+      isBookmarked: null == isBookmarked
+          ? _value.isBookmarked
+          : isBookmarked // ignore: cast_nullable_to_non_nullable
+              as bool,
       savedId: freezed == savedId
           ? _value.savedId
           : savedId // ignore: cast_nullable_to_non_nullable
@@ -955,6 +968,7 @@ class _$SakeImpl implements _Sake {
       this.drinkingPlace,
       final List<String>? userTags,
       final Map<String, int>? personalTasteRatings,
+      this.isBookmarked = true,
       this.savedId,
       final List<String>? imagePaths,
       this.username,
@@ -1038,6 +1052,9 @@ class _$SakeImpl implements _Sake {
   }
 
   @override
+  @JsonKey()
+  final bool isBookmarked;
+  @override
   final String? savedId;
   final List<String>? _imagePaths;
   @override
@@ -1093,7 +1110,7 @@ class _$SakeImpl implements _Sake {
 
   @override
   String toString() {
-    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, timelineComment: $timelineComment, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
+    return 'Sake(sakeId: $sakeId, brandId: $brandId, name: $name, brewery: $brewery, types: $types, sakeMeterValue: $sakeMeterValue, type: $type, price: $price, description: $description, recommendationScore: $recommendationScore, impression: $impression, timelineComment: $timelineComment, place: $place, drinkingPlace: $drinkingPlace, userTags: $userTags, personalTasteRatings: $personalTasteRatings, isBookmarked: $isBookmarked, savedId: $savedId, imagePaths: $imagePaths, username: $username, displayName: $displayName, iconUrl: $iconUrl, prefectureCode: $prefectureCode, primaryImageUrl: $primaryImageUrl, thumbnailImageUrl: $thumbnailImageUrl, community: $community, sameBrandSakes: $sameBrandSakes, envyCount: $envyCount, isPublic: $isPublic, syncStatus: $syncStatus)';
   }
 
   @override
@@ -1124,6 +1141,8 @@ class _$SakeImpl implements _Sake {
             const DeepCollectionEquality().equals(other._userTags, _userTags) &&
             const DeepCollectionEquality()
                 .equals(other._personalTasteRatings, _personalTasteRatings) &&
+            (identical(other.isBookmarked, isBookmarked) ||
+                other.isBookmarked == isBookmarked) &&
             (identical(other.savedId, savedId) || other.savedId == savedId) &&
             const DeepCollectionEquality()
                 .equals(other._imagePaths, _imagePaths) &&
@@ -1170,6 +1189,7 @@ class _$SakeImpl implements _Sake {
         drinkingPlace,
         const DeepCollectionEquality().hash(_userTags),
         const DeepCollectionEquality().hash(_personalTasteRatings),
+        isBookmarked,
         savedId,
         const DeepCollectionEquality().hash(_imagePaths),
         username,
@@ -1217,6 +1237,7 @@ abstract class _Sake implements Sake {
       final DrinkingPlace? drinkingPlace,
       final List<String>? userTags,
       final Map<String, int>? personalTasteRatings,
+      final bool isBookmarked,
       final String? savedId,
       final List<String>? imagePaths,
       final String? username,
@@ -1266,6 +1287,8 @@ abstract class _Sake implements Sake {
   List<String>? get userTags;
   @override
   Map<String, int>? get personalTasteRatings;
+  @override
+  bool get isBookmarked;
   @override
   String? get savedId;
   @override

@@ -1972,7 +1972,7 @@ class _MasterSaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final savedNotifier = notifier;
     if (savedNotifier == null) return const SizedBox.shrink();
-    final isSaved = _findSavedSake(savedNotifier, sake) != null;
+    final isSaved = _isSaved(savedNotifier, sake);
     return IconButton(
       tooltip: isSaved ? context.l10n.removeSavedSake : context.l10n.saveSake,
       icon: Icon(
@@ -1997,7 +1997,16 @@ class _MasterSaveButton extends StatelessWidget {
           return;
         }
         try {
-          await savedNotifier.toggleSavedSake(sake);
+          final changed = await savedNotifier.toggleSavedSake(sake);
+          if (!context.mounted) {
+            return;
+          }
+          if (!changed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('保存状態を変更できませんでした。もう一度お試しください。')),
+            );
+            return;
+          }
           if (!isSaved && context.mounted) {
             SnackBarUtils.showInfoSnackBar(
               context,
@@ -2325,7 +2334,7 @@ class _MasterRecordCta extends StatelessWidget {
 }
 
 bool _isSaved(SavedSakeNotifier notifier, Sake sake) => notifier.savedSakes.any(
-  (candidate) => _isSameSakeIdentity(candidate, sake),
+  (candidate) => candidate.isBookmarked && _isSameSakeIdentity(candidate, sake),
 );
 
 bool _isSameSakeIdentity(Sake candidate, Sake sake) {
@@ -2365,7 +2374,16 @@ Future<void> _addSakeRecord(
     return;
   }
   try {
-    await notifier.toggleSavedSake(sake);
+    final changed = await notifier.toggleSavedSake(sake);
+    if (!changed) {
+      if (context.mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '保存状態を変更できませんでした。もう一度お試しください。',
+        );
+      }
+      return;
+    }
     if (!context.mounted) return;
     SnackBarUtils.showInfoSnackBar(
       context,

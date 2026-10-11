@@ -32,6 +32,11 @@ class SavedSakeState with _$SavedSakeState {
   }) = _SavedSakeState;
 }
 
+extension SavedSakeBookmarks on SavedSakeState {
+  List<Sake> get bookmarkedSakes =>
+      savedSakeList.where((sake) => sake.isBookmarked).toList(growable: false);
+}
+
 class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     with LocatorMixin {
   SavedSakeNotifier() : super(const SavedSakeState()) {
@@ -57,10 +62,10 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   bool get _isGuest => _authRepository.currentUser == null;
 
   bool get hasReachedGuestLimit =>
-      _isGuest && state.savedSakeList.length >= guestSavedLimit;
+      _isGuest && state.bookmarkedSakes.length >= guestSavedLimit;
 
   bool get hasReachedMemberLimit =>
-      !_isGuest && state.savedSakeList.length >= memberSavedLimit;
+      !_isGuest && state.bookmarkedSakes.length >= memberSavedLimit;
 
   bool _isRemoteImagePath(String path) =>
       path.startsWith('http://') || path.startsWith('https://');
@@ -153,16 +158,16 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   Future<String> addSavedSake(Sake sake) async {
     final alreadySaved = state.savedSakeList.any(
-      (item) => _isSameSake(item, sake),
+      (item) => item.isBookmarked && _isSameSake(item, sake),
     );
     if (_isGuest &&
         !alreadySaved &&
-        state.savedSakeList.length >= guestSavedLimit) {
+        state.bookmarkedSakes.length >= guestSavedLimit) {
       throw const SavedSakeGuestLimitReachedException();
     }
     if (!_isGuest &&
         !alreadySaved &&
-        state.savedSakeList.length >= memberSavedLimit) {
+        state.bookmarkedSakes.length >= memberSavedLimit) {
       throw const SavedSakeMemberLimitReachedException();
     }
     final savedId = sake.savedId ?? _generateId();
@@ -173,63 +178,68 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     return savedId;
   }
 
-  Future<void> toggleSavedSake(Sake sake) async {
+  Future<bool> toggleSavedSake(Sake sake) async {
+    try {
+      await _toggleSavedSake(sake);
+      return true;
+    } on SavedSakeGuestLimitReachedException {
+      rethrow;
+    } on SavedSakeMemberLimitReachedException {
+      rethrow;
+    } catch (error) {
+      logger.warning('保存状態の変更に失敗しました: $error');
+      return false;
+    }
+  }
+
+  Future<void> _toggleSavedSake(Sake sake) async {
     AppAnalytics.instance.event(AppAnalytics.instance.screen, 'save');
-    final exists = state.savedSakeList.any(
-      (item) => _isSameSakeProduct(item, sake),
-    );
-
-    if (exists) {
-      if (!_isGuest) {
-        final user = _authRepository.currentUser;
-        if (user != null) {
-          Sake? target;
-          for (final item in state.savedSakeList) {
-            if (_isSameSakeProduct(item, sake)) {
-              target = item;
-              break;
-            }
-          }
-          final savedId = target?.savedId;
-          final shouldRequestServerDelete =
-              target != null &&
-              target.syncStatus == SavedSakeSyncStatus.serverSynced;
-          if (savedId != null &&
-              savedId.isNotEmpty &&
-              shouldRequestServerDelete) {
-            final success = await _syncRepository.deleteSavedSakeRecord(
-              userId: user.uid,
-              savedId: savedId,
-            );
-            if (!success) {
-              logger.warning('保存酒のサーバー削除に失敗したためローカル削除を中止しました: id=$savedId');
-              return;
-            }
-          } else if (savedId != null && savedId.isNotEmpty) {
-            logger.info('ローカルのみの保存酒のためサーバー削除はスキップしました: id=$savedId');
-          } else {
-            logger.info('削除対象の savedId が未設定のためサーバー削除はスキップしました');
-          }
-        }
-      }
-
-      final updatedList = state.savedSakeList
-          .where((item) => !_isSameSakeProduct(item, sake))
-          .toList();
-      state = state.copyWith(savedSakeList: updatedList);
-      _syncFiltersWithAvailableTags();
-      logger.info('保存済み日本酒を削除: ${sake.name ?? '不明な日本酒'}');
-    } else {
-      final savedId = await addSavedSake(sake);
-      if (!_isGuest) {
-        final synced = await syncSavedSakeToServer(savedId);
-        if (synced == null) {
-          logger.warning('保存酒のサーバー保存に失敗しました: id=$savedId');
-        }
-      }
+    final matching = state.savedSakeList
+        .where((item) => _isSameSakeProduct(item, sake))
+        .toList();
+    if (matching.isEmpty) {
+      final savedId = await addSavedSake(sake.copyWith(isBookmarked: true));
+      if (!_isGuest) await syncSavedSakeToServer(savedId);
       return;
     }
-
+    final bookmark = !matching.any((item) => item.isBookmarked);
+    if (bookmark && hasReachedGuestLimit) {
+      throw const SavedSakeGuestLimitReachedException();
+    }
+    if (bookmark && hasReachedMemberLimit) {
+      throw const SavedSakeMemberLimitReachedException();
+    }
+    // 保存解除でも記録自体は残し、公開設定には触れない。
+    final target = matching.first;
+    final savedId = target.savedId;
+    if (savedId == null || savedId.isEmpty) throw StateError('保存情報が見つかりません。');
+    await _syncTasks[savedId];
+    final user = _authRepository.currentUser;
+    if (user != null) {
+      final current = state.savedSakeList.firstWhere(
+        (item) => item.savedId == savedId,
+      );
+      if (current.syncStatus != SavedSakeSyncStatus.serverSynced) {
+        final synced = await syncSavedSakeToServer(savedId);
+        if (synced == null) throw StateError('保存情報を同期できませんでした。');
+      }
+      final success = await _syncRepository.updateBookmark(
+        userId: user.uid,
+        savedId: savedId,
+        isBookmarked: bookmark,
+      );
+      if (!success) throw StateError('保存状態を変更できませんでした。');
+    }
+    state = state.copyWith(
+      savedSakeList: state.savedSakeList
+          .map(
+            (item) => _isSameSakeProduct(item, sake)
+                ? item.copyWith(isBookmarked: bookmark)
+                : item,
+          )
+          .toList(),
+    );
+    _syncFiltersWithAvailableTags();
     await _persistSavedSakes();
   }
 
@@ -601,14 +611,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     required bool isPublic,
     String? timelineComment,
   }) async {
-    final index = state.savedSakeList.indexWhere(
-      (item) => item.savedId != null && item.savedId == savedId,
-    );
-    if (index == -1) {
-      logger.warning('公開設定更新対象の保存酒が見つかりません: id=$savedId');
-      return false;
-    }
-
+    await _syncTasks[savedId];
     final user = _authRepository.currentUser;
     if (user == null) {
       logger.warning('公開設定更新に失敗: ログイン情報がありません');
@@ -625,10 +628,15 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       return false;
     }
 
+    final index = state.savedSakeList.indexWhere(
+      (item) => item.savedId == savedId,
+    );
+    if (index == -1) return true;
     final updatedList = [...state.savedSakeList];
     updatedList[index] = updatedList[index].copyWith(
       isPublic: isPublic,
-      timelineComment: timelineComment?.trim(),
+      timelineComment:
+          timelineComment?.trim() ?? updatedList[index].timelineComment,
     );
     state = state.copyWith(savedSakeList: updatedList);
     await _persistSavedSakes();
@@ -709,6 +717,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       personalTasteRatings: existing.personalTasteRatings,
       imagePaths: existing.imagePaths,
       isPublic: existing.isPublic,
+      isBookmarked: existing.isBookmarked,
       syncStatus: user == null
           ? existing.syncStatus
           : SavedSakeSyncStatus.serverSynced,
@@ -728,7 +737,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   bool isSaved(String? name, String? type) {
     return state.savedSakeList.any(
-      (item) => item.name == name && item.type == type,
+      (item) => item.isBookmarked && item.name == name && item.type == type,
     );
   }
 
