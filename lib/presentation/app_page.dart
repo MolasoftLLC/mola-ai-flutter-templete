@@ -86,10 +86,15 @@ class AppPage extends StatelessWidget {
                   child: MenuSearchPage.wrapped(),
                 ),
               ),
-              AnalyticsScreen(
-                name: 'map',
-                active: currentIndex == 2,
-                child: SakeMapPage.wrapped(),
+              KeyedSubtree(
+                key: ValueKey('map-tab-${historyOwner ?? 'guest'}'),
+                child: AnalyticsScreen(
+                  name: 'map',
+                  active: currentIndex == 2,
+                  child: SakeMapPage.wrapped(
+                    myMapRequests: notifier.myMapRequests,
+                  ),
+                ),
               ),
               // Preserve timeline links and its intro while the rightmost tab is My Page.
               AnalyticsScreen(
@@ -118,6 +123,16 @@ class AppPage extends StatelessWidget {
                 4: 'my_page',
               }[index]!,
             );
+            if (index == 0 && currentIndex == 0) {
+              final controller = notifier.homeFeatureGuide.homeScrollController;
+              if (controller.hasClients) {
+                controller.animateTo(
+                  controller.position.minScrollExtent,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOutCubic,
+                );
+              }
+            }
             notifier.onTabTapped(index);
           },
           onScanTap: () => openNewHomeScanner(context),

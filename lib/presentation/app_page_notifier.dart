@@ -47,6 +47,13 @@ class AppPageNotifier extends StateNotifier<AppPageState>
 
   final BuildContext context;
   final homeFeatureGuide = HomeFeatureGuide();
+  final myMapRequests = ValueNotifier<int>(0);
+
+  void openMyMap() {
+    onTabTapped(2);
+    myMapRequests.value++;
+  }
+
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   MolaApiRepository get molaApiRepository => read<MolaApiRepository>();
   MyPageNotifier get myPageNotifier => read<MyPageNotifier>();
@@ -127,6 +134,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   void dispose() {
     _homeNoticeRefreshTimer?.cancel();
     homeFeatureGuide.dispose();
+    myMapRequests.dispose();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();

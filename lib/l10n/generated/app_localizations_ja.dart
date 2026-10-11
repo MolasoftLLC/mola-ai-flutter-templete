@@ -1077,7 +1077,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get placeConsumedHint => 'Google検索候補から店舗を登録できます';
+  String get placeConsumedHint => 'タップで店舗の候補から登録！';
 
   @override
   String get addConsumedPlace => '店舗を登録';

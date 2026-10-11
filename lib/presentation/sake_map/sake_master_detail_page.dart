@@ -2409,7 +2409,7 @@ class _PersonalRecordSection extends StatelessWidget {
           children: [
             const Expanded(child: _SectionHeading(title: 'あなたの記録')),
             TextButton.icon(
-              onPressed: () => _showRecordEditorSheet(
+              onPressed: () => showSakeRecordEditorSheet(
                 context,
                 notifier: savedNotifier,
                 sake: record,
@@ -2425,7 +2425,7 @@ class _PersonalRecordSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => _showRecordEditorSheet(
+            onTap: () => showSakeRecordEditorSheet(
               context,
               notifier: savedNotifier,
               sake: record,
@@ -2490,7 +2490,7 @@ class _PersonalRecordSection extends StatelessWidget {
   }
 }
 
-Future<void> _showRecordEditorSheet(
+Future<void> showSakeRecordEditorSheet(
   BuildContext context, {
   required SavedSakeNotifier notifier,
   required Sake sake,
@@ -2818,10 +2818,20 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   bool _isSaving = false;
   String? _saveError;
   bool _isAddingImage = false;
+  void Function()? _removeRecordListener;
+
+  Sake get _currentRecord =>
+      widget.notifier.savedSakes
+          .where((record) => record.savedId == widget.sake.savedId)
+          .firstOrNull ??
+      widget.sake;
 
   @override
   void initState() {
     super.initState();
+    _removeRecordListener = widget.notifier.addListener((_) {
+      if (mounted) setState(() {});
+    }, fireImmediately: false);
     _impressionController = TextEditingController(
       text: widget.sake.impression ?? '',
     );
@@ -2834,6 +2844,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
 
   @override
   void dispose() {
+    _removeRecordListener?.call();
     _impressionController.dispose();
     _placeController.dispose();
     super.dispose();
@@ -2849,11 +2860,14 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     final isLoggedIn = context.read<AuthState>().user != null;
     try {
       final place = _placeController.text.trim();
-      var updated = widget.sake.copyWith(
+      final current = widget.notifier.savedSakes
+          .where((record) => record.savedId == widget.sake.savedId)
+          .firstOrNull;
+      if (current == null) throw StateError('記録が見つかりません。');
+      var updated = current.copyWith(
         impression: _impressionController.text.trim(),
         place: place.isEmpty ? null : place,
         drinkingPlace: _selectedPlace,
-        isPublic: false,
         userTags: _tags.toList(growable: false),
       );
       await widget.notifier.updateSavedSake(updated);
@@ -2910,7 +2924,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _showImageSourceSheet() async {
-    if ((widget.sake.imagePaths ?? const <String>[]).length >= 3) {
+    if ((_currentRecord.imagePaths ?? const <String>[]).length >= 3) {
       SnackBarUtils.showWarningSnackBar(context, message: '写真は3枚まで追加できます。');
       return;
     }
@@ -2965,6 +2979,16 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       if (!mounted) return;
       if (updated == null) {
         SnackBarUtils.showWarningSnackBar(context, message: '写真を追加できませんでした。');
+      } else {
+        SnackBarUtils.showInfoSnackBar(context, message: '写真を追加しました。');
+      }
+    } catch (error) {
+      logger.warning('思い出写真の追加に失敗しました: $error');
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '写真を追加できませんでした。もう一度お試しください。',
+        );
       }
     } finally {
       if (mounted) setState(() => _isAddingImage = false);
@@ -3062,12 +3086,13 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
             Expanded(
               child: _MemoryPhotoTile(
                 path:
-                    index < (widget.sake.imagePaths ?? const <String>[]).length
-                    ? widget.sake.imagePaths![index]
+                    index <
+                        (_currentRecord.imagePaths ?? const <String>[]).length
+                    ? _currentRecord.imagePaths![index]
                     : null,
                 isPrimary:
                     index ==
-                    (widget.sake.imagePaths ?? const <String>[]).length,
+                    (_currentRecord.imagePaths ?? const <String>[]).length,
                 isAdding: _isAddingImage,
                 onAdd: _showImageSourceSheet,
               ),
@@ -3186,31 +3211,87 @@ class _MemoryPhotoTile extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => const _MemoryImageError(),
           );
-    return AspectRatio(
-      aspectRatio: 1,
-      child: ClipRRect(
-        borderRadius: borderRadius,
+    return InkWell(
+      onTap: () => _showMemoryImagePreview(context, path!),
+      borderRadius: borderRadius,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              image,
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: const Icon(
+                    Icons.zoom_in,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showMemoryImagePreview(BuildContext context, String path) {
+  final isRemote = path.startsWith('http://') || path.startsWith('https://');
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: SafeArea(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            image,
+            InteractiveViewer(
+              minScale: 1,
+              maxScale: 5,
+              child: Center(
+                child: isRemote
+                    ? Image.network(
+                        path,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (_, child, progress) => progress == null
+                            ? child
+                            : const CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                        errorBuilder: (_, _, _) => const _MemoryImageError(),
+                      )
+                    : Image.file(
+                        File(path),
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const _MemoryImageError(),
+                      ),
+              ),
+            ),
             Positioned(
-              top: 6,
-              right: 6,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(4),
-                child: const Icon(Icons.zoom_in, color: Colors.white, size: 16),
+              top: 8,
+              right: 8,
+              child: IconButton(
+                tooltip: '閉じる',
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _MemoryImageError extends StatelessWidget {

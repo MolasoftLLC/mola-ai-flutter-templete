@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/logger.dart';
+import '../../common/utils/personal_map_camera.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../common/utils/sake_image_utils.dart';
@@ -27,16 +28,26 @@ import 'sake_master_detail_page.dart';
 import 'venue_menu_carousel.dart';
 
 class SakeMapPage extends StatefulWidget {
-  const SakeMapPage._({this.initialSake});
+  const SakeMapPage._({this.initialSake, this.myMapRequests});
+
+  final ValueNotifier<int>? myMapRequests;
 
   final SakeMapSearchResult? initialSake;
 
-  static Widget wrapped({SakeMapSearchResult? initialSake}) =>
-      StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
-        create: (context) =>
-            SakeMapPageNotifier(context.read<PlaceMapRepository>()),
-        child: SakeMapPage._(initialSake: initialSake),
-      );
+  static Widget wrapped({
+    SakeMapSearchResult? initialSake,
+    ValueNotifier<int>? myMapRequests,
+  }) => StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
+    create: (context) => SakeMapPageNotifier(
+      context.read<PlaceMapRepository>(),
+      ownVenuesLoader: (sake) =>
+          context.read<PlaceMapRepository>().fetchMyVenues(sake: sake),
+    ),
+    child: SakeMapPage._(
+      initialSake: initialSake,
+      myMapRequests: myMapRequests,
+    ),
+  );
 
   @override
   State<SakeMapPage> createState() => _SakeMapPageState();
@@ -62,7 +73,28 @@ class _SakeMapPageState extends State<SakeMapPage> {
   bool _didApplyInitialSake = false;
 
   @override
+  void initState() {
+    super.initState();
+    widget.myMapRequests?.addListener(_openMyMap);
+  }
+
+  Future<void> _openMyMap() async {
+    if (!mounted || _mapController == null) return;
+    _searchController.clear();
+    final notifier = context.read<SakeMapPageNotifier>();
+    await notifier.setOwnOnly(true, clearSake: true);
+    if (mounted && _mapController != null) {
+      await fitPersonalMapVenues(
+        _mapController!,
+        context.read<SakeMapState>().venues,
+        padding: 64,
+      );
+    }
+  }
+
+  @override
   void dispose() {
+    widget.myMapRequests?.removeListener(_openMyMap);
     _searchController.dispose();
     _mapController?.dispose();
     super.dispose();
@@ -109,6 +141,10 @@ class _SakeMapPageState extends State<SakeMapPage> {
             zoomControlsEnabled: false,
             onMapCreated: (controller) async {
               _mapController = controller;
+              if ((widget.myMapRequests?.value ?? 0) > 0) {
+                await _openMyMap();
+                return;
+              }
               await _moveToCurrentLocationIfAvailable();
               final initialSake = widget.initialSake;
               if (initialSake != null && !_didApplyInitialSake) {
@@ -162,6 +198,20 @@ class _SakeMapPageState extends State<SakeMapPage> {
                           borderSide: BorderSide.none,
                         ),
                       ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilterChip(
+                      label: const Text('自分の登録'),
+                      selected: state.ownOnly,
+                      onSelected: (selected) async {
+                        if (selected) {
+                          await _openMyMap();
+                        } else {
+                          await notifier.setOwnOnly(false);
+                        }
+                      },
                     ),
                   ),
                   if (state.searchResults.isNotEmpty)
@@ -233,7 +283,9 @@ class _SakeMapPageState extends State<SakeMapPage> {
                 message:
                     state.errorMessage ??
                     (state.selectedSake == null
-                        ? 'この範囲には店舗と日本酒の登録がありません。'
+                        ? (state.ownOnly
+                              ? '登録した場所はまだありません。'
+                              : 'この範囲には店舗と日本酒の登録がありません。')
                         : '「${state.selectedSake!.name}」が登録されている店舗はありません。'),
                 onRetry: state.errorMessage == null ? null : notifier.refresh,
               ),

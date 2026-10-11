@@ -63,7 +63,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
           decoration: InputDecoration(
             labelText: context.l10n.placeConsumed,
             floatingLabelBehavior: FloatingLabelBehavior.always,
-            labelStyle: const TextStyle(color: Colors.white70, fontSize: 14),
+            labelStyle: const TextStyle(color: Colors.white, fontSize: 14),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.08),
             errorText: _failed ? context.l10n.errorSaveToServer : null,
@@ -98,12 +98,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
                 : context.l10n.placeConsumedHint,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: name?.trim().isNotEmpty == true
-                  ? Colors.white
-                  : Colors.white54,
-              fontSize: 15,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 15),
           ),
         ),
       ),

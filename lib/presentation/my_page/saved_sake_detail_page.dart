@@ -760,10 +760,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
                 fontSize: 14,
               ),
               hintText: context.l10n.placeConsumedHint,
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 14,
-              ),
+              hintStyle: const TextStyle(color: Colors.white, fontSize: 14),
               filled: true,
               fillColor: Colors.white.withOpacity(0.08),
               suffixIcon: IconButton(

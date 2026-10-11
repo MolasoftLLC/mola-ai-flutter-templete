@@ -2129,7 +2129,7 @@ abstract class AppLocalizations {
   /// No description provided for @placeConsumedHint.
   ///
   /// In ja, this message translates to:
-  /// **'Google検索候補から店舗を登録できます'**
+  /// **'タップで店舗の候補から登録！'**
   String get placeConsumedHint;
 
   /// No description provided for @addConsumedPlace.

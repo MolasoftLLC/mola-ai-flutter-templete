@@ -978,6 +978,33 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     state = state.copyWith(activeFilterTags: filtered);
   }
 
+  /// 指定した記録だけを削除する。サーバー削除失敗時は端末の記録も残す。
+  Future<bool> deleteRecord(String savedId) async {
+    final pending = _syncTasks[savedId];
+    if (pending != null) await pending;
+    final target = state.savedSakeList
+        .where((item) => item.savedId == savedId)
+        .firstOrNull;
+    if (target == null) return true;
+    final user = _authRepository.currentUser;
+    if (target.syncStatus == SavedSakeSyncStatus.serverSynced) {
+      if (user == null) return false;
+      final success = await _syncRepository.deleteSavedSakeRecord(
+        userId: user.uid,
+        savedId: savedId,
+      );
+      if (!success) return false;
+    }
+    state = state.copyWith(
+      savedSakeList: state.savedSakeList
+          .where((item) => item.savedId != savedId)
+          .toList(growable: false),
+    );
+    _syncFiltersWithAvailableTags();
+    await _persistSavedSakes();
+    return true;
+  }
+
   Future<void> removeById(String savedId) async {
     final updatedList = state.savedSakeList
         .where((item) => item.savedId != savedId)

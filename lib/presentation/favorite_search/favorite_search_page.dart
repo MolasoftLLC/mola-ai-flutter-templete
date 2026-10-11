@@ -31,6 +31,7 @@ class FavoriteSearchPage extends StatefulWidget {
 }
 
 class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
+  final _resultsKey = GlobalKey();
   bool _isSearching = false;
   bool _hasSearched = false;
   String? _errorMessage;
@@ -70,7 +71,19 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
         _errorMessage = '検索に失敗しました。通信状況を確認してもう一度お試しください。';
       });
     } finally {
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted) {
+        setState(() => _isSearching = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final resultsContext = _resultsKey.currentContext;
+          if (resultsContext == null) return;
+          Scrollable.ensureVisible(
+            resultsContext,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOutCubic,
+          );
+        });
+      }
     }
   }
 
@@ -90,69 +103,73 @@ class _FavoriteSearchPageState extends State<FavoriteSearchPage> {
           color: const Color(0xFF1D3567),
           child: SafeArea(
             top: false,
-            child: ListView(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-              children: [
-                const Text(
-                  '産地と味わいから、気になる日本酒を探せます。',
-                  style: TextStyle(color: Colors.white, fontSize: 13),
-                ),
-                const SizedBox(height: 28),
-                _SectionLabel(label: context.l10n.region),
-                const SizedBox(height: 10),
-                _PrefectureDropdown(
-                  value: state.selectedPrefecture,
-                  onChanged: notifier.setPrefecture,
-                ),
-                const SizedBox(height: 28),
-                _FilterGrid(
-                  label: context.l10n.flavorGroupOne,
-                  choices: Sake.flavors,
-                  selected: selectedFlavors,
-                  onTap: notifier.toggleSelectedFlavor,
-                ),
-                const SizedBox(height: 28),
-                _FilterGrid(
-                  label: context.l10n.flavorGroupTwo,
-                  choices: Sake.tastes,
-                  selected: selectedTastes,
-                  onTap: notifier.toggleSelectedTaste,
-                ),
-                const SizedBox(height: 28),
-                _FilterGrid(
-                  label: context.l10n.specificDesignation,
-                  choices: Sake.designs,
-                  selected: selectedDesigns,
-                  onTap: notifier.toggleSelectedDesigns,
-                ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: _isSearching ? null : () => _search(state),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    backgroundColor: const Color(0xFFFF7A1A),
-                    foregroundColor: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '産地と味わいから、気になる日本酒を探せます。',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
                   ),
-                  icon: _isSearching
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.search),
-                  label: Text(_isSearching ? '検索中…' : 'この条件で検索'),
-                ),
-                if (_hasSearched) ...[
+                  const SizedBox(height: 28),
+                  _SectionLabel(label: context.l10n.region),
+                  const SizedBox(height: 10),
+                  _PrefectureDropdown(
+                    value: state.selectedPrefecture,
+                    onChanged: notifier.setPrefecture,
+                  ),
+                  const SizedBox(height: 28),
+                  _FilterGrid(
+                    label: context.l10n.flavorGroupOne,
+                    choices: Sake.flavors,
+                    selected: selectedFlavors,
+                    onTap: notifier.toggleSelectedFlavor,
+                  ),
+                  const SizedBox(height: 28),
+                  _FilterGrid(
+                    label: context.l10n.flavorGroupTwo,
+                    choices: Sake.tastes,
+                    selected: selectedTastes,
+                    onTap: notifier.toggleSelectedTaste,
+                  ),
+                  const SizedBox(height: 28),
+                  _FilterGrid(
+                    label: context.l10n.specificDesignation,
+                    choices: Sake.designs,
+                    selected: selectedDesigns,
+                    onTap: notifier.toggleSelectedDesigns,
+                  ),
                   const SizedBox(height: 32),
-                  _SearchResults(
-                    results: _results,
-                    errorMessage: _errorMessage,
+                  FilledButton.icon(
+                    onPressed: _isSearching ? null : () => _search(state),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      backgroundColor: const Color(0xFFFF7A1A),
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: _isSearching
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.search),
+                    label: Text(_isSearching ? '検索中…' : 'この条件で検索'),
                   ),
+                  if (_hasSearched) ...[
+                    const SizedBox(height: 32),
+                    _SearchResults(
+                      key: _resultsKey,
+                      results: _results,
+                      errorMessage: _errorMessage,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -253,7 +270,11 @@ class _FilterGrid extends StatelessWidget {
 }
 
 class _SearchResults extends StatelessWidget {
-  const _SearchResults({required this.results, required this.errorMessage});
+  const _SearchResults({
+    super.key,
+    required this.results,
+    required this.errorMessage,
+  });
   final List<SakeMapSearchResult> results;
   final String? errorMessage;
 

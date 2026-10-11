@@ -848,21 +848,12 @@ class _SectionTitle extends StatelessWidget {
             TextButton(
               onPressed: onMoreTap,
               style: TextButton.styleFrom(
-                foregroundColor: _brandColor,
-                backgroundColor: actionAsButton
-                    ? const Color(0xFFEAF0F7)
-                    : null,
-                side: actionAsButton
-                    ? const BorderSide(color: Color(0xFFB8C9DE))
-                    : null,
-                shape: actionAsButton
-                    ? RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      )
-                    : null,
-                padding: EdgeInsets.symmetric(
-                  horizontal: actionAsButton ? 12 : 4,
+                foregroundColor: Colors.white,
+                backgroundColor: _brandColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 minimumSize: const Size(60, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),

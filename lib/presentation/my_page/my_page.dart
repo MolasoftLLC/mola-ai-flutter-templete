@@ -21,7 +21,6 @@ import '../../common/assets.dart';
 import '../../common/localization/app_locale_controller.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/sake_image_utils.dart';
-import '../common/help/help_guide_dialog.dart';
 import '../common/help/my_page_feature_guide.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
@@ -29,10 +28,12 @@ import '../timeline/timeline_page.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'account_settings_page.dart';
+import 'my_records_page.dart';
 import 'widgets/blocked_users_dialog.dart';
 import 'saved_sake_detail_page.dart';
 import 'how_to_use/how_to_use_page.dart';
 import 'widgets/menu_history_preview.dart';
+import 'widgets/my_map_preview.dart';
 import 'widgets/taste_profile_edit_dialog.dart';
 
 bool _isRemoteImagePath(String path) =>
@@ -255,16 +256,10 @@ class _MyPageState extends State<MyPage> {
               onSelected: (value) {
                 if (value == 'tutorial') {
                   _guide.showIfNeeded(context, force: true);
-                } else {
-                  HelpGuideDialog.showForType(
-                    context,
-                    type: HelpGuideType.myPage,
-                  );
                 }
               },
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'tutorial', child: Text('もう一度チュートリアルを見る')),
-                PopupMenuItem(value: 'help', child: Text('使い方を見る')),
               ],
             ),
             IconButton(
@@ -572,10 +567,19 @@ class _MyPageState extends State<MyPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    if (isLoggedIn) ...[
+                      MyMapPreview(
+                        key: ValueKey('my-map-${authUser.uid}'),
+                        isActive: widget.isActive,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     _MyTimelineEntryTile(
                       isLoggedIn: isLoggedIn,
                       onLoginRequested: openLogin,
                     ),
+                    const SizedBox(height: 12),
+                    const _MyRecordsEntryTile(),
                     const SizedBox(height: 8),
 
                     // お気に入りのお酒セクション
@@ -3084,4 +3088,41 @@ class _MyTimelineEntryTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MyRecordsEntryTile extends StatelessWidget {
+  const _MyRecordsEntryTile();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Material(
+      color: Colors.white.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.all(16),
+        leading: const Icon(Icons.edit_note, color: Colors.amber, size: 26),
+        title: const Text(
+          'あなたの記録',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.white,
+          size: 16,
+        ),
+        onTap: () {
+          AppAnalytics.instance.event('my_page', 'my_records');
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const MyRecordsPage()),
+          );
+        },
+      ),
+    ),
+  );
 }

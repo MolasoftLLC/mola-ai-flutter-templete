@@ -11,6 +11,7 @@ class SakeMapState {
     this.venues = const [],
     this.searchResults = const [],
     this.selectedSake,
+    this.ownOnly = false,
     this.isLoading = false,
     this.isSearching = false,
     this.errorMessage,
@@ -19,6 +20,7 @@ class SakeMapState {
   final List<MapVenue> venues;
   final List<SakeMapSearchResult> searchResults;
   final SakeMapSearchResult? selectedSake;
+  final bool ownOnly;
   final bool isLoading;
   final bool isSearching;
   final String? errorMessage;
@@ -28,6 +30,7 @@ class SakeMapState {
     List<SakeMapSearchResult>? searchResults,
     SakeMapSearchResult? selectedSake,
     bool clearSelectedSake = false,
+    bool? ownOnly,
     bool? isLoading,
     bool? isSearching,
     String? errorMessage,
@@ -36,6 +39,7 @@ class SakeMapState {
     venues: venues ?? this.venues,
     searchResults: searchResults ?? this.searchResults,
     selectedSake: clearSelectedSake ? null : selectedSake ?? this.selectedSake,
+    ownOnly: ownOnly ?? this.ownOnly,
     isLoading: isLoading ?? this.isLoading,
     isSearching: isSearching ?? this.isSearching,
     errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -43,7 +47,19 @@ class SakeMapState {
 }
 
 class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
-  SakeMapPageNotifier(this._repository) : super(const SakeMapState());
+  SakeMapPageNotifier(this._repository, {this.ownVenuesLoader})
+    : super(const SakeMapState());
+  final Future<List<MapVenue>> Function(SakeMapSearchResult?)? ownVenuesLoader;
+
+  Future<void> setOwnOnly(bool value, {bool clearSake = false}) async {
+    state = state.copyWith(
+      ownOnly: value,
+      venues: const [],
+      clearSelectedSake: clearSake,
+      searchResults: const [],
+    );
+    await refresh();
+  }
 
   final SakeMapDataSource _repository;
   Timer? _searchDebounce;
@@ -95,6 +111,10 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
       clearError: true,
     );
 
+    if (state.ownOnly) {
+      await refresh();
+      return state.venues.isEmpty ? null : _nearestVenue(state.venues, origin);
+    }
     final foundVenues = <String, MapVenue>{};
     try {
       for (final area in _nearestSearchAreas(origin)) {
@@ -107,7 +127,7 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
           sakeId: sake.sakeId,
           sakeToken: sake.searchToken,
         );
-        if (requestId != _venueRequestId) return null;
+        if (!mounted || requestId != _venueRequestId) return null;
         for (final venue in venues) {
           foundVenues[venue.venueId] = venue;
         }
@@ -123,12 +143,12 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
           return nearest;
         }
       }
-      if (requestId == _venueRequestId) {
+      if (mounted && requestId == _venueRequestId) {
         state = state.copyWith(venues: const [], isLoading: false);
       }
       return null;
     } catch (_) {
-      if (requestId != _venueRequestId) return null;
+      if (!mounted || requestId != _venueRequestId) return null;
       state = state.copyWith(
         venues: const [],
         isLoading: false,
@@ -146,28 +166,30 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
   Future<void> loadBounds(LatLngBounds bounds, double zoom) async {
     _lastBounds = bounds;
     _lastZoom = zoom;
-    await refresh();
+    if (!state.ownOnly) await refresh();
   }
 
   Future<void> refresh() async {
     final bounds = _lastBounds;
-    if (bounds == null) return;
+    if (bounds == null && !state.ownOnly) return;
     final requestId = ++_venueRequestId;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final venues = await _repository.fetchVenues(
-        swLat: bounds.southwest.latitude,
-        swLng: bounds.southwest.longitude,
-        neLat: bounds.northeast.latitude,
-        neLng: bounds.northeast.longitude,
-        zoom: _lastZoom,
-        sakeId: state.selectedSake?.sakeId,
-        sakeToken: state.selectedSake?.searchToken,
-      );
-      if (requestId != _venueRequestId) return;
+      final venues = state.ownOnly
+          ? await ownVenuesLoader!(state.selectedSake)
+          : await _repository.fetchVenues(
+              swLat: bounds!.southwest.latitude,
+              swLng: bounds.southwest.longitude,
+              neLat: bounds.northeast.latitude,
+              neLng: bounds.northeast.longitude,
+              zoom: _lastZoom,
+              sakeId: state.selectedSake?.sakeId,
+              sakeToken: state.selectedSake?.searchToken,
+            );
+      if (!mounted || requestId != _venueRequestId) return;
       state = state.copyWith(venues: venues, isLoading: false);
     } catch (_) {
-      if (requestId != _venueRequestId) return;
+      if (!mounted || requestId != _venueRequestId) return;
       state = state.copyWith(
         isLoading: false,
         errorMessage: '地図の店舗情報を取得できませんでした。',

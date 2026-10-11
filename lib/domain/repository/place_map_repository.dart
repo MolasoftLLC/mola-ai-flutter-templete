@@ -341,6 +341,26 @@ class PlaceMapRepository implements SakeMapDataSource {
     return _parseList(response.body, 'venues', MapVenue.fromJson);
   }
 
+  Future<List<MapVenue>> fetchMyVenues({SakeMapSearchResult? sake}) async {
+    final response = await _apiClient.fetchMapVenues(
+      swLat: -85,
+      swLng: -180,
+      neLat: 85,
+      neLng: 180,
+      zoom: 1,
+      ownOnly: true,
+      sakeId: sake?.sakeId,
+      sakeToken: sake?.searchToken,
+    );
+    if (!response.isSuccessful) {
+      throw PlaceMapException(
+        statusCode: response.statusCode,
+        message: '自分の登録場所を取得できませんでした。',
+      );
+    }
+    return _parseList(response.body, 'venues', MapVenue.fromJson);
+  }
+
   @override
   Future<List<VenueSake>> fetchVenueSakes(String venueId) async {
     final response = await _apiClient.fetchVenueSakes(venueId);

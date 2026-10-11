@@ -532,6 +532,7 @@ class _$ApiClient extends ApiClient {
     int? sakeId,
     String? sakeToken,
     int? sinceDays,
+    bool? ownOnly,
   }) {
     final Uri $url = Uri.parse('/map/venues');
     final Map<String, dynamic> $params = <String, dynamic>{
@@ -543,6 +544,7 @@ class _$ApiClient extends ApiClient {
       'sakeId': sakeId,
       'sakeToken': sakeToken,
       'sinceDays': sinceDays,
+      'ownOnly': ownOnly,
     };
     final Request $request = Request(
       'GET',

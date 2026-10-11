@@ -169,6 +169,7 @@ abstract class ApiClient extends ChopperService {
     @Query('sakeId') int? sakeId,
     @Query('sakeToken') String? sakeToken,
     @Query('sinceDays') int? sinceDays,
+    @Query('ownOnly') bool? ownOnly,
   });
 
   @Get(path: 'map/venues/{venueId}/sakes')

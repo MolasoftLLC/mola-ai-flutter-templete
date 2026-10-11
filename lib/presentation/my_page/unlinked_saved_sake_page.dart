@@ -9,10 +9,12 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/sake_menu_recognition_repository.dart';
 import 'saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
 
-/// 保存した表ラベルから候補を選び、同じ保存記録へマスターを紐付ける。
+/// 保存した写真または名前から候補を選び、同じ保存記録へ紐付ける。
 class UnlinkedSavedSakePage extends StatefulWidget {
   const UnlinkedSavedSakePage({super.key, required this.sake});
   final Sake sake;
@@ -25,6 +27,74 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
   bool _busy = false;
   bool _failed = false;
   Sake? _linked;
+  bool _photoUnavailable = false;
+
+  String? get _photoPath {
+    if (_photoUnavailable) return null;
+    for (final value in widget.sake.imagePaths ?? const <String>[]) {
+      final path = value.trim();
+      if (path.isEmpty) continue;
+      if (path.startsWith('https://') ||
+          path.startsWith('http://') ||
+          File(path).existsSync()) {
+        return path;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _saveSelection(String savedId, Sake target) async {
+    final linked = await context.read<SavedSakeNotifier>().reassignSavedSake(
+      savedId: savedId,
+      target: target,
+    );
+    if (linked == null || (linked.sakeId ?? 0) <= 0) {
+      throw StateError('紐付けに失敗しました');
+    }
+    if (mounted) setState(() => _linked = linked);
+  }
+
+  Future<void> _linkByName(String savedId) async {
+    final query = widget.sake.name?.trim() ?? '';
+    if (query.isEmpty) throw StateError('お酒の名前がありません');
+    final repository = context.read<PlaceMapRepository>();
+    var results = await repository.searchSakeMasters(query);
+    if (!mounted) return;
+    if (results.isEmpty) {
+      results = await repository.searchSakeMastersByAi(query);
+      if (!mounted) return;
+    }
+    final candidates = results
+        .where(
+          (result) =>
+              (result.sakeId ?? 0) > 0 ||
+              (result.searchToken?.isNotEmpty ?? false),
+        )
+        .map(
+          (result) => SakeScanCandidate(
+            sakeId: result.sakeId ?? 0,
+            name: result.name,
+            type: result.type,
+            brewery: result.brewery,
+            imageUrl: result.thumbnailImageUrl ?? result.primaryImageUrl,
+            candidateKey: result.searchToken,
+          ),
+        )
+        .toList();
+    if (candidates.isEmpty) throw StateError('候補がありません');
+    final selected = await _selectCandidate(candidates);
+    if (!mounted || selected == null) return;
+    final overview = selected.sakeId > 0
+        ? await context.read<SakeScanRepository>().fetchOverview(
+            selected.sakeId,
+          )
+        : await context
+              .read<SakeMenuRecognitionRepository>()
+              .resolveSakeCandidateOverview(selected.candidateKey!);
+    if (!mounted) return;
+    if (overview == null) throw StateError('詳細を取得できません');
+    await _saveSelection(savedId, overview.sake);
+  }
 
   Future<File> _frontImage(String path) async {
     if (!path.startsWith('https://') && !path.startsWith('http://')) {
@@ -60,19 +130,24 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
     File? downloaded;
     try {
       final savedId = widget.sake.savedId;
-      final paths = widget.sake.imagePaths
-          ?.where((path) => path.trim().isNotEmpty)
-          .toList();
-      if (savedId == null ||
-          savedId.isEmpty ||
-          paths == null ||
-          paths.isEmpty) {
-        throw StateError('表ラベルの画像がありません');
+      if (savedId == null || savedId.isEmpty) {
+        throw StateError('保存記録がありません');
+      }
+      final path = _photoPath;
+      if (path == null) {
+        await _linkByName(savedId);
+        return;
       }
       final repository = context.read<SakeScanRepository>();
-      final notifier = context.read<SavedSakeNotifier>();
-      final path = paths.first.trim();
-      final image = await _frontImage(path);
+      final File image;
+      try {
+        image = await _frontImage(path);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _photoUnavailable = true);
+        await _linkByName(savedId);
+        return;
+      }
       if (path.startsWith('http://') || path.startsWith('https://')) {
         downloaded = image;
       }
@@ -104,14 +179,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
       if (confirmation.sakeId <= 0) throw StateError('マスターがありません');
       final overview = await repository.fetchOverview(confirmation.sakeId);
       if (!mounted) return;
-      final linked = await notifier.reassignSavedSake(
-        savedId: savedId,
-        target: overview.sake,
-      );
-      if (linked == null || (linked.sakeId ?? 0) <= 0) {
-        throw StateError('紐付けに失敗しました');
-      }
-      if (mounted) setState(() => _linked = linked);
+      await _saveSelection(savedId, overview.sake);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -219,8 +287,8 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
   @override
   Widget build(BuildContext context) {
     if (_linked != null) return SavedSakeDetailPage.forSake(_linked!);
-    final paths = widget.sake.imagePaths;
-    final path = paths == null || paths.isEmpty ? null : paths.first;
+    final path = _photoPath;
+    final useNameSearch = path == null;
     Widget imageError(BuildContext context, Object error, StackTrace? stack) =>
         const Icon(
           Icons.local_bar_outlined,
@@ -260,7 +328,11 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text('保存した写真からお酒を探します。候補から同じお酒を選ぶと、詳しい情報や味わいを確認できます。'),
+            Text(
+              useNameSearch
+                  ? '保存した名前からお酒を探します。候補から同じお酒を選ぶと、詳しい情報や味わいを確認できます。'
+                  : '保存した写真からお酒を探します。候補から同じお酒を選ぶと、詳しい情報や味わいを確認できます。',
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _busy ? null : _link,
@@ -271,7 +343,11 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
                       child: Lottie.asset('assets/lottie/ai_loading.json'),
                     )
                   : const Icon(Icons.search),
-              label: Text(_busy ? '写真からお酒を探しています…' : '写真からお酒を探す'),
+              label: Text(
+                _busy
+                    ? (useNameSearch ? '名前からお酒を探しています…' : '写真からお酒を探しています…')
+                    : (useNameSearch ? '名前からお酒を探す' : '写真からお酒を探す'),
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF143861),
                 padding: const EdgeInsets.symmetric(vertical: 16),

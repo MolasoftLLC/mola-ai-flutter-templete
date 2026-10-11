@@ -736,9 +736,55 @@ class _SakeScanPageState extends State<SakeScanPage>
         context.read<AuthRepository>().currentUser == null) {
       throw const SavedSakeXPostException('Xに投稿するにはログインとお酒の保存が必要です。');
     }
+    final repository = context.read<SakeScanRepository>();
+    final savedNotifier = context.read<SavedSakeNotifier>();
+    final sakeId = sake.sakeId;
+    if (sakeId != null && sakeId > 0) {
+      var overview = await repository.fetchOverview(sakeId);
+      if (!mounted) return;
+      final lensStatus = overview.lensDetailAnalysisStatus;
+      if (lensStatus == 'idle' || lensStatus == 'running') {
+        if (repository is! LensDetailAnalysisRepository) {
+          throw const SavedSakeXPostException('解析結果を準備できませんでした。もう一度お試しください。');
+        }
+        final analysisRepository = repository as LensDetailAnalysisRepository;
+        var status = await analysisRepository.startLensDetailAnalysis(sakeId);
+        final deadline = DateTime.now().add(const Duration(minutes: 16));
+        while (status == 'running' && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(seconds: 3));
+          if (!mounted) return;
+          status = await analysisRepository.fetchLensDetailAnalysisStatus(
+            sakeId,
+          );
+        }
+        if (!mounted) return;
+        if (status != 'completed' && status != 'partial') {
+          throw const SavedSakeXPostException(
+            '解析結果を取得できませんでした。再試行するか、X投稿のチェックを外して詳細へ進んでください。',
+          );
+        }
+        overview = await repository.fetchOverview(sakeId);
+      }
+      final deadline = DateTime.now().add(const Duration(seconds: 90));
+      while ((overview.sake.description?.trim().isEmpty ?? true) &&
+          overview.masterEnrichmentPending &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        if (!mounted) return;
+        overview = await repository.fetchOverview(sakeId);
+      }
+      if (!mounted) return;
+      if (overview.sake.description?.trim().isEmpty ?? true) {
+        throw const SavedSakeXPostException(
+          '味わいの説明をまだ取得できていません。再試行するか、X投稿のチェックを外して詳細へ進んでください。',
+        );
+      }
+      await savedNotifier.updateSavedSakeWithInfo(savedId, overview.sake);
+      if (!mounted) return;
+    }
     final synced = await context
         .read<SavedSakeNotifier>()
-        .syncSavedSakeToServer(savedId);
+        .syncSavedSakeToServer(savedId, force: true);
     if (synced == null || !mounted) {
       throw const SavedSakeXPostException('写真の保存が完了していません。もう一度お試しください。');
     }
@@ -1829,7 +1875,7 @@ class _SakeScanPageState extends State<SakeScanPage>
               ),
               child: Text(
                 _openingDetail
-                    ? (_autoTweetEnabled ? 'Xへの投稿を確認中…' : '保存中…')
+                    ? (_autoTweetEnabled ? '解析結果を確認してXへ投稿中…' : '保存中…')
                     : actionLabel,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
