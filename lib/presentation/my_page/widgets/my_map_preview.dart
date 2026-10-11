@@ -1,11 +1,8 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../common/analytics/app_analytics.dart';
-import '../../../common/utils/personal_map_camera.dart';
 import '../../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../../domain/repository/place_map_repository.dart';
 import '../../app_page_notifier.dart';
@@ -68,6 +65,11 @@ class _MyMapPreviewState extends State<MyMapPreview> {
         });
       }
     }
+  }
+
+  void _openMap() {
+    AppAnalytics.instance.event('my_page', 'my_map');
+    context.read<AppPageNotifier>().openMyMap();
   }
 
   @override
@@ -142,43 +144,45 @@ class _MyMapPreviewState extends State<MyMapPreview> {
                         ),
                       ),
                     )
-                  : GoogleMap(
-                      key: ValueKey(_mapRevision),
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(
-                          _venues.first.latitude,
-                          _venues.first.longitude,
-                        ),
-                        zoom: 13,
-                      ),
-                      markers: {
-                        for (final venue in _venues)
-                          Marker(
-                            markerId: MarkerId(venue.venueId),
-                            position: LatLng(venue.latitude, venue.longitude),
-                            infoWindow: InfoWindow(title: venue.displayName),
+                  : Semantics(
+                      button: true,
+                      label: 'あなたの地図を大きいマップで見る',
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _openMap,
+                        child: IgnorePointer(
+                          child: GoogleMap(
+                            key: ValueKey(_mapRevision),
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(
+                                _venues.first.latitude,
+                                _venues.first.longitude,
+                              ),
+                              zoom: 16,
+                            ),
+                            markers: {
+                              for (final venue in _venues)
+                                Marker(
+                                  markerId: MarkerId(venue.venueId),
+                                  position: LatLng(
+                                    venue.latitude,
+                                    venue.longitude,
+                                  ),
+                                  infoWindow: InfoWindow(
+                                    title: venue.displayName,
+                                  ),
+                                ),
+                            },
+                            zoomControlsEnabled: false,
+                            myLocationButtonEnabled: false,
+                            mapToolbarEnabled: false,
+                            scrollGesturesEnabled: false,
+                            zoomGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
                           ),
-                      },
-                      onMapCreated: (controller) async {
-                        if (!mounted) return;
-                        await fitPersonalMapVenues(
-                          controller,
-                          _venues,
-                          padding: 32,
-                        );
-                      },
-                      zoomControlsEnabled: false,
-                      gestureRecognizers: {
-                        Factory<OneSequenceGestureRecognizer>(
-                          () => EagerGestureRecognizer(),
                         ),
-                      },
-                      myLocationButtonEnabled: false,
-                      mapToolbarEnabled: false,
-                      scrollGesturesEnabled: true,
-                      zoomGesturesEnabled: true,
-                      rotateGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
+                      ),
                     ),
             ),
           ),
@@ -193,10 +197,7 @@ class _MyMapPreviewState extends State<MyMapPreview> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onPressed: () {
-                AppAnalytics.instance.event('my_page', 'my_map');
-                context.read<AppPageNotifier>().openMyMap();
-              },
+              onPressed: _openMap,
               icon: const Icon(Icons.open_in_full, size: 17),
               label: const Text(
                 '大きいマップで見る',

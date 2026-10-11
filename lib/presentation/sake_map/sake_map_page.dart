@@ -202,16 +202,38 @@ class _SakeMapPageState extends State<SakeMapPage> {
                   ),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: FilterChip(
-                      avatar: const Icon(
-                        Icons.account_circle_outlined,
-                        size: 20,
+                    child: SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(
+                          value: false,
+                          icon: Icon(Icons.public),
+                          label: Text('すべての店舗'),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          icon: Icon(Icons.account_circle_outlined),
+                          label: Text('自分の登録'),
+                        ),
+                      ],
+                      selected: {state.ownOnly},
+                      showSelectedIcon: true,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? const Color(0xFF143861)
+                              : Colors.white,
+                        ),
+                        foregroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? Colors.white
+                              : const Color(0xFF143861),
+                        ),
+                        textStyle: const WidgetStatePropertyAll(
+                          TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      showCheckmark: false,
-                      label: const Text('自分の登録'),
-                      selected: state.ownOnly,
-                      onSelected: (selected) async {
-                        if (selected) {
+                      onSelectionChanged: (selection) async {
+                        if (selection.single) {
                           await _openMyMap();
                         } else {
                           await notifier.setOwnOnly(false);
