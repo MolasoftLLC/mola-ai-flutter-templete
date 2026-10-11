@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @myPosts.
   ///
   /// In ja, this message translates to:
-  /// **'自分の投稿'**
+  /// **'自分のタイムライン投稿'**
   String get myPosts;
 
   /// No description provided for @myPostsEmpty.

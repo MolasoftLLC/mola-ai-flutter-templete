@@ -3034,8 +3034,30 @@ class _MyTimelineEntryTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          tileColor: Colors.white.withOpacity(0.1),
+          contentPadding: const EdgeInsets.all(16),
+          leading: const Icon(
+            Icons.person_pin_circle,
+            color: Colors.amber,
+            size: 26,
+          ),
+          title: Text(
+            context.l10n.myPosts,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white,
+            size: 16,
+          ),
           onTap: () {
             AppAnalytics.instance.event('my_page', 'my_posts');
             if (!isLoggedIn) {
@@ -3052,38 +3074,6 @@ class _MyTimelineEntryTile extends StatelessWidget {
               ),
             );
           },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.person_pin_circle,
-                  color: Colors.amber,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    context.l10n.myPosts,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

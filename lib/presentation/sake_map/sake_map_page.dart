@@ -203,6 +203,11 @@ class _SakeMapPageState extends State<SakeMapPage> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: FilterChip(
+                      avatar: const Icon(
+                        Icons.account_circle_outlined,
+                        size: 20,
+                      ),
+                      showCheckmark: false,
                       label: const Text('自分の登録'),
                       selected: state.ownOnly,
                       onSelected: (selected) async {

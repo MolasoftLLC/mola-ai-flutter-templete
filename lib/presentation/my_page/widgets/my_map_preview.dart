@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
@@ -107,11 +109,6 @@ class _MyMapPreviewState extends State<MyMapPreview> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Text(
-            '最近登録した30店舗',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
@@ -171,10 +168,15 @@ class _MyMapPreviewState extends State<MyMapPreview> {
                         );
                       },
                       zoomControlsEnabled: false,
+                      gestureRecognizers: {
+                        Factory<OneSequenceGestureRecognizer>(
+                          () => ScaleGestureRecognizer(),
+                        ),
+                      },
                       myLocationButtonEnabled: false,
                       mapToolbarEnabled: false,
                       scrollGesturesEnabled: false,
-                      zoomGesturesEnabled: false,
+                      zoomGesturesEnabled: true,
                       rotateGesturesEnabled: false,
                       tiltGesturesEnabled: false,
                     ),

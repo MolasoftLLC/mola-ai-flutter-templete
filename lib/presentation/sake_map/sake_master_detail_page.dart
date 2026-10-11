@@ -2956,6 +2956,33 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
     await _pickMemoryImage(source);
   }
 
+  Future<void> _deleteMemoryImage(String path) async {
+    final savedId = widget.sake.savedId;
+    if (savedId == null || _isAddingImage) return;
+    setState(() => _isAddingImage = true);
+    try {
+      final updated = await widget.notifier.removeImageFromSavedSake(
+        savedId: savedId,
+        imagePath: path,
+      );
+      if (!mounted) return;
+      if (updated == null) {
+        SnackBarUtils.showWarningSnackBar(context, message: '写真を削除できませんでした。');
+      } else {
+        SnackBarUtils.showInfoSnackBar(context, message: '写真を削除しました。');
+      }
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '写真を削除できませんでした。もう一度お試しください。',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isAddingImage = false);
+    }
+  }
+
   Future<void> _pickMemoryImage(ImageSource source) async {
     final savedId = widget.sake.savedId;
     if (savedId == null || savedId.isEmpty) {
@@ -3095,6 +3122,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
                     (_currentRecord.imagePaths ?? const <String>[]).length,
                 isAdding: _isAddingImage,
                 onAdd: _showImageSourceSheet,
+                onDelete: _deleteMemoryImage,
               ),
             ),
             if (index < 2) const SizedBox(width: 8),
@@ -3144,12 +3172,14 @@ class _MemoryPhotoTile extends StatelessWidget {
     required this.isPrimary,
     required this.isAdding,
     required this.onAdd,
+    required this.onDelete,
   });
 
   final String? path;
   final bool isPrimary;
   final bool isAdding;
   final VoidCallback onAdd;
+  final Future<void> Function(String) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -3212,7 +3242,12 @@ class _MemoryPhotoTile extends StatelessWidget {
             errorBuilder: (_, _, _) => const _MemoryImageError(),
           );
     return InkWell(
-      onTap: () => _showMemoryImagePreview(context, path!),
+      onTap: isAdding
+          ? null
+          : () async {
+              final delete = await _showMemoryImagePreview(context, path!);
+              if (delete == true) await onDelete(path!);
+            },
       borderRadius: borderRadius,
       child: AspectRatio(
         aspectRatio: 1,
@@ -3246,9 +3281,9 @@ class _MemoryPhotoTile extends StatelessWidget {
   }
 }
 
-void _showMemoryImagePreview(BuildContext context, String path) {
+Future<bool?> _showMemoryImagePreview(BuildContext context, String path) {
   final isRemote = path.startsWith('http://') || path.startsWith('https://');
-  showDialog<void>(
+  return showDialog<bool>(
     context: context,
     builder: (dialogContext) => Dialog.fullscreen(
       backgroundColor: Colors.black,
@@ -3280,11 +3315,49 @@ void _showMemoryImagePreview(BuildContext context, String path) {
             ),
             Positioned(
               top: 8,
-              right: 8,
+              left: 8,
               child: IconButton(
                 tooltip: '閉じる',
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: dialogContext,
+                    builder: (confirmationContext) => AlertDialog(
+                      title: const Text('この写真を削除しますか？'),
+                      content: const Text('この操作は取り消せません。'),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(confirmationContext, false),
+                          child: const Text('キャンセル'),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(confirmationContext, true),
+                          child: const Text(
+                            '削除',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop(true);
+                  }
+                },
+                child: const Text(
+                  '削除',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],

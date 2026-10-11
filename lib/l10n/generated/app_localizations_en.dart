@@ -209,7 +209,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There are no saved sake posts on the timeline yet.\nPosts from other users will appear here.';
 
   @override
-  String get myPosts => 'My Posts';
+  String get myPosts => 'My Timeline Posts';
 
   @override
   String get myPostsEmpty =>

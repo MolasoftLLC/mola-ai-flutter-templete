@@ -203,7 +203,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'まだタイムラインには保存酒がありません。\nほかのユーザーが保存するとここに表示されます。';
 
   @override
-  String get myPosts => '自分の投稿';
+  String get myPosts => '自分のタイムライン投稿';
 
   @override
   String get myPostsEmpty => 'まだタイムラインに公開した投稿がありません。\nお気に入りのお酒をシェアしてみましょう。';

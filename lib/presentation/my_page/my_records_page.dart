@@ -79,6 +79,7 @@ class _MyRecordsPageState extends State<MyRecordsPage> {
     final records = context
         .select((SavedSakeState state) => state.savedSakeList)
         .where((sake) => sake.savedId?.isNotEmpty == true)
+        .where(_hasPersonalRecord)
         .toList(growable: false);
     return AnalyticsScreen(
       name: 'my_records',
@@ -99,7 +100,7 @@ class _MyRecordsPageState extends State<MyRecordsPage> {
                       child: Text('まだ記録がありません', style: TextStyle(color: _navy)),
                     ),
                     SizedBox(height: 8),
-                    Center(child: Text('お酒を保存すると、ここで振り返れます。')),
+                    Center(child: Text('感想や場所、味わいを記録すると、ここで振り返れます。')),
                   ],
                 )
               : ListView.separated(
@@ -132,6 +133,16 @@ class _MyRecordsPageState extends State<MyRecordsPage> {
       ),
     );
   }
+}
+
+bool _hasPersonalRecord(Sake sake) {
+  // 撮影画像や商品情報は検索時にも保存されるため、記録の判定には使わない。
+  return sake.impression?.trim().isNotEmpty == true ||
+      sake.place?.trim().isNotEmpty == true ||
+      sake.drinkingPlace?.displayName.trim().isNotEmpty == true ||
+      sake.userTags?.any((tag) => tag.trim().isNotEmpty) == true ||
+      sake.personalTasteRatings?.isNotEmpty == true ||
+      (sake.imagePaths?.length ?? 0) >= 2;
 }
 
 class _RecordCard extends StatelessWidget {
