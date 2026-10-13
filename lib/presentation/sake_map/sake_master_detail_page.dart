@@ -441,7 +441,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       try {
         if (!await launchUrl(
           Uri.https('www.google.com', '/search', {'q': query}),
-          mode: LaunchMode.inAppBrowserView,
+          mode: LaunchMode.externalApplication,
         )) {
           throw StateError('Cannot open browser');
         }
