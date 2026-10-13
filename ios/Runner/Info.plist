@@ -33,16 +33,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>Access to pick a photo</string>
 	<key>NSCameraUsageDescription</key>
-	<string>AIに問い合わせるための画像を撮影できます</string>
+	<string>日本酒のラベルやメニューを撮影してお酒を調べたり、お酒の記録写真を残したりするためにカメラを使用します。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>AIに問い合わせるための画像を選択できます</string>
+	<string>写真から日本酒のラベルやメニューを選んで解析したり、お酒の記録に写真を追加したりするために使用します。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ビデオ撮影時にマイクへのアクセスが必要です</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>現在地周辺から飲んだお店を探すために位置情報を使用します</string>
+	<string>近くの飲食店・酒屋の検索と、地図に現在地を表示するために位置情報を使用します。周辺店舗の検索時は現在地を当社サーバーとGoogleへ送信します。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>撮影したラベル画像や編集した画像をフォトライブラリに保存します</string>
 	<key>NSUserTrackingUsageDescription</key>

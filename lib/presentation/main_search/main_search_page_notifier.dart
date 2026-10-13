@@ -28,6 +28,7 @@ import '../common/widgets/ad_consent_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../common/dialogs/sake_preferences_dialog.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
@@ -119,6 +120,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       state = state.copyWith(errorMessage: context.l10n.errorEnterSakeName);
       return;
     }
+    if (!await ensureAiDataConsent(context) || !mounted) return;
     // 初期化
     state = state.copyWith(sakeInfo: null);
     // Increment click count
@@ -241,6 +243,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     required String sakeName,
     required String sakeType,
   }) async {
+    if (!await ensureAiDataConsent(context) || !mounted) return;
     // 状態を更新
     state = state.copyWith(
       sakeName: sakeName,
@@ -288,6 +291,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     if (state.isLoading == true) {
       return;
     }
+    if (!await ensureAiDataConsent(context) || !mounted) return;
     state = state.copyWith(isLoading: true);
     if (state.sakeName != null) {
       final response = await geminiMolaApiRepository.promptWithText(
@@ -516,6 +520,8 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return false;
     }
 
+    if (!await ensureAiDataConsent(context) || !mounted) return false;
+
     if (!await _ensureSakePreferencesReady()) {
       return false;
     }
@@ -610,6 +616,15 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
     bool inBackground = false,
     String? savedIdHint,
   }) async {
+    if (!await ensureAiDataConsent(context) || !mounted) {
+      if (mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          isAnalyzingInBackground: false,
+        );
+      }
+      return;
+    }
     File? analysisFile = state.sakeImage;
     if (analysisFile == null && state.analyzingImagePath != null) {
       final fileFromPath = File(state.analyzingImagePath!);

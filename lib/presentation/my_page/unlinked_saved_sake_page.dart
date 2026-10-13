@@ -13,6 +13,7 @@ import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import 'saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 
 /// 保存した写真または名前から候補を選び、同じ保存記録へ紐付ける。
 class UnlinkedSavedSakePage extends StatefulWidget {
@@ -123,6 +124,7 @@ class _UnlinkedSavedSakePageState extends State<UnlinkedSavedSakePage> {
 
   Future<void> _link() async {
     if (_busy) return;
+    if (!await ensureAiDataConsent(context) || !mounted || _busy) return;
     setState(() {
       _busy = true;
       _failed = false;

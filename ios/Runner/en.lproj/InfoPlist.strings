@@ -1,0 +1,6 @@
+"NSCameraUsageDescription" = "SAKEPEDIA uses the camera to identify sake from bottle labels and menus, and to take photos for your sake records.";
+"NSPhotoLibraryUsageDescription" = "SAKEPEDIA uses the photos you choose to analyze sake labels and menus, or add photos to your sake records.";
+"NSPhotoLibraryAddUsageDescription" = "SAKEPEDIA saves captured labels and edited photos to your photo library.";
+"NSLocationWhenInUseUsageDescription" = "SAKEPEDIA uses your location to find nearby restaurants and sake shops, and show your position on the map. Nearby searches send your location to our server and Google.";
+"NSUserTrackingUsageDescription" = "SAKEPEDIA requests tracking permission to show ads that are more relevant to you.";
+"NSMicrophoneUsageDescription" = "Microphone access is used only when recording video with sound.";

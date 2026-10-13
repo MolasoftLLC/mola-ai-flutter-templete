@@ -27,6 +27,7 @@ import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/dialogs/sake_preferences_dialog.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../common/widgets/ad_consent_dialog.dart';
 import '../auth/email_link_auth_page.dart';
 import '../../common/utils/snack_bar_utils.dart';
@@ -388,6 +389,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
       if (!context.mounted || read<AuthRepository>().currentUser == null)
         return;
+    }
+    if (!await ensureAiDataConsent(context) || !mounted || !context.mounted) {
+      return;
     }
     if (!await _ensureSakePreferencesReady()) {
       return;

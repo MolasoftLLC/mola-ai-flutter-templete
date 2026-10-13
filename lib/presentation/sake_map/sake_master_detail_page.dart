@@ -16,6 +16,7 @@ import '../../common/logger.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/sake/taste_match.dart';
 import '../common/widgets/sake_taste_widgets.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/sake_image_utils.dart';
@@ -577,6 +578,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
   }
 
   Future<void> _reanalyzeSavedImages(Sake personalRecord) async {
+    if (!await ensureAiDataConsent(context) || !mounted) return;
     final imagePaths = personalRecord.imagePaths
         ?.where((path) => path.trim().isNotEmpty)
         .toList(growable: false);

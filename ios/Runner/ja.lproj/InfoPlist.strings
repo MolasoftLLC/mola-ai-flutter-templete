@@ -1,0 +1,6 @@
+"NSCameraUsageDescription" = "日本酒のラベルやメニューを撮影してお酒を調べたり、お酒の記録写真を残したりするためにカメラを使用します。";
+"NSPhotoLibraryUsageDescription" = "写真から日本酒のラベルやメニューを選んで解析したり、お酒の記録に写真を追加したりするために使用します。";
+"NSPhotoLibraryAddUsageDescription" = "撮影したラベル画像や編集した画像をフォトライブラリに保存します。";
+"NSLocationWhenInUseUsageDescription" = "近くの飲食店・酒屋の検索と、地図に現在地を表示するために位置情報を使用します。周辺店舗の検索時は現在地を当社サーバーとGoogleへ送信します。";
+"NSUserTrackingUsageDescription" = "このアプリでは、より関連性の高い広告を表示するために、お客様のデータを使用します。";
+"NSMicrophoneUsageDescription" = "音声付きのビデオを撮影する場合にのみマイクを使用します。";

@@ -6,6 +6,7 @@ import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/sake_community_repository.dart';
 import '../auth/email_link_auth_page.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 import 'sake_scan_page.dart';
 
 Future<Object?> openSakeLabelScanner(BuildContext context) async {
@@ -62,6 +63,7 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
   }
 
   final repository = context.read<SakeCommunityRepository>();
+  if (!await ensureAiDataConsent(context) || !context.mounted) return null;
   bool agreed;
   try {
     agreed = await repository.hasAcceptedLabelConsent();

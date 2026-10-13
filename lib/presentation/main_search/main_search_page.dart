@@ -20,6 +20,7 @@ import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../common/help/help_guide_dialog.dart';
+import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../menu_search/menu_search_page.dart';
@@ -1316,6 +1317,11 @@ class _MasterSakeSearchPanelState extends State<MasterSakeSearchPanel> {
     _debounce?.cancel();
     final query = _controller.text.trim();
     if (query.isEmpty || _isLoading || _isAiSearching) return;
+
+    if (!await ensureAiDataConsent(context) || !mounted) return;
+    // The query may have changed while the consent dialog was open.
+    if (query != _controller.text.trim() || _isLoading || _isAiSearching)
+      return;
 
     final requestId = ++_requestId;
     final existingResults = _results;
