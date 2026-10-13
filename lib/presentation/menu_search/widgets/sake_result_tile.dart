@@ -189,6 +189,15 @@ class _SakeResultTileState extends State<SakeResultTile> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: ExpansionTile(
+              // Keep each sake's expansion state separate from the menu's
+              // expansion state and descendant scroll offsets in PageStorage.
+              key: PageStorageKey<Object>((
+                'menu-sake-details',
+                widget.key,
+                widget.sake.sakeId,
+                widget.sake.name,
+                widget.sake.type,
+              )),
               initiallyExpanded: false,
               controller: _expansionController,
               tilePadding: const EdgeInsets.symmetric(
@@ -233,6 +242,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   if (profile != null) ...[
                     const SizedBox(height: 8),
                     SingleChildScrollView(
+                      key: const PageStorageKey<String>(
+                        'menu-sake-taste-tags-scroll',
+                      ),
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
