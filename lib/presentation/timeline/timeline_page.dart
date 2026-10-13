@@ -18,6 +18,7 @@ import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
+import '../main_search/main_search_page.dart';
 import 'envy_result.dart';
 import 'timeline_envy_ranking_page.dart';
 import 'timeline_page_notifier.dart';
@@ -415,27 +416,40 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         envyCoachMarkKey: envyCoachMarkKey,
         envyCount: envyCount,
         isReportPending: isReportPending,
-        onOpenDetails: (sake.sakeId ?? 0) <= 0
-            ? null
-            : () async {
-                AppAnalytics.instance.event('timeline', 'detail');
-                await Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SakeMasterDetailPage(
-                      venueSake: VenueSake(
-                        sakeId: sake.sakeId,
-                        name: normalizedName,
-                        brewery: sake.brewery,
-                        type: sake.type,
-                        recordCount: 0,
-                        primaryImageUrl: sake.primaryImageUrl,
-                        thumbnailImageUrl: sake.thumbnailImageUrl,
-                      ),
-                    ),
+        onOpenDetails: () async {
+          AppAnalytics.instance.event('timeline', 'detail');
+          if ((sake.sakeId ?? 0) <= 0) {
+            await Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  backgroundColor: const Color(0xFF1D3567),
+                  appBar: const PrimaryAppBar(title: '日本酒検索'),
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: MasterSakeSearchPanel(initialQuery: normalizedName),
                   ),
-                );
-                if (context.mounted) await notifier.refresh();
-              },
+                ),
+              ),
+            );
+            return;
+          }
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SakeMasterDetailPage(
+                venueSake: VenueSake(
+                  sakeId: sake.sakeId,
+                  name: normalizedName,
+                  brewery: sake.brewery,
+                  type: sake.type,
+                  recordCount: 0,
+                  primaryImageUrl: sake.primaryImageUrl,
+                  thumbnailImageUrl: sake.thumbnailImageUrl,
+                ),
+              ),
+            ),
+          );
+          if (context.mounted) await notifier.refresh();
+        },
         onToggleSaved: () async {
           if (!await ensureLoggedIn()) {
             return;
@@ -766,8 +780,17 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         actions: [
           IconButton(
             tooltip: context.l10n.refresh,
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => notifier.fetchTimeline(isRefresh: true),
+            icon: isRefreshing || isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh, color: Colors.white),
+            onPressed: isRefreshing || isLoading ? null : notifier.refresh,
           ),
         ],
       ),

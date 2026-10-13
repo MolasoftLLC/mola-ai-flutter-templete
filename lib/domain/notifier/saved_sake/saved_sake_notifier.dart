@@ -326,19 +326,36 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     final updated = current.copyWith(imagePaths: updatedPaths);
 
     await updateSavedSake(updated);
+    // Replace the initial local photo alias with the server image URL too;
+    // deleting that first photo must reach the server just like added photos.
+    if (!_isGuest) await refreshFromServer();
     logger.info('保存酒に画像を追加: id=$savedId path=$newPath');
-    return updated;
+    return state.savedSakeList
+            .where((item) => item.savedId == savedId)
+            .firstOrNull ??
+        updated;
   }
 
   Future<Sake?> removeImageFromSavedSake({
     required String savedId,
     required String imagePath,
   }) async {
+    await _syncTasks[savedId];
     final index = state.savedSakeList.indexWhere(
       (item) => item.savedId != null && item.savedId == savedId,
     );
     if (index == -1) {
       logger.warning('画像削除対象の保存酒が見つかりません: id=$savedId');
+      return null;
+    }
+
+    if (!_isGuest &&
+        !_isRemoteImagePath(imagePath) &&
+        state.savedSakeList[index].syncStatus ==
+            SavedSakeSyncStatus.serverSynced) {
+      // A stale local path cannot identify a server image safely. Refresh the
+      // tiles instead of reporting success while leaving the server photo.
+      await refreshFromServer();
       return null;
     }
 
@@ -359,12 +376,13 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
       }
     }
 
-    final current = state.savedSakeList[index];
+    final current = state.savedSakeList
+        .where((item) => item.savedId == savedId)
+        .firstOrNull;
+    if (current == null) return null;
     final updatedPaths = [...(current.imagePaths ?? const <String>[])]
-      ..remove(imagePath);
-    final updated = current.copyWith(
-      imagePaths: updatedPaths.isEmpty ? null : updatedPaths,
-    );
+      ..removeWhere((path) => path == imagePath);
+    final updated = current.copyWith(imagePaths: updatedPaths);
 
     await updateSavedSake(updated);
     logger.info('保存酒の画像を削除: id=$savedId path=$imagePath');
@@ -835,6 +853,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     final mergedImagePaths = _mergeImagePaths(
       local.imagePaths,
       remote.imagePaths,
+      keepPendingLocalImages: local.syncStatus == SavedSakeSyncStatus.localOnly,
     );
 
     return remote.copyWith(
@@ -869,11 +888,18 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
 
   List<String>? _mergeImagePaths(
     List<String>? localPaths,
-    List<String>? remotePaths,
-  ) {
-    final remoteList = remotePaths ?? const <String>[];
-    if (remoteList.isNotEmpty) {
-      return remoteList.toSet().toList();
+    List<String>? remotePaths, {
+    required bool keepPendingLocalImages,
+  }) {
+    // An explicit empty manifest means the user removed all photos.
+    if (remotePaths != null) {
+      if (remotePaths.isEmpty && keepPendingLocalImages) {
+        return localPaths
+            ?.where((path) => !_isRemoteImagePath(path))
+            .toSet()
+            .toList();
+      }
+      return remotePaths.toSet().toList();
     }
 
     if (localPaths == null || localPaths.isEmpty) {

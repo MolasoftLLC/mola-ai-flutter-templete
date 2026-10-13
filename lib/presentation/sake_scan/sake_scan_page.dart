@@ -1736,6 +1736,8 @@ class _SakeScanPageState extends State<SakeScanPage>
                       const SizedBox(height: 8),
                       TextField(
                         controller: _recordImpressionController,
+                        onTapOutside: (_) =>
+                            FocusManager.instance.primaryFocus?.unfocus(),
                         maxLength: 200,
                         maxLines: 4,
                         onChanged: (_) => _markRecordDirty(),

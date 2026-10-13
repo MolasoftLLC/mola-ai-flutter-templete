@@ -441,7 +441,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       try {
         if (!await launchUrl(
           Uri.https('www.google.com', '/search', {'q': query}),
-          mode: LaunchMode.externalApplication,
+          mode: LaunchMode.inAppBrowserView,
         )) {
           throw StateError('Cannot open browser');
         }
@@ -2144,6 +2144,7 @@ class _TimelineShareSheetState extends State<_TimelineShareSheet> {
             20 + MediaQuery.viewInsetsOf(context).bottom,
           ),
           child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2213,6 +2214,8 @@ class _TimelineShareSheetState extends State<_TimelineShareSheet> {
                 TextField(
                   key: const Key('timeline-share-comment'),
                   controller: _commentController,
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                   maxLength: 500,
                   maxLines: 4,
                   decoration: const InputDecoration(
@@ -2515,6 +2518,18 @@ Future<void> showSakeRecordEditorSheet(
   required SavedSakeNotifier notifier,
   required Sake sake,
 }) async {
+  if (sake.syncStatus == SavedSakeSyncStatus.serverSynced &&
+      (sake.imagePaths ?? const <String>[]).any(
+        (path) => !path.startsWith('https://') && !path.startsWith('http://'),
+      )) {
+    await notifier.refreshFromServer();
+  }
+  if (!context.mounted) return;
+  final current =
+      notifier.savedSakes
+          .where((record) => record.savedId == sake.savedId)
+          .firstOrNull ??
+      sake;
   final saved = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -2522,57 +2537,69 @@ Future<void> showSakeRecordEditorSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
-    builder: (sheetContext) => GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () => FocusScope.of(sheetContext).unfocus(),
-      child: DraggableScrollableSheet(
-        initialChildSize: .86,
-        minChildSize: .55,
-        maxChildSize: .96,
-        expand: false,
-        builder: (context, scrollController) => SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD3DAE4),
-                  borderRadius: BorderRadius.circular(99),
+    builder: (sheetContext) => AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(sheetContext).unfocus(),
+        child: DraggableScrollableSheet(
+          initialChildSize: .86,
+          minChildSize: .55,
+          maxChildSize: .96,
+          expand: false,
+          builder: (context, scrollController) => SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD3DAE4),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'あなたの記録を編集',
-                        style: TextStyle(
-                          color: _navy,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'あなたの記録を編集',
+                          style: TextStyle(
+                            color: _navy,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: '閉じる',
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                    ),
-                  ],
+                      IconButton(
+                        tooltip: '閉じる',
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                  child: _InlineRecordEditor(notifier: notifier, sake: sake),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                    child: _InlineRecordEditor(
+                      notifier: notifier,
+                      sake: current,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -3157,6 +3184,8 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       const SizedBox(height: 8),
       TextField(
         controller: _impressionController,
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        scrollPadding: const EdgeInsets.all(32),
         maxLength: 200,
         maxLines: 4,
         textAlign: TextAlign.start,

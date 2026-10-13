@@ -26,6 +26,8 @@ import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
 import '../timeline/timeline_page.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/eintities/sake_label_scan.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'account_settings_page.dart';
 import 'my_records_page.dart';
@@ -38,6 +40,15 @@ import 'widgets/taste_profile_edit_dialog.dart';
 
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
+
+enum _SavedSakeOrder {
+  newest('新しい順'),
+  oldest('古い順'),
+  match('マッチ度順');
+
+  const _SavedSakeOrder(this.label);
+  final String label;
+}
 
 class MyPage extends StatefulWidget {
   const MyPage._({Key? key, this.isTab = false, this.isActive = true})
@@ -56,6 +67,9 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> {
   final _guide = MyPageFeatureGuide();
+  _SavedSakeOrder _savedOrder = _SavedSakeOrder.newest;
+  bool _isSorting = false;
+  final Map<int, SakeTasteProfileDetails> _sortProfiles = {};
 
   @override
   void initState() {
@@ -173,15 +187,42 @@ class _MyPageState extends State<MyPage> {
             .toList()
           ..sort();
     final activeFilterTagSet = activeFilterTags.toSet();
-    final filteredSakeList = activeFilterTagSet.isEmpty
-        ? savedSakeList
-        : savedSakeList
-              .where(
-                (sake) => (sake.userTags ?? const <String>[])
-                    .map((tag) => tag.trim())
-                    .any(activeFilterTagSet.contains),
-              )
-              .toList();
+    final filteredSakeList =
+        (activeFilterTagSet.isEmpty
+                ? savedSakeList
+                : savedSakeList
+                      .where(
+                        (sake) => (sake.userTags ?? const <String>[])
+                            .map((tag) => tag.trim())
+                            .any(activeFilterTagSet.contains),
+                      )
+                      .toList())
+            .toList();
+    if (_savedOrder == _SavedSakeOrder.oldest) {
+      filteredSakeList.setAll(0, filteredSakeList.reversed.toList());
+    } else if (_savedOrder == _SavedSakeOrder.match) {
+      final preference = context.watch<MyPageState>().tasteProfile;
+      final positions = {
+        for (var i = 0; i < filteredSakeList.length; i++)
+          filteredSakeList[i]: i,
+      };
+      int score(Sake sake) {
+        final profile = _sortProfiles[sake.sakeId];
+        if (profile == null || preference == null) return -1;
+        return calculateSakeTastePreferenceMatchPercent(
+          profile: profile,
+          preference: preference,
+        );
+      }
+
+      final scores = {for (final sake in filteredSakeList) sake: score(sake)};
+      filteredSakeList.sort((a, b) {
+        final comparison = scores[b]!.compareTo(scores[a]!);
+        return comparison != 0
+            ? comparison
+            : positions[a]!.compareTo(positions[b]!);
+      });
+    }
     final isFiltering = activeFilterTags.isNotEmpty;
     final preferences = context.select(
       (MyPageState state) => state.preferences,
@@ -389,31 +430,41 @@ class _MyPageState extends State<MyPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 TextButton.icon(
-                                  onPressed: allFilterTags.isEmpty
+                                  onPressed: savedSakeList.isEmpty || _isSorting
                                       ? null
                                       : () {
-                                          _showTagFilterSheet(
+                                          _showSavedSortSheet(
                                             context,
                                             notifier: savedNotifier,
+                                            sakes: savedSakeList,
                                             allTags: allFilterTags,
                                             selectedTags: activeFilterTags,
                                           );
                                         },
-                                  icon: Icon(
-                                    Icons.tune,
-                                    color: isFiltering
-                                        ? Colors.amber
-                                        : (allFilterTags.isEmpty
-                                              ? Colors.white30
-                                              : Colors.white),
-                                  ),
+                                  icon: _isSorting
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.sort,
+                                          color: isFiltering
+                                              ? Colors.amber
+                                              : (savedSakeList.isEmpty
+                                                    ? Colors.white30
+                                                    : Colors.white),
+                                        ),
                                   label: Text(
                                     context.l10n.sort,
                                     style: TextStyle(
                                       fontSize: 10,
                                       color: isFiltering
                                           ? Colors.amber
-                                          : (allFilterTags.isEmpty
+                                          : (savedSakeList.isEmpty
                                                 ? Colors.white30
                                                 : Colors.white),
                                       fontWeight: isFiltering
@@ -1148,6 +1199,93 @@ class _MyPageState extends State<MyPage> {
     );
   }
 
+  Future<void> _showSavedSortSheet(
+    BuildContext context, {
+    required SavedSakeNotifier notifier,
+    required List<Sake> sakes,
+    required List<String> allTags,
+    required List<String> selectedTags,
+  }) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                '保存酒の並び替え',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            for (final order in _SavedSakeOrder.values)
+              ListTile(
+                title: Text(order.label),
+                trailing: _savedOrder == order
+                    ? const Icon(Icons.check, color: Color(0xFF1D3567))
+                    : null,
+                onTap: () => Navigator.pop(sheetContext, order.name),
+              ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.filter_list),
+              title: Text(context.l10n.filterByTag),
+              enabled: allTags.isNotEmpty,
+              onTap: () => Navigator.pop(sheetContext, 'tags'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || !context.mounted || selected == null) return;
+    if (selected == 'tags') {
+      _showTagFilterSheet(
+        context,
+        notifier: notifier,
+        allTags: allTags,
+        selectedTags: selectedTags,
+      );
+      return;
+    }
+    final order = _SavedSakeOrder.values.byName(selected);
+    if (order != _SavedSakeOrder.match) {
+      setState(() => _savedOrder = order);
+      return;
+    }
+    setState(() => _isSorting = true);
+    try {
+      final repository = context.read<SakeScanRepository>();
+      final ids = sakes
+          .map((sake) => sake.sakeId ?? 0)
+          .where((id) => id > 0)
+          .toSet()
+          .toList();
+      final profiles = <int, SakeTasteProfileDetails>{};
+      for (var start = 0; start < ids.length; start += 50) {
+        profiles.addAll(
+          await repository.fetchTasteProfiles(
+            ids.sublist(start, math.min(start + 50, ids.length)),
+          ),
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _sortProfiles.addAll(profiles);
+        _savedOrder = order;
+      });
+    } catch (_) {
+      if (context.mounted) {
+        _showToast(
+          context,
+          message: 'マッチ度を取得できませんでした。もう一度お試しください。',
+          icon: Icons.error_outline,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSorting = false);
+    }
+  }
+
   void _showTagFilterSheet(
     BuildContext context, {
     required SavedSakeNotifier notifier,
@@ -1297,112 +1435,118 @@ class _MyPageState extends State<MyPage> {
     final pageContext = context;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
         final localeController = context.watch<AppLocaleController>();
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                context.l10n.settings,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1D3567),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.language, color: Color(0xFF1D3567)),
-                title: Text(context.l10n.language),
-                subtitle: Text(
-                  _languageLabel(context, localeController.language),
-                ),
-                onTap: () => _showLanguageDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.description,
-                  color: Color(0xFF1D3567),
-                ),
-                title: Text(context.l10n.termsOfUse),
-                onTap: () async {
-                  Navigator.pop(context); // 設定メニューを閉じる
-                  await Navigator.of(context, rootNavigator: true).push<void>(
-                    CupertinoPageRoute(builder: (_) => const HowToUse()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.privacy_tip_outlined,
-                  color: Color(0xFF1D3567),
-                ),
-                title: const Text('プライバシーポリシー'),
-                onTap: () => launchUrl(
-                  Uri.parse(
-                    'https://molasoft-ai-central.com/assets/sakepedia-privacy.html',
+        return SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 16),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  context.l10n.settings,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D3567),
                   ),
-                  mode: LaunchMode.externalApplication,
                 ),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.mail_outline,
-                  color: Color(0xFF1D3567),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.language, color: Color(0xFF1D3567)),
+                  title: Text(context.l10n.language),
+                  subtitle: Text(
+                    _languageLabel(context, localeController.language),
+                  ),
+                  onTap: () => _showLanguageDialog(context),
                 ),
-                title: const Text('お問い合わせ・通報について'),
-                onTap: () => launchUrl(
-                  Uri.parse('https://molasoft.jp/contact/'),
-                  mode: LaunchMode.externalApplication,
+                ListTile(
+                  leading: const Icon(
+                    Icons.description,
+                    color: Color(0xFF1D3567),
+                  ),
+                  title: Text(context.l10n.termsOfUse),
+                  onTap: () async {
+                    Navigator.pop(context); // 設定メニューを閉じる
+                    await Navigator.of(context, rootNavigator: true).push<void>(
+                      CupertinoPageRoute(builder: (_) => const HowToUse()),
+                    );
+                  },
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.block, color: Color(0xFF1D3567)),
-                title: const Text('ブロックしたユーザー'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await showDialog<void>(
-                    context: pageContext,
-                    builder: (_) => const BlockedUsersDialog(),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.article_outlined,
-                  color: Color(0xFF1D3567),
+                ListTile(
+                  leading: const Icon(
+                    Icons.privacy_tip_outlined,
+                    color: Color(0xFF1D3567),
+                  ),
+                  title: const Text('プライバシーポリシー'),
+                  onTap: () => launchUrl(
+                    Uri.parse(
+                      'https://molasoft-ai-central.com/assets/sakepedia-privacy.html',
+                    ),
+                    mode: LaunchMode.externalApplication,
+                  ),
                 ),
-                title: Text(context.l10n.licenseInformation),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _showLicenseInformation(pageContext);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.business, color: Color(0xFF1D3567)),
-                title: Text(context.l10n.developer),
-                onTap: () async {
-                  Navigator.pop(context); // 設定メニューを閉じる
-                  await launchUrl(Uri.parse('https://molasoft.jp'));
-                },
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // 設定メニューを閉じる
-                },
-                child: Text(
-                  context.l10n.cancel,
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ListTile(
+                  leading: const Icon(
+                    Icons.mail_outline,
+                    color: Color(0xFF1D3567),
+                  ),
+                  title: const Text('お問い合わせ・通報について'),
+                  onTap: () => launchUrl(
+                    Uri.parse('https://molasoft.jp/contact/'),
+                    mode: LaunchMode.externalApplication,
+                  ),
                 ),
-              ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.block, color: Color(0xFF1D3567)),
+                  title: const Text('ブロックしたユーザー'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await showDialog<void>(
+                      context: pageContext,
+                      builder: (_) => const BlockedUsersDialog(),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.article_outlined,
+                    color: Color(0xFF1D3567),
+                  ),
+                  title: Text(context.l10n.licenseInformation),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _showLicenseInformation(pageContext);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.business, color: Color(0xFF1D3567)),
+                  title: Text(context.l10n.developer),
+                  onTap: () async {
+                    Navigator.pop(context); // 設定メニューを閉じる
+                    await launchUrl(Uri.parse('https://molasoft.jp'));
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // 設定メニューを閉じる
+                  },
+                  child: Text(
+                    context.l10n.cancel,
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

@@ -471,6 +471,9 @@ class SavedSakeSyncRepository {
       final dynamic base64ListField = sakeJson.remove('imageBase64List');
       final dynamic imageUrlField = sakeJson.remove('imageUrl');
       final dynamic imageUrlListField = sakeJson.remove('imageUrls');
+      // The image table is authoritative. Embedded analysis JSON can still
+      // contain the first photo's old path after that photo has been deleted.
+      final hasImageManifest = imageUrlListField is List;
 
       final savedId = sakeJson['savedId'] as String?;
 
@@ -532,7 +535,7 @@ class SavedSakeSyncRepository {
         logger.info('[$logPrefix] パース後: $sakeJson');
 
         final combined = <String>[];
-        if (sake.imagePaths != null) {
+        if (!hasImageManifest && sake.imagePaths != null) {
           combined.addAll(sake.imagePaths!);
         }
         combined.addAll(imagePaths);
@@ -563,7 +566,9 @@ class SavedSakeSyncRepository {
               : normalizedPaths;
           result.add(sake.copyWith(imagePaths: effectivePaths));
         } else {
-          result.add(sake);
+          result.add(
+            hasImageManifest ? sake.copyWith(imagePaths: const []) : sake,
+          );
         }
       } catch (error) {
         logger.warning('保存酒レスポンスのパースに失敗しました: $error');

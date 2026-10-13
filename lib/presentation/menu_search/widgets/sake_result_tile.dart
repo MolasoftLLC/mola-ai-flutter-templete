@@ -66,11 +66,19 @@ class SakeResultTile extends StatefulWidget {
 
 class _SakeResultTileState extends State<SakeResultTile> {
   late final ExpansionTileController _expansionController;
+  final _storageBucket = PageStorageBucket();
+  final _tagsScrollController = ScrollController(keepScrollOffset: false);
 
   @override
   void initState() {
     super.initState();
     _expansionController = ExpansionTileController();
+  }
+
+  @override
+  void dispose() {
+    _tagsScrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -179,251 +187,255 @@ class _SakeResultTileState extends State<SakeResultTile> {
           )
         : Icon(Icons.error_outline, color: Colors.red.shade700);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 0),
-      child: Stack(
-        children: [
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ExpansionTile(
-              // Keep each sake's expansion state separate from the menu's
-              // expansion state and descendant scroll offsets in PageStorage.
-              key: PageStorageKey<Object>((
-                'menu-sake-details',
-                widget.key,
-                widget.sake.sakeId,
-                widget.sake.name,
-                widget.sake.type,
-              )),
-              initiallyExpanded: false,
-              controller: _expansionController,
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
+    return PageStorage(
+      bucket: _storageBucket,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0, top: 0),
+        child: Stack(
+          children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (hasPhoto) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: Image.network(
-                            imageUri.toString(),
-                            width: 44,
-                            height: 56,
-                            fit: BoxFit.contain,
-                            excludeFromSemantics: true,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox.shrink(),
+              child: ExpansionTile(
+                // Keep each sake's expansion state separate from the menu's
+                // expansion state and descendant scroll offsets in PageStorage.
+                key: PageStorageKey<Object>((
+                  'menu-sake-details',
+                  widget.key,
+                  widget.sake.sakeId,
+                  widget.sake.name,
+                  widget.sake.type,
+                )),
+                initiallyExpanded: false,
+                controller: _expansionController,
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (hasPhoto) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              imageUri.toString(),
+                              width: 44,
+                              height: 56,
+                              fit: BoxFit.contain,
+                              excludeFromSemantics: true,
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            widget.hasDetails
+                                ? (widget.detailedSake!.name ??
+                                      context.l10n.unknown)
+                                : (widget.sake.name ?? context.l10n.unknown),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
                       ],
-                      Expanded(
-                        child: Text(
-                          widget.hasDetails
-                              ? (widget.detailedSake!.name ??
-                                    context.l10n.unknown)
-                              : (widget.sake.name ?? context.l10n.unknown),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                    ),
+                    if (profile != null) ...[
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        controller: _tagsScrollController,
+                        key: const PageStorageKey<String>(
+                          'menu-sake-taste-tags-scroll',
+                        ),
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final tag in menuTasteTags(profile))
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: Chip(
+                                  label: Text(tag),
+                                  visualDensity: VisualDensity.compact,
+                                  backgroundColor: const Color(0xFFEAF0F7),
+                                  side: BorderSide.none,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                  if (profile != null) ...[
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      key: const PageStorageKey<String>(
-                        'menu-sake-taste-tags-scroll',
+                    if (matchPercent != null || profile != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SakeTasteMatchPreview(
+                          percent: matchPercent,
+                          profile: profile,
+                          preference: preference,
+                          radarSize: 128,
+                        ),
                       ),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (final tag in menuTasteTags(profile))
-                            Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: Chip(
-                                label: Text(tag),
-                                visualDensity: VisualDensity.compact,
-                                backgroundColor: const Color(0xFFEAF0F7),
-                                side: BorderSide.none,
+                  ],
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.sake.type ?? context.l10n.unknownType,
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    if (widget.candidates.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: InkWell(
+                          onTap: () => _showCandidatePicker(context),
+                          borderRadius: BorderRadius.circular(4),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              '商品詳細の候補を見る',
+                              style: TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
                               ),
                             ),
-                        ],
+                          ),
+                        ),
                       ),
-                    ),
+                    Align(alignment: Alignment.centerRight, child: actions),
+                    const SizedBox(height: 16),
                   ],
-                  if (matchPercent != null || profile != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: SakeTasteMatchPreview(
-                        percent: matchPercent,
-                        profile: profile,
-                        preference: preference,
-                        radarSize: 128,
-                      ),
-                    ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                showTrailingIcon: false,
                 children: [
-                  Text(
-                    widget.sake.type ?? context.l10n.unknownType,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  if (widget.candidates.isNotEmpty)
+                  if (widget.hasDetails)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: InkWell(
-                        onTap: () => _showCandidatePicker(context),
-                        borderRadius: BorderRadius.circular(4),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            '商品詳細の候補を見る',
-                            style: TextStyle(
-                              color: Color(0xFF1D3567),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              decoration: TextDecoration.underline,
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.detailedSake!.description
+                                  ?.trim()
+                                  .isNotEmpty ==
+                              true) ...[
+                            const Text(
+                              'このお酒について',
+                              style: TextStyle(
+                                color: Color(0xFF143861),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.detailedSake!.description!.trim(),
+                              style: const TextStyle(
+                                height: 1.75,
+                                color: Color(0xFF404A56),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (widget.detailedSake!.brewery != null)
+                            widget.buildInfoRow(
+                              context.l10n.brewery,
+                              widget.detailedSake!.brewery!,
+                              Icons.home_work,
+                            ),
+                          if (widget.detailedSake!.sakeMeterValue != null)
+                            widget.buildInfoRow(
+                              context.l10n.sakeMeterValue,
+                              '${widget.detailedSake!.sakeMeterValue}',
+                              Icons.science,
+                            ),
+                          if (widget.detailedSake!.types != null &&
+                              widget.detailedSake!.types!.isNotEmpty)
+                            widget.buildTypesRow(widget.detailedSake!.types!),
+                          const SizedBox(height: 4),
+                        ],
+                      ),
+                    )
+                  else if (widget.candidates.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            widget.isItemLoading
+                                ? Icons.hourglass_top
+                                : Icons.error_outline,
+                            color: widget.isItemLoading
+                                ? const Color(0xFF1D3567)
+                                : Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              widget.isItemLoading
+                                  ? context.l10n.loadingDetails
+                                  : context.l10n.detailsUnavailable,
+                              style: TextStyle(
+                                color: widget.isItemLoading
+                                    ? const Color(0xFF1D3567)
+                                    : Colors.red.shade700,
+                                fontStyle: widget.isItemLoading
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
+                                fontWeight: widget.isItemLoading
+                                    ? FontWeight.normal
+                                    : FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  Align(alignment: Alignment.centerRight, child: actions),
-                  const SizedBox(height: 16),
                 ],
               ),
-              showTrailingIcon: false,
-              children: [
-                if (widget.hasDetails)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.detailedSake!.description
-                                ?.trim()
-                                .isNotEmpty ==
-                            true) ...[
-                          const Text(
-                            'このお酒について',
-                            style: TextStyle(
-                              color: Color(0xFF143861),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.detailedSake!.description!.trim(),
-                            style: const TextStyle(
-                              height: 1.75,
-                              color: Color(0xFF404A56),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (widget.detailedSake!.brewery != null)
-                          widget.buildInfoRow(
-                            context.l10n.brewery,
-                            widget.detailedSake!.brewery!,
-                            Icons.home_work,
-                          ),
-                        if (widget.detailedSake!.sakeMeterValue != null)
-                          widget.buildInfoRow(
-                            context.l10n.sakeMeterValue,
-                            '${widget.detailedSake!.sakeMeterValue}',
-                            Icons.science,
-                          ),
-                        if (widget.detailedSake!.types != null &&
-                            widget.detailedSake!.types!.isNotEmpty)
-                          widget.buildTypesRow(widget.detailedSake!.types!),
-                        const SizedBox(height: 4),
-                      ],
-                    ),
-                  )
-                else if (widget.candidates.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          widget.isItemLoading
-                              ? Icons.hourglass_top
-                              : Icons.error_outline,
-                          color: widget.isItemLoading
-                              ? const Color(0xFF1D3567)
-                              : Colors.red.shade700,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.isItemLoading
-                                ? context.l10n.loadingDetails
-                                : context.l10n.detailsUnavailable,
-                            style: TextStyle(
-                              color: widget.isItemLoading
-                                  ? const Color(0xFF1D3567)
-                                  : Colors.red.shade700,
-                              fontStyle: widget.isItemLoading
-                                  ? FontStyle.italic
-                                  : FontStyle.normal,
-                              fontWeight: widget.isItemLoading
-                                  ? FontWeight.normal
-                                  : FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
             ),
-          ),
-          if (widget.hasDetails)
-            Positioned(
-              bottom: 8,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Material(
-                  color: Colors.transparent,
-                  child: IconButton(
-                    tooltip: context.l10n.expand,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(
-                      minWidth: 36,
-                      minHeight: 36,
+            if (widget.hasDetails)
+              Positioned(
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      tooltip: context.l10n.expand,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                      icon: const Icon(
+                        Icons.expand_more,
+                        color: Color(0xFF1D3567),
+                        size: 28,
+                      ),
+                      onPressed: () {
+                        if (_expansionController.isExpanded) {
+                          _expansionController.collapse();
+                        } else {
+                          _expansionController.expand();
+                        }
+                      },
                     ),
-                    icon: const Icon(
-                      Icons.expand_more,
-                      color: Color(0xFF1D3567),
-                      size: 28,
-                    ),
-                    onPressed: () {
-                      if (_expansionController.isExpanded) {
-                        _expansionController.collapse();
-                      } else {
-                        _expansionController.expand();
-                      }
-                    },
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

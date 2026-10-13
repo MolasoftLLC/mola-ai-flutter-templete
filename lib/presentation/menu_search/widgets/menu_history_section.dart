@@ -177,7 +177,7 @@ class MenuHistorySection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: _MenuHistoryCard(
-                      key: PageStorageKey(historyItem.id),
+                      key: ValueKey(historyItem.id),
                       alwaysExpanded: historyId != null,
                       onExpansionChanged: (expanded) {
                         if (expanded)
@@ -398,7 +398,7 @@ class MenuHistorySection extends StatelessWidget {
   }
 }
 
-class _MenuHistoryCard extends StatelessWidget {
+class _MenuHistoryCard extends StatefulWidget {
   const _MenuHistoryCard({
     super.key,
     required this.alwaysExpanded,
@@ -417,23 +417,39 @@ class _MenuHistoryCard extends StatelessWidget {
   final ValueChanged<bool> onExpansionChanged;
 
   @override
+  State<_MenuHistoryCard> createState() => _MenuHistoryCardState();
+}
+
+class _MenuHistoryCardState extends State<_MenuHistoryCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (alwaysExpanded) {
-      // A single-menu detail has no outer expansion animation or collapsed state.
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ListTile(leading: leading, title: title, subtitle: subtitle),
-          ...children,
-        ],
-      );
-    }
-    return ExpansionTile(
-      leading: leading,
-      title: title,
-      subtitle: subtitle,
-      onExpansionChanged: onExpansionChanged,
-      children: children,
+    final expanded = widget.alwaysExpanded || _expanded;
+    // Keep the outer menu's bool out of PageStorage, where nested scrollables
+    // restore doubles. Each menu keeps its own expansion state locally.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          leading: widget.leading,
+          title: widget.title,
+          subtitle: widget.subtitle,
+          trailing: widget.alwaysExpanded
+              ? null
+              : Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  color: const Color(0xFF1D3567),
+                ),
+          onTap: widget.alwaysExpanded
+              ? null
+              : () {
+                  setState(() => _expanded = !_expanded);
+                  widget.onExpansionChanged(_expanded);
+                },
+        ),
+        if (expanded) ...widget.children,
+      ],
     );
   }
 }

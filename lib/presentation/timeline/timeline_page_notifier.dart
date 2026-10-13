@@ -137,7 +137,7 @@ class TimelinePageNotifier extends StateNotifier<TimelinePageState>
   }
 
   Future<void> fetchTimeline({bool isRefresh = false}) async {
-    if (state.isLoading && !isRefresh) {
+    if (state.isLoading || state.isRefreshing) {
       return;
     }
 

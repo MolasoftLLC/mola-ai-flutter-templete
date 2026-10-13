@@ -296,10 +296,10 @@ class _SakeMapPageState extends State<SakeMapPage> {
             ),
           ),
           if (state.isLoading)
-            const Positioned(
-              top: 12,
-              right: 12,
-              child: SafeArea(child: CircularProgressIndicator()),
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: Center(child: CircularProgressIndicator()),
+              ),
             ),
           if (!state.isLoading && state.venues.isEmpty)
             Positioned(
