@@ -1055,7 +1055,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   Future<void> loadMenuAnalysisHistory() async {
     try {
       final history = await _historyRepository.load();
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       final currentUid = context.read<AuthRepository>().currentUser?.uid;
       state = state.copyWith(
         menuAnalysisHistory: currentUid == _historyRepository.ownerId
@@ -1067,7 +1067,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
     } catch (e) {
       logger.shout('メニュー解析履歴の読み込みに失敗しました: $e');
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
       // Initial history loading must not make an empty analysis screen look
       // like a failed menu scan. Keep failures in the log and retry on sync.
       if (state.menuAnalysisHistory.isNotEmpty) {
@@ -1238,7 +1238,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       await _historyRepository.migrateLegacy();
     } catch (e) {
       logger.shout('メニュー解析履歴の画像の移行に失敗しました: $e');
-      if (mounted && state.menuAnalysisHistory.isNotEmpty) {
+      if (mounted && context.mounted && state.menuAnalysisHistory.isNotEmpty) {
         state = state.copyWith(
           errorMessage: context.l10n.menuHistoryLoadFailed,
         );
