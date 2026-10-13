@@ -30,6 +30,7 @@ class SnackBarUtils {
     Color backgroundColor = Colors.black87,
     Color textColor = Colors.white,
     SnackBarAction? action,
+    bool? persist,
     IconData? leadingIcon,
   }) {
     // 既存のSnackBarを閉じる
@@ -58,6 +59,7 @@ class SnackBarUtils {
         duration: duration,
         backgroundColor: backgroundColor,
         action: action,
+        persist: persist,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomObstacleHeight),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

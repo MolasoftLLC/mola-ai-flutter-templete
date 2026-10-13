@@ -162,6 +162,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       SnackBarUtils.showSnackBar(
         context,
         message: '詳細情報を取得できませんでした',
+        duration: const Duration(seconds: 5),
+        persist: false,
         action: SnackBarAction(
           label: '再試行',
           onPressed: () {
