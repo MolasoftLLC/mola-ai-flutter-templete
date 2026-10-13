@@ -1061,11 +1061,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         menuAnalysisHistory: currentUid == _historyRepository.ownerId
             ? history
             : const [],
+        errorMessage: state.errorMessage == context.l10n.menuHistoryLoadFailed
+            ? null
+            : state.errorMessage,
       );
     } catch (e) {
       logger.shout('メニュー解析履歴の読み込みに失敗しました: $e');
       if (!mounted) return;
-      state = state.copyWith(errorMessage: context.l10n.menuHistoryLoadFailed);
+      // Initial history loading must not make an empty analysis screen look
+      // like a failed menu scan. Keep failures in the log and retry on sync.
+      if (state.menuAnalysisHistory.isNotEmpty) {
+        state = state.copyWith(
+          errorMessage: context.l10n.menuHistoryLoadFailed,
+        );
+      }
     }
   }
 
@@ -1229,7 +1238,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       await _historyRepository.migrateLegacy();
     } catch (e) {
       logger.shout('メニュー解析履歴の画像の移行に失敗しました: $e');
-      state = state.copyWith(errorMessage: context.l10n.menuHistoryLoadFailed);
+      if (mounted && state.menuAnalysisHistory.isNotEmpty) {
+        state = state.copyWith(
+          errorMessage: context.l10n.menuHistoryLoadFailed,
+        );
+      }
     }
   }
 
