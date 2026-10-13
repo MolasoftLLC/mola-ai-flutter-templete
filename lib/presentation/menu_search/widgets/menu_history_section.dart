@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -181,10 +183,7 @@ class MenuHistorySection extends StatelessWidget {
                         if (expanded)
                           notifier.restoreHistoryDetails(historyItem.id);
                       },
-                      leading:
-                          (historyItem.imagePath != null ||
-                              (historyItem.base64Image != null &&
-                                  historyItem.base64Image!.isNotEmpty))
+                      leading: _hasUsableHistoryImage(historyItem)
                           ? GestureDetector(
                               onTap: () {
                                 _showEnlargedImage(context, historyItem);
@@ -204,7 +203,7 @@ class MenuHistorySection extends StatelessWidget {
                                 ),
                               ),
                             )
-                          : null,
+                          : _missingHistoryImagePlaceholder(),
                       title: Row(
                         children: [
                           Expanded(
@@ -370,6 +369,30 @@ class MenuHistorySection extends StatelessWidget {
               },
             ),
         ],
+      ),
+    );
+  }
+
+  bool _hasUsableHistoryImage(MenuAnalysisHistoryItem item) {
+    final path = item.imagePath;
+    if (path != null && path.isNotEmpty && File(path).existsSync()) {
+      return true;
+    }
+    return item.base64Image?.isNotEmpty == true;
+  }
+
+  Widget _missingHistoryImagePlaceholder() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F5F8),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(
+        Icons.photo_outlined,
+        size: 22,
+        color: Color(0xFF9AA5B1),
       ),
     );
   }
