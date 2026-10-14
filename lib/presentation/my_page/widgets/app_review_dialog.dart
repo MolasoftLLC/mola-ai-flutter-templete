@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../common/access_url.dart';
 import '../../../common/utils/snack_bar_utils.dart';
+import 'app_feedback_dialog.dart';
 
 const _navy = Color(0xFF1D3567);
 
@@ -70,11 +71,13 @@ Future<void> showAppReviewDialog(BuildContext context) async {
     ),
   );
   if (action == null || !context.mounted) return;
+  if (action == _ReviewAction.feedback) {
+    await showAppFeedbackDialog(context);
+    return;
+  }
   // A user-initiated review link opens the store's review page reliably;
   // the system's discretionary review prompt may not appear on a button tap.
-  final uri = action == _ReviewAction.feedback
-      ? Uri.parse('https://molasoft.jp/contact/')
-      : Platform.isAndroid
+  final uri = Platform.isAndroid
       ? Uri.parse(PLAY_STORE_URL)
       : Uri.parse(
           APP_STORE_URL,

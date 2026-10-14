@@ -17,6 +17,19 @@ class _$ApiClient extends ApiClient {
   final definitionType = ApiClient;
 
   @override
+  Future<Response<dynamic>> sendAppFeedback(Map<String, dynamic> body) {
+    final Uri $url = Uri.parse('/app-feedback');
+    final $body = body;
+    final Request $request = Request(
+      'POST',
+      $url,
+      client.baseUrl,
+      body: $body,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> checkApiUseCount() {
     final Uri $url = Uri.parse('/check_api_use_count');
     final Request $request = Request(

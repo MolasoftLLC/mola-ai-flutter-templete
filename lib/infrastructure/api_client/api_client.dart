@@ -8,6 +8,9 @@ part 'api_client.chopper.dart';
 abstract class ApiClient extends ChopperService {
   static ApiClient create([ChopperClient? client]) => _$ApiClient(client);
 
+  @Post(path: 'app-feedback')
+  Future<Response> sendAppFeedback(@Body() Map<String, dynamic> body);
+
   @Get(path: 'check_api_use_count')
   Future<Response> checkApiUseCount();
 
