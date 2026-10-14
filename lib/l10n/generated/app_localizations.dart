@@ -1187,7 +1187,7 @@ abstract class AppLocalizations {
   /// No description provided for @autoPostDialogDescription.
   ///
   /// In ja, this message translates to:
-  /// **'この画像と解析結果だけがツイートされます。\n日本酒を広めるためにご協力お願いします。'**
+  /// **'写真1枚と解析結果をSAKEPEDIAのXアカウントに投稿します。ご自身のXアカウントとの連携は不要です。'**
   String get autoPostDialogDescription;
 
   /// No description provided for @continuePosting.
@@ -1739,13 +1739,13 @@ abstract class AppLocalizations {
   /// No description provided for @scanPostToXDescription.
   ///
   /// In ja, this message translates to:
-  /// **'「詳細を見る」を押すと、写真1枚とこのお酒をXに投稿します。'**
+  /// **'「詳細を見る」で写真1枚と解析結果をSAKEPEDIAのXに投稿します。このチェックでON／OFFできます。'**
   String get scanPostToXDescription;
 
   /// No description provided for @autoPostToXDescription.
   ///
   /// In ja, this message translates to:
-  /// **'解析完了時に結果をXにも自動投稿します。'**
+  /// **'写真と解析結果をSAKEPEDIAのXに投稿します。このチェックでON／OFFできます。'**
   String get autoPostToXDescription;
 
   /// No description provided for @loginToChangeSetting.

@@ -34,7 +34,7 @@ class SnackBarUtils {
     IconData? leadingIcon,
   }) {
     // 既存のSnackBarを閉じる
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).clearSnackBars();
 
     // 新しいSnackBarを表示
     final content = leadingIcon == null

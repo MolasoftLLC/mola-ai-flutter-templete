@@ -33,6 +33,7 @@ import '../my_page/saved_sake_detail_page.dart';
 import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'sake_scan_notifier.dart';
+import '../common/dialogs/share_opt_out_dialog.dart';
 import 'widgets/lens_progress_toasts.dart';
 import 'widgets/label_capture_guide.dart';
 
@@ -115,6 +116,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _openingDetail = false;
   String? _xPostError;
   bool _isAutoTweetUpdating = false;
+  bool _isTimelineShareUpdating = false;
   bool _initialReanalysisStarted = false;
 
   @override
@@ -214,85 +216,81 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _onTimelineShareChanged(bool value) async {
-    AppAnalytics.instance.event('scan', 'timeline_post');
-    if (!value) {
-      final shouldDisable = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(context.l10n.timelinePublishingTitle),
-          content: Text(context.l10n.timelinePublishingDescription),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(context.l10n.continueAnalysis),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(context.l10n.removeCheck),
-            ),
-          ],
-        ),
-      );
-      if (shouldDisable != true || !mounted) return;
-    }
-
-    setState(() {
-      _shareToTimeline = value;
-      _xPostError = null;
-      _recordDirty = true;
-      _recordSaved = false;
-      _recordSaveError = null;
-    });
-    context.read<SakeScanNotifier>().setShareToTimeline(value);
+    if (_isTimelineShareUpdating ||
+        _isAutoTweetUpdating ||
+        _recordSaving ||
+        _openingDetail)
+      return;
+    setState(() => _isTimelineShareUpdating = true);
     try {
+      AppAnalytics.instance.event('scan', 'timeline_post');
+      if (!value) {
+        final shouldDisable = await showShareOptOutDialog(
+          context,
+          title: context.l10n.timelinePublishingTitle,
+          description: context.l10n.timelinePublishingDescription,
+          keepLabel: context.l10n.continueAnalysis,
+          disableLabel: context.l10n.removeCheck,
+        );
+        if (!shouldDisable || !mounted) return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _shareToTimeline = value;
+        _xPostError = null;
+        _recordDirty = true;
+        _recordSaved = false;
+        _recordSaveError = null;
+      });
+      context.read<SakeScanNotifier>().setShareToTimeline(value);
       final preferences = await SharedPreferences.getInstance();
       await preferences.setBool(_timelineSharePreferenceKey, value);
-    } catch (error, stackTrace) {
+    } catch (error) {
       logger.warning('タイムライン共有設定の保存に失敗しました: $error');
-      logger.info(stackTrace.toString());
+    } finally {
+      if (mounted) setState(() => _isTimelineShareUpdating = false);
     }
   }
 
   Future<void> _onAutoTweetChanged(bool value) async {
-    AppAnalytics.instance.event('scan', 'x_post');
-    if (_isAutoTweetUpdating) return;
-    if (!value) {
-      final shouldDisable = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(context.l10n.autoPostDialogTitle),
-          content: Text(context.l10n.autoPostDialogDescription),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(context.l10n.continuePosting),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(context.l10n.disableAutoPost),
-            ),
-          ],
-        ),
-      );
-      if (shouldDisable != true || !mounted) return;
-    }
-
+    if (_isAutoTweetUpdating ||
+        _isTimelineShareUpdating ||
+        _recordSaving ||
+        _openingDetail)
+      return;
     setState(() => _isAutoTweetUpdating = true);
-    final response = await context.read<SakeUserRepository>().updateAutoTweet(
-      value,
-    );
-    if (!mounted) return;
-    setState(() {
-      _isAutoTweetUpdating = false;
-      if (response != null) {
+    try {
+      AppAnalytics.instance.event('scan', 'x_post');
+      if (!value) {
+        final shouldDisable = await showShareOptOutDialog(
+          context,
+          title: context.l10n.autoPostDialogTitle,
+          description: context.l10n.autoPostDialogDescription,
+          keepLabel: context.l10n.continuePosting,
+          disableLabel: context.l10n.disableAutoPost,
+        );
+        if (!shouldDisable || !mounted) return;
+      }
+      if (!mounted) return;
+      final response = await context.read<SakeUserRepository>().updateAutoTweet(
+        value,
+      );
+      if (!mounted) return;
+      if (response == null) throw StateError('X setting update failed');
+      setState(() {
         _autoTweetEnabled = value;
         _xPostError = null;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(content: Text(context.l10n.autoPostUpdateFailed)),
+          );
       }
-    });
-    if (response == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.autoPostUpdateFailed)),
-      );
+    } finally {
+      if (mounted) setState(() => _isAutoTweetUpdating = false);
     }
   }
 
@@ -711,7 +709,11 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _openAnalyzedDetail(SakeScanState state) async {
-    if (_openingDetail || _recordSaving || _isAutoTweetUpdating) return;
+    if (_openingDetail ||
+        _recordSaving ||
+        _isAutoTweetUpdating ||
+        _isTimelineShareUpdating)
+      return;
     setState(() {
       _openingDetail = true;
       _xPostError = null;
@@ -1774,7 +1776,8 @@ class _SakeScanPageState extends State<SakeScanPage>
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               value: _shareToTimeline,
-              onChanged: _recordSaving || _openingDetail
+              onChanged:
+                  _isTimelineShareUpdating || _recordSaving || _openingDetail
                   ? null
                   : (value) {
                       if (value != null) {
@@ -1801,7 +1804,7 @@ class _SakeScanPageState extends State<SakeScanPage>
               visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               value: _autoTweetEnabled,
-              onChanged: _isAutoTweetUpdating || _openingDetail
+              onChanged: _isAutoTweetUpdating || _recordSaving || _openingDetail
                   ? null
                   : (value) {
                       if (value != null) {
@@ -1861,7 +1864,11 @@ class _SakeScanPageState extends State<SakeScanPage>
             ),
             const SizedBox(height: 10),
             FilledButton(
-              onPressed: _recordSaving || _openingDetail || _isAutoTweetUpdating
+              onPressed:
+                  _recordSaving ||
+                      _openingDetail ||
+                      _isAutoTweetUpdating ||
+                      _isTimelineShareUpdating
                   ? null
                   : analysisCompleted
                   ? () => unawaited(_openAnalyzedDetail(state))

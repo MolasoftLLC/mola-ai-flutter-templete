@@ -12,6 +12,7 @@ import 'package:mola_gemini_flutter_template/common/logger.dart';
 import '../../../infrastructure/local_database/shared_key.dart';
 import '../../../infrastructure/local_database/shared_preference.dart';
 import '../../repository/auth_repository.dart';
+import '../../../common/utils/async_action_gate.dart';
 import '../../repository/favorite_sync_repository.dart';
 import '../../repository/gemini_mola_api_repository.dart';
 
@@ -68,6 +69,7 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
   }
 
   static const int guestFavoriteLimit = 8;
+  final _favoriteActions = AsyncActionGate();
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
   GeminiMolaApiRepository get geminiMolaApiRepository =>
@@ -121,7 +123,13 @@ class FavoriteNotifier extends StateNotifier<FavoriteState>
   }
 
   // お気に入りに追加または削除
-  Future<void> addOrRemoveFavorite(FavoriteSake favoriteSake) async {
+  Future<void> addOrRemoveFavorite(FavoriteSake favoriteSake) =>
+      _favoriteActions.run((
+        favoriteSake.name,
+        favoriteSake.type,
+      ), () => _addOrRemoveFavoriteOnce(favoriteSake));
+
+  Future<void> _addOrRemoveFavoriteOnce(FavoriteSake favoriteSake) async {
     AppAnalytics.instance.event(AppAnalytics.instance.screen, 'favorite');
     // 既に同じ名前とタイプの組み合わせが存在するか確認
     final exists = state.myFavoriteList.any(

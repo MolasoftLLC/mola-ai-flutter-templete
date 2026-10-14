@@ -69,6 +69,9 @@ class _MyPageState extends State<MyPage> {
   final _guide = MyPageFeatureGuide();
   _SavedSakeOrder _savedOrder = _SavedSakeOrder.newest;
   bool _isSorting = false;
+  bool _reviewDialogOpen = false;
+  bool _tasteProfileDialogOpen = false;
+  bool _preferenceAnalysisOpen = false;
   final Map<int, SakeTasteProfileDetails> _sortProfiles = {};
 
   @override
@@ -123,6 +126,38 @@ class _MyPageState extends State<MyPage> {
     );
   }
 
+  Future<void> _savePreferences(
+    BuildContext context, {
+    bool useAnalysis = false,
+  }) async {
+    final notifier = context.read<MyPageNotifier>();
+    if (notifier.isSavingPreferences) return;
+    FocusScope.of(context).unfocus();
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = useAnalysis
+        ? await notifier.saveSakePreferenceAsPreferences()
+        : await notifier.savePreferences();
+    if (!context.mounted) return;
+    final message = saved
+        ? context.l10n.preferencesSaved
+        : Localizations.localeOf(context).languageCode == 'en'
+        ? 'Could not save. Please try again.'
+        : '保存できませんでした。もう一度お試しください。';
+    if (saved && useAnalysis) Navigator.pop(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showAppReview() async {
+    if (_reviewDialogOpen) return;
+    _reviewDialogOpen = true;
+    try {
+      await showAppReviewDialog(context);
+    } finally {
+      _reviewDialogOpen = false;
+    }
+  }
+
   bool _isValidText(String? value) {
     return value != null && value.trim().isNotEmpty;
   }
@@ -132,6 +167,9 @@ class _MyPageState extends State<MyPage> {
     final notifier = context.watch<MyPageNotifier>();
     final authNotifier = context.read<AuthNotifier>();
     final isLoading = context.select((MyPageState state) => state.isLoading);
+    final isSavingPreferences = context.select(
+      (MyPageState state) => state.isSavingPreferences,
+    );
     final geminiResponse = context.select(
       (MyPageState state) => state.geminiResponse,
     );
@@ -274,7 +312,7 @@ class _MyPageState extends State<MyPage> {
                   Icons.star_outline_rounded,
                   color: Color(0xFFFFD54F),
                 ),
-                onPressed: () => showAppReviewDialog(context),
+                onPressed: _showAppReview,
               ),
             ],
           ),
@@ -781,38 +819,45 @@ class _MyPageState extends State<MyPage> {
                       width: MediaQuery.of(context).size.width * 0.9,
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          // お気に入りの日本酒が2つ以上あるか確認
-                          if (myFavoriteSakeList.length >= 2) {
-                            if (!notifier.hasAnalysisQuota) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    context.l10n.diagnosisDailyLimit,
-                                  ),
-                                  duration: const Duration(seconds: 2),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                              return;
-                            }
-                            // 2つ以上ある場合は診断を実行
-                            _showSakePreferenceAnalysisDialog(
-                              context,
-                              notifier,
-                            );
-                            notifier.analyzeSakePreference(myFavoriteSakeList);
-                          } else {
-                            // 2つ未満の場合はトーストメッセージのみ表示
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(context.l10n.needMoreFavorites),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: isLoading || isSavingPreferences
+                            ? null
+                            : () async {
+                                if (_preferenceAnalysisOpen) return;
+                                // お気に入りの日本酒が2つ以上あるか確認
+                                if (myFavoriteSakeList.length >= 2) {
+                                  if (!notifier.hasAnalysisQuota) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.diagnosisDailyLimit,
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  // 2つ以上ある場合は診断を実行
+                                  _showSakePreferenceAnalysisDialog(
+                                    context,
+                                    notifier,
+                                  );
+                                  notifier.analyzeSakePreference(
+                                    myFavoriteSakeList,
+                                  );
+                                } else {
+                                  // 2つ未満の場合はトーストメッセージのみ表示
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.l10n.needMoreFavorites,
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
                         icon: const Icon(Icons.psychology),
                         label: Text(
                           context.l10n.favoriteDiagnosis,
@@ -887,6 +932,7 @@ class _MyPageState extends State<MyPage> {
                           const SizedBox(height: 16),
                           TextField(
                             controller: preferencesController,
+                            readOnly: isSavingPreferences,
                             maxLength: 200,
                             maxLines: 3,
                             style: const TextStyle(color: Colors.white),
@@ -910,20 +956,9 @@ class _MyPageState extends State<MyPage> {
                           const SizedBox(height: 12),
                           Center(
                             child: ElevatedButton(
-                              onPressed: () {
-                                // キーボードを閉じる
-                                FocusScope.of(context).unfocus();
-                                // 保存処理
-                                notifier.savePreferences();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      context.l10n.preferencesSaved,
-                                    ),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              },
+                              onPressed: isSavingPreferences
+                                  ? null
+                                  : () => _savePreferences(context),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1D3567),
                                 foregroundColor: Colors.white,
@@ -935,7 +970,15 @@ class _MyPageState extends State<MyPage> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: Text(context.l10n.saveAction),
+                              child: isSavingPreferences
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(context.l10n.saveAction),
                             ),
                           ),
                         ],
@@ -1108,19 +1151,26 @@ class _MyPageState extends State<MyPage> {
               icon: const Icon(Icons.tune, size: 18),
               label: Text(context.l10n.editTasteProfile),
               onPressed: () async {
-                final notifier = context.read<MyPageNotifier>();
-                final saved = await showDialog<bool>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => TasteProfileEditDialog(
-                    profile: effectiveProfile,
-                    onSave: notifier.saveTasteProfile,
-                  ),
-                );
-                if (saved == true && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.preferencesSaved)),
+                if (_tasteProfileDialogOpen) return;
+                _tasteProfileDialogOpen = true;
+                try {
+                  final notifier = context.read<MyPageNotifier>();
+                  final saved = await showDialog<bool>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => TasteProfileEditDialog(
+                      profile: effectiveProfile,
+                      onSave: notifier.saveTasteProfile,
+                    ),
                   );
+                  if (saved == true && context.mounted) {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(context.l10n.preferencesSaved)),
+                    );
+                  }
+                } finally {
+                  _tasteProfileDialogOpen = false;
                 }
               },
             ),
@@ -1596,6 +1646,8 @@ class _MyPageState extends State<MyPage> {
     BuildContext context,
     MyPageNotifier notifier,
   ) {
+    if (_preferenceAnalysisOpen) return;
+    _preferenceAnalysisOpen = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1604,6 +1656,9 @@ class _MyPageState extends State<MyPage> {
           builder: (context, setState) {
             final isLoading = context.select(
               (MyPageState state) => state.isLoading,
+            );
+            final isSavingPreferences = context.select(
+              (MyPageState state) => state.isSavingPreferences,
             );
             final sakePreferenceAnalysis = context.select(
               (MyPageState state) => state.sakePreferenceAnalysis,
@@ -1653,9 +1708,11 @@ class _MyPageState extends State<MyPage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // ダイアログを閉じる
-                  },
+                  onPressed: isSavingPreferences
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                        },
                   child: Text(
                     context.l10n.close,
                     style: const TextStyle(color: Colors.grey, fontSize: 16),
@@ -1663,28 +1720,27 @@ class _MyPageState extends State<MyPage> {
                 ),
                 if (sakePreferenceAnalysis != null && !isLoading)
                   ElevatedButton(
-                    onPressed: () {
-                      notifier.saveSakePreferenceAsPreferences();
-                      Navigator.pop(context); // ダイアログを閉じる
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.l10n.preferencesSaved),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onPressed: isSavingPreferences
+                        ? null
+                        : () => _savePreferences(context, useAnalysis: true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1D3567),
                       foregroundColor: Colors.white,
                     ),
-                    child: Text(context.l10n.savePreferenceAndClose),
+                    child: isSavingPreferences
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(context.l10n.savePreferenceAndClose),
                   ),
               ],
             );
           },
         );
       },
-    );
+    ).whenComplete(() => _preferenceAnalysisOpen = false);
   }
 }
 

@@ -29,6 +29,7 @@ import '../common/widgets/guest_limit_dialog.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/dialogs/ai_data_consent_dialog.dart';
+import '../common/dialogs/share_opt_out_dialog.dart';
 
 part 'main_search_page_notifier.freezed.dart';
 
@@ -431,6 +432,7 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
   }
 
   Future<void> onAutoTweetToggle(bool newValue) async {
+    if (state.isAutoTweetUpdating) return;
     final user = authNotifier.state.user;
     if (user == null) {
       SnackBarUtils.showWarningSnackBar(
@@ -440,16 +442,10 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
       return;
     }
 
-    if (!newValue) {
-      final shouldDisable = await _showAutoTweetOptOutDialog();
-      if (!shouldDisable) {
-        return;
-      }
-    }
-
     state = state.copyWith(isAutoTweetUpdating: true);
-
     try {
+      if (!newValue && !await _showAutoTweetOptOutDialog()) return;
+      if (!mounted) return;
       final response = await sakeUserRepository.updateAutoTweet(newValue);
       if (response == null) {
         state = state.copyWith(isAutoTweetUpdating: false);
@@ -486,32 +482,18 @@ class MainSearchPageNotifier extends StateNotifier<MainSearchPageState>
         context,
         message: context.l10n.autoPostUpdateFailed,
       );
+    } finally {
+      if (mounted) state = state.copyWith(isAutoTweetUpdating: false);
     }
   }
 
-  Future<bool> _showAutoTweetOptOutDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(context.l10n.autoPostDialogTitle),
-          content: Text(context.l10n.autoPostDialogDescription),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(context.l10n.continuePosting),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(context.l10n.disableAutoPost),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
-  }
+  Future<bool> _showAutoTweetOptOutDialog() => showShareOptOutDialog(
+    context,
+    title: context.l10n.autoPostDialogTitle,
+    description: context.l10n.autoPostDialogDescription,
+    keepLabel: context.l10n.continuePosting,
+    disableLabel: context.l10n.disableAutoPost,
+  );
 
   Future<bool> saveAndAnalyzeBottle() async {
     final image = state.sakeImage;

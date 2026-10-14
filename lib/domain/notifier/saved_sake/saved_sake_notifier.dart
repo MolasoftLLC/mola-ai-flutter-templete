@@ -11,6 +11,7 @@ import 'package:mola_gemini_flutter_template/infrastructure/local_database/share
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../repository/auth_repository.dart';
+import '../../../common/utils/async_action_gate.dart';
 import '../../repository/saved_sake_sync_repository.dart';
 
 part 'saved_sake_notifier.freezed.dart';
@@ -51,6 +52,7 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
   static const String analysisFailedLabel = '解析失敗(名前変更して解析可能)';
 
   final Random _random = Random();
+  final _bookmarkActions = AsyncActionGate();
   final Map<String, Future<Sake?>> _syncTasks = <String, Future<Sake?>>{};
   final Set<String> _completingSyncIds = <String>{};
   final Set<String> _analysisStartedIds = <String>{};
@@ -178,7 +180,12 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     return savedId;
   }
 
-  Future<bool> toggleSavedSake(Sake sake) async {
+  Future<bool> toggleSavedSake(Sake sake) => _bookmarkActions.run(
+    (sake.sakeId ?? 0) > 0 ? sake.sakeId! : (sake.name, sake.type),
+    () => _toggleSavedSakeOnce(sake),
+  );
+
+  Future<bool> _toggleSavedSakeOnce(Sake sake) async {
     try {
       await _toggleSavedSake(sake);
       return true;

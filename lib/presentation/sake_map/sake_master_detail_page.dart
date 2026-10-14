@@ -2867,6 +2867,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   bool _isSaving = false;
   String? _saveError;
   bool _isAddingImage = false;
+  bool _isChoosingImageSource = false;
   void Function()? _removeRecordListener;
 
   Sake get _currentRecord =>
@@ -2901,7 +2902,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
 
   Future<void> _save() async {
     AppAnalytics.instance.event('detail', 'impression');
-    if (_isSaving) return;
+    if (_isSaving || _isAddingImage) return;
     setState(() {
       _isSaving = true;
       _saveError = null;
@@ -2973,41 +2974,49 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _showImageSourceSheet() async {
+    if (_isAddingImage || _isSaving || _isChoosingImageSource) return;
     if ((_currentRecord.imagePaths ?? const <String>[]).length >= 3) {
       SnackBarUtils.showWarningSnackBar(context, message: '写真は3枚まで追加できます。');
       return;
     }
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera, color: _navy),
-              title: const Text('カメラで撮る'),
-              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: _navy),
-              title: const Text('写真ライブラリから選ぶ'),
-              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
-            ),
-          ],
+    _isChoosingImageSource = true;
+    final ImageSource? source;
+    try {
+      source = await showModalBottomSheet<ImageSource>(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-      ),
-    );
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: _navy),
+                title: const Text('カメラで撮る'),
+                onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: _navy),
+                title: const Text('写真ライブラリから選ぶ'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      _isChoosingImageSource = false;
+    }
     if (!mounted || source == null) return;
     await _pickMemoryImage(source);
   }
 
   Future<void> _deleteMemoryImage(String path) async {
     final savedId = widget.sake.savedId;
-    if (savedId == null || _isAddingImage) return;
+    if (savedId == null || _isAddingImage || _isSaving) return;
     setState(() => _isAddingImage = true);
     try {
       final updated = await widget.notifier.removeImageFromSavedSake(
@@ -3033,6 +3042,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
   }
 
   Future<void> _pickMemoryImage(ImageSource source) async {
+    if (_isAddingImage || _isSaving) return;
     final savedId = widget.sake.savedId;
     if (savedId == null || savedId.isEmpty) {
       SnackBarUtils.showWarningSnackBar(context, message: '先にこのお酒を記録してください。');
@@ -3169,7 +3179,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
                 isPrimary:
                     index ==
                     (_currentRecord.imagePaths ?? const <String>[]).length,
-                isAdding: _isAddingImage,
+                isAdding: _isAddingImage || _isSaving,
                 onAdd: _showImageSourceSheet,
                 onDelete: _deleteMemoryImage,
               ),
@@ -3206,7 +3216,7 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       ),
       const SizedBox(height: 20),
       FilledButton(
-        onPressed: _isSaving ? null : _save,
+        onPressed: _isSaving || _isAddingImage ? null : _save,
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           backgroundColor: _orange,

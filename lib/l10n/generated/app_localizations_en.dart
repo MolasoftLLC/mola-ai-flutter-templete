@@ -611,7 +611,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get autoPostDialogDescription =>
-      'Only this image and the analysis result will be posted.\nThank you for helping more people discover sake.';
+      'One photo and the analysis are posted to SAKEPEDIA’s X account. You do not need to connect your own X account.';
 
   @override
   String get continuePosting => 'Keep automatic posting on';
@@ -903,11 +903,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanPostToXDescription =>
-      'Tap View details to post this sake and one photo to X.';
+      'View details posts one photo and the analysis to SAKEPEDIA’s X account. Use this checkbox to turn posting on or off.';
 
   @override
   String get autoPostToXDescription =>
-      'Automatically post the result to X when analysis finishes.';
+      'Your photo and analysis are posted to SAKEPEDIA’s X account. Use this checkbox to turn posting on or off.';
 
   @override
   String get loginToChangeSetting => 'Sign in to change this setting.';

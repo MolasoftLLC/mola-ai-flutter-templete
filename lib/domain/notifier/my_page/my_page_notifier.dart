@@ -24,6 +24,7 @@ part 'my_page_notifier.freezed.dart';
 abstract class MyPageState with _$MyPageState {
   const factory MyPageState({
     @Default(false) bool isLoading,
+    @Default(false) bool isSavingPreferences,
     String? sakeName,
     String? hint,
     File? sakeImage,
@@ -51,6 +52,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
   final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   String? get currentPreferences => state.preferences;
+  bool get isSavingPreferences => state.isSavingPreferences;
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
 
@@ -170,22 +172,32 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   }
 
   // 好みの設定を保存する
-  Future<void> savePreferences() async {
-    if (state.preferences != null) {
+  Future<bool> savePreferences() async {
+    if (state.isSavingPreferences || state.preferences == null) return false;
+    final preferences = state.preferences!;
+    state = state.copyWith(isSavingPreferences: true);
+    try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('sake_preferences', state.preferences!);
+      if (!await prefs.setString('sake_preferences', preferences)) return false;
       if (!_isGuest) {
         final user = _authRepository.currentUser;
         if (user != null) {
           final success = await _userPreferenceRepository.updatePreferences(
             userId: user.uid,
-            preferences: state.preferences!,
+            preferences: preferences,
           );
           if (!success) {
             logger.warning('好み設定のリモート更新に失敗しました');
+            return false;
           }
         }
       }
+      return true;
+    } catch (error) {
+      logger.warning('好み設定の保存に失敗しました: $error');
+      return false;
+    } finally {
+      if (mounted) state = state.copyWith(isSavingPreferences: false);
     }
   }
 
@@ -211,6 +223,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
   // お酒診断の結果を取得する
   Future<void> analyzeSakePreference(List<FavoriteSake> sakes) async {
+    if (state.isLoading || state.isSavingPreferences) return;
     if (sakes.isEmpty) {
       logger.info('お気に入りが空のため、好み分析は実行されません');
       return;
@@ -291,11 +304,13 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   }
 
   // お酒診断の結果を好みの設定として保存する
-  void saveSakePreferenceAsPreferences() {
+  Future<bool> saveSakePreferenceAsPreferences() async {
+    if (state.isSavingPreferences) return false;
     if (state.sakePreferenceAnalysis != null) {
       setPreferences(state.sakePreferenceAnalysis!);
-      savePreferences();
+      return savePreferences();
     }
+    return false;
   }
 
   Future<void> _loadRemoteIfLoggedIn() async {

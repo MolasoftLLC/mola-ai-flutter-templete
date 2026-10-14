@@ -17,6 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$MyPageState {
   bool get isLoading => throw _privateConstructorUsedError;
+  bool get isSavingPreferences => throw _privateConstructorUsedError;
   String? get sakeName => throw _privateConstructorUsedError;
   String? get hint => throw _privateConstructorUsedError;
   File? get sakeImage => throw _privateConstructorUsedError;
@@ -42,6 +43,7 @@ abstract class $MyPageStateCopyWith<$Res> {
   @useResult
   $Res call(
       {bool isLoading,
+      bool isSavingPreferences,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -68,6 +70,7 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isSavingPreferences = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -83,6 +86,10 @@ class _$MyPageStateCopyWithImpl<$Res, $Val extends MyPageState>
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isSavingPreferences: null == isSavingPreferences
+          ? _value.isSavingPreferences
+          : isSavingPreferences // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -138,6 +145,7 @@ abstract class _$$MyPageStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {bool isLoading,
+      bool isSavingPreferences,
       String? sakeName,
       String? hint,
       File? sakeImage,
@@ -162,6 +170,7 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? isLoading = null,
+    Object? isSavingPreferences = null,
     Object? sakeName = freezed,
     Object? hint = freezed,
     Object? sakeImage = freezed,
@@ -177,6 +186,10 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isSavingPreferences: null == isSavingPreferences
+          ? _value.isSavingPreferences
+          : isSavingPreferences // ignore: cast_nullable_to_non_nullable
               as bool,
       sakeName: freezed == sakeName
           ? _value.sakeName
@@ -227,6 +240,7 @@ class __$$MyPageStateImplCopyWithImpl<$Res>
 class _$MyPageStateImpl implements _MyPageState {
   const _$MyPageStateImpl(
       {this.isLoading = false,
+      this.isSavingPreferences = false,
       this.sakeName,
       this.hint,
       this.sakeImage,
@@ -242,6 +256,9 @@ class _$MyPageStateImpl implements _MyPageState {
   @override
   @JsonKey()
   final bool isLoading;
+  @override
+  @JsonKey()
+  final bool isSavingPreferences;
   @override
   final String? sakeName;
   @override
@@ -272,7 +289,7 @@ class _$MyPageStateImpl implements _MyPageState {
 
   @override
   String toString() {
-    return 'MyPageState(isLoading: $isLoading, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, userName: $userName, userIconUrl: $userIconUrl, preferences: $preferences, sakePreferenceAnalysis: $sakePreferenceAnalysis, tasteProfile: $tasteProfile, achievementCounts: $achievementCounts)';
+    return 'MyPageState(isLoading: $isLoading, isSavingPreferences: $isSavingPreferences, sakeName: $sakeName, hint: $hint, sakeImage: $sakeImage, geminiResponse: $geminiResponse, userName: $userName, userIconUrl: $userIconUrl, preferences: $preferences, sakePreferenceAnalysis: $sakePreferenceAnalysis, tasteProfile: $tasteProfile, achievementCounts: $achievementCounts)';
   }
 
   @override
@@ -282,6 +299,8 @@ class _$MyPageStateImpl implements _MyPageState {
             other is _$MyPageStateImpl &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
+            (identical(other.isSavingPreferences, isSavingPreferences) ||
+                other.isSavingPreferences == isSavingPreferences) &&
             (identical(other.sakeName, sakeName) ||
                 other.sakeName == sakeName) &&
             (identical(other.hint, hint) || other.hint == hint) &&
@@ -307,6 +326,7 @@ class _$MyPageStateImpl implements _MyPageState {
   int get hashCode => Object.hash(
       runtimeType,
       isLoading,
+      isSavingPreferences,
       sakeName,
       hint,
       sakeImage,
@@ -328,6 +348,7 @@ class _$MyPageStateImpl implements _MyPageState {
 abstract class _MyPageState implements MyPageState {
   const factory _MyPageState(
       {final bool isLoading,
+      final bool isSavingPreferences,
       final String? sakeName,
       final String? hint,
       final File? sakeImage,
@@ -341,6 +362,8 @@ abstract class _MyPageState implements MyPageState {
 
   @override
   bool get isLoading;
+  @override
+  bool get isSavingPreferences;
   @override
   String? get sakeName;
   @override

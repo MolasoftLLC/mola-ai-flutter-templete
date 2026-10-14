@@ -26,6 +26,7 @@ class _TasteProfileEditDialogState extends State<TasteProfileEditDialog> {
   static const _ink = Color(0xFF173A60);
 
   Future<void> _save() async {
+    if (_saving) return;
     setState(() {
       _saving = true;
       _saveFailed = false;

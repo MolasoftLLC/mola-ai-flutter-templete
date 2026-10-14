@@ -586,7 +586,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get autoPostDialogDescription =>
-      'この画像と解析結果だけがツイートされます。\n日本酒を広めるためにご協力お願いします。';
+      '写真1枚と解析結果をSAKEPEDIAのXアカウントに投稿します。ご自身のXアカウントとの連携は不要です。';
 
   @override
   String get continuePosting => 'このまま投稿する';
@@ -872,10 +872,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scanPostToX => 'Xにも投稿する';
 
   @override
-  String get scanPostToXDescription => '「詳細を見る」を押すと、写真1枚とこのお酒をXに投稿します。';
+  String get scanPostToXDescription =>
+      '「詳細を見る」で写真1枚と解析結果をSAKEPEDIAのXに投稿します。このチェックでON／OFFできます。';
 
   @override
-  String get autoPostToXDescription => '解析完了時に結果をXにも自動投稿します。';
+  String get autoPostToXDescription =>
+      '写真と解析結果をSAKEPEDIAのXに投稿します。このチェックでON／OFFできます。';
 
   @override
   String get loginToChangeSetting => 'ログインすると設定を変更できます。';
