@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/access_url.dart';
 import '../../common/logger.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/sake/taste_match.dart';
@@ -442,7 +443,16 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           : name;
       try {
         if (!await launchUrl(
-          Uri.https('www.google.com', '/search', {'q': query}),
+          // Open our unassociated domain first, then navigate to search inside
+          // the user's browser instead of launching Google's app directly.
+          Uri.parse(sakeMenuUrl)
+              .resolve('/web/sake-search')
+              .replace(
+                queryParameters: {
+                  'q': query,
+                  'lang': Localizations.localeOf(context).languageCode,
+                },
+              ),
           mode: LaunchMode.externalApplication,
         )) {
           throw StateError('Cannot open browser');

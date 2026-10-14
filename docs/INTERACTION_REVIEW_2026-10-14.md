@@ -17,6 +17,27 @@ iOSでは `SFSafariViewController` を使うため、ユーザー設定のChrome
 現行ライブラリの外部起動モードではブラウザだけに限定できない。
 この調査ではURL・起動モードを変更していない。
 
+### 追加対応: 既定ブラウザを経由する方式（未配信）
+
+後続の依頼により、詳細のブラウザ検索はGoogleのURLを直接外部起動する代わりに、
+`https://molasoft-ai-central.com/web/sake-search?q=...&lang=...` を外部起動する実装を用意した。
+アプリのassociated domainsは空で、この入口をアプリ自身へ関連付けていない。
+サーバーはHTTPリダイレクトではなく200のHTMLを返し、ページ内の
+`window.location.replace` でGoogle検索へ移る。検索先はGoogleのままで、
+ブラウザに設定されている検索エンジンの自動取得・使用は行わない。
+追加のタップは通常不要で、自動遷移しない場合だけ検索フォームを表示する。
+
+AppleのDTS EngineerはSafari拡張の文脈で、`window.location` はURL欄への入力と同様に
+扱われ、関連アプリではなくブラウザ内を移動すると説明している。
+この説明を根拠にした対応案であり、SAKEPEDIAからの起動とGoogleアプリが入った端末、
+Safari/Chromeそれぞれを既定にした組み合わせでの動作は未検証。
+すべてのブラウザでGoogleアプリへの移動を防げるとはまだ保証しない。
+
+- https://developer.apple.com/forums/thread/776365
+- サーバーのTypeScriptビルド: 成功。アプリの変更箇所は静的解析で確認。
+- サーバー反映とアプリ配信は未実施。サーバー側を先に反映し、入口が200を返すことを
+  確認してから、アプリを配信する必要がある。
+
 - Flutter: https://pub.dev/documentation/url_launcher/latest/url_launcher/LaunchMode.html
 - Apple: https://developer.apple.com/documentation/uikit/uiapplication/openexternalurloptionskey/universallinksonly
 
