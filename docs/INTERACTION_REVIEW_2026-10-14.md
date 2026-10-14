@@ -17,7 +17,7 @@ iOSでは `SFSafariViewController` を使うため、ユーザー設定のChrome
 現行ライブラリの外部起動モードではブラウザだけに限定できない。
 この調査ではURL・起動モードを変更していない。
 
-### 追加対応: 既定ブラウザを経由する方式（未配信）
+### 追加対応: 既定ブラウザを経由する方式（ビルド148）
 
 後続の依頼により、詳細のブラウザ検索はGoogleのURLを直接外部起動する代わりに、
 `https://molasoft-ai-central.com/web/sake-search?q=...&lang=...` を外部起動する実装を用意した。
@@ -35,8 +35,15 @@ Safari/Chromeそれぞれを既定にした組み合わせでの動作は未検�
 
 - https://developer.apple.com/forums/thread/776365
 - サーバーのTypeScriptビルド: 成功。アプリの変更箇所は静的解析で確認。
-- サーバー反映とアプリ配信は未実施。サーバー側を先に反映し、入口が200を返すことを
-  確認してから、アプリを配信する必要がある。
+- サーバーは `3e01e4d` を本番反映済み。GitHub Actions `38559041411` は成功。
+  本番のHEAD一致、`/health` 200、検索ページ200、HTML内の自動移動処理とCSP nonceの一致を確認。
+- 本番ページをデスクトップのブラウザで開き、追加操作なしで「田酒」のGoogle検索結果へ
+  移動することを確認。iPhoneでの既定ブラウザ／Googleアプリの関連付け確認とは区別する。
+- アプリは `5.0.22 (148)` をアーカイブ済み。地図APIキー解決、日英許可文言、
+  バックグラウンド位置取得なし、プライバシーマニフェスト23個を確認。
+  通常のApp Store Connect経路で `App upload complete` と
+  `mola_gemini_flutter_template 5.0.22 (148) uploaded` を確認。
+  Internal Onlyとしては送信していない。Apple処理・審査・一般公開は未確認。
 
 - Flutter: https://pub.dev/documentation/url_launcher/latest/url_launcher/LaunchMode.html
 - Apple: https://developer.apple.com/documentation/uikit/uiapplication/openexternalurloptionskey/universallinksonly
@@ -81,11 +88,13 @@ Safari/Chromeそれぞれを既定にした組み合わせでの動作は未検�
 - 共通通知は待機中の通知も消去し、通知が連続して積み上がらないようにする。
 - フィードバック送信、スキャン撮影・詳細遷移、タイムライン更新は既存の処理中ガードも確認。
 
-ブラウザの起動方法、写真削除の対象判定、タイムライン更新の表示時間は今回変更していない。
+初回対応（3・4・6）ではブラウザの起動方法、写真削除の対象判定、タイムライン更新の表示時間は
+変更していない。後続のブラウザ検索対応・配信は上のビルド148の項目を参照。
 
 ## 検証
 
 - 変更対象の静的解析: 型エラー0。既存の警告・非推奨API等は残る。
 - iOS debugビルド（production設定・署名なし）: 成功。
 - 同時操作の集約、失敗後の再試行、別対象の並行操作のテストケースを追加。ユーザーの既存希望に従い自動テストは実行していない。
-- 実機での表示・連打の確認、追加修正のストア配信は未実施。
+- 実機での表示・連打の確認は未実施。追加修正はブラウザ検索対応と合わせて
+  ビルド148を通常のApp Store Connectへアップロード済み。
