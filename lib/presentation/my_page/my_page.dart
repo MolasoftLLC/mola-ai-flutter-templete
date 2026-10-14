@@ -5,7 +5,6 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,6 +36,7 @@ import 'how_to_use/how_to_use_page.dart';
 import 'widgets/menu_history_preview.dart';
 import 'widgets/my_map_preview.dart';
 import 'widgets/taste_profile_edit_dialog.dart';
+import 'widgets/app_review_dialog.dart';
 
 bool _isRemoteImagePath(String path) =>
     path.startsWith('http://') || path.startsWith('https://');
@@ -122,35 +122,6 @@ class _MyPageState extends State<MyPage> {
       ),
     );
   }
-
-  // Future<void> _promptAppReview(BuildContext context) async {
-  //   const appStoreUrl = 'https://apps.apple.com/jp/app/sakepedia/id6502377200';
-  //   // final inAppReview = InAppReview.instance;
-  //
-  //   try {
-  //     if (await inAppReview.isAvailable()) {
-  //       await inAppReview.requestReview();
-  //       return;
-  //     }
-  //   } catch (_) {
-  //     // In-app review not available; fall back to Store link.
-  //   }
-  //
-  //   final uri = Uri.parse(appStoreUrl);
-  //   final launched = await launchUrl(
-  //     uri,
-  //     mode: LaunchMode.externalApplication,
-  //   );
-  //
-  //   if (!launched) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text('App Storeを開けませんでした。後ほどお試しください。'),
-  //         behavior: SnackBarBehavior.floating,
-  //       ),
-  //     );
-  //   }
-  // }
 
   bool _isValidText(String? value) {
     return value != null && value.trim().isNotEmpty;
@@ -290,6 +261,23 @@ class _MyPageState extends State<MyPage> {
         appBar: PrimaryAppBar(
           title: context.l10n.navigationMyPage,
           automaticallyImplyLeading: !widget.isTab,
+          leadingWidth: widget.isTab ? null : 96,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!widget.isTab) const BackButton(),
+              IconButton(
+                tooltip: Localizations.localeOf(context).languageCode == 'en'
+                    ? 'Rate the app / Feedback'
+                    : 'アプリを評価・フィードバック',
+                icon: const Icon(
+                  Icons.star_outline_rounded,
+                  color: Color(0xFFFFD54F),
+                ),
+                onPressed: () => showAppReviewDialog(context),
+              ),
+            ],
+          ),
           actions: [
             PopupMenuButton<String>(
               tooltip: context.l10n.helpGuide,
