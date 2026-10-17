@@ -1,12 +1,10 @@
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
@@ -16,7 +14,7 @@ import '../../domain/notifier/recent_sake_history.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../my_page/saved_sake_detail_page.dart';
-import '../common/widgets/sake_taste_match_preview.dart';
+import '../common/widgets/sake_list_card.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
 
@@ -298,179 +296,60 @@ class _RecentSakeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          InkWell(
-            onTap: onOpen,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(
-                      width: 96,
-                      height: 152,
-                      child: _RecordImage(sake: sake),
+    return SakeListCard(
+      sake: sake,
+      profileFuture: profileFuture,
+      preference: preference,
+      onOpen: onOpen,
+      footer: sake.savedId == null
+          ? null
+          : Column(
+              children: [
+                const Divider(height: 1, color: Color(0xFFE8EDF3)),
+                InkWell(
+                  onTap: onToggleRecord,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          _name(sake),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _navy,
-                            fontSize: 17,
-                            height: 1.3,
-                            fontWeight: FontWeight.w800,
+                        const Icon(Icons.edit_note, size: 19, color: _muted),
+                        const SizedBox(width: 7),
+                        const Expanded(
+                          child: Text(
+                            '記録した内容',
+                            style: TextStyle(
+                              color: _muted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        if (sake.brewery?.trim().isNotEmpty == true) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            sake.brewery!.trim(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: _muted, fontSize: 12),
+                        AnimatedRotation(
+                          turns: isExpanded ? .5 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: _muted,
                           ),
-                        ],
-                        const SizedBox(height: 8),
-                        _ProfilePreview(
-                          profileFuture: profileFuture,
-                          preference: preference,
                         ),
                       ],
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 64),
-                    child: Icon(Icons.chevron_right, color: Color(0xFF9AA4B2)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (sake.savedId != null) ...[
-            const Divider(height: 1, color: Color(0xFFE8EDF3)),
-            InkWell(
-              onTap: onToggleRecord,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.edit_note, size: 19, color: _muted),
-                    const SizedBox(width: 7),
-                    const Expanded(
-                      child: Text(
-                        '記録した内容',
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    AnimatedRotation(
-                      turns: isExpanded ? .5 : 0,
-                      duration: const Duration(milliseconds: 180),
-                      child: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: _muted,
-                      ),
-                    ),
-                  ],
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: Alignment.topCenter,
+                  child: isExpanded
+                      ? _RecordedContent(sake: sake)
+                      : const SizedBox(width: double.infinity),
                 ),
-              ),
+              ],
             ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              alignment: Alignment.topCenter,
-              child: isExpanded
-                  ? _RecordedContent(sake: sake)
-                  : const SizedBox(width: double.infinity),
-            ),
-          ],
-        ],
-      ),
     );
   }
-}
-
-class _ProfilePreview extends StatelessWidget {
-  const _ProfilePreview({
-    required this.profileFuture,
-    required this.preference,
-  });
-
-  final Future<SakeTasteProfileDetails?>? profileFuture;
-  final TastePreferenceProfile? preference;
-
-  @override
-  Widget build(BuildContext context) {
-    final future = profileFuture;
-    if (future == null) return const _ProfileUnavailable();
-    return FutureBuilder<SakeTasteProfileDetails?>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox(
-            height: 92,
-            child: Center(
-              child: SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _orange,
-                ),
-              ),
-            ),
-          );
-        }
-        final profile = snapshot.data;
-        if (profile == null) return const _ProfileUnavailable();
-        final match = preference == null
-            ? null
-            : calculateSakeTastePreferenceMatchPercent(
-                profile: profile,
-                preference: preference!,
-              );
-        return SakeTasteMatchPreview(
-          percent: match,
-          profile: profile,
-          preference: preference,
-        );
-      },
-    );
-  }
-}
-
-class _ProfileUnavailable extends StatelessWidget {
-  const _ProfileUnavailable();
-
-  @override
-  Widget build(BuildContext context) => const SizedBox(
-    height: 92,
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        '味わいプロフィールを取得中',
-        style: TextStyle(color: _muted, fontSize: 12),
-      ),
-    ),
-  );
 }
 
 class _RecordedContent extends StatelessWidget {
@@ -584,48 +463,6 @@ class _RecordLine extends StatelessWidget {
         ),
       ],
     ),
-  );
-}
-
-class _RecordImage extends StatelessWidget {
-  const _RecordImage({required this.sake});
-
-  final Sake sake;
-
-  @override
-  Widget build(BuildContext context) {
-    final path = _preferredImagePath(sake);
-    if (path == null) return _placeholder();
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
-      );
-    }
-    final file = File(path);
-    return file.existsSync()
-        ? Image.file(file, fit: BoxFit.cover, cacheWidth: 300)
-        : _placeholder();
-  }
-
-  Widget _placeholder() => Container(
-    color: const Color(0xFFF1F3F5),
-    alignment: Alignment.center,
-    child: Image.asset('assets/images/sake_placeholder.png'),
-  );
-}
-
-String _name(Sake sake) {
-  final name = sake.name?.trim();
-  return name?.isNotEmpty == true ? name! : '名称不明の日本酒';
-}
-
-String? _preferredImagePath(Sake sake) {
-  return preferredSakeImagePath(
-    personalImagePaths: sake.imagePaths,
-    thumbnailImageUrl: sake.thumbnailImageUrl,
-    primaryImageUrl: sake.primaryImageUrl,
   );
 }
 

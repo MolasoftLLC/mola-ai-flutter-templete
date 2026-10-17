@@ -14,6 +14,7 @@ import '../../common/logger.dart';
 import '../../common/utils/image_utils.dart';
 import '../../infrastructure/api_client/sake_menu_recognition_api_client.dart';
 import '../eintities/sake_label_scan.dart';
+import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
 abstract class SakeScanRepository {
   Future<SakeScanResult> scanFront(File image);
@@ -30,6 +31,19 @@ abstract class SakeScanRepository {
   Future<Map<int, SakeTasteProfileDetails>> fetchTasteProfiles(
     List<int> sakeIds,
   );
+}
+
+class RelatedSakeProductsPage {
+  const RelatedSakeProductsPage({required this.sakes, this.nextCursor});
+  final List<Sake> sakes;
+  final int? nextCursor;
+}
+
+abstract interface class RelatedSakeProductsRepository {
+  Future<RelatedSakeProductsPage> fetchRelatedProducts(
+    int sakeId, {
+    int? beforeId,
+  });
 }
 
 abstract interface class LensDetailAnalysisRepository {
@@ -64,7 +78,8 @@ class SakeScanApiRepository
         SakeScanRepository,
         ProgressiveSakeScanRepository,
         LensDiscoveryRepository,
-        LensDetailAnalysisRepository {
+        LensDetailAnalysisRepository,
+        RelatedSakeProductsRepository {
   SakeScanApiRepository(
     this._apiClient, {
     this.requestTimeout = const Duration(seconds: 30),
@@ -259,6 +274,44 @@ class SakeScanApiRepository
       if (shouldTrackView) _detailViewMemory.forget(sakeId);
       rethrow;
     }
+  }
+
+  @override
+  Future<RelatedSakeProductsPage> fetchRelatedProducts(
+    int sakeId, {
+    int? beforeId,
+  }) async {
+    final response = await _apiClient.client
+        .send<Map<String, dynamic>, Map<String, dynamic>>(
+          chopper.Request(
+            'GET',
+            Uri.parse('/api/sakes/$sakeId/related-products'),
+            _apiClient.client.baseUrl,
+            parameters: {
+              'limit': 50,
+              if (beforeId != null) 'beforeId': beforeId,
+            },
+          ),
+        )
+        .timeout(requestTimeout);
+    final body = _requireBody(response);
+    final raw = body['sakes'];
+    if (raw is! List) throw const FormatException('商品一覧の形式が不正です。');
+    final cursor = body['nextCursor'];
+    if (cursor != null &&
+        (cursor is! int ||
+            cursor < 1 ||
+            (beforeId != null && cursor >= beforeId))) {
+      throw const FormatException('商品一覧の続きの位置が不正です。');
+    }
+    return RelatedSakeProductsPage(
+      sakes: raw
+          .whereType<Map>()
+          .map((row) => Sake.fromJson(Map<String, dynamic>.from(row)))
+          .where((sake) => (sake.sakeId ?? 0) > 0 && sake.sakeId != sakeId)
+          .toList(growable: false),
+      nextCursor: cursor as int?,
+    );
   }
 
   @override

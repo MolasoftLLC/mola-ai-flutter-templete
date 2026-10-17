@@ -40,6 +40,7 @@ import '../my_page/widgets/place_picker_sheet.dart';
 import '../sake_scan/sake_scan_page.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'sake_map_page.dart';
+import 'same_brand_sake_section.dart';
 
 const _navy = Color(0xFF143861);
 const _orange = Color(0xFFFF7A1A);
@@ -1748,6 +1749,29 @@ class _Details extends StatelessWidget {
                   ),
                 ),
               ),
+            if (overview != null &&
+                ((overview!.brand.id ?? 0) > 0 ||
+                    overview!.relatedProducts.isNotEmpty))
+              SameBrandSakeSection(
+                key: ValueKey('same-brand:${detailSake.sakeId}'),
+                overview: overview!,
+                onOpen: (product) => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SakeMasterDetailPage(
+                      recordRecentView: true,
+                      venueSake: VenueSake(
+                        sakeId: product.sakeId,
+                        name: product.name ?? '',
+                        brewery: product.brewery,
+                        type: product.type,
+                        primaryImageUrl: product.primaryImageUrl,
+                        thumbnailImageUrl: product.thumbnailImageUrl,
+                        recordCount: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if ((detailSake.sakeId ?? 0) > 0)
               _Section(
                 title: 'みんなの評価',
@@ -1857,46 +1881,6 @@ class _Details extends StatelessWidget {
                       _WebLink(
                         url: overview!.brewery.officialUrl!,
                         label: '蔵元の公式サイト',
-                      ),
-                  ],
-                ),
-              ),
-            if (overview?.relatedProducts.isNotEmpty ?? false)
-              _Section(
-                title: '同じ銘柄の日本酒',
-                child: Column(
-                  children: [
-                    for (final product in overview!.relatedProducts.where(
-                      (p) => p.sakeId > 0,
-                    ))
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: SizedBox(
-                          width: 42,
-                          height: 54,
-                          child: _BottleImage(url: product.imageUrl),
-                        ),
-                        title: Text(product.name),
-                        subtitle: product.type == null
-                            ? null
-                            : Text(product.type!),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => Provider<SakeScanRepository>.value(
-                              value: context.read<SakeScanRepository>(),
-                              child: SakeMasterDetailPage(
-                                venueSake: VenueSake(
-                                  sakeId: product.sakeId,
-                                  name: product.name,
-                                  type: product.type,
-                                  primaryImageUrl: product.imageUrl,
-                                  recordCount: 0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       ),
                   ],
                 ),
