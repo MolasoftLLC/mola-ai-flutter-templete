@@ -1,5 +1,9 @@
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../common/utils/async_action_gate.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -9,7 +13,12 @@ import '../auth/email_link_auth_page.dart';
 import '../common/dialogs/ai_data_consent_dialog.dart';
 import 'sake_scan_page.dart';
 
-Future<Object?> openSakeLabelScanner(BuildContext context) async {
+final _scannerEntryGate = AsyncActionGate();
+
+Future<Object?> openSakeLabelScanner(BuildContext context) =>
+    _scannerEntryGate.run('open', () => _openSakeLabelScanner(context));
+
+Future<Object?> _openSakeLabelScanner(BuildContext context) async {
   AppAnalytics.instance.event('app', 'scan');
   final authRepository = context.read<AuthRepository>();
   if (authRepository.currentUser == null) {
@@ -38,27 +47,9 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
     if (signedIn != true || !context.mounted) return null;
   }
 
-  final savedNotifier = context.read<SavedSakeNotifier>();
-  await savedNotifier.reloadLocal();
-  if (!context.mounted) return null;
-  if (savedNotifier.hasReachedMemberLimit) {
-    AppAnalytics.instance.event('scan', 'saved_limit', kind: 'blocked');
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('保存酒が上限に達しています'),
-        content: const Text(
-          '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで登録できます。'
-          '新しいお酒をスキャンするには、マイページから不要な保存酒を削除してください。',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
+  final checkedUserId = authRepository.currentUser?.uid;
+  if (checkedUserId == null || !context.mounted) return null;
+  if (!await _checkScanCapacity(context, checkedUserId) || !context.mounted) {
     return null;
   }
 
@@ -146,6 +137,12 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
   }
 
   if (!context.mounted) return null;
+  if (authRepository.currentUser?.uid != checkedUserId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('アカウントが変わりました。もう一度スキャンを開いてください。')),
+    );
+    return null;
+  }
   return Navigator.of(context).push<Object>(
     PageRouteBuilder<Object>(
       pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
@@ -164,4 +161,60 @@ Future<Object?> openSakeLabelScanner(BuildContext context) async {
       reverseTransitionDuration: const Duration(milliseconds: 240),
     ),
   );
+}
+
+Future<bool> _checkScanCapacity(BuildContext context, String userId) async {
+  final notifier = context.read<SavedSakeNotifier>();
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final loadingRoute = DialogRoute<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: Row(
+          children: [
+            SizedBox.square(dimension: 24, child: CircularProgressIndicator()),
+            SizedBox(width: 16),
+            Expanded(child: Text('保存件数を確認しています…')),
+          ],
+        ),
+      ),
+    ),
+  );
+  unawaited(navigator.push(loadingRoute));
+  Object? failure;
+  try {
+    await notifier.ensureNewScanCapacity(userId);
+  } catch (error) {
+    failure = error;
+  } finally {
+    if (navigator.mounted && loadingRoute.isActive) {
+      navigator.removeRoute(loadingRoute);
+    }
+  }
+  if (!context.mounted) return false;
+  if (failure == null) return true;
+  final atLimit = failure is SavedSakeMemberLimitReachedException;
+  if (atLimit) {
+    AppAnalytics.instance.event('scan', 'saved_limit', kind: 'blocked');
+  }
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(atLimit ? '保存酒が上限に達しています' : '保存件数を確認できませんでした'),
+      content: Text(
+        atLimit
+            ? '保存酒は${SavedSakeNotifier.memberSavedLimit}件まで登録できます。マイページで保存を解除してから、もう一度お試しください。'
+            : '通信状況とログイン中のアカウントを確認して、もう一度お試しください。',
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('閉じる'),
+        ),
+      ],
+    ),
+  );
+  return false;
 }

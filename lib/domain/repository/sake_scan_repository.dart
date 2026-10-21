@@ -393,6 +393,7 @@ class SakeScanApiRepository
 }
 
 enum SakeScanErrorKind {
+  savedLimit,
   cameraPermission,
   compression,
   timeout,

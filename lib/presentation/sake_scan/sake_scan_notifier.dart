@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:state_notifier/state_notifier.dart';
 
 import '../../common/logger.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/repository/sake_scan_repository.dart';
@@ -594,6 +595,10 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           isSubmitting: false,
         ),
       );
+    } on SavedSakeMemberLimitReachedException {
+      rethrow;
+    } on SavedSakeGuestLimitReachedException {
+      rethrow;
     } catch (error) {
       throw SakeScanException(
         kind: SakeScanErrorKind.aiAnalysis,
@@ -642,7 +647,17 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     logger.warning('日本酒ラベルスキャンに失敗しました: $error');
     logger.info(stackTrace.toString());
     if (!_isCurrent(operation)) return;
-    _fail(SakeScanException.fromError(error));
+    if (error is SavedSakeMemberLimitReachedException ||
+        error is SavedSakeGuestLimitReachedException) {
+      _fail(
+        const SakeScanException(
+          kind: SakeScanErrorKind.savedLimit,
+          message: '保存酒が上限に達しています',
+        ),
+      );
+    } else {
+      _fail(SakeScanException.fromError(error));
+    }
   }
 
   Future<void> _handleFrontError(

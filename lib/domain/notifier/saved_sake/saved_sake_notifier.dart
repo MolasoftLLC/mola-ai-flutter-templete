@@ -143,6 +143,26 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     }
   }
 
+  Future<void> ensureNewScanCapacity(String userId) async {
+    if (_authRepository.currentUser?.uid != userId) {
+      throw StateError('ログイン中のアカウントが変わりました');
+    }
+    final ids = await _syncRepository.fetchBookmarkedSavedIds(userId);
+    if (_authRepository.currentUser?.uid != userId) {
+      throw StateError('ログイン中のアカウントが変わりました');
+    }
+    // Include pending local saves without counting synced records from a stale cache.
+    ids.addAll(
+      state.bookmarkedSakes
+          .where((sake) => sake.syncStatus == SavedSakeSyncStatus.localOnly)
+          .map((sake) => sake.savedId)
+          .whereType<String>(),
+    );
+    if (ids.length >= memberSavedLimit) {
+      throw const SavedSakeMemberLimitReachedException();
+    }
+  }
+
   Future<void> reloadLocal() async {
     await _loadSavedSakes();
   }

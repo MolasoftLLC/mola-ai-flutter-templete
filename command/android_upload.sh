@@ -6,10 +6,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_DIR}"
 
+# This file is local-only (*.env is ignored). Explicit environment values win.
+if [[ -z "${PLAY_STORE_SERVICE_ACCOUNT_JSON:-}" && -f "${SCRIPT_DIR}/android_upload.local.env" ]]; then
+  source "${SCRIPT_DIR}/android_upload.local.env"
+fi
+
 json_key="${PLAY_STORE_SERVICE_ACCOUNT_JSON:-}"
 track="${PLAY_TRACK:-internal}"
 release_status="${PLAY_RELEASE_STATUS:-draft}"
 package_name="okinawa.molasoft_ai.sake"
+
+if [[ $# -gt 1 || ( $# -eq 1 && "$1" != "--check" ) ]]; then
+  echo "使い方: bash command/android_upload.sh [--check]" >&2
+  exit 1
+fi
 
 if [[ -z "${json_key}" || ! -f "${json_key}" ]]; then
   echo "Google PlayサービスアカウントJSONを指定してください。" >&2
@@ -24,6 +34,17 @@ elif [[ -f Gemfile ]] && command -v bundle >/dev/null 2>&1; then
 else
   echo "fastlaneが見つかりません。先にfastlaneをインストールしてください。" >&2
   exit 1
+fi
+
+export FASTLANE_OPT_OUT_USAGE=1
+export FASTLANE_SKIP_UPDATE_CHECK=1
+
+if [[ "${1:-}" == "--check" ]]; then
+  "${fastlane_command[@]}" run validate_play_store_json_key json_key:"${json_key}"
+  "${fastlane_command[@]}" run google_play_track_version_codes \
+    json_key:"${json_key}" package_name:"${package_name}" track:"${track}"
+  echo "Google Playへの接続確認が完了しました（ビルド・アップロードなし）。"
+  exit 0
 fi
 
 bash command/android_release.sh

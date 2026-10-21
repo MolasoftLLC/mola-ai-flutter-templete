@@ -1896,6 +1896,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildError(SakeScanState state) {
+    final atSavedLimit = state.error?.kind == SakeScanErrorKind.savedLimit;
     final canContinueWithBackLabel = state.frontImage != null;
     return _BottomCard(
       child: SingleChildScrollView(
@@ -1910,7 +1911,12 @@ class _SakeScanPageState extends State<SakeScanPage>
               style: const TextStyle(color: Color(0xFF1D3567), fontSize: 15),
             ),
             const SizedBox(height: 14),
-            if (canContinueWithBackLabel) ...[
+            if (atSavedLimit)
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('閉じる'),
+              )
+            else if (canContinueWithBackLabel) ...[
               FilledButton.icon(
                 onPressed: state.isSubmitting
                     ? null
@@ -1945,6 +1951,8 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   String _errorText(SakeScanException? error) {
     return switch (error?.kind) {
+      SakeScanErrorKind.savedLimit =>
+        '保存酒が上限に達しています。マイページで保存を解除してから、もう一度お試しください。',
       SakeScanErrorKind.cameraPermission =>
         context.l10n.scanCameraPermissionDenied,
       SakeScanErrorKind.compression => context.l10n.scanErrorCompression,

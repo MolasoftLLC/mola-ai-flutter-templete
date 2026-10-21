@@ -14,7 +14,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../common/logger.dart';
 import '../../common/utils/personal_map_camera.dart';
 import '../../common/localization/localization_extensions.dart';
-import '../../common/utils/snack_bar_utils.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/auth_repository.dart';
@@ -53,7 +52,9 @@ class SakeMapPage extends StatefulWidget {
   State<SakeMapPage> createState() => _SakeMapPageState();
 }
 
-class _SakeMapPageState extends State<SakeMapPage> {
+enum _LocationIssue { serviceDisabled, denied, deniedForever, unavailable }
+
+class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
   static const _initialCamera = CameraPosition(
     target: LatLng(34.6811499, 135.5097380),
     zoom: 15,
@@ -67,6 +68,8 @@ class _SakeMapPageState extends State<SakeMapPage> {
   int _activeMarkerLoads = 0;
   bool _isLocating = false;
   bool _showMyLocation = false;
+  _LocationIssue? _locationIssue;
+  bool _locationNoticeDismissed = false;
   GoogleMapController? _mapController;
   LatLng? _lastKnownLocation;
   double _zoom = _initialCamera.zoom;
@@ -75,7 +78,9 @@ class _SakeMapPageState extends State<SakeMapPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     widget.myMapRequests?.addListener(_openMyMap);
+    unawaited(_refreshLocationAccess());
   }
 
   Future<void> _openMyMap() async {
@@ -94,10 +99,123 @@ class _SakeMapPageState extends State<SakeMapPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.myMapRequests?.removeListener(_openMyMap);
     _searchController.dispose();
     _mapController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_isLocating) {
+      unawaited(_restoreLocationAccess());
+    }
+  }
+
+  Future<void> _restoreLocationAccess() async {
+    final wasAllowed = _showMyLocation;
+    if (await _refreshLocationAccess() && !wasAllowed && mounted) {
+      await _moveToCurrentLocationIfAvailable();
+    }
+  }
+
+  void _setLocationIssue(_LocationIssue? issue) {
+    if (!mounted) return;
+    setState(() {
+      if (_locationIssue != issue) _locationNoticeDismissed = false;
+      _locationIssue = issue;
+      if (issue == _LocationIssue.denied ||
+          issue == _LocationIssue.deniedForever ||
+          issue == _LocationIssue.serviceDisabled) {
+        _showMyLocation = false;
+        _lastKnownLocation = null;
+      }
+    });
+  }
+
+  Future<bool> _refreshLocationAccess() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _setLocationIssue(_LocationIssue.serviceDisabled);
+        return false;
+      }
+      final permission = await Geolocator.checkPermission();
+      if (!mounted) return false;
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        _setLocationIssue(
+          permission == LocationPermission.deniedForever
+              ? _LocationIssue.deniedForever
+              : _LocationIssue.denied,
+        );
+        return false;
+      }
+      _setLocationIssue(null);
+      setState(() => _showMyLocation = true);
+      return true;
+    } catch (error) {
+      logger.info('マップの位置情報設定を確認できませんでした: $error');
+      _setLocationIssue(_LocationIssue.unavailable);
+      return false;
+    }
+  }
+
+  Widget _buildLocationNotice() {
+    final issue = _locationIssue!;
+    final message = switch (issue) {
+      _LocationIssue.serviceDisabled =>
+        '端末の位置情報がオフになっています。設定からオンにすると、近くのお店を探せます。',
+      _LocationIssue.denied ||
+      _LocationIssue.deniedForever => '位置情報を許可すると、現在地の近くのお店を探せます。',
+      _LocationIssue.unavailable => '現在地を取得できませんでした。通信状況や位置情報の設定をご確認ください。',
+    };
+    return Material(
+      color: Colors.white,
+      elevation: 6,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.location_off_outlined,
+              color: Color(0xFF143861),
+              size: 30,
+            ),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _isLocating
+                  ? null
+                  : () async {
+                      if (issue == _LocationIssue.serviceDisabled) {
+                        await Geolocator.openLocationSettings();
+                      } else if (issue == _LocationIssue.deniedForever) {
+                        await Geolocator.openAppSettings();
+                      } else {
+                        await _moveToCurrentLocation();
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF143861),
+              ),
+              child: Text(switch (issue) {
+                _LocationIssue.denied => '位置情報を許可する',
+                _LocationIssue.unavailable => 'もう一度試す',
+                _ => '設定を開く',
+              }),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _locationNoticeDismissed = true),
+              child: const Text('現在地を使わずに地図を見る'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -295,13 +413,30 @@ class _SakeMapPageState extends State<SakeMapPage> {
               ),
             ),
           ),
-          if (state.isLoading)
+          if (_locationIssue != null && !_locationNoticeDismissed)
+            Positioned.fill(
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 144, 24, 90),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: _buildLocationNotice(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (state.isLoading &&
+              (_locationIssue == null || _locationNoticeDismissed))
             const Positioned.fill(
               child: IgnorePointer(
                 child: Center(child: CircularProgressIndicator()),
               ),
             ),
-          if (!state.isLoading && state.venues.isEmpty)
+          if (!state.isLoading &&
+              state.venues.isEmpty &&
+              (_locationIssue == null || _locationNoticeDismissed))
             Positioned(
               left: 24,
               right: 24,
@@ -409,12 +544,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
     final controller = _mapController;
     if (controller == null || _isLocating) return;
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return;
-      final permission = await Geolocator.checkPermission();
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
-        return;
-      }
+      if (!await _refreshLocationAccess()) return;
       if (!mounted) return;
       setState(() => _isLocating = true);
       final position = await Geolocator.getCurrentPosition(
@@ -426,6 +556,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
       await _moveCameraToPosition(controller, position);
     } catch (error) {
       logger.info('初期表示用の現在地を取得できませんでした: $error');
+      _setLocationIssue(_LocationIssue.unavailable);
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
@@ -434,18 +565,15 @@ class _SakeMapPageState extends State<SakeMapPage> {
   Future<void> _moveToCurrentLocation() async {
     final controller = _mapController;
     if (controller == null || _isLocating) return;
-    setState(() => _isLocating = true);
+    setState(() {
+      _isLocating = true;
+      _locationNoticeDismissed = false;
+    });
 
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         if (!mounted) return;
-        _showLocationWarning(
-          '端末の位置情報サービスがオフになっています。',
-          action: const SnackBarAction(
-            label: '設定',
-            onPressed: Geolocator.openLocationSettings,
-          ),
-        );
+        _setLocationIssue(_LocationIssue.serviceDisabled);
         return;
       }
 
@@ -455,17 +583,12 @@ class _SakeMapPageState extends State<SakeMapPage> {
       }
       if (!mounted) return;
       if (permission == LocationPermission.deniedForever) {
-        _showLocationWarning(
-          '位置情報の利用が許可されていません。設定から許可してください。',
-          action: const SnackBarAction(
-            label: '設定',
-            onPressed: Geolocator.openAppSettings,
-          ),
-        );
+        _setLocationIssue(_LocationIssue.deniedForever);
         return;
       }
-      if (permission == LocationPermission.denied) {
-        _showLocationWarning('現在地へ移動するには位置情報の許可が必要です。');
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        _setLocationIssue(_LocationIssue.denied);
         return;
       }
 
@@ -477,10 +600,10 @@ class _SakeMapPageState extends State<SakeMapPage> {
       _lastKnownLocation = LatLng(position.latitude, position.longitude);
       await _moveCameraToPosition(controller, position);
     } on TimeoutException {
-      if (mounted) _showLocationWarning('現在地を取得できませんでした。もう一度お試しください。');
+      _setLocationIssue(_LocationIssue.unavailable);
     } catch (error) {
       logger.warning('マップで現在地を取得できませんでした: $error');
-      if (mounted) _showLocationWarning('現在地を取得できませんでした。');
+      _setLocationIssue(_LocationIssue.unavailable);
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
@@ -490,6 +613,7 @@ class _SakeMapPageState extends State<SakeMapPage> {
     GoogleMapController controller,
     Position position,
   ) async {
+    _setLocationIssue(null);
     if (!_showMyLocation) setState(() => _showMyLocation = true);
     await controller.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -516,16 +640,6 @@ class _SakeMapPageState extends State<SakeMapPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('地図を開けませんでした。もう一度お試しください。')));
-  }
-
-  void _showLocationWarning(String message, {SnackBarAction? action}) {
-    SnackBarUtils.showSnackBar(
-      context,
-      message: message,
-      backgroundColor: Colors.orange.shade800,
-      action: action,
-      leadingIcon: Icons.location_off_outlined,
-    );
   }
 
   void _requestMarkerIcons(List<MapVenue> venues) {

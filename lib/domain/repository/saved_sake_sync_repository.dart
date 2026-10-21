@@ -168,6 +168,39 @@ class SavedSakeSyncRepository {
     }
   }
 
+  /// Capacity checks must distinguish an empty account from a failed request.
+  /// Read identifiers only; do not download images or merge another account's data.
+  Future<Set<String>> fetchBookmarkedSavedIds(String userId) async {
+    final response = await _apiClient
+        .fetchSavedSakes(userId)
+        .timeout(const Duration(seconds: 20));
+    if (!response.isSuccessful || response.body == null) {
+      throw StateError('保存件数を確認できませんでした');
+    }
+    final dynamic body = response.body;
+    final dynamic records = body is List
+        ? body
+        : (body is Map ? body['sakes'] : null);
+    if (records is! List) throw const FormatException('保存酒の応答形式が不正です');
+    final ids = <String>{};
+    for (final record in records) {
+      if (record is! Map ||
+          record['userId'] != userId ||
+          record['savedId'] is! String ||
+          (record['savedId'] as String).isEmpty) {
+        throw const FormatException('保存酒の所有者またはIDを確認できません');
+      }
+      final detail = record['sake'];
+      final bookmarked =
+          record['isBookmarked'] ??
+          (detail is Map ? detail['isBookmarked'] : null) ??
+          true;
+      if (bookmarked is! bool) throw const FormatException('保存状態を確認できません');
+      if (bookmarked) ids.add(record['savedId'] as String);
+    }
+    return ids;
+  }
+
   Future<List<Sake>> fetchSavedSakes(String userId) async {
     try {
       final response = await _apiClient.fetchSavedSakes(userId);
