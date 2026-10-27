@@ -1889,32 +1889,36 @@ class _Details extends StatelessWidget {
               _WebLink(
                 url: master.officialUrl ?? master.sourceUrl!,
                 label: '商品情報の出典を見る',
+                compact: true,
               ),
             if (master.verifiedAt != null)
               Text(
                 '${DateFormat('yyyy年M月d日').format(master.verifiedAt!)}確認',
-                style: const TextStyle(color: Color(0xFF647184), fontSize: 12),
+                style: const TextStyle(color: Color(0xFF616161), fontSize: 12),
               ),
             if (master.imageSource == 'yahoo_shopping') ...[
               if (master.imageProductUrl != null)
                 _WebLink(
                   url: master.imageProductUrl!,
                   label: '画像の商品をYahoo!ショッピングで見る',
+                  compact: true,
                 ),
               const _WebLink(
                 url: 'https://developer.yahoo.co.jp/sitemap/',
                 label: 'Webサービス by Yahoo! JAPAN',
+                compact: true,
               ),
             ],
             if (master.rakutenOffer != null)
               const _WebLink(
                 url: 'https://developers.rakuten.com/',
                 label: 'Supported by Rakuten Developers',
+                compact: true,
               ),
             if (master.amazonOffer != null || master.amazonSearchUrl != null)
               const Text(
                 'Amazonのアソシエイトとして、SAKEPEDIAは適格販売により収入を得ています。',
-                style: TextStyle(color: Color(0xFF647184), fontSize: 11),
+                style: TextStyle(color: Color(0xFF616161), fontSize: 11),
               ),
           ],
         ),
@@ -4285,14 +4289,29 @@ class _DetailSakeImage extends StatelessWidget {
 }
 
 class _WebLink extends StatelessWidget {
-  const _WebLink({required this.url, required this.label});
+  const _WebLink({
+    required this.url,
+    required this.label,
+    this.compact = false,
+  });
   final String url;
   final String label;
+  final bool compact;
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
     child: TextButton.icon(
-      icon: const Icon(Icons.open_in_new, size: 16),
+      style: compact
+          ? TextButton.styleFrom(
+              foregroundColor: const Color(0xFF616161),
+              textStyle: const TextStyle(fontSize: 12),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              minimumSize: const Size(0, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              alignment: Alignment.centerLeft,
+            )
+          : null,
+      icon: Icon(Icons.open_in_new, size: compact ? 13 : 16),
       label: Text(label),
       onPressed: () async {
         final uri = Uri.tryParse(url);
