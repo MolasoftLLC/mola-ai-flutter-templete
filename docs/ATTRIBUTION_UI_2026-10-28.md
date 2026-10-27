@@ -14,6 +14,7 @@
 
 ## 送信状況
 
-- Xcode Organizerで通常のApp Store Connect配信を開始したが、既存Appleアカウントが認証エラーになった。
-- 既存アカウントと配信チームを確認し、再ログイン画面を開いた。パスワードの再入力が必要なため、ユーザーのログイン待ち。アップロードは未完了。
-- ログイン完了後は完成済みアーカイブを再利用する。Apple側の処理・TestFlightでの表示・一般公開・審査提出は未確認。
+- Xcode Organizerで通常のApp Store Connect配信を開始した際、認証エラーが表示された。再ログインを依頼したが、ログにはXcode内部のITunesSoftwareService接続エラー（NSCocoaErrorDomain 4097）が記録されていた。認証情報の失効と断定できる状態ではなかった。
+- 古い配信エラー画面を閉じ、完成済みアーカイブで通常のApp Store Connect配信をやり直すと、追加のログインなしで送信が進んだ。
+- Organizerで `App upload complete` と `mola_gemini_flutter_template 5.0.25 (152) uploaded` を確認。アップロード完了。Internal Onlyではない。
+- Apple側の処理完了・TestFlightでの表示・一般公開・審査提出は未確認。ストア側の審査提出はユーザーが担当する既存方針を維持。
