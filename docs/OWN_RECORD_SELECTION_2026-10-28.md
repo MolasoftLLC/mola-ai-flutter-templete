@@ -20,4 +20,12 @@
 
 ## 配信
 
-Appleへのアップロードは完成したアーカイブからXcode Organizerで実施し、完了を確認して追記する。
+5.0.27（154）はXcode OrganizerのApp Store Connect経路でアップロード完了を確認した。
+
+その後、同時期に別ホストで配信された比較画面・撮影導線等の最新変更（origin/main `9daf777` / build 155）を確認し、それらと今回の変更を`4a5d9e2`で統合した。既存の比較・撮影・地図の各画面が最新mainと同一であることを確認。最終配信対象は5.0.27（156）に更新した。
+
+- 統合版でも関連操作テスト4件成功、対象ファイルの静的解析は指摘0件。
+- 署名付きproductionアーカイブ、Bundle ID、バージョンとビルド番号、地図APIキーを再検証した。
+- アーカイブは`/Users/mukae-mini/Library/Developer/Xcode/Archives/2026-10-28/SAKEPEDIA 156.xcarchive`。
+- 156はXcode OrganizerのApp Store Connect経路で送信中。完了を確認後に追記する。
+- Apple側の処理・TestFlightの表示・一般公開・審査提出は、送信完了とは別に確認する。審査提出は実施していない。
