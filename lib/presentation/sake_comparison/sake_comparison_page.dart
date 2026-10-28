@@ -14,11 +14,14 @@ import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
+import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../common/widgets/sake_taste_match_preview.dart';
+import '../sake_map/sake_master_detail_page.dart';
 import 'comparison_item.dart';
+import 'comparison_detail_page.dart';
 
 const _navy = Color(0xFF143861);
 
@@ -210,7 +213,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
       List<MenuSakeResolution> resolved;
       try {
         resolved = await session
-            .resolveMenuSakes([reviewed])
+            .resolveMenuSakes([reviewed], includeDescription: true)
             .timeout(const Duration(seconds: 90));
       } catch (_) {
         resolved = [];
@@ -265,17 +268,33 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
         if (candidate == null) return;
       }
       if (!mounted || !_sameOwner) return;
-      final item = ComparisonItem(
+      final registered = (candidate?.sake.sakeId ?? 0) > 0;
+      final fallback = resolution?.fallback;
+      var item = ComparisonItem(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
-        sake: candidate?.sake ?? reviewed,
+        sake: registered
+            ? candidate!.sake
+            : reviewed.copyWith(
+                // The printed explanation is retained separately as OCR evidence.
+                description: fallback?.description,
+                type: reviewed.type ?? fallback?.type,
+                brewery: reviewed.brewery ?? fallback?.brewery,
+              ),
         text: reviewed.description ?? '',
         profile:
             candidate?.tasteProfile ??
-            (candidate == null ? resolution?.fallbackTasteProfile : null),
+            (!registered ? resolution?.fallbackTasteProfile : null),
         estimated:
-            candidate == null ||
-            (candidate.tasteProfile?.sourceType?.contains('ai') ?? false),
+            !registered ||
+            (candidate?.tasteProfile?.sourceType?.contains('ai') ?? false),
       );
+      if (registered &&
+          resolution?.status == MenuSakeResolutionStatus.multiple &&
+          (item.profile == null ||
+              item.sake.description?.trim().isNotEmpty != true)) {
+        item = await _enrichItem(item, session, reviewed);
+      }
+      if (!mounted || !_sameOwner) return;
       await _add(item);
     } on SakeCandidateResolutionException catch (error) {
       if (_sameOwner) setState(() => _error = error.message);
@@ -291,6 +310,71 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
         });
       }
     }
+  }
+
+  Future<ComparisonItem> _enrichItem(
+    ComparisonItem item,
+    SakeMenuRecognitionRepository session,
+    Sake input,
+  ) async {
+    try {
+      final results = await session
+          .resolveMenuSakes(
+            [input],
+            includeDescription: true,
+            selectedSakeId: (item.sake.sakeId ?? 0) > 0
+                ? item.sake.sakeId
+                : null,
+          )
+          .timeout(const Duration(seconds: 90));
+      if (results.isEmpty) return item;
+      final result = results.first;
+      final registered = (item.sake.sakeId ?? 0) > 0;
+      MenuSakeCandidate? exact;
+      if (registered) {
+        for (final candidate in result.candidates) {
+          if (candidate.sake.sakeId == item.sake.sakeId) exact = candidate;
+        }
+      }
+      // A selected product must never acquire another candidate's analysis.
+      final info = registered ? exact?.sake : result.fallback;
+      final profile = registered
+          ? exact?.tasteProfile
+          : result.fallbackTasteProfile;
+      return ComparisonItem(
+        id: item.id,
+        sake: item.sake.copyWith(
+          description: info?.description ?? item.sake.description,
+        ),
+        text: item.text,
+        profile: item.profile ?? profile,
+        estimated:
+            item.estimated || (profile?.sourceType?.contains('ai') ?? false),
+        sample: item.sample,
+      );
+    } catch (_) {
+      return item;
+    }
+  }
+
+  void _openDetail(ComparisonItem item) {
+    if (!_sameOwner) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => !item.sample && (item.sake.sakeId ?? 0) > 0
+            ? SakeMasterDetailPage(
+                recordRecentView: true,
+                venueSake: VenueSake(
+                  sakeId: item.sake.sakeId,
+                  name: item.sake.name ?? '',
+                  brewery: item.sake.brewery,
+                  type: item.sake.type,
+                  recordCount: 0,
+                ),
+              )
+            : ComparisonDetailPage(item: item, preference: _preference),
+      ),
+    );
   }
 
   Future<void> _add(ComparisonItem item) async {
@@ -765,6 +849,15 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text(item.text),
             ),
+          if (item.sake.description?.trim().isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                item.sake.description!,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           if (preference == null)
             Text(
               '今日の気分マッチ度  ${percent == null ? '未算出' : '$percent%'}',
@@ -789,6 +882,15 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                 style: const TextStyle(fontSize: 12, color: _navy),
               ),
             ),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () => _openDetail(item),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: const Text('詳細を見る'),
+              ),
+            ],
+          ),
         ],
       ),
     );

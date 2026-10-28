@@ -139,6 +139,8 @@ class SakeMenuRecognitionRepository {
   Future<List<MenuSakeResolution>> resolveMenuSakes(
     List<Sake> sakes, {
     bool masterOnly = false,
+    bool includeDescription = false,
+    int? selectedSakeId,
   }) async {
     final response = await _apiClient.resolveMenuSakes({
       if (_menuAnalysisId != null) 'analysisId': _menuAnalysisId,
@@ -157,6 +159,8 @@ class SakeMenuRecognitionRepository {
           .toList(growable: false),
       'locale': await resolveAppLocaleLanguageCode(),
       if (masterOnly) 'phase': 'master',
+      if (includeDescription) 'includeDescription': true,
+      if (selectedSakeId != null) 'selectedSakeId': selectedSakeId,
     });
     if (!response.isSuccessful || response.body == null) {
       throw SakeCandidateResolutionException(
