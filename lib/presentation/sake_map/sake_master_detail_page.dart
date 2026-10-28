@@ -416,8 +416,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
             if (personalRecord != null) ...[
               ListTile(
                 leading: const Icon(Icons.format_list_bulleted),
-                title: const Text('同じ酒蔵から再選択'),
-                subtitle: const Text('同じ銘柄の商品候補から選び直します'),
+                title: const Text('同じ銘柄から選び直す'),
+                subtitle: const Text('自分の保存記録の商品を選び直します'),
                 onTap: () => Navigator.pop(sheetContext, 'select'),
               ),
               ListTile(
@@ -476,17 +476,27 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
     SakeOverview overview,
     Sake personalRecord,
   ) async {
-    final currentSakeId = overview.sake.sakeId;
-    final products = overview.relatedProducts
-        .where(
-          (product) => product.sakeId > 0 && product.sakeId != currentSakeId,
-        )
-        .toList(growable: false);
+    setState(() => _isCorrectingProduct = true);
+    final List<Sake> products;
+    try {
+      products = await _loadRelatedProducts(overview);
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '同じ銘柄の商品を取得できませんでした。もう一度お試しください。',
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _isCorrectingProduct = false);
+    }
+    if (!mounted || ModalRoute.of(context)?.isActive == false) return;
     if (products.isEmpty) {
       SnackBarUtils.showInfoSnackBar(context, message: '同じ銘柄に選び直せる登録商品がありません。');
       return;
     }
-    final selected = await showModalBottomSheet<RelatedSakeProduct>(
+    final selected = await showModalBottomSheet<Sake>(
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
@@ -523,9 +533,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       leading: SizedBox(
                         width: 42,
                         height: 54,
-                        child: _BottleImage(url: product.imageUrl),
+                        child: _BottleImage(
+                          url:
+                              product.primaryImageUrl ??
+                              product.thumbnailImageUrl,
+                        ),
                       ),
-                      title: Text(product.name),
+                      title: Text(product.name ?? ''),
                       subtitle: product.type == null
                           ? null
                           : Text(product.type!),
@@ -540,8 +554,50 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         ),
       ),
     );
-    if (!mounted || selected == null) return;
-    await _reassignToSakeId(personalRecord, selected.sakeId);
+    if (!mounted || selected?.sakeId == null) return;
+    await _reassignToSakeId(personalRecord, selected!.sakeId!);
+  }
+
+  Future<List<Sake>> _loadRelatedProducts(SakeOverview overview) async {
+    final repository = context.read<SakeScanRepository>();
+    final currentId = overview.sake.sakeId;
+    final products = <int, Sake>{};
+    void addProducts(Iterable<Sake> candidates) {
+      for (final product in candidates) {
+        final id = product.sakeId;
+        if (id != null && id > 0 && id != currentId) products[id] = product;
+      }
+    }
+
+    if (repository is RelatedSakeProductsRepository && currentId != null) {
+      final catalog = repository as RelatedSakeProductsRepository;
+      final cursors = <int>{};
+      int? cursor;
+      do {
+        final page = await catalog.fetchRelatedProducts(
+          currentId,
+          beforeId: cursor,
+        );
+        addProducts(page.sakes);
+        cursor = page.nextCursor;
+        if (cursor != null && !cursors.add(cursor)) {
+          throw StateError('同じ銘柄の商品の続きが取得できませんでした');
+        }
+      } while (cursor != null);
+    } else {
+      addProducts(
+        overview.relatedProducts.map(
+          (product) => Sake(
+            sakeId: product.sakeId,
+            name: product.name,
+            type: product.type,
+            brewery: overview.brewery.name,
+            primaryImageUrl: product.imageUrl,
+          ),
+        ),
+      );
+    }
+    return products.values.toList(growable: false);
   }
 
   Future<void> _reassignToSakeId(Sake personalRecord, int targetSakeId) async {
@@ -1889,32 +1945,36 @@ class _Details extends StatelessWidget {
               _WebLink(
                 url: master.officialUrl ?? master.sourceUrl!,
                 label: '商品情報の出典を見る',
+                compact: true,
               ),
             if (master.verifiedAt != null)
               Text(
                 '${DateFormat('yyyy年M月d日').format(master.verifiedAt!)}確認',
-                style: const TextStyle(color: Color(0xFF647184), fontSize: 12),
+                style: const TextStyle(color: Color(0xFF616161), fontSize: 12),
               ),
             if (master.imageSource == 'yahoo_shopping') ...[
               if (master.imageProductUrl != null)
                 _WebLink(
                   url: master.imageProductUrl!,
                   label: '画像の商品をYahoo!ショッピングで見る',
+                  compact: true,
                 ),
               const _WebLink(
                 url: 'https://developer.yahoo.co.jp/sitemap/',
                 label: 'Webサービス by Yahoo! JAPAN',
+                compact: true,
               ),
             ],
             if (master.rakutenOffer != null)
               const _WebLink(
                 url: 'https://developers.rakuten.com/',
                 label: 'Supported by Rakuten Developers',
+                compact: true,
               ),
             if (master.amazonOffer != null || master.amazonSearchUrl != null)
               const Text(
                 'Amazonのアソシエイトとして、SAKEPEDIAは適格販売により収入を得ています。',
-                style: TextStyle(color: Color(0xFF647184), fontSize: 11),
+                style: TextStyle(color: Color(0xFF616161), fontSize: 11),
               ),
           ],
         ),
@@ -4285,14 +4345,29 @@ class _DetailSakeImage extends StatelessWidget {
 }
 
 class _WebLink extends StatelessWidget {
-  const _WebLink({required this.url, required this.label});
+  const _WebLink({
+    required this.url,
+    required this.label,
+    this.compact = false,
+  });
   final String url;
   final String label;
+  final bool compact;
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerLeft,
     child: TextButton.icon(
-      icon: const Icon(Icons.open_in_new, size: 16),
+      style: compact
+          ? TextButton.styleFrom(
+              foregroundColor: const Color(0xFF616161),
+              textStyle: const TextStyle(fontSize: 12),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              minimumSize: const Size(0, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              alignment: Alignment.centerLeft,
+            )
+          : null,
+      icon: Icon(Icons.open_in_new, size: compact ? 13 : 16),
       label: Text(label),
       onPressed: () async {
         final uri = Uri.tryParse(url);
