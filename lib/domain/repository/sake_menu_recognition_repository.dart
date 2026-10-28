@@ -42,6 +42,10 @@ class SakeMenuRecognitionRepository {
 
   final SakeMenuRecognitionApiClient _apiClient;
 
+  /// Separate extraction/resolution IDs for an independent comparison session.
+  SakeMenuRecognitionRepository forkSession() =>
+      SakeMenuRecognitionRepository(_apiClient);
+
   Future<SakeMenuRecognitionResponse?> recognizeMenu(File file) async {
     final baseFile = await ImageUtils.compressAndEncodeImage(file);
     logger.shout(baseFile);
