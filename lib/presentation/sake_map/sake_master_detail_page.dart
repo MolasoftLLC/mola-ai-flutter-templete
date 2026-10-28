@@ -413,13 +413,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               ),
               onTap: () => Navigator.pop(sheetContext, 'timeline'),
             ),
-            ListTile(
-              leading: const Icon(Icons.format_list_bulleted),
-              title: const Text('同じ銘柄から選び直す'),
-              subtitle: const Text('同じ銘柄の商品候補から選び直します'),
-              onTap: () => Navigator.pop(sheetContext, 'select'),
-            ),
             if (personalRecord != null) ...[
+              ListTile(
+                leading: const Icon(Icons.format_list_bulleted),
+                title: const Text('同じ銘柄から選び直す'),
+                subtitle: const Text('自分の保存記録の商品を選び直します'),
+                onTap: () => Navigator.pop(sheetContext, 'select'),
+              ),
               ListTile(
                 leading: const Icon(Icons.image_search_outlined),
                 title: const Text('全く違うので再解析'),
@@ -465,7 +465,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       }
     } else if (action == 'timeline') {
       await _openTimelineShare(overview.sake);
-    } else if (action == 'select') {
+    } else if (action == 'select' && personalRecord != null) {
       await _showRelatedProductSelection(overview, personalRecord);
     } else if (action == 'reanalyze' && personalRecord != null) {
       await _reanalyzeSavedImages(personalRecord);
@@ -474,7 +474,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   Future<void> _showRelatedProductSelection(
     SakeOverview overview,
-    Sake? personalRecord,
+    Sake personalRecord,
   ) async {
     setState(() => _isCorrectingProduct = true);
     final List<Sake> products;
@@ -505,24 +505,20 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '同じ銘柄の商品から再選択',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      personalRecord == null
-                          ? '選んだ商品の詳細を表示します。'
-                          : '選択後、写真・場所・評価・メモはその商品へ移管されます。',
-                    ),
+                    SizedBox(height: 4),
+                    Text('選択後、写真・場所・評価・メモはその商品へ移管されます。'),
                   ],
                 ),
               ),
@@ -559,26 +555,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       ),
     );
     if (!mounted || selected?.sakeId == null) return;
-    if (personalRecord != null) {
-      await _reassignToSakeId(personalRecord, selected!.sakeId!);
-    } else {
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => SakeMasterDetailPage(
-            recordRecentView: true,
-            venueSake: VenueSake(
-              sakeId: selected!.sakeId,
-              name: selected.name ?? '',
-              brewery: selected.brewery,
-              type: selected.type,
-              primaryImageUrl: selected.primaryImageUrl,
-              thumbnailImageUrl: selected.thumbnailImageUrl,
-              recordCount: 0,
-            ),
-          ),
-        ),
-      );
-    }
+    await _reassignToSakeId(personalRecord, selected!.sakeId!);
   }
 
   Future<List<Sake>> _loadRelatedProducts(SakeOverview overview) async {

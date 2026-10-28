@@ -33,7 +33,7 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   for (final isSaved in [false, true]) {
     testWidgets(
-      isSaved ? '保存済みなら同銘柄の続きの商品へ記録を保って付け替える' : '未保存でも同銘柄から選び直せて、保存せず商品の詳細を開く',
+      isSaved ? '保存済みなら同銘柄の続きの商品へ記録を保って付け替える' : '自分の保存記録がない商品には同銘柄の選び直しを表示しない',
       (tester) async {
         final repository = _RelatedSelectionRepository();
         final saved = SavedSakeNotifier()
@@ -53,6 +53,21 @@ void main() {
         }
         final original = saved.state.savedSakeList.firstOrNull;
         await _pumpCorrectionPage(tester, repository, saved);
+        if (!isSaved) {
+          final previousRequests = repository.requests.length;
+          final menu = find.byKey(const Key('sake-product-correction-menu'));
+          await tester.ensureVisible(menu);
+          await tester.pumpAndSettle();
+          await tester.tap(menu);
+          await tester.pumpAndSettle();
+          expect(find.text('同じ銘柄から選び直す'), findsNothing);
+          expect(find.text('全く違うので再解析'), findsNothing);
+          expect(find.text('この名前でブラウザで検索'), findsOneWidget);
+          expect(repository.requests.length, previousRequests);
+          expect(saved.state.savedSakeList, isEmpty);
+          expect(tester.takeException(), isNull);
+          return;
+        }
         await _openSameBrandSelection(tester);
         expect(find.text('同じ銘柄の商品から再選択'), findsOneWidget);
         expect(find.text('KURAMOTO 続きの商品'), findsOneWidget);
@@ -96,6 +111,7 @@ void main() {
     final saved = SavedSakeNotifier()
       ..read = (<T>() => _GuestAuthRepository() as T);
     addTearDown(saved.dispose);
+    await saved.addSavedSake(const Sake(sakeId: 123, name: 'KURAMOTO 元の商品'));
     await _pumpCorrectionPage(tester, repository, saved);
     repository.failRelated = true;
     await _openSameBrandSelection(tester);
@@ -104,7 +120,7 @@ void main() {
     repository.failRelated = false;
     await _openSameBrandSelection(tester);
     expect(find.text('KURAMOTO 続きの商品'), findsOneWidget);
-    expect(saved.state.savedSakeList, isEmpty);
+    expect(saved.state.savedSakeList.single.sakeId, 123);
   });
 
   testWidgets('同じ銘柄のほかの商品がない場合は案内し記録を作らない', (tester) async {
@@ -112,12 +128,13 @@ void main() {
     final saved = SavedSakeNotifier()
       ..read = (<T>() => _GuestAuthRepository() as T);
     addTearDown(saved.dispose);
+    await saved.addSavedSake(const Sake(sakeId: 123, name: 'KURAMOTO 元の商品'));
     await _pumpCorrectionPage(tester, repository, saved);
     repository.emptyRelated = true;
     await _openSameBrandSelection(tester);
     expect(find.text('同じ銘柄に選び直せる登録商品がありません。'), findsOneWidget);
     expect(find.text('同じ銘柄の商品から再選択'), findsNothing);
-    expect(saved.state.savedSakeList, isEmpty);
+    expect(saved.state.savedSakeList.single.sakeId, 123);
   });
   testWidgets('日本酒名の全文を長押しコピーし、同じ名前で外部検索する', (tester) async {
     final launcher = _FakeUrlLauncher();
