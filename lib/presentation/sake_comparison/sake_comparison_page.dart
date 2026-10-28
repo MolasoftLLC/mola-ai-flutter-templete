@@ -11,16 +11,15 @@ import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/menu_sake_resolution.dart';
-import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_menu_recognition_repository.dart';
 import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
-import '../common/widgets/sake_taste_match_preview.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'comparison_item.dart';
+import 'comparison_cart_view.dart';
 import 'comparison_detail_page.dart';
 
 const _navy = Color(0xFF143861);
@@ -180,7 +179,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                   const Padding(
                     padding: EdgeInsets.all(20),
                     child: Text(
-                      '今回追加する1件を選んでください',
+                      'どのお酒を追加する？',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -190,7 +189,11 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                         for (final sake in extracted!)
                           ListTile(
                             title: Text(sake.name ?? ''),
-                            subtitle: Text(sake.description ?? sake.type ?? ''),
+                            subtitle: Text(
+                              sake.type ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () => Navigator.pop(sheetContext, sake),
                           ),
@@ -204,11 +207,8 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
         );
       }
       if (selected == null || !mounted || !_sameOwner) return;
-      final reviewed = await showDialog<Sake>(
-        context: context,
-        builder: (_) => _TextReviewDialog(sake: selected!),
-      );
-      if (reviewed == null || !mounted || !_sameOwner) return;
+      // One clear recognition goes straight into the cart; only ambiguity needs a choice.
+      final reviewed = selected;
       setState(() => _progress = '味わいとマッチ度を確認中…');
       List<MenuSakeResolution> resolved;
       try {
@@ -237,7 +237,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                   const Padding(
                     padding: EdgeInsets.all(20),
                     child: Text(
-                      '同じお酒を選んでください',
+                      'どのお酒ですか？',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -258,7 +258,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                       sheetContext,
                       MenuSakeCandidate(sake: reviewed),
                     ),
-                    child: const Text('該当なし・読み取った文字のまま追加'),
+                    child: const Text('この中にない・そのまま追加'),
                   ),
                 ],
               ),
@@ -499,7 +499,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
     _message(
       _recommended.length < _bottles
           ? '条件を比較できる候補から${_recommended.length}本を選びました。残りは情報不足のため選んでいません。'
-          : '${_recommended.length}本を選びました。おすすめ理由もご覧ください。',
+          : '${_recommended.length}本を選びました',
     );
   }
 
@@ -510,6 +510,89 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
     _flight.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _chooseRecommendations() async {
+    if (_busy || _items.isEmpty || !_sameOwner) return;
+    final choice = await showModalBottomSheet<ComparisonChoice>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => ComparisonPreferenceSheet(
+        initial: (bottles: _bottles, mood: _mood, limited: _limited),
+        maxBottles: math.min(10, _items.length),
+        hasPreference: _preference != null,
+      ),
+    );
+    if (choice == null || !_sameOwner) return;
+    setState(() {
+      _bottles = choice.bottles;
+      _mood = choice.mood;
+      _limited = choice.limited;
+    });
+    _recommend();
+    if (_recommended.isNotEmpty && _scroll.hasClients) {
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _showHelp() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'お酒えらび・デモ',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: _navy,
+                ),
+              ),
+              SizedBox(height: 20),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.document_scanner_outlined),
+                title: Text('説明カードやメニューを1件ずつ撮影'),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.shopping_basket_outlined),
+                title: Text('気になるお酒を集めて比較'),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.auto_awesome),
+                title: Text('気分と本数を選んで、おすすめを確認'),
+              ),
+              SizedBox(height: 16),
+              Text(
+                '読み取りはメニュー解析の利用回数に含まれます。カートは20本まで。写真はカートに保存しません。',
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'AI推定の説明・味わい・マッチ度は参考情報です。限定品は説明の記載を参考にし、希少性を保証するものではありません。サンプルは架空の商品です。',
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -527,474 +610,31 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
         final ar = _recommended.contains(a.id);
         final br = _recommended.contains(b.id);
         return ar == br
-            ? 0
+            ? _items.indexOf(a).compareTo(_items.indexOf(b))
             : ar
             ? -1
             : 1;
       });
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: PrimaryAppBar(
-        title: 'お酒えらび・デモ',
-        actions: [
-          IconButton(
-            key: _cartKey,
-            tooltip: '比較カート',
-            onPressed: () {
-              if (_scroll.hasClients) {
-                _scroll.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            },
-            icon: Badge(
-              label: Text('${_items.length}'),
-              child: const Icon(
-                Icons.shopping_basket_outlined,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: !_ready
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    controller: _scroll,
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      const Text(
-                        '文字で集めて、今の一本を。',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: _navy,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '商品説明カードやメニューの一部分を撮影。文字を確認して1件ずつカートに入れ、まとめて比べられます。',
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '写真は比較カートに保存しません。読み取りはメニュー解析の利用回数に含まれます。',
-                        style: TextStyle(fontSize: 11, color: Colors.blueGrey),
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: _busy ? null : _samples,
-                          icon: const Icon(Icons.science_outlined),
-                          label: const Text('サンプル3件で試す（架空の商品）'),
-                        ),
-                      ),
-                      _panel(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '今日は、どう選ぶ？',
-                              style: TextStyle(
-                                color: _navy,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Expanded(child: Text('何本買う？')),
-                                IconButton(
-                                  onPressed: _bottles > 1
-                                      ? () => setState(() {
-                                          _bottles--;
-                                          _recommended = {};
-                                        })
-                                      : null,
-                                  icon: const Icon(Icons.remove_circle_outline),
-                                ),
-                                Text(
-                                  '$_bottles本',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: _bottles < 10
-                                      ? () => setState(() {
-                                          _bottles++;
-                                          _recommended = {};
-                                        })
-                                      : null,
-                                  icon: const Icon(Icons.add_circle_outline),
-                                ),
-                              ],
-                            ),
-                            const Text('今、飲みたい気分'),
-                            Wrap(
-                              spacing: 6,
-                              children: [
-                                for (final mood in ComparisonMood.values)
-                                  ChoiceChip(
-                                    label: Text(mood.label),
-                                    selected: _mood == mood,
-                                    onSelected: (_) => setState(() {
-                                      _mood = mood;
-                                      _recommended = {};
-                                    }),
-                                  ),
-                              ],
-                            ),
-                            SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('限定・珍しいものが気になる'),
-                              subtitle: const Text(
-                                'カードの「限定」などの記載を参考にします。実際の希少性は未確認です。',
-                                style: TextStyle(fontSize: 11),
-                              ),
-                              value: _limited,
-                              onChanged: (v) => setState(() {
-                                _limited = v;
-                                _recommended = {};
-                              }),
-                            ),
-                            if (preference == null)
-                              const Text(
-                                '好みが未設定です。気分を選ぶと「今日の気分マッチ度」で比較できます。',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blueGrey,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (_error != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.deepOrange),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      Text(
-                        '比較カート  ${_items.length}/20',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: _navy,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (_items.isEmpty)
-                        _panel(
-                          child: const Column(
-                            children: [
-                              Icon(
-                                Icons.add_shopping_cart,
-                                size: 40,
-                                color: _navy,
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                '気になる説明カードを1件撮ってみましょう。\n上のサンプルでも操作を試せます。',
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      for (final item in sorted)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _itemCard(item, preference),
-                        ),
-                      const Text(
-                        'マッチ度は参考値です。味わいデータがない場合は数値を作らず「未算出」と表示します。おすすめはカート内だけから選びます。',
-                        style: TextStyle(fontSize: 11, color: Colors.blueGrey),
-                      ),
-                    ],
-                  ),
-                ),
-                SafeArea(
-                  top: false,
-                  child: _panel(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_busy)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                const SizedBox.square(
-                                  dimension: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _progress.isEmpty ? 'カートを更新中…' : _progress,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FilledButton.icon(
-                                key: _readKey,
-                                onPressed: _busy
-                                    ? null
-                                    : () => _capture(ImageSource.camera),
-                                icon: const Icon(
-                                  Icons.document_scanner_outlined,
-                                ),
-                                label: const Text('撮影して追加'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              tooltip: '写真から読み取る',
-                              onPressed: _busy
-                                  ? null
-                                  : () => _capture(ImageSource.gallery),
-                              icon: const Icon(
-                                Icons.photo_library_outlined,
-                                color: _navy,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: _busy || _items.isEmpty
-                                ? null
-                                : _recommend,
-                            icon: const Icon(Icons.auto_awesome),
-                            label: Text('この中から$_bottles本、おすすめを選んで'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return ComparisonCartView(
+      items: sorted,
+      recommended: _recommended,
+      preference: preference,
+      mood: _mood,
+      ready: _ready,
+      busy: _busy,
+      progress: _progress,
+      error: _error,
+      scrollController: _scroll,
+      cartKey: _cartKey,
+      readKey: _readKey,
+      onCamera: () => _capture(ImageSource.camera),
+      onGallery: () => _capture(ImageSource.gallery),
+      onSamples: _samples,
+      onRecommend: _chooseRecommendations,
+      onReset: () => setState(() => _recommended = {}),
+      onHelp: _showHelp,
+      onDetail: _openDetail,
+      onRemove: _remove,
     );
   }
-
-  Widget _itemCard(ComparisonItem item, TastePreferenceProfile? preference) {
-    final selected = _recommended.contains(item.id);
-    final percent = item.match(preference ?? _mood.preference);
-    final reasons = <String>[
-      if (item.match(preference) != null) '好みとのマッチ度 ${item.match(preference)}%',
-      if (_mood != ComparisonMood.any && item.match(_mood.preference) != null)
-        '${_mood.label}の気分に ${item.match(_mood.preference)}%',
-      if (_limited && item.mentionsLimited) '説明に限定・季節品などの記載あり',
-      if (percent == null) '味わいデータまたは好みが不足しているため、マッチ度は未算出',
-    ];
-    return _panel(
-      color: selected ? const Color(0xFFFFF8E4) : Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.sake.name ?? '',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: _navy,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: '比較カートから外す',
-                onPressed: _busy ? null : () => _remove(item),
-                icon: const Icon(Icons.close, size: 20),
-              ),
-            ],
-          ),
-          if (item.sample)
-            const Text(
-              '架空の商品・デモデータ',
-              style: TextStyle(color: Colors.deepOrange, fontSize: 11),
-            ),
-          if (selected)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 6),
-              child: Text(
-                '★ 今回のおすすめ',
-                style: TextStyle(fontWeight: FontWeight.bold, color: _navy),
-              ),
-            ),
-          Text(
-            [item.sake.brewery, item.sake.type].whereType<String>().join(' / '),
-            style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
-          ),
-          if (item.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(item.text),
-            ),
-          if (item.sake.description?.trim().isNotEmpty == true)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                item.sake.description!,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          if (preference == null)
-            Text(
-              '今日の気分マッチ度  ${percent == null ? '未算出' : '$percent%'}',
-              style: const TextStyle(color: _navy, fontWeight: FontWeight.bold),
-            )
-          else
-            SakeTasteMatchPreview(
-              percent: percent,
-              profile: item.profile,
-              preference: preference,
-            ),
-          if (item.estimated)
-            const Text(
-              '味わいは読み取った説明などをもとにした推定です。',
-              style: TextStyle(fontSize: 11, color: Colors.blueGrey),
-            ),
-          if (selected)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                reasons.join('。'),
-                style: const TextStyle(fontSize: 12, color: _navy),
-              ),
-            ),
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: () => _openDetail(item),
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('詳細を見る'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _panel({required Widget child, Color color = Colors.white}) =>
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: child,
-      );
-}
-
-class _TextReviewDialog extends StatefulWidget {
-  const _TextReviewDialog({required this.sake});
-  final Sake sake;
-  @override
-  State<_TextReviewDialog> createState() => _TextReviewDialogState();
-}
-
-class _TextReviewDialogState extends State<_TextReviewDialog> {
-  late final TextEditingController _name = TextEditingController(
-    text: widget.sake.name,
-  );
-  late final TextEditingController _type = TextEditingController(
-    text: widget.sake.type,
-  );
-  late final TextEditingController _brewery = TextEditingController(
-    text: widget.sake.brewery,
-  );
-  late final TextEditingController _text = TextEditingController(
-    text: widget.sake.description,
-  );
-  final _form = GlobalKey<FormState>();
-  @override
-  void dispose() {
-    for (final c in [_name, _type, _brewery, _text]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('読み取った文字を確認'),
-    content: Form(
-      key: _form,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _name,
-              maxLength: 160,
-              decoration: const InputDecoration(labelText: '商品名'),
-              validator: (v) =>
-                  !isPlausibleRecognizedSakeName(v) ? '商品名を確認してください' : null,
-            ),
-            TextFormField(
-              controller: _type,
-              maxLength: 100,
-              decoration: const InputDecoration(labelText: '種類（任意）'),
-            ),
-            TextFormField(
-              controller: _brewery,
-              maxLength: 100,
-              decoration: const InputDecoration(labelText: '酒蔵（任意）'),
-            ),
-            TextFormField(
-              controller: _text,
-              maxLength: 2000,
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(labelText: 'カード・メニューの説明文'),
-              onTapOutside: (_) => FocusScope.of(context).unfocus(),
-            ),
-          ],
-        ),
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('キャンセル'),
-      ),
-      FilledButton(
-        onPressed: () {
-          if (_form.currentState!.validate()) {
-            Navigator.pop(
-              context,
-              Sake(
-                name: _name.text.trim(),
-                type: _type.text.trim(),
-                brewery: _brewery.text.trim(),
-                description: _text.text.trim(),
-              ),
-            );
-          }
-        },
-        child: const Text('比較カートに追加'),
-      ),
-    ],
-  );
 }

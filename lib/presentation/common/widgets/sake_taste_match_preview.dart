@@ -12,12 +12,16 @@ class SakeTasteMatchPreview extends StatelessWidget {
     this.profile,
     this.preference,
     this.radarSize = 92,
+    this.label = 'あなたの好みマッチ度',
+    this.percentFontSize = 22,
   });
 
   final int? percent;
   final SakeTasteProfileDetails? profile;
   final TastePreferenceProfile? preference;
   final double radarSize;
+  final String label;
+  final double percentFontSize;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -26,9 +30,9 @@ class SakeTasteMatchPreview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'あなたの好みマッチ度',
-              style: TextStyle(
+            Text(
+              label,
+              style: const TextStyle(
                 color: Color(0xFF647184),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -41,9 +45,9 @@ class SakeTasteMatchPreview extends StatelessWidget {
               ).createShader(bounds),
               child: Text(
                 percent == null ? '--' : '${percent!.clamp(0, 100)}%',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: percentFontSize,
                   fontWeight: FontWeight.w900,
                 ),
               ),
