@@ -413,13 +413,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               ),
               onTap: () => Navigator.pop(sheetContext, 'timeline'),
             ),
+            ListTile(
+              leading: const Icon(Icons.format_list_bulleted),
+              title: const Text('同じ銘柄から選び直す'),
+              subtitle: const Text('同じ銘柄の商品候補から選び直します'),
+              onTap: () => Navigator.pop(sheetContext, 'select'),
+            ),
             if (personalRecord != null) ...[
-              ListTile(
-                leading: const Icon(Icons.format_list_bulleted),
-                title: const Text('同じ酒蔵から再選択'),
-                subtitle: const Text('同じ銘柄の商品候補から選び直します'),
-                onTap: () => Navigator.pop(sheetContext, 'select'),
-              ),
               ListTile(
                 leading: const Icon(Icons.image_search_outlined),
                 title: const Text('全く違うので再解析'),
@@ -465,7 +465,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       }
     } else if (action == 'timeline') {
       await _openTimelineShare(overview.sake);
-    } else if (action == 'select' && personalRecord != null) {
+    } else if (action == 'select') {
       await _showRelatedProductSelection(overview, personalRecord);
     } else if (action == 'reanalyze' && personalRecord != null) {
       await _reanalyzeSavedImages(personalRecord);
@@ -474,19 +474,29 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
 
   Future<void> _showRelatedProductSelection(
     SakeOverview overview,
-    Sake personalRecord,
+    Sake? personalRecord,
   ) async {
-    final currentSakeId = overview.sake.sakeId;
-    final products = overview.relatedProducts
-        .where(
-          (product) => product.sakeId > 0 && product.sakeId != currentSakeId,
-        )
-        .toList(growable: false);
+    setState(() => _isCorrectingProduct = true);
+    final List<Sake> products;
+    try {
+      products = await _loadRelatedProducts(overview);
+    } catch (_) {
+      if (mounted) {
+        SnackBarUtils.showWarningSnackBar(
+          context,
+          message: '同じ銘柄の商品を取得できませんでした。もう一度お試しください。',
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _isCorrectingProduct = false);
+    }
+    if (!mounted || ModalRoute.of(context)?.isActive == false) return;
     if (products.isEmpty) {
       SnackBarUtils.showInfoSnackBar(context, message: '同じ銘柄に選び直せる登録商品がありません。');
       return;
     }
-    final selected = await showModalBottomSheet<RelatedSakeProduct>(
+    final selected = await showModalBottomSheet<Sake>(
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
@@ -495,20 +505,24 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       '同じ銘柄の商品から再選択',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text('選択後、写真・場所・評価・メモはその商品へ移管されます。'),
+                    const SizedBox(height: 4),
+                    Text(
+                      personalRecord == null
+                          ? '選んだ商品の詳細を表示します。'
+                          : '選択後、写真・場所・評価・メモはその商品へ移管されます。',
+                    ),
                   ],
                 ),
               ),
@@ -523,9 +537,13 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                       leading: SizedBox(
                         width: 42,
                         height: 54,
-                        child: _BottleImage(url: product.imageUrl),
+                        child: _BottleImage(
+                          url:
+                              product.primaryImageUrl ??
+                              product.thumbnailImageUrl,
+                        ),
                       ),
-                      title: Text(product.name),
+                      title: Text(product.name ?? ''),
                       subtitle: product.type == null
                           ? null
                           : Text(product.type!),
@@ -540,8 +558,69 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         ),
       ),
     );
-    if (!mounted || selected == null) return;
-    await _reassignToSakeId(personalRecord, selected.sakeId);
+    if (!mounted || selected?.sakeId == null) return;
+    if (personalRecord != null) {
+      await _reassignToSakeId(personalRecord, selected!.sakeId!);
+    } else {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SakeMasterDetailPage(
+            recordRecentView: true,
+            venueSake: VenueSake(
+              sakeId: selected!.sakeId,
+              name: selected.name ?? '',
+              brewery: selected.brewery,
+              type: selected.type,
+              primaryImageUrl: selected.primaryImageUrl,
+              thumbnailImageUrl: selected.thumbnailImageUrl,
+              recordCount: 0,
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<List<Sake>> _loadRelatedProducts(SakeOverview overview) async {
+    final repository = context.read<SakeScanRepository>();
+    final currentId = overview.sake.sakeId;
+    final products = <int, Sake>{};
+    void addProducts(Iterable<Sake> candidates) {
+      for (final product in candidates) {
+        final id = product.sakeId;
+        if (id != null && id > 0 && id != currentId) products[id] = product;
+      }
+    }
+
+    if (repository is RelatedSakeProductsRepository && currentId != null) {
+      final catalog = repository as RelatedSakeProductsRepository;
+      final cursors = <int>{};
+      int? cursor;
+      do {
+        final page = await catalog.fetchRelatedProducts(
+          currentId,
+          beforeId: cursor,
+        );
+        addProducts(page.sakes);
+        cursor = page.nextCursor;
+        if (cursor != null && !cursors.add(cursor)) {
+          throw StateError('同じ銘柄の商品の続きが取得できませんでした');
+        }
+      } while (cursor != null);
+    } else {
+      addProducts(
+        overview.relatedProducts.map(
+          (product) => Sake(
+            sakeId: product.sakeId,
+            name: product.name,
+            type: product.type,
+            brewery: overview.brewery.name,
+            primaryImageUrl: product.imageUrl,
+          ),
+        ),
+      );
+    }
+    return products.values.toList(growable: false);
   }
 
   Future<void> _reassignToSakeId(Sake personalRecord, int targetSakeId) async {

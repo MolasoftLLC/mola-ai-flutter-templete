@@ -14,9 +14,11 @@ import 'package:mola_gemini_flutter_template/infrastructure/api_client/sake_menu
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_master_detail_page.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/recent_sake_history.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/my_page/my_page_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/preferences/taste_preference_profile.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
@@ -29,6 +31,94 @@ import 'package:mola_gemini_flutter_template/common/utils/sake_image_utils.dart'
 void main() {
   setUpAll(loggerConfigure);
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  for (final isSaved in [false, true]) {
+    testWidgets(
+      isSaved ? '保存済みなら同銘柄の続きの商品へ記録を保って付け替える' : '未保存でも同銘柄から選び直せて、保存せず商品の詳細を開く',
+      (tester) async {
+        final repository = _RelatedSelectionRepository();
+        final saved = SavedSakeNotifier()
+          ..read = (<T>() => _GuestAuthRepository() as T);
+        addTearDown(saved.dispose);
+        if (isSaved) {
+          await saved.addSavedSake(
+            const Sake(
+              sakeId: 123,
+              name: 'KURAMOTO 元の商品',
+              impression: '残しておくメモ',
+              userTags: ['食事と一緒に'],
+              personalTasteRatings: {'fruity': 4},
+              isBookmarked: false,
+            ),
+          );
+        }
+        final original = saved.state.savedSakeList.firstOrNull;
+        await _pumpCorrectionPage(tester, repository, saved);
+        await _openSameBrandSelection(tester);
+        expect(find.text('同じ銘柄の商品から再選択'), findsOneWidget);
+        expect(find.text('KURAMOTO 続きの商品'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.text('KURAMOTO 元の商品'),
+          ),
+          findsNothing,
+        );
+        expect(repository.requests, contains((123, 122)));
+        expect(
+          find.text(
+            isSaved ? '選択後、写真・場所・評価・メモはその商品へ移管されます。' : '選んだ商品の詳細を表示します。',
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('KURAMOTO 続きの商品'));
+        await tester.pumpAndSettle();
+        expect(find.text('KURAMOTO 続きの商品'), findsWidgets);
+        if (isSaved) {
+          final record = saved.state.savedSakeList.single;
+          expect(record.sakeId, 120);
+          expect(record.savedId, original!.savedId);
+          expect(record.impression, original.impression);
+          expect(record.userTags, original.userTags);
+          expect(record.personalTasteRatings, original.personalTasteRatings);
+          expect(record.isBookmarked, original.isBookmarked);
+          expect(find.text('写真・場所・評価・メモを選択した商品へ移管しました。'), findsOneWidget);
+        } else {
+          expect(saved.state.savedSakeList, isEmpty);
+          expect(find.text('このお酒を保存する'), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('同銘柄候補の取得失敗を候補なしとせず、再操作で取得し直す', (tester) async {
+    final repository = _RelatedSelectionRepository();
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    await _pumpCorrectionPage(tester, repository, saved);
+    repository.failRelated = true;
+    await _openSameBrandSelection(tester);
+    expect(find.text('同じ銘柄の商品を取得できませんでした。もう一度お試しください。'), findsOneWidget);
+    expect(find.text('同じ銘柄に選び直せる登録商品がありません。'), findsNothing);
+    repository.failRelated = false;
+    await _openSameBrandSelection(tester);
+    expect(find.text('KURAMOTO 続きの商品'), findsOneWidget);
+    expect(saved.state.savedSakeList, isEmpty);
+  });
+
+  testWidgets('同じ銘柄のほかの商品がない場合は案内し記録を作らない', (tester) async {
+    final repository = _RelatedSelectionRepository();
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    await _pumpCorrectionPage(tester, repository, saved);
+    repository.emptyRelated = true;
+    await _openSameBrandSelection(tester);
+    expect(find.text('同じ銘柄に選び直せる登録商品がありません。'), findsOneWidget);
+    expect(find.text('同じ銘柄の商品から再選択'), findsNothing);
+    expect(saved.state.savedSakeList, isEmpty);
+  });
   testWidgets('日本酒名の全文を長押しコピーし、同じ名前で外部検索する', (tester) async {
     final launcher = _FakeUrlLauncher();
     final previous = UrlLauncherPlatform.instance;
@@ -1068,6 +1158,102 @@ void main() {
     expect(saved.state.savedSakeList.single.isPublic, isFalse);
     expect(saved.state.savedSakeList, hasLength(1));
   });
+}
+
+Future<void> _pumpCorrectionPage(
+  WidgetTester tester,
+  SakeScanRepository repository,
+  SavedSakeNotifier saved,
+) async {
+  final visibilityController = VisibilityDetectorController.instance;
+  final previousInterval = visibilityController.updateInterval;
+  visibilityController.updateInterval = Duration.zero;
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    visibilityController.updateInterval = previousInterval;
+  });
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    MultiProvider(
+      providers: [
+        Provider<SakeScanRepository>.value(value: repository),
+        Provider<SavedSakeNotifier>.value(value: saved),
+        ChangeNotifierProvider(create: (_) => RecentSakeHistory()),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('ja'),
+        home: SakeMasterDetailPage(
+          venueSake: VenueSake(
+            sakeId: 123,
+            name: 'KURAMOTO 元の商品',
+            recordCount: 0,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openSameBrandSelection(WidgetTester tester) async {
+  final menu = find.byKey(const Key('sake-product-correction-menu'));
+  await tester.ensureVisible(menu);
+  await tester.pumpAndSettle();
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('同じ銘柄から選び直す'));
+  await tester.pumpAndSettle();
+}
+
+class _RelatedSelectionRepository extends _FakeSakeScanRepository
+    implements RelatedSakeProductsRepository {
+  final requests = <(int, int?)>[];
+  bool failRelated = false;
+  bool emptyRelated = false;
+
+  @override
+  Future<SakeOverview> fetchOverview(
+    int sakeId, {
+    bool trackView = false,
+  }) async => SakeOverview(
+    sake: Sake(
+      sakeId: sakeId,
+      brandId: 3942,
+      name: sakeId == 123 ? 'KURAMOTO 元の商品' : 'KURAMOTO 続きの商品',
+    ),
+    analysisCompleted: true,
+    brand: const SakeBrandDetails(id: 3942, name: 'KURAMOTO'),
+    brewery: const SakeBreweryDetails(name: '倉本酒造株式会社'),
+    // The overview intentionally has no embedded products: the selection must
+    // use the same paginated catalog as the related-products section.
+  );
+
+  @override
+  Future<RelatedSakeProductsPage> fetchRelatedProducts(
+    int sakeId, {
+    int? beforeId,
+  }) async {
+    requests.add((sakeId, beforeId));
+    if (failRelated) throw StateError('test network error');
+    if (emptyRelated || sakeId != 123) {
+      return const RelatedSakeProductsPage(sakes: []);
+    }
+    if (beforeId == null) {
+      return const RelatedSakeProductsPage(
+        sakes: [
+          Sake(sakeId: 123, name: 'KURAMOTO 元の商品'),
+          Sake(sakeId: 122, name: 'KURAMOTO 別の商品'),
+        ],
+        nextCursor: 122,
+      );
+    }
+    return const RelatedSakeProductsPage(
+      sakes: [Sake(sakeId: 120, name: 'KURAMOTO 続きの商品')],
+    );
+  }
 }
 
 class _GuestAuthRepository implements AuthRepository {
