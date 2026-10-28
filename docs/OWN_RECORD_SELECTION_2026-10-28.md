@@ -27,5 +27,6 @@
 - 統合版でも関連操作テスト4件成功、対象ファイルの静的解析は指摘0件。
 - 署名付きproductionアーカイブ、Bundle ID、バージョンとビルド番号、地図APIキーを再検証した。
 - アーカイブは`/Users/mukae-mini/Library/Developer/Xcode/Archives/2026-10-28/SAKEPEDIA 156.xcarchive`。
-- 156はXcode OrganizerのApp Store Connect経路で送信中。完了を確認後に追記する。
+- 156はXcode OrganizerのApp Store Connect経路でアップロード完了。2026-10-28 22:09 JSTに`App upload complete`および`mola_gemini_flutter_template 5.0.27 (156) uploaded`を確認した。
+- 最初の156送信はAppleの認証接続エラーで失敗したが、完成済みの同じアーカイブを再送信し、追加のログイン操作なしで成功した。再アーカイブ、証明書変更、アカウント削除は行っていない。
 - Apple側の処理・TestFlightの表示・一般公開・審査提出は、送信完了とは別に確認する。審査提出は実施していない。
