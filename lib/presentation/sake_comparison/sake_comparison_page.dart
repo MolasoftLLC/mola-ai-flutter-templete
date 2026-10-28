@@ -412,7 +412,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
                 scale: 1 - t * .5,
                 child: Material(
                   elevation: 8,
-                  color: const Color(0xFFFFD54F),
+                  color: const Color(0xFFE6EDF6),
                   borderRadius: BorderRadius.circular(12),
                   child: const SizedBox.square(
                     dimension: 44,

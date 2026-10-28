@@ -6,7 +6,7 @@ import '../common/widgets/sake_taste_match_preview.dart';
 import 'comparison_item.dart';
 
 const _navy = Color(0xFF143861);
-const _gold = Color(0xFFFFD653);
+const _paleBlue = Color(0xFFE6EDF6);
 
 /// The cart stays central; buying preferences are chosen only when needed.
 class ComparisonCartView extends StatelessWidget {
@@ -76,7 +76,7 @@ class ComparisonCartView extends StatelessWidget {
             }
           },
           icon: Badge(
-            backgroundColor: _gold,
+            backgroundColor: _paleBlue,
             textColor: _navy,
             label: Text('${items.length}'),
             child: const Icon(Icons.shopping_basket_outlined),
@@ -130,7 +130,7 @@ class ComparisonCartView extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
                         decoration: BoxDecoration(
-                          color: _gold,
+                          color: _paleBlue,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -235,7 +235,7 @@ class ComparisonCartView extends StatelessWidget {
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: _gold,
+                    color: _paleBlue,
                     borderRadius: BorderRadius.circular(26),
                   ),
                   child: const Icon(
@@ -250,7 +250,7 @@ class ComparisonCartView extends StatelessWidget {
                 top: 9,
                 child: Icon(
                   Icons.auto_awesome,
-                  color: Color(0xFFD8A62B),
+                  color: Color(0xFF6B8DB3),
                   size: 29,
                 ),
               ),
@@ -315,7 +315,7 @@ class ComparisonCartView extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: selected ? const Color(0xFFECC44F) : const Color(0xFFE6EAF0),
+          color: selected ? const Color(0xFF527BA7) : const Color(0xFFE6EAF0),
           width: selected ? 2 : 1,
         ),
       ),
@@ -330,16 +330,12 @@ class ComparisonCartView extends StatelessWidget {
               if (selected) ...[
                 const Row(
                   children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: Color(0xFFA17512),
-                    ),
+                    Icon(Icons.auto_awesome, size: 16, color: _navy),
                     SizedBox(width: 6),
                     Text(
                       '今のおすすめ',
                       style: TextStyle(
-                        color: Color(0xFFA17512),
+                        color: _navy,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -463,8 +459,8 @@ class ComparisonCartView extends StatelessWidget {
                       key: readKey,
                       onPressed: busy ? null : onCamera,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: _navy,
+                        backgroundColor: _navy,
+                        foregroundColor: Colors.white,
                         minimumSize: const Size(0, 54),
                         textStyle: const TextStyle(
                           fontSize: 16,
@@ -491,16 +487,16 @@ class ComparisonCartView extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: busy ? null : onRecommend,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: _navy,
+                        backgroundColor: _navy,
+                        foregroundColor: Colors.white,
                         minimumSize: const Size(0, 54),
                         textStyle: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      icon: const Icon(Icons.auto_awesome, size: 19),
+                      icon: const Icon(Icons.tune, size: 19),
                       label: Text(
                         MediaQuery.sizeOf(context).width < 360
-                            ? 'おすすめ'
-                            : 'おすすめを選ぶ',
+                            ? '絞り込む'
+                            : 'こだわりで絞り込む',
                       ),
                     ),
                   ),
@@ -596,7 +592,7 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
           ),
           const SizedBox(height: 24),
           const Text(
-            '今日は、どんな気分？',
+            'どんなお酒を選びたい？',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
@@ -673,6 +669,8 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
             avatar: const Icon(Icons.diamond_outlined, size: 18),
             label: const Text('限定ものも気になる'),
             selected: limited,
+            selectedColor: _paleBlue,
+            checkmarkColor: _navy,
             onSelected: (value) => setState(() => limited = value),
           ),
           const SizedBox(height: 24),
@@ -698,8 +696,8 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
                       limited: limited,
                     )),
               style: FilledButton.styleFrom(
-                backgroundColor: _gold,
-                foregroundColor: _navy,
+                backgroundColor: _navy,
+                foregroundColor: Colors.white,
                 minimumSize: const Size(0, 54),
                 textStyle: const TextStyle(
                   fontSize: 16,
@@ -707,7 +705,7 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
                 ),
               ),
               icon: const Icon(Icons.auto_awesome),
-              label: Text('$bottles本を選んでもらう'),
+              label: const Text('この条件でおすすめを見る'),
             ),
           ),
         ],
