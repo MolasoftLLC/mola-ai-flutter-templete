@@ -225,25 +225,15 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                   Container(
                     key: notifier.resultsSectionKey,
                     padding: const EdgeInsets.only(
-                      top: 42,
-                      left: 12,
-                      right: 12,
+                      top: 24,
+                      left: 24,
+                      right: 24,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Center(
-                          child: Text(
-                            context.l10n.detectedSake,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                         Padding(
-                          padding: const EdgeInsets.only(top: 20, bottom: 20),
+                          padding: const EdgeInsets.only(bottom: 24),
                           child: MenuResultPlaceField(
                             key: ValueKey(currentHistoryId),
                             history: currentHistory,
@@ -253,6 +243,28 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                             ),
                           ),
                         ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                context.l10n.sakeCount(extractedSakes.length),
+                                style: MenuPhotoStyle.text(16, bold: true),
+                              ),
+                            ),
+                            if (currentHistory?.analysisStatus == 'partial' ||
+                                currentHistory?.analysisStatus == 'pending')
+                              Text(
+                                currentHistory!.analysisStatus == 'partial'
+                                    ? context.l10n.menuHistoryPartial
+                                    : context.l10n.menuHistoryPending,
+                                style: MenuPhotoStyle.text(
+                                  12,
+                                  color: MenuPhotoStyle.yellow,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
                         if (!isMasterLookupComplete)
                           const Padding(
                             padding: EdgeInsets.all(24),
@@ -327,6 +339,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
 
                             return SakeResultTile(
                               key: ValueKey('${sake.name}\u0000${sake.type}'),
+                              dark: true,
                               sake: sake,
                               detailedSake: detailedSake,
                               hasDetails: hasDetails,
@@ -458,9 +471,17 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 return !isSaved;
                               },
                               buildInfoRow: (key, value, icon) =>
-                                  buildMenuSakeInfoRow(key, value, icon),
-                              buildTypesRow: (types) =>
-                                  buildMenuSakeTypesRow(context, types),
+                                  buildMenuSakeInfoRow(
+                                    key,
+                                    value,
+                                    icon,
+                                    dark: true,
+                                  ),
+                              buildTypesRow: (types) => buildMenuSakeTypesRow(
+                                context,
+                                types,
+                                dark: true,
+                              ),
                             );
                           },
                         ),

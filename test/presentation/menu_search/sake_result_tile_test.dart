@@ -23,6 +23,7 @@ void main() {
         locale: const Locale('ja'),
         home: Scaffold(
           body: SakeResultTile(
+            dark: true,
             sake: const Sake(name: '天吹 雄町'),
             detailedSake: null,
             hasDetails: false,

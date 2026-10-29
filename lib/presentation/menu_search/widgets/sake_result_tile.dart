@@ -69,6 +69,7 @@ class SakeResultTile extends StatefulWidget {
 class _SakeResultTileState extends State<SakeResultTile> {
   Color get _ink => widget.dark ? Colors.white : const Color(0xFF1D3567);
   Color get _muted => widget.dark ? Colors.white70 : Colors.grey;
+  Color get _error => widget.dark ? Colors.redAccent : Colors.red.shade700;
 
   late final ExpansionTileController _expansionController;
   final _storageBucket = PageStorageBucket();
@@ -169,28 +170,22 @@ class _SakeResultTileState extends State<SakeResultTile> {
         : widget.candidates.isNotEmpty
         ? IconButton(
             tooltip: '候補を選択',
-            icon: const Icon(Icons.rule, color: Color(0xFF1D3567)),
+            icon: Icon(Icons.rule, color: _ink),
             onPressed: () => _showCandidatePicker(context),
           )
         : !widget.hasFailed
-        ? const SizedBox(
+        ? SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Color(0xFF1D3567),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: _ink),
           )
         : widget.isLoading
-        ? const SizedBox(
+        ? SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Color(0xFF1D3567),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: _ink),
           )
-        : Icon(Icons.error_outline, color: Colors.red.shade700);
+        : Icon(Icons.error_outline, color: _error);
 
     return PageStorage(
       bucket: _storageBucket,
@@ -320,12 +315,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         child: InkWell(
                           onTap: () => _showCandidatePicker(context),
                           borderRadius: BorderRadius.circular(4),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Text(
                               '商品詳細の候補を見る',
                               style: TextStyle(
-                                color: Color(0xFF1D3567),
+                                color: _ink,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 decoration: TextDecoration.underline,
@@ -398,9 +393,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             widget.isItemLoading
                                 ? Icons.hourglass_top
                                 : Icons.error_outline,
-                            color: widget.isItemLoading
-                                ? const Color(0xFF1D3567)
-                                : Colors.red.shade700,
+                            color: widget.isItemLoading ? _ink : _error,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -409,9 +402,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                   ? context.l10n.loadingDetails
                                   : context.l10n.detailsUnavailable,
                               style: TextStyle(
-                                color: widget.isItemLoading
-                                    ? const Color(0xFF1D3567)
-                                    : Colors.red.shade700,
+                                color: widget.isItemLoading ? _ink : _error,
                                 fontStyle: widget.isItemLoading
                                     ? FontStyle.italic
                                     : FontStyle.normal,
