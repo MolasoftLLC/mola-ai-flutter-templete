@@ -546,5 +546,37 @@
   "showCaptureGuide": "補助枠を表示",
   "labelSearchMode": "ラベル検索",
   "menuCaptureTitle": "メニューを撮影",
-  "menuCaptureDescription": "日本酒の名前が読めるように、メニュー全体を撮影してください。"
+  "menuCaptureDescription": "日本酒の名前が読めるように、メニュー全体を撮影してください。",
+  "menuCaptureTagline": "メニューから、\n好みのお酒が見つかる",
+  "menuCapturePhoto": "メニューを撮影",
+  "menuChoosePhoto": "写真から選ぶ",
+  "menuResumePhoto": "選択した写真を確認",
+  "menuRecentAnalyses": "過去の解析",
+  "menuViewMore": "もっと見る",
+  "menuDatedHistory": "{date}のメニュー",
+  "menuConfirmPhoto": "写真を確認",
+  "menuZoomPhoto": "タップで拡大",
+  "menuRetakePhoto": "撮り直す",
+  "menuCropPhoto": "切り抜き",
+  "menuAnalyzePhoto": "この写真で解析する",
+  "menuPhotoCropped": "切り抜き済み",
+  "menuRestorePhoto": "元に戻す",
+  "menuCropHeading": "読み取りたい範囲に合わせる",
+  "menuCropHint": "四隅をドラッグして範囲を調整",
+  "menuConfirmCrop": "この範囲で決定",
+  "menuOriginalPreserved": "元の写真は残ります",
+  "menuAnalyzingTitle": "解析中",
+  "menuAnalyzingHeading": "メニューを読み取っています",
+  "menuAnalyzingDescription": "見つかったお酒の情報を確認しています",
+  "menuStopAnalysis": "解析を中止",
+  "menuPhotoPreserved": "写真は消えません",
+  "menuCropFailed": "切り抜きできませんでした。写真を残したまま、もう一度お試しください。",
+  "menuPhotoLoadFailed": "写真を読み込めませんでした。写真を選び直してください。",
+  "@menuDatedHistory": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -5,7 +5,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mola_gemini_flutter_template/common/utils/image_cropper_service.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_analysis_history.dart';
@@ -108,7 +107,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   GeminiMolaApiRepository get geminiMolaApiRepository =>
       read<GeminiMolaApiRepository>();
   SakeMenuRecognitionRepository get sakeMenuRecognitionRepository =>
-      read<SakeMenuRecognitionRepository>();
+      _analysisRepository ?? read<SakeMenuRecognitionRepository>();
 
   @override
   Future<void> initState() async {
@@ -133,33 +132,6 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       (_) => unawaited(_syncHistory()),
     );
     unawaited(_syncHistory());
-    final image = initialImage;
-    if (mounted && image != null) {
-      // Wait for the result route to finish its first frame before opening ads
-      // or preference dialogs from the existing menu analysis flow.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && context.mounted) {
-          unawaited(_analyzeCapturedMenu(image));
-        }
-      });
-      WidgetsBinding.instance.ensureVisualUpdate();
-    }
-  }
-
-  Future<void> _analyzeCapturedMenu(File image) async {
-    File analysisImage = image;
-    try {
-      final path = await ImageCropperService.saveImagePermanently(
-        image,
-        'menu_captured',
-      );
-      if (path != null) analysisImage = File(path);
-    } catch (error) {
-      logger.warning('撮影したメニュー画像の永続保存に失敗しました: $error');
-    }
-    if (!mounted || !context.mounted) return;
-    state = state.copyWith(sakeImage: analysisImage);
-    await extractAndFetchSakeInfo(analysisImage);
   }
 
   Future<void> _initializeWithMigration() async {
@@ -238,90 +210,72 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     state = state.copyWith(preferences: preferences);
   }
 
-  Future<void> pickImageFromGallery() async {
-    AppAnalytics.instance.event('menu', 'gallery');
-    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
-    final imageFile = await CustomImagePicker.pickImage(
-      source: ImageSource.gallery,
+  File? _originalImage;
+  int _photoGeneration = 0;
+  int _analysisGeneration = 0;
+  bool _startingAnalysis = false;
+  SakeMenuRecognitionRepository? _analysisRepository;
+  File? get originalImage => _originalImage;
+  bool get isPhotoCropped =>
+      _originalImage != null && state.sakeImage?.path != _originalImage!.path;
+
+  Future<void> pickImageFromGallery() => _pickPhoto(ImageSource.gallery);
+  Future<void> pickImageFromCamera() => _pickPhoto(ImageSource.camera);
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    AppAnalytics.instance.event(
+      'menu',
+      source == ImageSource.camera ? 'camera' : 'gallery',
     );
-    if (imageFile != null) {
-      // Show cropping UI
-      final croppedFile = await ImageCropperService.cropAndRotateImage(
-        imageFile.path,
-      );
-
-      if (croppedFile != null) {
-        // ギャラリーから選択した画像も永続的に保存
-        try {
-          // ドキュメントディレクトリに画像を保存
-          final permanentPath = await ImageCropperService.saveImagePermanently(
-            croppedFile,
-            'gallery_selected',
-          );
-
-          if (permanentPath != null) {
-            logger.info('ギャラリー選択画像を永続的に保存しました: $permanentPath');
-            // 永続的に保存した画像を使用
-            final savedFile = File(permanentPath);
-            state = state.copyWith(sakeImage: savedFile);
-          } else {
-            // 保存に失敗した場合は元のファイルを使用
-            state = state.copyWith(sakeImage: croppedFile);
-            logger.warning('ギャラリー選択画像の永続保存に失敗しました');
-          }
-        } catch (e) {
-          // エラーが発生した場合は元のファイルを使用
-          state = state.copyWith(sakeImage: croppedFile);
-          logger.shout('ギャラリー選択画像の保存に失敗しました: $e');
-        }
-      }
+    try {
+      final image = await CustomImagePicker.pickImage(source: source);
+      if (image != null && mounted) await selectPhoto(image);
+    } catch (error) {
+      if (!mounted || !context.mounted) return;
+      logger.warning('メニュー写真を選択できませんでした: $error');
+      state = state.copyWith(errorMessage: context.l10n.errorSelectImage);
     }
   }
 
-  Future<void> pickImageFromCamera() async {
-    AppAnalytics.instance.event('menu', 'camera');
-    // Use CustomImagePicker to avoid READ_MEDIA_IMAGES permission
-    final imageFile = await CustomImagePicker.pickImage(
-      source: ImageSource.camera,
+  /// Keep the full photograph; cropping is an explicit action on confirmation.
+  Future<void> selectPhoto(File image) async {
+    final generation = ++_photoGeneration;
+    final path = await ImageCropperService.saveImagePermanently(
+      image,
+      'menu_original',
     );
-    if (imageFile != null) {
-      // Show cropping UI
-      final croppedFile = await ImageCropperService.cropAndRotateImage(
-        imageFile.path,
-      );
+    if (!mounted || generation != _photoGeneration) return;
+    clearImage();
+    _originalImage = path == null ? image : File(path);
+    state = state.copyWith(sakeImage: _originalImage);
+  }
 
-      if (croppedFile != null) {
-        // Save image to gallery
-        try {
-          await ImageGallerySaverPlus.saveFile(croppedFile.path);
-          logger.info('画像をギャラリーに保存しました: ${croppedFile.path}');
+  void applyCroppedPhoto(File image) {
+    if (!mounted || state.isLoading) return;
+    _originalImage ??= state.sakeImage;
+    state = state.copyWith(sakeImage: image, errorMessage: null);
+  }
 
-          // アプリの永続ストレージにも保存
-          final permanentPath = await ImageCropperService.saveImagePermanently(
-            croppedFile,
-            'camera_captured',
-          );
-
-          if (permanentPath != null) {
-            logger.info('カメラ撮影画像を永続的に保存しました: $permanentPath');
-            // 永続的に保存した画像を使用
-            final savedFile = File(permanentPath);
-            state = state.copyWith(sakeImage: savedFile);
-          } else {
-            // 永続保存に失敗した場合は元のファイルを使用
-            state = state.copyWith(sakeImage: croppedFile);
-            logger.warning('カメラ撮影画像の永続保存に失敗しました');
-          }
-        } catch (e) {
-          // エラーが発生した場合は元のファイルを使用
-          state = state.copyWith(sakeImage: croppedFile);
-          logger.shout('カメラ撮影画像の保存に失敗しました: $e');
-        }
-      }
+  void restoreOriginalPhoto() {
+    if (_originalImage != null && !state.isLoading) {
+      state = state.copyWith(sakeImage: _originalImage, errorMessage: null);
     }
+  }
+
+  /// Ignore late network/ad replies after cancellation, retaining both photos.
+  void cancelAnalysis() {
+    final image = state.sakeImage;
+    final original = _originalImage;
+    clearImage();
+    _originalImage = original;
+    state = state.copyWith(sakeImage: image);
   }
 
   void clearImage() {
+    _analysisGeneration++;
+    _startingAnalysis = false;
+    _originalImage = null;
+    _analysisRepository = null;
     if (_usageFlow != null && !_usageExtractionDone) {
       AppAnalytics.instance.event(
         'menu',
@@ -348,6 +302,15 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     _pendingHistoryItem = null;
     state = state.copyWith(
       sakeImage: null,
+      isLoading: false,
+      isExtractingInfo: false,
+      isGettingDetails: false,
+      isAdLoading: false,
+      isAnalyzingInBackground: false,
+      resolutionCandidates: {},
+      matchPercents: {},
+      tasteProfiles: {},
+      unverifiedNames: [],
       isMasterLookupComplete: false,
       extractedSakes: [],
       sakeMenuRecognitionResponse: null,
@@ -361,212 +324,261 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   String? _usageFlow;
   bool _usageExtractionDone = false;
   Future<void> extractAndFetchSakeInfo(File? imageFile) async {
-    if (imageFile == null) {
+    if (imageFile == null ||
+        _startingAnalysis ||
+        state.isLoading ||
+        state.isGettingDetails) {
       return;
     }
 
-    if (read<AuthRepository>().currentUser == null) {
-      final login = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('メニュー解析にはログインが必要です'),
-          content: const Text('解析結果の保存と利用回数の管理のため、ログインしてください。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('キャンセル'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('ログイン'),
-            ),
-          ],
-        ),
-      );
-      if (login != true || !context.mounted) return;
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signIn()),
-      );
-      if (!context.mounted || read<AuthRepository>().currentUser == null)
-        return;
-    }
-    if (!await ensureAiDataConsent(context) || !mounted || !context.mounted) {
-      return;
-    }
-    if (!await _ensureSakePreferencesReady()) {
-      return;
-    }
-
-    _usageFlow = analyticsId();
-    _usageExtractionDone = false;
-    AppAnalytics.instance.event(
-      'menu',
-      'menu_analysis',
-      kind: 'start',
-      flowId: _usageFlow,
-    );
-    _detailsGeneration++;
-    _resolvingDetails = false;
-    _selectedMenuNames.clear();
-    _activeAnalysisId =
-        'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
-    _activeAnalysisDate = DateTime.now();
-    _pendingHistoryItem = null;
-
-    // 初期状態をリセット
-    state = state.copyWith(
-      isLoading: true,
-      isExtractingInfo: true,
-      isMasterLookupComplete: false,
-      errorMessage: null,
-      extractedSakes: [],
-      sakes: <Sake>[],
-      sakeLoadingStatus: {},
-      nameMapping: {},
-      resolutionCandidates: {},
-      matchPercents: {},
-      tasteProfiles: {},
-      unverifiedNames: [],
-      isAdLoading: true,
-      hasScrolledToResults: false,
-      isAnalyzingInBackground: false,
-    );
-
+    _startingAnalysis = true;
+    final generation = ++_analysisGeneration;
+    bool isCurrent() => mounted && generation == _analysisGeneration;
     try {
-      // Check if we should show an ad using shared counter (3-search cycle)
-      final shouldShowAd = await AdCounterService.shouldShowAd();
-
-      if (shouldShowAd) {
-        // 広告表示前に同意ダイアログを表示
-        final consent = await AdConsentDialog.show(
-          context,
-          title: context.l10n.adConfirmation,
-          description: context.l10n.menuAdDescription,
-          icon: Icons.menu_book,
+      if (read<AuthRepository>().currentUser == null) {
+        final login = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('メニュー解析にはログインが必要です'),
+            content: const Text('解析結果の保存と利用回数の管理のため、ログインしてください。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('ログイン'),
+              ),
+            ],
+          ),
         );
-
-        // ユーザーが同意した場合のみ広告を表示
-        if (consent == true) {
-          // 広告のロードを開始
-          try {
-            final rewardedAd = await AdUtils.loadRewardedAd(
-              onAdLoaded: (ad) {
-                logger.info('リワード広告がロードされました');
-              },
-              onAdDismissed: () {
-                logger.info('リワード広告が閉じられました');
-
-                // 広告が閉じられた時の処理
-                if (state.isAnalyzingInBackground) {
-                  // まだ解析中の場合は、解析中の表示を継続
-                  logger.info('広告が閉じられましたが、まだ解析中です');
-                  state = state.copyWith(
-                    isAdLoading: false,
-                    isLoading: true,
-                    isExtractingInfo: true,
-                  );
-                } else if (state.extractedSakes.isNotEmpty) {
-                  // 解析が完了している場合は、詳細情報を取得
-                  logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
-                  state = state.copyWith(isAdLoading: false, isLoading: false);
-                  _fetchSakeDetails(state.extractedSakes);
-                } else {
-                  // 解析結果がない場合（エラーなど）
-                  state = state.copyWith(isAdLoading: false, isLoading: false);
-                }
-              },
-              onAdFailedToLoad: (error) {
-                logger.shout('リワード広告のロードに失敗しました: ${error.message}');
-                state = state.copyWith(isAdLoading: false);
-              },
-              onUserEarnedReward: (reward) {
-                logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-              },
-            );
-
-            if (rewardedAd != null) {
-              // 広告を表示し、同時に裏側で解析を開始
-              state = state.copyWith(
-                isAdLoading: true,
-                isAnalyzingInBackground: true,
-              );
-
-              // 広告を表示
-              try {
-                // 裏側で解析を開始（非同期で実行）
-                _extractSakeInfoInBackground(imageFile);
-
-                // 広告を表示（ユーザーはこれを見ている間に解析が進む）
-                await AdUtils.showRewardedAd(
-                  rewardedAd,
-                  onUserEarnedReward: (reward) {
-                    logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
-                  },
-                );
-
-                return; // 処理完了（残りの処理はコールバックで行われる）
-              } catch (e) {
-                logger.shout('広告の表示に失敗しました: $e');
-                // 広告の表示に失敗した場合は通常の解析を実行
-                state = state.copyWith(
-                  isAdLoading: false,
-                  isLoading: true,
-                  isExtractingInfo: true,
-                  isAnalyzingInBackground: false,
-                );
-                await _extractSakeInfoInForeground(imageFile);
-              }
-
-              return; // 処理完了
-            }
-          } catch (e) {
-            logger.shout('広告処理でエラーが発生しました: $e');
-            state = state.copyWith(
-              isAdLoading: false,
-              isAnalyzingInBackground: false,
-            );
-          }
-        } else {
-          // ユーザーが広告視聴を拒否した場合
-          logger.info('ユーザーが広告視聴を拒否しました');
-
-          // SnackBarで通知
-          SnackBarUtils.showWarningSnackBar(
-            context,
-            message: context.l10n.analysisCancelled,
-            duration: const Duration(seconds: 4),
-          );
-
-          // 解析をキャンセルして処理を終了
-          state = state.copyWith(
-            isLoading: false,
-            isExtractingInfo: false,
-            isGettingDetails: false,
-            isAdLoading: false,
-            isAnalyzingInBackground: false,
-          );
+        if (login != true || !context.mounted) return;
+        await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => EmailLinkAuthPage.signIn()),
+        );
+        if (!isCurrent() ||
+            !context.mounted ||
+            read<AuthRepository>().currentUser == null)
           return;
-        }
-      } else {
-        // No ad needed, proceed directly to analysis
-        await _extractSakeInfoInForeground(imageFile);
+      }
+      if (!await ensureAiDataConsent(context) || !mounted || !context.mounted) {
+        return;
+      }
+      if (!await _ensureSakePreferencesReady()) {
         return;
       }
 
-      // 広告のロードに失敗した場合や広告がnullの場合はここに到達する
-      // 通常の処理を続行
-      await _extractSakeInfoInForeground(imageFile);
-    } catch (e) {
+      if (!isCurrent()) return;
+      await _historyWriteQueue;
+      if (!isCurrent()) return;
+      _analysisRepository = read<SakeMenuRecognitionRepository>().forkSession();
+      _usageFlow = analyticsId();
+      _usageExtractionDone = false;
+      AppAnalytics.instance.event(
+        'menu',
+        'menu_analysis',
+        kind: 'start',
+        flowId: _usageFlow,
+      );
+      _detailsGeneration++;
+      _resolvingDetails = false;
+      _selectedMenuNames.clear();
+      _activeAnalysisId =
+          'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
+      _activeAnalysisDate = DateTime.now();
+      _pendingHistoryItem = null;
+
+      // 初期状態をリセット
+      state = state.copyWith(
+        isLoading: true,
+        isExtractingInfo: true,
+        isMasterLookupComplete: false,
+        errorMessage: null,
+        extractedSakes: [],
+        sakes: <Sake>[],
+        sakeLoadingStatus: {},
+        nameMapping: {},
+        resolutionCandidates: {},
+        matchPercents: {},
+        tasteProfiles: {},
+        unverifiedNames: [],
+        isAdLoading: true,
+        hasScrolledToResults: false,
+        isAnalyzingInBackground: false,
+      );
+
+      try {
+        // Check if we should show an ad using shared counter (3-search cycle)
+        final shouldShowAd = await AdCounterService.shouldShowAd();
+        if (!isCurrent()) return;
+
+        if (shouldShowAd) {
+          // 広告表示前に同意ダイアログを表示
+          final consent = await AdConsentDialog.show(
+            context,
+            title: context.l10n.adConfirmation,
+            description: context.l10n.menuAdDescription,
+            icon: Icons.menu_book,
+          );
+
+          if (!isCurrent()) return;
+          // ユーザーが同意した場合のみ広告を表示
+          if (consent == true) {
+            // 広告のロードを開始
+            try {
+              final rewardedAd = await AdUtils.loadRewardedAd(
+                onAdLoaded: (ad) {
+                  logger.info('リワード広告がロードされました');
+                },
+                onAdDismissed: () {
+                  if (!isCurrent()) return;
+                  logger.info('リワード広告が閉じられました');
+
+                  // 広告が閉じられた時の処理
+                  if (state.isAnalyzingInBackground) {
+                    // まだ解析中の場合は、解析中の表示を継続
+                    logger.info('広告が閉じられましたが、まだ解析中です');
+                    state = state.copyWith(
+                      isAdLoading: false,
+                      isLoading: true,
+                      isExtractingInfo: true,
+                    );
+                  } else if (state.extractedSakes.isNotEmpty) {
+                    // 解析が完了している場合は、詳細情報を取得
+                    logger.info('広告が閉じられ、解析も完了しています。詳細情報を取得します');
+                    state = state.copyWith(
+                      isAdLoading: false,
+                      isLoading: false,
+                    );
+                    _fetchSakeDetails(state.extractedSakes);
+                  } else {
+                    // 解析結果がない場合（エラーなど）
+                    state = state.copyWith(
+                      isAdLoading: false,
+                      isLoading: false,
+                    );
+                  }
+                },
+                onAdFailedToLoad: (error) {
+                  if (!isCurrent()) return;
+                  logger.shout('リワード広告のロードに失敗しました: ${error.message}');
+                  state = state.copyWith(isAdLoading: false);
+                },
+                onUserEarnedReward: (reward) {
+                  logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+                },
+              );
+
+              if (!isCurrent()) {
+                rewardedAd?.dispose();
+                return;
+              }
+              if (rewardedAd != null) {
+                // 広告を表示し、同時に裏側で解析を開始
+                state = state.copyWith(
+                  isAdLoading: true,
+                  isAnalyzingInBackground: true,
+                );
+
+                // 広告を表示
+                try {
+                  // 裏側で解析を開始（非同期で実行）
+                  _extractSakeInfoInBackground(imageFile);
+
+                  // 広告を表示（ユーザーはこれを見ている間に解析が進む）
+                  await AdUtils.showRewardedAd(
+                    rewardedAd,
+                    onUserEarnedReward: (reward) {
+                      logger.info('ユーザーが報酬を獲得しました: ${reward.amount}');
+                    },
+                  );
+
+                  return; // 処理完了（残りの処理はコールバックで行われる）
+                } catch (e) {
+                  if (!isCurrent()) return;
+                  logger.shout('広告の表示に失敗しました: $e');
+                  // 実行中の抽出を継続し、同じ写真の二重送信を避ける。
+                  // 抽出済み/失敗済みなら、待機表示へ巻き戻さない。
+                  final extracting = state.isAnalyzingInBackground;
+                  state = state.copyWith(
+                    isAdLoading: false,
+                    isLoading: extracting,
+                    isExtractingInfo: extracting,
+                    isAnalyzingInBackground: false,
+                  );
+                  if (state.extractedSakes.isNotEmpty &&
+                      !state.isAnalyzingInBackground) {
+                    await _fetchSakeDetails(state.extractedSakes);
+                  }
+                }
+
+                return; // 処理完了
+              }
+            } catch (e) {
+              if (!isCurrent()) return;
+              logger.shout('広告処理でエラーが発生しました: $e');
+              state = state.copyWith(
+                isAdLoading: false,
+                isAnalyzingInBackground: false,
+              );
+            }
+          } else {
+            // ユーザーが広告視聴を拒否した場合
+            logger.info('ユーザーが広告視聴を拒否しました');
+
+            // SnackBarで通知
+            SnackBarUtils.showWarningSnackBar(
+              context,
+              message: context.l10n.analysisCancelled,
+              duration: const Duration(seconds: 4),
+            );
+
+            // 解析をキャンセルして処理を終了
+            state = state.copyWith(
+              isLoading: false,
+              isExtractingInfo: false,
+              isGettingDetails: false,
+              isAdLoading: false,
+              isAnalyzingInBackground: false,
+            );
+            return;
+          }
+        } else {
+          // No ad needed, proceed directly to analysis
+          await _extractSakeInfoInForeground(imageFile);
+          return;
+        }
+
+        // 広告のロードに失敗した場合や広告がnullの場合はここに到達する
+        // 通常の処理を続行
+        await _extractSakeInfoInForeground(imageFile);
+      } catch (e) {
+        if (!isCurrent()) return;
+        state = state.copyWith(
+          isLoading: false,
+          isExtractingInfo: false,
+          isGettingDetails: false,
+          isAdLoading: false,
+          isAnalyzingInBackground: false,
+          errorMessage: e is SakeCandidateResolutionException
+              ? e.message
+              : context.l10n.errorMenuExtraction,
+        );
+      }
+    } catch (error) {
+      if (!isCurrent() || !context.mounted) return;
+      logger.warning('メニュー解析の開始に失敗しました: $error');
       state = state.copyWith(
         isLoading: false,
         isExtractingInfo: false,
         isGettingDetails: false,
         isAdLoading: false,
         isAnalyzingInBackground: false,
-        errorMessage: e is SakeCandidateResolutionException
-            ? e.message
-            : context.l10n.errorMenuExtraction,
+        errorMessage: context.l10n.errorMenuExtraction,
       );
+    } finally {
+      if (isCurrent()) _startingAnalysis = false;
     }
   }
 
@@ -881,10 +893,12 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   /// フォアグラウンドでメニュー解析を実行する
   Future<void> _extractSakeInfoInForeground(File imageFile) async {
     final usageFlow = _usageFlow;
+    bool isCurrent() => mounted && _usageFlow == usageFlow && usageFlow != null;
+    final repository = sakeMenuRecognitionRepository;
     try {
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes = await sakeMenuRecognitionRepository
-          .extractSakeInfo(imageFile);
+      final extractedSakes = await repository.extractSakeInfo(imageFile);
+      if (!isCurrent()) return;
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         if (_usageFlow == usageFlow) _usageExtractionDone = true;
@@ -932,9 +946,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
       // マスター解決を待たず、抽出できた酒名をまず履歴へ確定保存する。
       await addCurrentAnalysisToHistory(analysisStatus: 'details_pending');
+      if (!isCurrent()) return;
       // 詳細情報を取得
       await _fetchSakeDetails(extractedSakes);
     } catch (e) {
+      if (!isCurrent()) return;
       if (_usageFlow == usageFlow) _usageExtractionDone = true;
       AppAnalytics.instance.event(
         'menu',
@@ -963,12 +979,14 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   /// バックグラウンドでメニュー解析を実行する（広告表示中に実行）
   Future<void> _extractSakeInfoInBackground(File imageFile) async {
     final usageFlow = _usageFlow;
+    bool isCurrent() => mounted && _usageFlow == usageFlow && usageFlow != null;
+    final repository = sakeMenuRecognitionRepository;
     try {
       logger.info('バックグラウンドでメニュー解析を開始します');
 
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes = await sakeMenuRecognitionRepository
-          .extractSakeInfo(imageFile);
+      final extractedSakes = await repository.extractSakeInfo(imageFile);
+      if (!isCurrent()) return;
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         if (_usageFlow == usageFlow) _usageExtractionDone = true;
@@ -1014,6 +1032,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         hasScrolledToResults: false,
       );
       await addCurrentAnalysisToHistory(analysisStatus: 'details_pending');
+      if (!isCurrent()) return;
 
       if (state.isAdLoading) {
         logger.info('広告表示中のため、解析結果を保存し広告終了を待ちます');
@@ -1027,6 +1046,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         await _fetchSakeDetails(extractedSakes);
       }
     } catch (e) {
+      if (!isCurrent()) return;
       if (_usageFlow == usageFlow) _usageExtractionDone = true;
       AppAnalytics.instance.event(
         'menu',
@@ -1117,6 +1137,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     final analysisId = _activeAnalysisId ??=
         'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
     final analysisDate = _activeAnalysisDate ??= DateTime.now();
+    final generation = _detailsGeneration;
+    bool isCurrent() => mounted && generation == _detailsGeneration;
     try {
       final existing = state.menuAnalysisHistory
           .where((item) => item.id == analysisId)
@@ -1133,6 +1155,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           logger.warning('メニュー履歴画像の保存に失敗しました: $e');
         }
       }
+      if (!isCurrent()) return;
       final savedSakes = buildMenuHistorySakes(
         extracted: state.extractedSakes
             .where((sake) => sake.name?.trim().isNotEmpty == true)
@@ -1180,6 +1203,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 : 'partial'),
       );
       await _historyRepository.upsert(newHistoryItem);
+      if (!isCurrent()) return;
       _scheduleHistorySync();
       final updatedHistory = [
         newHistoryItem,
@@ -1195,6 +1219,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       );
       logger.info('メニュー解析履歴に追加しました: ${newHistoryItem.id}');
     } catch (e) {
+      if (!isCurrent()) return;
       logger.shout('メニュー解析履歴への追加に失敗しました: $e');
       _pendingHistoryItem = MenuAnalysisHistoryItem(
         id: analysisId,

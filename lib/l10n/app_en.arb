@@ -546,5 +546,37 @@
   "showCaptureGuide": "Show guide",
   "labelSearchMode": "Label Scan",
   "menuCaptureTitle": "Capture the menu",
-  "menuCaptureDescription": "Capture the whole menu so the sake names are readable."
+  "menuCaptureDescription": "Capture the whole menu so the sake names are readable.",
+  "menuCaptureTagline": "Find your next sake\nfrom the menu",
+  "menuCapturePhoto": "Photograph a menu",
+  "menuChoosePhoto": "Choose a photo",
+  "menuResumePhoto": "Review selected photo",
+  "menuRecentAnalyses": "Recent analyses",
+  "menuViewMore": "View more",
+  "menuDatedHistory": "Menu from {date}",
+  "menuConfirmPhoto": "Review photo",
+  "menuZoomPhoto": "Tap to enlarge",
+  "menuRetakePhoto": "Retake",
+  "menuCropPhoto": "Crop",
+  "menuAnalyzePhoto": "Analyze this photo",
+  "menuPhotoCropped": "Cropped",
+  "menuRestorePhoto": "Restore original",
+  "menuCropHeading": "Select the area to read",
+  "menuCropHint": "Drag the corners to adjust the area",
+  "menuConfirmCrop": "Use this area",
+  "menuOriginalPreserved": "Your original photo is preserved",
+  "menuAnalyzingTitle": "Analyzing",
+  "menuAnalyzingHeading": "Reading your menu",
+  "menuAnalyzingDescription": "Checking information about the sake found",
+  "menuStopAnalysis": "Stop analysis",
+  "menuPhotoPreserved": "Your photo will be kept",
+  "menuCropFailed": "Could not crop. Your photo is kept. Please try again.",
+  "menuPhotoLoadFailed": "Could not load the photo. Please choose it again.",
+  "@menuDatedHistory": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -3247,6 +3247,156 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'日本酒の名前が読めるように、メニュー全体を撮影してください。'**
   String get menuCaptureDescription;
+
+  /// No description provided for @menuCaptureTagline.
+  ///
+  /// In ja, this message translates to:
+  /// **'メニューから、\n好みのお酒が見つかる'**
+  String get menuCaptureTagline;
+
+  /// No description provided for @menuCapturePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'メニューを撮影'**
+  String get menuCapturePhoto;
+
+  /// No description provided for @menuChoosePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'写真から選ぶ'**
+  String get menuChoosePhoto;
+
+  /// No description provided for @menuResumePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'選択した写真を確認'**
+  String get menuResumePhoto;
+
+  /// No description provided for @menuRecentAnalyses.
+  ///
+  /// In ja, this message translates to:
+  /// **'過去の解析'**
+  String get menuRecentAnalyses;
+
+  /// No description provided for @menuViewMore.
+  ///
+  /// In ja, this message translates to:
+  /// **'もっと見る'**
+  String get menuViewMore;
+
+  /// No description provided for @menuDatedHistory.
+  ///
+  /// In ja, this message translates to:
+  /// **'{date}のメニュー'**
+  String menuDatedHistory(String date);
+
+  /// No description provided for @menuConfirmPhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'写真を確認'**
+  String get menuConfirmPhoto;
+
+  /// No description provided for @menuZoomPhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'タップで拡大'**
+  String get menuZoomPhoto;
+
+  /// No description provided for @menuRetakePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'撮り直す'**
+  String get menuRetakePhoto;
+
+  /// No description provided for @menuCropPhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'切り抜き'**
+  String get menuCropPhoto;
+
+  /// No description provided for @menuAnalyzePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'この写真で解析する'**
+  String get menuAnalyzePhoto;
+
+  /// No description provided for @menuPhotoCropped.
+  ///
+  /// In ja, this message translates to:
+  /// **'切り抜き済み'**
+  String get menuPhotoCropped;
+
+  /// No description provided for @menuRestorePhoto.
+  ///
+  /// In ja, this message translates to:
+  /// **'元に戻す'**
+  String get menuRestorePhoto;
+
+  /// No description provided for @menuCropHeading.
+  ///
+  /// In ja, this message translates to:
+  /// **'読み取りたい範囲に合わせる'**
+  String get menuCropHeading;
+
+  /// No description provided for @menuCropHint.
+  ///
+  /// In ja, this message translates to:
+  /// **'四隅をドラッグして範囲を調整'**
+  String get menuCropHint;
+
+  /// No description provided for @menuConfirmCrop.
+  ///
+  /// In ja, this message translates to:
+  /// **'この範囲で決定'**
+  String get menuConfirmCrop;
+
+  /// No description provided for @menuOriginalPreserved.
+  ///
+  /// In ja, this message translates to:
+  /// **'元の写真は残ります'**
+  String get menuOriginalPreserved;
+
+  /// No description provided for @menuAnalyzingTitle.
+  ///
+  /// In ja, this message translates to:
+  /// **'解析中'**
+  String get menuAnalyzingTitle;
+
+  /// No description provided for @menuAnalyzingHeading.
+  ///
+  /// In ja, this message translates to:
+  /// **'メニューを読み取っています'**
+  String get menuAnalyzingHeading;
+
+  /// No description provided for @menuAnalyzingDescription.
+  ///
+  /// In ja, this message translates to:
+  /// **'見つかったお酒の情報を確認しています'**
+  String get menuAnalyzingDescription;
+
+  /// No description provided for @menuStopAnalysis.
+  ///
+  /// In ja, this message translates to:
+  /// **'解析を中止'**
+  String get menuStopAnalysis;
+
+  /// No description provided for @menuPhotoPreserved.
+  ///
+  /// In ja, this message translates to:
+  /// **'写真は消えません'**
+  String get menuPhotoPreserved;
+
+  /// No description provided for @menuCropFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'切り抜きできませんでした。写真を残したまま、もう一度お試しください。'**
+  String get menuCropFailed;
+
+  /// No description provided for @menuPhotoLoadFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'写真を読み込めませんでした。写真を選び直してください。'**
+  String get menuPhotoLoadFailed;
 }
 
 class _AppLocalizationsDelegate

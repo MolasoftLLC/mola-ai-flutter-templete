@@ -15,7 +15,6 @@ import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/sake/master.dart' as sake_master;
 import '../../common/utils/custom_image_picker.dart';
-import '../../common/utils/image_cropper_service.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/sake_label_scan.dart';
@@ -888,20 +887,11 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   Future<void> _submitImage(File file) async {
     if (_isMenuCapture) {
-      AppAnalytics.instance.event('scan', 'crop', kind: 'start');
-      final croppedFile = await ImageCropperService.cropAndRotateImage(
-        file.path,
-      );
-      if (!mounted || croppedFile == null) {
-        AppAnalytics.instance.event('scan', 'crop', kind: 'cancel');
-        return;
-      }
-      AppAnalytics.instance.event('scan', 'crop', kind: 'success');
       await Navigator.of(context).pushReplacement<void, void>(
         MaterialPageRoute(
           builder: (_) => AnalyticsScreen(
             name: 'menu',
-            child: MenuSearchPage.wrapped(initialImage: croppedFile),
+            child: MenuSearchPage.wrapped(initialImage: file),
           ),
         ),
       );

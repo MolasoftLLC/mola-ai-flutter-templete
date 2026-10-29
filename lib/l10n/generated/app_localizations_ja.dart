@@ -1661,4 +1661,81 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get menuCaptureDescription => '日本酒の名前が読めるように、メニュー全体を撮影してください。';
+
+  @override
+  String get menuCaptureTagline => 'メニューから、\n好みのお酒が見つかる';
+
+  @override
+  String get menuCapturePhoto => 'メニューを撮影';
+
+  @override
+  String get menuChoosePhoto => '写真から選ぶ';
+
+  @override
+  String get menuResumePhoto => '選択した写真を確認';
+
+  @override
+  String get menuRecentAnalyses => '過去の解析';
+
+  @override
+  String get menuViewMore => 'もっと見る';
+
+  @override
+  String menuDatedHistory(String date) {
+    return '$dateのメニュー';
+  }
+
+  @override
+  String get menuConfirmPhoto => '写真を確認';
+
+  @override
+  String get menuZoomPhoto => 'タップで拡大';
+
+  @override
+  String get menuRetakePhoto => '撮り直す';
+
+  @override
+  String get menuCropPhoto => '切り抜き';
+
+  @override
+  String get menuAnalyzePhoto => 'この写真で解析する';
+
+  @override
+  String get menuPhotoCropped => '切り抜き済み';
+
+  @override
+  String get menuRestorePhoto => '元に戻す';
+
+  @override
+  String get menuCropHeading => '読み取りたい範囲に合わせる';
+
+  @override
+  String get menuCropHint => '四隅をドラッグして範囲を調整';
+
+  @override
+  String get menuConfirmCrop => 'この範囲で決定';
+
+  @override
+  String get menuOriginalPreserved => '元の写真は残ります';
+
+  @override
+  String get menuAnalyzingTitle => '解析中';
+
+  @override
+  String get menuAnalyzingHeading => 'メニューを読み取っています';
+
+  @override
+  String get menuAnalyzingDescription => '見つかったお酒の情報を確認しています';
+
+  @override
+  String get menuStopAnalysis => '解析を中止';
+
+  @override
+  String get menuPhotoPreserved => '写真は消えません';
+
+  @override
+  String get menuCropFailed => '切り抜きできませんでした。写真を残したまま、もう一度お試しください。';
+
+  @override
+  String get menuPhotoLoadFailed => '写真を読み込めませんでした。写真を選び直してください。';
 }

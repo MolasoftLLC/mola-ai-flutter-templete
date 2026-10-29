@@ -1744,4 +1744,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get menuCaptureDescription =>
       'Capture the whole menu so the sake names are readable.';
+
+  @override
+  String get menuCaptureTagline => 'Find your next sake\nfrom the menu';
+
+  @override
+  String get menuCapturePhoto => 'Photograph a menu';
+
+  @override
+  String get menuChoosePhoto => 'Choose a photo';
+
+  @override
+  String get menuResumePhoto => 'Review selected photo';
+
+  @override
+  String get menuRecentAnalyses => 'Recent analyses';
+
+  @override
+  String get menuViewMore => 'View more';
+
+  @override
+  String menuDatedHistory(String date) {
+    return 'Menu from $date';
+  }
+
+  @override
+  String get menuConfirmPhoto => 'Review photo';
+
+  @override
+  String get menuZoomPhoto => 'Tap to enlarge';
+
+  @override
+  String get menuRetakePhoto => 'Retake';
+
+  @override
+  String get menuCropPhoto => 'Crop';
+
+  @override
+  String get menuAnalyzePhoto => 'Analyze this photo';
+
+  @override
+  String get menuPhotoCropped => 'Cropped';
+
+  @override
+  String get menuRestorePhoto => 'Restore original';
+
+  @override
+  String get menuCropHeading => 'Select the area to read';
+
+  @override
+  String get menuCropHint => 'Drag the corners to adjust the area';
+
+  @override
+  String get menuConfirmCrop => 'Use this area';
+
+  @override
+  String get menuOriginalPreserved => 'Your original photo is preserved';
+
+  @override
+  String get menuAnalyzingTitle => 'Analyzing';
+
+  @override
+  String get menuAnalyzingHeading => 'Reading your menu';
+
+  @override
+  String get menuAnalyzingDescription =>
+      'Checking information about the sake found';
+
+  @override
+  String get menuStopAnalysis => 'Stop analysis';
+
+  @override
+  String get menuPhotoPreserved => 'Your photo will be kept';
+
+  @override
+  String get menuCropFailed =>
+      'Could not crop. Your photo is kept. Please try again.';
+
+  @override
+  String get menuPhotoLoadFailed =>
+      'Could not load the photo. Please choose it again.';
 }
