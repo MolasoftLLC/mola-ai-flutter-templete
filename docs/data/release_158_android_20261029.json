@@ -1,0 +1,43 @@
+{
+  "packageName": "okinawa.molasoft_ai.sake",
+  "versionCode": 158,
+  "versionName": "5.0.29",
+  "track": "internal",
+  "sha256": "4b54d4ad5e650817ea8b7441a1af8d5f6f0304d2eec723a90dabdbb3f0802e51",
+  "bytes": 74780544,
+  "committedAt": "2026-10-29T08:01:37.091Z",
+  "internal": {
+    "track": "internal",
+    "releases": [
+      {
+        "name": "5.0.29",
+        "versionCodes": [
+          "158"
+        ],
+        "releaseNotes": [
+          {
+            "language": "ja-JP",
+            "text": "ホームのデモ機能（比較カート）を一時的に非表示にしました。利用状況の継続・再利用の計測を追加しました。"
+          }
+        ],
+        "status": "completed"
+      }
+    ]
+  },
+  "production": {
+    "track": "production",
+    "releases": [
+      {
+        "name": "5.0.24",
+        "versionCodes": [
+          "151"
+        ],
+        "status": "completed"
+      }
+    ]
+  },
+  "productionUnchanged": true,
+  "artifactSignatureVerified": true,
+  "mapsKeyResolved": true,
+  "deviceInstallVerified": false
+}

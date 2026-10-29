@@ -13,3 +13,15 @@
 - CLI exportはNo Accountsで失敗したが、完成済みアーカイブをOrganizerで配布し成功。証明書・アカウント設定は変更していない。
 - Organizerで `TestFlight Internal Only` により送信。2026-10-29 16:46 JST、「App upload complete」と同ビルドの「Uploaded to Apple」を確認。
 - Apple処理完了とTestFlight利用可能状態は未確認。App Store審査提出・一般公開はしていない。
+
+## Android
+
+同じコミットの5.0.29（158）から、`command/android_release.sh`で署名付きAABを作成。必要なJava 17をこのMacへ導入した。アプリの追加コード変更はなし。元の署名・Firebase・地図設定を非公開のローカル設定として利用し、秘密値を出力・コミットしていない。
+
+- パッケージ `okinawa.molasoft_ai.sake`、5.0.29（158）、非空の解決済み地図キーを結合後マニフェストで確認。
+- AABの署名検証成功。アップロード後にGoogleが返したバージョンコードとSHA256が作成物に一致。
+- Google Play Developer APIの編集検証とcommitが成功。新たな編集セッションの再取得でinternalのname=`5.0.29`、status=`completed`、versionCodes=`[158]`を確認。
+- productionは5.0.24（151）のままで、取得前後の一致を確認。本番トラックへは送っていない。
+- 実機でのインストール・更新反映は未確認。ストア情報、画像、テスターの権限、契約・ポリシー申告は変更していない。
+
+送信・反映記録: [release_158_android_20261029.json](data/release_158_android_20261029.json)。
