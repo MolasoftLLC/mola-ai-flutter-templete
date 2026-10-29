@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -32,6 +33,11 @@ class MyHttpOverrides extends HttpOverrides {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks([
+      'Yuji Syuku',
+    ], await rootBundle.loadString('assets/fonts/YujiSyuku-OFL.txt'));
+  });
   // 画面の向きを縦に固定
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 

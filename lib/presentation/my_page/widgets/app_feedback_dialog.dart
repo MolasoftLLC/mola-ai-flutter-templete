@@ -10,11 +10,48 @@ import '../../../infrastructure/api_client/api_client.dart';
 
 const _navy = Color(0xFF1D3567);
 
-Future<void> showAppFeedbackDialog(BuildContext context) async {
+enum AppFeedbackTopic {
+  general,
+  sakeCorrection,
+  sakeBrandAddition;
+
+  String title(bool english) => switch (this) {
+    general => english ? 'Feedback' : 'フィードバック',
+    sakeCorrection => english ? 'Report incorrect information' : '間違いを教えてあげる',
+    sakeBrandAddition =>
+      english ? 'Suggest another sake brand' : '追加の銘柄を教えてあげる',
+  };
+
+  String hint(bool english) => switch (this) {
+    general =>
+      english
+          ? 'Tell us about improvements or issues with the app!'
+          : 'アプリの改善点や不具合などを教えてください！',
+    sakeCorrection =>
+      english
+          ? 'Tell us which brand or information is incorrect, and what it should be. A source URL is welcome.'
+          : '間違っている銘柄名や内容と、正しい情報を教えてください。参考URLもあればお願いします。',
+    sakeBrandAddition =>
+      english
+          ? 'Tell us the brand or brewery you would like added. A source URL is welcome.'
+          : '追加してほしい銘柄名や蔵元名を教えてください。参考URLもあればお願いします。',
+  };
+
+  String get contentPrefix => switch (this) {
+    general => '',
+    sakeCorrection => '【日本酒を旅する：間違いの報告】\n',
+    sakeBrandAddition => '【日本酒を旅する：追加の銘柄】\n',
+  };
+}
+
+Future<void> showAppFeedbackDialog(
+  BuildContext context, {
+  AppFeedbackTopic topic = AppFeedbackTopic.general,
+}) async {
   final sent = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => const _AppFeedbackDialog(),
+    builder: (_) => _AppFeedbackDialog(topic: topic),
   );
   if (sent == true && context.mounted) {
     final english = Localizations.localeOf(context).languageCode == 'en';
@@ -28,7 +65,8 @@ Future<void> showAppFeedbackDialog(BuildContext context) async {
 }
 
 class _AppFeedbackDialog extends StatefulWidget {
-  const _AppFeedbackDialog();
+  const _AppFeedbackDialog({required this.topic});
+  final AppFeedbackTopic topic;
   @override
   State<_AppFeedbackDialog> createState() => _AppFeedbackDialogState();
 }
@@ -77,7 +115,7 @@ class _AppFeedbackDialogState extends State<_AppFeedbackDialog> {
       await AppFeedbackRepository(context.read<ApiClient>()).submit(
         identity: _identity!,
         requestId: _requestId,
-        content: _controller.text,
+        content: '${widget.topic.contentPrefix}${_controller.text.trim()}',
       );
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
@@ -123,7 +161,7 @@ class _AppFeedbackDialogState extends State<_AppFeedbackDialog> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         scrollable: true,
         title: Text(
-          english ? 'Feedback' : 'フィードバック',
+          widget.topic.title(english),
           style: const TextStyle(color: _navy, fontWeight: FontWeight.bold),
         ),
         content: Form(
@@ -151,7 +189,7 @@ class _AppFeedbackDialogState extends State<_AppFeedbackDialog> {
                 enabled: !_sending,
                 minLines: 4,
                 maxLines: 7,
-                maxLength: 2000,
+                maxLength: 2000 - widget.topic.contentPrefix.length,
                 onTapOutside: (_) =>
                     FocusManager.instance.primaryFocus?.unfocus(),
                 onChanged: (_) {
@@ -164,9 +202,7 @@ class _AppFeedbackDialogState extends State<_AppFeedbackDialog> {
                           : 'フィードバック内容を入力してください。')
                     : null,
                 decoration: InputDecoration(
-                  hintText: english
-                      ? 'Tell us about improvements or issues with the app!'
-                      : 'アプリの改善点や不具合などを教えてください！',
+                  hintText: widget.topic.hint(english),
                   hintStyle: const TextStyle(color: Color(0xFF8B96A6)),
                   filled: true,
                   fillColor: const Color(0xFFF5F7FA),

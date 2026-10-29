@@ -82,6 +82,14 @@ void main() {
         ],
       );
       expect(result.counts, {15: 2});
+      expect(result.brandIdsByPrefecture, {
+        15: {11},
+      });
+      expect(result.productsByPrefecture[15]!.map((sake) => sake.impression), [
+        '初回',
+        '同じ銘柄の別商品',
+      ]);
+      expect(result.productsByPrefecture.keys, [15]);
       expect(result.unresolvedRecords, 1);
     },
   );
@@ -94,4 +102,26 @@ void main() {
     expect(sakeJourneyColor(10), japanMapOrange);
     expect(sakeJourneyColor(50), japanMapOrange);
   });
+  test(
+    'record list opens the canonical product without changing the saved record',
+    () {
+      const original = Sake(sakeId: 100, savedId: 'personal', impression: '記録');
+      final result = aggregateSakeJourney(
+        [original],
+        [
+          const SakeProductOrigin(
+            sakeId: 100,
+            canonicalSakeId: 1,
+            brandId: 11,
+            prefectureCode: 15,
+          ),
+        ],
+      );
+      final product = result.productsByPrefecture[15]!.single;
+      expect(product.sakeId, 1);
+      expect(product.savedId, 'personal');
+      expect(product.impression, '記録');
+      expect(original.sakeId, 100);
+    },
+  );
 }

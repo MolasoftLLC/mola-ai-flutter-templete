@@ -14,6 +14,7 @@ class HomeFeatureGuide {
   final myPageKey = GlobalKey();
   final recommendationsKey = GlobalKey();
   final timelineKey = GlobalKey();
+  final japanSakeKey = GlobalKey();
   final homeScrollController = ScrollController();
   bool _showing = false;
   static const _preferenceKey = 'home_feature_guide_shown_v5';
@@ -86,7 +87,9 @@ class HomeFeatureGuide {
         final box = targetContext?.findRenderObject();
         if (box is! RenderBox || !box.attached || !box.hasSize) return null;
         final rect = box.localToGlobal(Offset.zero) & box.size;
-        if ((key == recommendationsKey || key == timelineKey) &&
+        if ((key == recommendationsKey ||
+                key == timelineKey ||
+                key == japanSakeKey) &&
             targetContext != null) {
           final viewport = Scrollable.maybeOf(
             targetContext,
@@ -108,6 +111,7 @@ class HomeFeatureGuide {
         [myPageKey],
         [recommendationsKey],
         [timelineKey],
+        [japanSakeKey],
       ];
       if (targetKeys
           .take(5)
@@ -121,7 +125,7 @@ class HomeFeatureGuide {
         barrierColor: Colors.transparent,
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => FeatureGuideOverlay(
-          bottomMessageSteps: const {5, 6},
+          bottomMessageSteps: const {5, 6, 7},
           titles: const [
             '高速ラベル検索',
             'いろいろな条件で検索',
@@ -130,6 +134,7 @@ class HomeFeatureGuide {
             'マイページ',
             'あなたが好きそうな日本酒',
             'タイムライン',
+            '日本酒を旅する',
           ],
           messages: const [
             'ラベルから高速検索！今までの体感３倍の速度！',
@@ -139,12 +144,14 @@ class HomeFeatureGuide {
             '保存したお酒やメニュー解析履歴はここから。好みの設定、ポイントやバッジもマイページで確認できます。',
             'マイページで好きなお酒の傾向を登録すると、あなたに合いそうな日本酒がここに表示されます！',
             'みんなが飲んだ日本酒を見られます。左右にスライドして気になるお酒を探してみましょう。「もっと見る」をタップすると、さらに多くの投稿を見られます！',
+            '県をタップすると、その県の銘柄や商品を探せます。「地図からお酒を探す」では地図を拡大できます。記録した商品数で県の色が変わり、10商品以上でオレンジに！県別の記録一覧も見られます。',
           ],
           circleSteps: const {0},
-          outlineSteps: const {2, 3, 4},
+          outlineSteps: const {2, 3, 4, 7},
           prepareStep: (step) async {
             if (step == 5) await _scrollToSection(recommendationsKey);
             if (step == 6) await _scrollToSection(timelineKey);
+            if (step == 7) await _scrollToSection(japanSakeKey);
           },
           readTargets: (step) => [
             for (final key in targetKeys[step])

@@ -34,9 +34,10 @@ class SavedSakeDetailPage extends StatefulWidget {
   final Sake sake;
 
   /// マスター未紐付けの保存酒は、ユーザーが候補を選んで紐付ける。
-  static Widget forSake(Sake sake) {
+  static Widget forSake(Sake sake, {bool recordRecentView = false}) {
     if ((sake.sakeId ?? 0) <= 0) return UnlinkedSavedSakePage(sake: sake);
     return SakeMasterDetailPage(
+      recordRecentView: recordRecentView,
       venueSake: VenueSake(
         sakeId: sake.sakeId,
         name: sake.name ?? '名称不明',

@@ -11,12 +11,21 @@ class JapanCatalogList<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.emptyText,
     this.firstPage,
+    this.headerBuilder,
   });
   final Future<SakeCatalogPage<T>> Function(int? cursor) loadPage;
   final Future<SakeCatalogPage<T>>? firstPage;
   final Object Function(T item) itemId;
   final Widget Function(T item) itemBuilder;
   final String emptyText;
+  final Widget Function(
+    List<T> items,
+    bool hasMore,
+    bool loading,
+    bool failed,
+    VoidCallback loadMore,
+  )?
+  headerBuilder;
   @override
   State<JapanCatalogList<T>> createState() => _JapanCatalogListState<T>();
 }
@@ -34,6 +43,7 @@ class _JapanCatalogListState<T> extends State<JapanCatalogList<T>> {
   }
 
   Future<void> _load([Future<SakeCatalogPage<T>>? first]) async {
+    if (_loading && first == null && _loaded) return;
     setState(() {
       _loading = true;
       _failed = false;
@@ -61,6 +71,14 @@ class _JapanCatalogListState<T> extends State<JapanCatalogList<T>> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (widget.headerBuilder != null)
+          widget.headerBuilder!(
+            _items.values.toList(growable: false),
+            _next != null,
+            _loading,
+            _failed,
+            () => _load(),
+          ),
         for (final item in _items.values) widget.itemBuilder(item),
         if (_loading)
           const Padding(

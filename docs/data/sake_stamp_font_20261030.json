@@ -1,0 +1,13 @@
+{
+  "family": "Yuji Syuku",
+  "appFamilyAlias": "SakeSeal",
+  "fontSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/YujiSyuku-Regular.ttf",
+  "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/OFL.txt",
+  "upstream": "https://github.com/Kinutafontfactory/Yuji",
+  "license": "SIL Open Font License 1.1",
+  "downloadedOn": "2026-10-30",
+  "fontBytes": 8430348,
+  "fontSha256": "82728ebafc8c97391e2dab633414a806f344b8e4e2227d307179f07b548fca61",
+  "licenseSha256": "ef7c85c72ae94381c8bc4832ae4e6fbabdeafa2bb8a31313cd75dce95a690256",
+  "modifiedFont": false
+}
