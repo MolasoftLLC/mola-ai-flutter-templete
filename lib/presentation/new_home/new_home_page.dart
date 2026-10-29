@@ -28,7 +28,6 @@ import '../timeline/envy_result.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'new_home_page_notifier.dart';
 import 'recent_sake_list_page.dart';
-import '../sake_comparison/sake_comparison_page.dart';
 import 'widgets/home_notice_ticker.dart';
 import '../common/widgets/sake_card_rail.dart';
 
@@ -148,36 +147,6 @@ class _NewHomePageState extends State<NewHomePage> {
                 padding: const EdgeInsets.only(top: 8, bottom: 34),
                 children: [
                   const _HomePromotionBanners(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Material(
-                      color: const Color(0xFFEAF0F6),
-                      borderRadius: BorderRadius.circular(14),
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.shopping_basket_outlined,
-                          color: _brandColor,
-                        ),
-                        title: const Text(
-                          'お酒えらび・デモ',
-                          style: TextStyle(
-                            color: _brandColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: const Text('説明カードを集めて、今の気分で比較'),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: _brandColor,
-                        ),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const SakeComparisonPage(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                   const _ObiDivider(topPadding: 0),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
