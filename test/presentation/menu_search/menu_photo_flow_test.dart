@@ -373,6 +373,7 @@ void main() {
   });
 
   testWidgets('履歴の場所を選び直し、座標付きで保存し、失敗時は再試行できる', (tester) async {
+    await size(tester);
     var calls = 0;
     DrinkingPlace? saved;
     const place = DrinkingPlace(
@@ -405,6 +406,7 @@ void main() {
         ),
       ),
     );
+    await preview(tester, 'place-registered');
     await tester.tap(find.text('元の店舗'));
     await tester.pumpAndSettle();
     expect(saved, isNull);
@@ -415,6 +417,26 @@ void main() {
     expect(saved, place);
     expect(saved!.latitude, 35);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          backgroundColor: MenuPhotoStyle.blue,
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: MenuResultPlaceField(
+              history: MenuAnalysisHistoryItem(
+                id: 'unregistered',
+                date: DateTime(2026),
+                sakes: [],
+              ),
+              onSave: (_) async {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await preview(tester, 'place-add');
   });
 
   testWidgets('写真全体を確認し、明示的に押すまで解析しない。拡大できる', (tester) async {

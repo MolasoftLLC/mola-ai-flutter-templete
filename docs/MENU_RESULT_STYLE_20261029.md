@@ -11,3 +11,9 @@
 - 163配信後の変更。まだビルド・アップロードは行っていない。
 
 [共通カードの展開表示（履歴画面）](images/menu_result_style_20261029/shared_card_expanded.png)
+
+## 場所登録アイコン
+
+場所入力欄のアイコンを黄色（#FFD54F）へ変更。未登録はMaterial標準のadd_location_alt_outlined（ピン＋）、登録済みはlocation_on_outlined（ピン）で追加と変更を区別。保存中の表示も黄色、操作不可時は淡色を使用。解析直後と履歴で共通適用。場所の保存・失敗時再試行の既存テスト成功、変更箇所analyze指摘0。未配信。
+
+[未登録のピン＋](images/menu_result_style_20261029/place_add.png)

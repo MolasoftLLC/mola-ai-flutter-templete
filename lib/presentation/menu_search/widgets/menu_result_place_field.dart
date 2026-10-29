@@ -5,6 +5,7 @@ import '../../../common/localization/localization_extensions.dart';
 import '../../../domain/eintities/menu_analysis_history.dart';
 import '../../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../my_page/widgets/place_picker_sheet.dart';
+import 'menu_photo_style.dart';
 
 class MenuResultPlaceField extends StatefulWidget {
   const MenuResultPlaceField({
@@ -52,6 +53,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
   Widget build(BuildContext context) {
     final name =
         widget.history?.drinkingPlace?.displayName ?? widget.history?.storeName;
+    final hasPlace = name?.trim().isNotEmpty == true;
     final enabled = !_saving && widget.history != null;
     return Semantics(
       button: true,
@@ -60,7 +62,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
         onTap: enabled ? _pickPlace : null,
         borderRadius: BorderRadius.circular(12),
         child: InputDecorator(
-          isEmpty: name?.trim().isNotEmpty != true,
+          isEmpty: !hasPlace,
           decoration: InputDecoration(
             labelText: context.l10n.placeConsumed,
             floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -76,18 +78,21 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
                       dimension: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white70,
+                        color: MenuPhotoStyle.yellow,
                       ),
                     ),
                   )
                 : IconButton(
-                    tooltip: name?.trim().isNotEmpty == true
+                    tooltip: hasPlace
                         ? context.l10n.changeConsumedPlace
                         : context.l10n.addConsumedPlace,
                     onPressed: enabled ? _pickPlace : null,
-                    icon: const Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.white70,
+                    color: MenuPhotoStyle.yellow,
+                    disabledColor: Colors.white38,
+                    icon: Icon(
+                      hasPlace
+                          ? Icons.location_on_outlined
+                          : Icons.add_location_alt_outlined,
                     ),
                   ),
             border: OutlineInputBorder(
@@ -96,9 +101,7 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
             ),
           ),
           child: Text(
-            name?.trim().isNotEmpty == true
-                ? name!
-                : context.l10n.placeConsumedHint,
+            hasPlace ? name! : context.l10n.placeConsumedHint,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Colors.white, fontSize: 15),
