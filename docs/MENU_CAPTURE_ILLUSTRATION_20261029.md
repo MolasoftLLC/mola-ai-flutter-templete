@@ -15,3 +15,9 @@
 ## 生成プロンプト（原文）
 
 Use case: illustration-story. Asset type: small hand-drawn illustration for the SAKEPEDIA mobile app's 'photograph a menu' button. Create a charming, clean hand-drawn editorial doodle clearly showing ONE human hand holding a smartphone aimed at an upright Japanese restaurant drinks menu card. The menu card should be behind and slightly to the left of the phone, and the phone screen visibly contains the same menu rows with four tiny orange viewfinder corner marks. The hand enters from the lower right. Main subject is the menu being photographed, not a standalone camera icon. Minimal irregular rounded ink strokes, warm approachable Japanese cafe stationery illustration, restrained navy #17395F outlines, orange #FF914D highlights, white/very pale warm fills in paper and smartphone, very light peach hand. Horizontally balanced compact composition with all subjects contained, clearly readable when displayed at about 150 by 90 pixels. Actual transparent background outside the subjects, no background rectangle or scene, no shadows, no gradients, no decorative flowers, no bottles, no extra hands or fingers. No text, no letters, no words, no numbers, no watermark. Use small drawn horizontal strokes and dots to suggest menu rows. Crisp generous linework suitable for a small UI illustration.
+
+## 追加デザイン案：押せるボタンらしい厚み
+
+「もう少しボタン感を」に対応。白背景・角丸24・枠色・イラストは維持し、下側に5pxの濃いオレンジの厚みと柔らかな影を追加。文字の横にオレンジの丸い矢印を置き、撮影へ進む操作を明示。タップ中は淡いオレンジで反応する。
+
+[調整後のデザイン](images/menu_capture_illustration_20261029/entry-raised.png)。入口の既存操作テスト成功、analyzeのエラー0。イラストの再生成なし。今回はデザイン調整のみ、配信・サーバー更新・版番号変更なし。

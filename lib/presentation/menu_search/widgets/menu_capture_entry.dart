@@ -35,48 +35,89 @@ class MenuCaptureEntry extends StatelessWidget {
           label: context.l10n.menuCapturePhoto,
           onTap: onCamera,
           excludeSemantics: true,
-          child: Material(
-            key: const ValueKey('menu-capture-button'),
-            color: Colors.white,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(
-                color: MenuPhotoStyle.scanOrange,
-                width: 3,
-              ),
-            ),
-            child: InkWell(
-              onTap: onCamera,
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 160),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000),
+                  offset: Offset(0, 10),
+                  blurRadius: 18,
                 ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/images/menu_capture_illustration.png',
-                      width: 176,
-                      height: 92,
-                      fit: BoxFit.contain,
-                      cacheWidth: 528,
-                      excludeFromSemantics: true,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      context.l10n.menuCapturePhoto,
-                      style: MenuPhotoStyle.text(
-                        21,
-                        bold: true,
-                        color: MenuPhotoStyle.ink,
+                BoxShadow(color: Color(0xFFD87535), offset: Offset(0, 5)),
+              ],
+            ),
+            child: Material(
+              key: const ValueKey('menu-capture-button'),
+              color: Colors.white,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: const BorderSide(
+                  color: MenuPhotoStyle.scanOrange,
+                  width: 3,
+                ),
+              ),
+              child: InkWell(
+                onTap: onCamera,
+                splashColor: MenuPhotoStyle.scanOrange.withValues(alpha: 0.15),
+                highlightColor: MenuPhotoStyle.scanOrange.withValues(
+                  alpha: 0.07,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 160),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/images/menu_capture_illustration.png',
+                        width: 176,
+                        height: 92,
+                        fit: BoxFit.contain,
+                        cacheWidth: 528,
+                        excludeFromSemantics: true,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              context.l10n.menuCapturePhoto,
+                              textAlign: TextAlign.center,
+                              style: MenuPhotoStyle.text(
+                                21,
+                                bold: true,
+                                color: MenuPhotoStyle.ink,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: MenuPhotoStyle.scanOrange,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
