@@ -7,6 +7,7 @@ import 'widgets/japan_catalog_list.dart';
 import 'widgets/sake_catalog_thumbnail.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/japan_sake_map.dart';
+import 'widgets/sake_journey_progress.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -29,86 +30,93 @@ class _JapanSakeSectionState extends State<JapanSakeSection> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-    key: const ValueKey('home-japan-sake-section'),
-    padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _english(context) ? 'A journey through sake' : '日本酒を旅する',
-          style: const TextStyle(
-            color: japanMapNavy,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _english(context)
-              ? 'Discover sake from 47 prefectures.'
-              : '47の産地から、気になる一本に出会う。',
-          style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
-        ),
-        const SizedBox(height: 18),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF4F7F6),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 300,
-                  child: FutureBuilder<List<JapanSakePrefecture>>(
-                    future: _map,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(
-                          child: Icon(
-                            Icons.map_outlined,
-                            size: 60,
-                            color: japanMapNavy,
-                          ),
-                        );
-                      }
-                      return JapanSakeMap(
-                        prefectures: snapshot.data!,
-                        onSelected: _open,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _open,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: japanMapNavy,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    icon: const Icon(Icons.explore_outlined),
-                    label: Text(
-                      _english(context) ? 'Explore the sake map' : '地図からお酒を探す',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
+  Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    builder: (context, progress, legend, ready) => Padding(
+      key: const ValueKey('home-japan-sake-section'),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _english(context) ? 'A journey through sake' : '日本酒を旅する',
+            style: const TextStyle(
+              color: japanMapNavy,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            _english(context)
+                ? 'Discover sake from 47 prefectures.'
+                : '47の産地から、気になる一本に出会う。',
+            style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
+          ),
+          const SizedBox(height: 18),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F7F6),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 300,
+                    child: FutureBuilder<List<JapanSakePrefecture>>(
+                      future: _map,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: Icon(
+                              Icons.map_outlined,
+                              size: 60,
+                              color: japanMapNavy,
+                            ),
+                          );
+                        }
+                        return JapanSakeMap(
+                          prefectures: snapshot.data!,
+                          productCounts: progress.counts,
+                          onSelected: _open,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  legend,
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _open,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: japanMapNavy,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.explore_outlined),
+                      label: Text(
+                        _english(context)
+                            ? 'Explore the sake map'
+                            : '地図からお酒を探す',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -171,18 +179,29 @@ class _JapanSakePageState extends State<JapanSakePage> {
   Future<void> _expandMap() async {
     final prefecture = await Navigator.of(context).push<JapanSakePrefecture>(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: const Color(0xFFF4F7F6),
-          appBar: AppBar(
-            title: Text(_english(context) ? 'Choose a prefecture' : '産地を選ぶ'),
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: ZoomableJapanSakeMap(
-                prefectures: _prefectures,
-                selectedCode: _selected?.code,
-                onSelected: (value) => Navigator.pop(context, value),
+        builder: (context) => SakeJourneyProgressBuilder(
+          builder: (context, progress, legend, ready) => Scaffold(
+            backgroundColor: const Color(0xFFF4F7F6),
+            appBar: AppBar(
+              title: Text(_english(context) ? 'Choose a prefecture' : '産地を選ぶ'),
+            ),
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ZoomableJapanSakeMap(
+                        prefectures: _prefectures,
+                        selectedCode: _selected?.code,
+                        productCounts: progress.counts,
+                        onSelected: (value) => Navigator.pop(context, value),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    legend,
+                  ],
+                ),
               ),
             ),
           ),
@@ -226,124 +245,137 @@ class _JapanSakePageState extends State<JapanSakePage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF7F9F8),
-    appBar: AppBar(
-      title: Text(_english(context) ? 'Sake map of Japan' : '日本酒を旅する'),
-      backgroundColor: Colors.white,
-      foregroundColor: japanMapNavy,
-      surfaceTintColor: Colors.transparent,
-    ),
-    body: ListView(
-      padding: EdgeInsets.fromLTRB(
-        24,
-        12,
-        24,
-        24 + MediaQuery.paddingOf(context).bottom,
+  Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    builder: (context, progress, legend, ready) => Scaffold(
+      backgroundColor: const Color(0xFFF7F9F8),
+      appBar: AppBar(
+        title: Text(_english(context) ? 'Sake map of Japan' : '日本酒を旅する'),
+        backgroundColor: Colors.white,
+        foregroundColor: japanMapNavy,
+        surfaceTintColor: Colors.transparent,
       ),
-      children: [
-        Text(
-          _english(context)
-              ? 'Zoom in and tap a prefecture to explore its brands.'
-              : '地図を拡大して、気になる県の銘柄を探そう。',
-          style: const TextStyle(color: Color(0xFF687880), height: 1.6),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          12,
+          24,
+          24 + MediaQuery.paddingOf(context).bottom,
         ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 330,
-          child: _prefectures.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : ZoomableJapanSakeMap(
-                  onExpand: _expandMap,
-                  prefectures: _prefectures,
-                  selectedCode: _selected?.code,
-                  onSelected: _select,
-                ),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            'Natural Earth',
-            style: TextStyle(
-              fontSize: 10,
-              color: japanMapNavy.withValues(alpha: .45),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          key: const ValueKey('choose-japan-prefecture'),
-          onPressed: _prefectures.isEmpty ? null : _choosePrefecture,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: japanMapNavy,
-            backgroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFFD3DDDF)),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          icon: const Icon(Icons.location_on_outlined),
-          label: Text(
-            _selected?.label(context) ??
-                (_english(context) ? 'Choose a prefecture' : '都道府県から選ぶ'),
-          ),
-        ),
-        const SizedBox(height: 24),
-        if (_selected == null)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              _english(context)
-                  ? 'You can also choose from the prefecture list.'
-                  : '小さな県は、一覧からも選べます。',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF687880)),
-            ),
-          )
-        else ...[
+        children: [
           Text(
             _english(context)
-                ? 'Sake brands from ${_selected!.label(context)}'
-                : '${_selected!.name}の銘柄',
-            style: const TextStyle(
-              color: japanMapNavy,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+                ? 'Zoom in and tap a prefecture to explore its brands.'
+                : '地図を拡大して、気になる県の銘柄を探そう。',
+            style: const TextStyle(color: Color(0xFF687880), height: 1.6),
           ),
           const SizedBox(height: 8),
-          Text(
-            _english(context)
-                ? 'Choose a brand to see its sake.'
-                : '銘柄を選ぶと、登録されている商品を見られます。',
-            style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
+          SizedBox(
+            height: 330,
+            child: _prefectures.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : ZoomableJapanSakeMap(
+                    onExpand: _expandMap,
+                    productCounts: progress.counts,
+                    prefectures: _prefectures,
+                    selectedCode: _selected?.code,
+                    onSelected: _select,
+                  ),
           ),
-          const SizedBox(height: 16),
-          JapanCatalogList<SakeBrandSummary>(
-            key: ValueKey('prefecture-brands-${_selected!.code}'),
-            firstPage: _results,
-            loadPage: (cursor) => context
-                .read<PlaceMapRepository>()
-                .fetchPrefectureBrands(_selected!.code, afterId: cursor),
-            itemId: (brand) => brand.brandId,
-            emptyText: _english(context)
-                ? 'No catalog brands found for this prefecture yet.'
-                : 'この県の銘柄は、まだカタログに見つかりませんでした。',
-            itemBuilder: (brand) => _CatalogCard(
-              rowKey: ValueKey('japan-brand-${brand.brandId}'),
-              title: brand.name,
-              subtitle:
-                  '${brand.brewery} · ${brand.productCount}${_english(context) ? ' products' : '商品'}',
-              thumbnail: SakeCatalogThumbnail(
-                thumbnailImageUrl: brand.thumbnailImageUrl,
-                primaryImageUrl: brand.primaryImageUrl,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'Natural Earth',
+              style: TextStyle(
+                fontSize: 10,
+                color: japanMapNavy.withValues(alpha: .45),
               ),
-              onTap: () => _openBrand(brand),
             ),
           ),
+          const SizedBox(height: 12),
+          legend,
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            key: const ValueKey('choose-japan-prefecture'),
+            onPressed: _prefectures.isEmpty ? null : _choosePrefecture,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: japanMapNavy,
+              backgroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFFD3DDDF)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: const Icon(Icons.location_on_outlined),
+            label: Text(
+              _selected?.label(context) ??
+                  (_english(context) ? 'Choose a prefecture' : '都道府県から選ぶ'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_selected != null && ready)
+            Text(
+              _english(context)
+                  ? '${progress.counts[_selected!.code] ?? 0} products in your records'
+                  : '${_selected!.name}：記録したお酒 ${progress.counts[_selected!.code] ?? 0}商品',
+              style: const TextStyle(color: japanMapNavy, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          if (_selected == null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                _english(context)
+                    ? 'You can also choose from the prefecture list.'
+                    : '小さな県は、一覧からも選べます。',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF687880)),
+              ),
+            )
+          else ...[
+            Text(
+              _english(context)
+                  ? 'Sake brands from ${_selected!.label(context)}'
+                  : '${_selected!.name}の銘柄',
+              style: const TextStyle(
+                color: japanMapNavy,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _english(context)
+                  ? 'Choose a brand to see its sake.'
+                  : '銘柄を選ぶと、登録されている商品を見られます。',
+              style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            JapanCatalogList<SakeBrandSummary>(
+              key: ValueKey('prefecture-brands-${_selected!.code}'),
+              firstPage: _results,
+              loadPage: (cursor) => context
+                  .read<PlaceMapRepository>()
+                  .fetchPrefectureBrands(_selected!.code, afterId: cursor),
+              itemId: (brand) => brand.brandId,
+              emptyText: _english(context)
+                  ? 'No catalog brands found for this prefecture yet.'
+                  : 'この県の銘柄は、まだカタログに見つかりませんでした。',
+              itemBuilder: (brand) => _CatalogCard(
+                rowKey: ValueKey('japan-brand-${brand.brandId}'),
+                title: brand.name,
+                subtitle:
+                    '${brand.brewery} · ${brand.productCount}${_english(context) ? ' products' : '商品'}',
+                thumbnail: SakeCatalogThumbnail(
+                  thumbnailImageUrl: brand.thumbnailImageUrl,
+                  primaryImageUrl: brand.primaryImageUrl,
+                ),
+                onTap: () => _openBrand(brand),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     ),
   );
 }

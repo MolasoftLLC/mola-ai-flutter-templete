@@ -402,6 +402,31 @@ class PlaceMapRepository implements SakeMapDataSource {
     return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
   }
 
+  Future<List<SakeProductOrigin>> fetchSakeOrigins(List<int> sakeIds) async {
+    final ids = sakeIds.where((id) => id > 0).toSet().toList()..sort();
+    final origins = <SakeProductOrigin>[];
+    for (var start = 0; start < ids.length; start += 200) {
+      final end = start + 200 > ids.length ? ids.length : start + 200;
+      final response = await _apiClient.client
+          .send<Map<String, dynamic>, Map<String, dynamic>>(
+            chopper.Request(
+              'POST',
+              Uri.parse('/sakes/origins'),
+              _apiClient.client.baseUrl,
+              body: {'sakeIds': ids.sublist(start, end)},
+            ),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!response.isSuccessful || response.body?['origins'] is! List) {
+        throw const PlaceMapException(message: '商品の産地を確認できませんでした。');
+      }
+      origins.addAll(
+        _parseList(response.body, 'origins', SakeProductOrigin.fromJson),
+      );
+    }
+    return origins;
+  }
+
   Future<SakeCatalogPage<SakeBrandSummary>> fetchPrefectureBrands(
     int prefectureCode, {
     int? afterId,

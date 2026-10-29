@@ -94,4 +94,41 @@ void main() {
       );
     },
   );
+
+  test(
+    'origin lookup splits over 200 distinct IDs and does not send personal records',
+    () async {
+      final requests = <http.Request>[];
+      final repo = repository((r) async {
+        requests.add(r);
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        expect(body.keys, ['sakeIds']);
+        final ids = (body['sakeIds'] as List).cast<int>();
+        return response({
+          'origins': [
+            for (final id in ids)
+              {
+                'sakeId': id,
+                'canonicalSakeId': id,
+                'brandId': 11,
+                'prefectureCode': '15',
+              },
+          ],
+        });
+      });
+      final rows = await repo.fetchSakeOrigins([
+        ...List.generate(201, (i) => i + 1),
+        1,
+      ]);
+      expect(rows.length, 201);
+      expect(requests.map((r) => r.url.path).toList(), [
+        '/api/sakes/origins',
+        '/api/sakes/origins',
+      ]);
+      expect((jsonDecode(requests[0].body)['sakeIds'] as List).length, 200);
+      expect((jsonDecode(requests[1].body)['sakeIds'] as List).length, 1);
+      expect(await repo.fetchSakeOrigins([]), isEmpty);
+      expect(requests.length, 2);
+    },
+  );
 }

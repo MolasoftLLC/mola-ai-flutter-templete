@@ -7,6 +7,14 @@ import 'package:flutter/services.dart';
 const japanMapNavy = Color(0xFF143861);
 const japanMapOrange = Color(0xFFFF914D);
 
+Color sakeJourneyColor(int count) => count >= 10
+    ? japanMapOrange
+    : count >= 5
+    ? const Color(0xFFFFD54F)
+    : count >= 1
+    ? const Color(0xFFFFEDB2)
+    : const Color(0xFFE1E9E9);
+
 class JapanSakePrefecture {
   JapanSakePrefecture({
     required this.code,
@@ -80,10 +88,12 @@ class JapanSakeMap extends StatelessWidget {
     super.key,
     required this.prefectures,
     this.selectedCode,
+    this.productCounts = const {},
     required this.onSelected,
   });
   final List<JapanSakePrefecture> prefectures;
   final int? selectedCode;
+  final Map<int, int> productCounts;
   final ValueChanged<JapanSakePrefecture> onSelected;
 
   @override
@@ -109,7 +119,7 @@ class JapanSakeMap extends StatelessWidget {
         },
         child: CustomPaint(
           size: size,
-          painter: _JapanMapPainter(prefectures, selectedCode),
+          painter: _JapanMapPainter(prefectures, selectedCode, productCounts),
         ),
       );
     },
@@ -117,9 +127,14 @@ class JapanSakeMap extends StatelessWidget {
 }
 
 class _JapanMapPainter extends CustomPainter {
-  const _JapanMapPainter(this.prefectures, this.selectedCode);
+  const _JapanMapPainter(
+    this.prefectures,
+    this.selectedCode,
+    this.productCounts,
+  );
   final List<JapanSakePrefecture> prefectures;
   final int? selectedCode;
+  final Map<int, int> productCounts;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -134,9 +149,9 @@ class _JapanMapPainter extends CustomPainter {
       final selected = prefecture.code == selectedCode;
       canvas.drawPath(
         prefecture.path,
-        Paint()..color = selected ? japanMapOrange : const Color(0xFFE1E9E9),
+        Paint()..color = sakeJourneyColor(productCounts[prefecture.code] ?? 0),
       );
-      if (!selected) {
+      if ((productCounts[prefecture.code] ?? 0) == 0) {
         final dot = Paint()..color = japanMapNavy.withValues(alpha: .58);
         for (final point in prefecture.dots) {
           canvas.drawCircle(point, 2.15, dot);
@@ -145,9 +160,9 @@ class _JapanMapPainter extends CustomPainter {
       canvas.drawPath(
         prefecture.path,
         Paint()
-          ..color = Colors.white
+          ..color = selected ? japanMapNavy : Colors.white
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
+          ..strokeWidth = selected ? 4 : 2,
       );
     }
     // Separate the southwest-islands inset without moving the main islands.
@@ -164,7 +179,8 @@ class _JapanMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(_JapanMapPainter oldDelegate) =>
       oldDelegate.selectedCode != selectedCode ||
-      oldDelegate.prefectures != prefectures;
+      oldDelegate.prefectures != prefectures ||
+      !mapEquals(oldDelegate.productCounts, productCounts);
 }
 
 /// Keeps taps in map coordinates while the viewer applies zoom and pan.
@@ -174,11 +190,13 @@ class ZoomableJapanSakeMap extends StatefulWidget {
     required this.prefectures,
     required this.onSelected,
     this.selectedCode,
+    this.productCounts = const {},
     this.onExpand,
   });
   final List<JapanSakePrefecture> prefectures;
   final ValueChanged<JapanSakePrefecture> onSelected;
   final int? selectedCode;
+  final Map<int, int> productCounts;
   final VoidCallback? onExpand;
   @override
   State<ZoomableJapanSakeMap> createState() => _ZoomableJapanSakeMapState();
@@ -246,6 +264,7 @@ class _ZoomableJapanSakeMapState extends State<ZoomableJapanSakeMap> {
                   child: JapanSakeMap(
                     prefectures: widget.prefectures,
                     selectedCode: widget.selectedCode,
+                    productCounts: widget.productCounts,
                     onSelected: widget.onSelected,
                   ),
                 ),

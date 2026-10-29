@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/analytics/app_analytics.dart';
+import '../../common/sake/personal_sake_record.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -79,7 +80,7 @@ class _MyRecordsPageState extends State<MyRecordsPage> {
     final records = context
         .select((SavedSakeState state) => state.savedSakeList)
         .where((sake) => sake.savedId?.isNotEmpty == true)
-        .where(_hasPersonalRecord)
+        .where(hasPersonalSakeRecord)
         .toList(growable: false);
     return AnalyticsScreen(
       name: 'my_records',
@@ -133,16 +134,6 @@ class _MyRecordsPageState extends State<MyRecordsPage> {
       ),
     );
   }
-}
-
-bool _hasPersonalRecord(Sake sake) {
-  // 撮影画像や商品情報は検索時にも保存されるため、記録の判定には使わない。
-  return sake.impression?.trim().isNotEmpty == true ||
-      sake.place?.trim().isNotEmpty == true ||
-      sake.drinkingPlace?.displayName.trim().isNotEmpty == true ||
-      sake.userTags?.any((tag) => tag.trim().isNotEmpty) == true ||
-      sake.personalTasteRatings?.isNotEmpty == true ||
-      (sake.imagePaths?.length ?? 0) >= 2;
 }
 
 class _RecordCard extends StatelessWidget {

@@ -266,8 +266,10 @@ void main() {
         size: const Size(320, 568),
         scale: 1.5,
       );
-      await tester.ensureVisible(
+      await tester.scrollUntilVisible(
         find.byKey(const ValueKey('choose-japan-prefecture')),
+        250,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.byKey(const ValueKey('choose-japan-prefecture')));
       await tester.pumpAndSettle();
