@@ -299,20 +299,33 @@ class _MyPageState extends State<MyPage> {
         appBar: PrimaryAppBar(
           title: context.l10n.navigationMyPage,
           automaticallyImplyLeading: !widget.isTab,
-          leadingWidth: widget.isTab ? null : 96,
+          leadingWidth: widget.isTab ? 104 : 152,
           leading: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!widget.isTab) const BackButton(),
-              IconButton(
-                tooltip: Localizations.localeOf(context).languageCode == 'en'
+              Tooltip(
+                message: Localizations.localeOf(context).languageCode == 'en'
                     ? 'Rate the app / Feedback'
                     : 'アプリを評価・フィードバック',
-                icon: const Icon(
-                  Icons.star_outline_rounded,
-                  color: Color(0xFFFFD54F),
+                child: TextButton.icon(
+                  onPressed: _showAppReview,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFFFD54F),
+                    minimumSize: const Size(0, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  icon: const Icon(Icons.star_outline_rounded, size: 24),
+                  label: Text(
+                    Localizations.localeOf(context).languageCode == 'en'
+                        ? 'Review'
+                        : 'レビュー',
+                  ),
                 ),
-                onPressed: _showAppReview,
               ),
             ],
           ),
