@@ -9,3 +9,9 @@
 - 変更ファイルのanalyzeは指摘0。iOS 5.0.33（163）配信後の変更で、まだアーカイブ作成・アップロードは行っていない。
 
 [確認画面](images/menu_photo_confirmation_20261029/confirmation.png) / [切り抜き済み](images/menu_photo_confirmation_20261029/cropped.png)
+
+## 解析中の補足文削除
+
+追加依頼により「写真は消えません」と直前の20pt余白を削除。中止操作・写真データの扱いは維持。既存の中止操作テスト成功、変更箇所analyzeの指摘0。未配信。
+
+[解析中の画面](images/menu_photo_confirmation_20261029/progress.png)

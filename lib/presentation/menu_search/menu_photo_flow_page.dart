@@ -371,11 +371,6 @@ class MenuAnalysisProgress extends StatelessWidget {
                     onPressed: onCancel,
                     height: 52,
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    context.l10n.menuPhotoPreserved,
-                    style: MenuPhotoStyle.text(12),
-                  ),
                 ],
               ),
             ),

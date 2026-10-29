@@ -470,14 +470,14 @@ void main() {
     }
   });
 
-  testWidgets('解析中は中止と写真保持の説明を表示する', (tester) async {
+  testWidgets('解析中は中止ボタンを表示し、写真保持の説明は出さない', (tester) async {
     await size(tester);
     var cancelled = false;
     await tester.pumpWidget(
       app(MenuAnalysisProgress(photo: photo, onCancel: () => cancelled = true)),
     );
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('写真は消えません'), findsOneWidget);
+    expect(find.text('写真は消えません'), findsNothing);
     await preview(tester, 'progress');
     await tester.tap(find.text('解析を中止'));
     expect(cancelled, isTrue);
