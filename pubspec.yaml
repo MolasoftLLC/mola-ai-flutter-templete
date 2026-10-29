@@ -126,6 +126,11 @@ flutter:
     - assets/icons/menu_analysis/
     - assets/lottie/
     - assets/data/
+    - assets/fonts/YujiSyuku-OFL.txt
+  fonts:
+    - family: SakeSeal
+      fonts:
+        - asset: assets/fonts/YujiSyuku-Regular.ttf
 
 flutter_icons:
   android: true

@@ -82,6 +82,9 @@ void main() {
         ],
       );
       expect(result.counts, {15: 2});
+      expect(result.brandIdsByPrefecture, {
+        15: {11},
+      });
       expect(result.productsByPrefecture[15]!.map((sake) => sake.impression), [
         '初回',
         '同じ銘柄の別商品',

@@ -183,7 +183,7 @@ void main() {
       await tapPrefecture(tester, 1);
       await tester.pumpAndSettle();
       expect(repository.requests, ['北海道']);
-      expect(find.text('北海道のテスト銘柄'), findsOneWidget);
+      expect(find.byKey(const ValueKey('japan-brand-123')), findsOneWidget);
       await preview(tester, 'hokkaido');
       expect(tester.takeException(), isNull);
     },
@@ -227,10 +227,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('北海道のテスト銘柄'), findsOneWidget);
+      expect(find.byKey(const ValueKey('japan-brand-1')), findsOneWidget);
       await tapPrefecture(tester, 15);
       await tester.pumpAndSettle();
-      expect(find.text('新潟の銘柄'), findsOneWidget);
+      expect(find.byKey(const ValueKey('japan-brand-15')), findsOneWidget);
       expect(repository.requests, ['新潟県', '北海道']);
     },
   );
@@ -324,9 +324,13 @@ void main() {
         const JapanSakePage(initialPrefectureCode: 15),
       );
       await tester.pumpAndSettle();
-      expect(find.text('テスト銘柄'), findsNWidgets(2));
+      expect(find.byKey(const ValueKey('japan-brand-11')), findsOneWidget);
+      expect(find.byKey(const ValueKey('japan-brand-12')), findsOneWidget);
+      expect(find.byKey(const ValueKey('brand-stamp-11')), findsOneWidget);
+      expect(find.byKey(const ValueKey('brand-stamp-12')), findsOneWidget);
       expect(find.byType(SakeCatalogThumbnail), findsNWidgets(2));
       await tester.ensureVisible(find.byKey(const ValueKey('japan-brand-11')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('japan-brand-11')));
       await tester.pumpAndSettle();
       expect(repository.productRequests, [(11, null)]);

@@ -11,6 +11,7 @@ import 'widgets/sake_journey_progress.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'widgets/japan_sake_feedback_button.dart';
+import 'widgets/sake_stamp_book.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -372,14 +373,6 @@ class _JapanSakePageState extends State<JapanSakePage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _english(context)
-                  ? 'Choose a brand to see its sake.'
-                  : '銘柄を選ぶと、登録されている商品を見られます。',
-              style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
-            ),
-            const SizedBox(height: 16),
             JapanCatalogList<SakeBrandSummary>(
               key: ValueKey('prefecture-brands-${_selected!.code}'),
               firstPage: _results,
@@ -387,6 +380,39 @@ class _JapanSakePageState extends State<JapanSakePage> {
                   .read<PlaceMapRepository>()
                   .fetchPrefectureBrands(_selected!.code, afterId: cursor),
               itemId: (brand) => brand.brandId,
+              headerBuilder: (brands, hasMore, loading, failed, loadMore) =>
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (brands.isNotEmpty)
+                        SakeStampBook(
+                          key: ValueKey('prefecture-stamps-${_selected!.code}'),
+                          prefectureName: _selected!.label(context),
+                          brands: brands,
+                          recordedBrandIds:
+                              progress.brandIdsByPrefecture[_selected!.code] ??
+                              const {},
+                          recordsReady: ready,
+                          onBrandTap: _openBrand,
+                          hasMore: hasMore,
+                          loading: loading,
+                          failed: failed,
+                          loadMore: loadMore,
+                        )
+                      else
+                        const SizedBox(height: 8),
+                      Text(
+                        _english(context)
+                            ? 'Choose a brand to see its sake.'
+                            : '銘柄を選ぶと、登録されている商品を見られます。',
+                        style: const TextStyle(
+                          color: Color(0xFF687880),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
               emptyText: _english(context)
                   ? 'No catalog brands found for this prefecture yet.'
                   : 'この県の銘柄は、まだカタログに見つかりませんでした。',
