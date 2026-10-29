@@ -334,7 +334,12 @@ class _NewHomePageState extends State<NewHomePage> {
                   ),
                   const SizedBox(height: 28),
                   const _ObiDivider(),
-                  const JapanSakeSection(),
+                  JapanSakeSection(
+                    key: context
+                        .read<AppPageNotifier>()
+                        .homeFeatureGuide
+                        .japanSakeKey,
+                  ),
                 ],
               ),
             ),
