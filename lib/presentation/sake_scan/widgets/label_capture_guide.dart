@@ -7,21 +7,26 @@ class LabelCaptureGuide extends StatelessWidget {
   final bool isBackLabel;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    // The front bottle is intentionally large and extends behind the floating
-    // controls. This is a visual overlay only; it must not intercept touch.
-    padding: isBackLabel
-        ? const EdgeInsets.fromLTRB(20, 136, 20, 166)
-        : EdgeInsets.fromLTRB(
-            12,
-            128 + (MediaQuery.textScalerOf(context).scale(12) - 12) * 5,
-            12,
-            12,
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Transform.translate(
+      // Move only the front outline; translating preserves its exact size.
+      offset: Offset(0, isBackLabel ? 0 : -constraints.maxHeight * 0.12),
+      child: Padding(
+        // This is a visual overlay only; it must not intercept touch.
+        padding: isBackLabel
+            ? const EdgeInsets.fromLTRB(20, 136, 20, 166)
+            : EdgeInsets.fromLTRB(
+                12,
+                128 + (MediaQuery.textScalerOf(context).scale(12) - 12) * 5,
+                12,
+                12,
+              ),
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: isBackLabel ? 0.80 : 0.30,
+            child: CustomPaint(painter: _LabelCaptureGuidePainter(isBackLabel)),
           ),
-    child: Center(
-      child: AspectRatio(
-        aspectRatio: isBackLabel ? 0.80 : 0.30,
-        child: CustomPaint(painter: _LabelCaptureGuidePainter(isBackLabel)),
+        ),
       ),
     ),
   );

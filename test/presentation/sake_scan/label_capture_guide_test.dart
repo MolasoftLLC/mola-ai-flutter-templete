@@ -121,7 +121,11 @@ void main() {
     expect(size.height, greaterThan((844 - 78) * .80));
     expect(size.width / size.height, lessThan(.38));
     final bounds = tester.getRect(guidePaint());
-    expect(bounds.bottom, greaterThan(844 - 34 - 24));
+    // The 626pt outline keeps its size and moves 12% of the 766pt viewport up.
+    expect(size.width, closeTo(187.8, .01));
+    expect(size.height, closeTo(626, .01));
+    expect(bounds.top, closeTo(44 + 128 - 766 * .12, .01));
+    expect(bounds.bottom, closeTo(844 - 34 - 12 - 766 * .12, .01));
     expect(find.textContaining('ラベルが大きく写る距離'), findsOneWidget);
     await preview(tester, 'front');
     await tester.tap(find.text('補助枠を消す'));

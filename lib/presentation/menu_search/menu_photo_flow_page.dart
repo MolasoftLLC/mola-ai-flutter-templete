@@ -165,7 +165,7 @@ class MenuPhotoConfirmation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: MenuPhotoStyle.blue,
+    backgroundColor: MenuPhotoStyle.deep,
     appBar: MenuPhotoStyle.appBar(
       context.l10n.menuConfirmPhoto,
       onBack: busy ? null : onBack,
@@ -175,33 +175,37 @@ class MenuPhotoConfirmation extends StatelessWidget {
       bottom: false,
       child: Column(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Column(
-                children: [
-                  Flexible(
-                    child: SizedBox(
-                      height: 490,
-                      child: Semantics(
-                        button: true,
-                        label: context.l10n.menuZoomPhoto,
-                        child: GestureDetector(
-                          onTap: () => _zoom(context),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: MenuPhotoStyle.deep,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Image.file(
-                              photo,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => Center(
-                                child: Text(
-                                  context.l10n.menuPhotoLoadFailed,
-                                  style: MenuPhotoStyle.text(13),
+          Flexible(
+            child: ColoredBox(
+              color: MenuPhotoStyle.blue,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: SizedBox(
+                        height: 490,
+                        child: Semantics(
+                          button: true,
+                          label: context.l10n.menuZoomPhoto,
+                          child: GestureDetector(
+                            onTap: () => _zoom(context),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: MenuPhotoStyle.deep,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Image.file(
+                                photo,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => Center(
+                                  child: Text(
+                                    context.l10n.menuPhotoLoadFailed,
+                                    style: MenuPhotoStyle.text(13),
+                                  ),
                                 ),
                               ),
                             ),
@@ -209,59 +213,41 @@ class MenuPhotoConfirmation extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (cropped)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            context.l10n.menuPhotoCropped,
-                            style: MenuPhotoStyle.text(12),
+                    if (cropped) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              context.l10n.menuPhotoCropped,
+                              style: MenuPhotoStyle.text(12),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: busy ? null : onRestore,
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 28),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                context.l10n.menuRestorePhoto,
-                                maxLines: 2,
-                                textAlign: TextAlign.right,
-                                style: MenuPhotoStyle.text(12, bold: true),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: busy ? null : onRestore,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 28),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  context.l10n.menuRestorePhoto,
+                                  maxLines: 2,
+                                  textAlign: TextAlign.right,
+                                  style: MenuPhotoStyle.text(12, bold: true),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  else
-                    TextButton(
-                      onPressed: () => _zoom(context),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(0, 24),
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const MenuPhotoIcon('zoom', size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            context.l10n.menuZoomPhoto,
-                            style: MenuPhotoStyle.text(12),
-                          ),
                         ],
                       ),
-                    ),
-                ],
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -271,7 +257,7 @@ class MenuPhotoConfirmation extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
@@ -281,6 +267,14 @@ class MenuPhotoConfirmation extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Text(error!, style: MenuPhotoStyle.text(13)),
                       ),
+                    MenuPhotoButton(
+                      label: context.l10n.menuAnalyzePhoto,
+                      height: 56,
+                      fontSize: 17,
+                      color: MenuPhotoStyle.yellow,
+                      onPressed: busy ? null : onAnalyze,
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -299,14 +293,6 @@ class MenuPhotoConfirmation extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    MenuPhotoButton(
-                      label: context.l10n.menuAnalyzePhoto,
-                      height: 56,
-                      fontSize: 17,
-                      color: MenuPhotoStyle.yellow,
-                      onPressed: busy ? null : onAnalyze,
                     ),
                     if (busy)
                       const Padding(

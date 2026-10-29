@@ -425,7 +425,12 @@ void main() {
     expect(calls, 0);
     expect(tester.widget<Image>(find.byType(Image).first).fit, BoxFit.contain);
     await preview(tester, 'confirmation');
-    await tester.tap(find.text('タップで拡大'));
+    expect(find.text('タップで拡大'), findsNothing);
+    expect(
+      tester.getTopLeft(find.text('この写真で解析する')).dy,
+      lessThan(tester.getTopLeft(find.text('撮り直す')).dy),
+    );
+    await tester.tap(find.byType(Image).first);
     await tester.pumpAndSettle();
     expect(find.byType(InteractiveViewer), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close));
