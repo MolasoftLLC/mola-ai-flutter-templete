@@ -1806,7 +1806,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuCropHeading => 'Select the area to read';
 
   @override
-  String get menuCropHint => 'Drag the corners to adjust the area';
+  String get menuCropHint =>
+      'Drag corners or edges to resize; drag inside to move';
 
   @override
   String get menuConfirmCrop => 'Use this area';

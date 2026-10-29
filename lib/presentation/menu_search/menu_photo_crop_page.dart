@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/gestures.dart';
 import '../../common/localization/localization_extensions.dart';
 import 'widgets/menu_photo_style.dart';
 
@@ -61,7 +61,11 @@ class MenuPhotoCropPage extends StatefulWidget {
 
 class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
   ui.Image? _image;
-  Rect _selection = const Rect.fromLTWH(0, 0, 1, 1);
+  final _selection = ValueNotifier(const Rect.fromLTWH(0, 0, 1, 1));
+  int? _pointer;
+  _CropDragTarget? _dragTarget;
+  Offset _dragStart = Offset.zero;
+  Rect _dragSelection = Rect.zero;
   bool _saving = false;
   bool _loadFailed = false;
   bool _saveFailed = false;
@@ -95,6 +99,7 @@ class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
 
   @override
   void dispose() {
+    _selection.dispose();
     _image?.dispose();
     super.dispose();
   }
@@ -107,7 +112,7 @@ class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
       _saveFailed = false;
     });
     try {
-      final bytes = await encodeMenuCrop(image, _selection);
+      final bytes = await encodeMenuCrop(image, _selection.value);
       final dir = await getApplicationDocumentsDirectory();
       final file = File(
         '${dir.path}/menu_crop_${DateTime.now().microsecondsSinceEpoch}.png',
@@ -199,11 +204,11 @@ class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
   );
 
   Widget _preview() => Container(
+    clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       color: MenuPhotoStyle.deep,
       borderRadius: BorderRadius.circular(18),
     ),
-    padding: const EdgeInsets.all(18),
     child: _image == null
         ? Center(
             child: _loadFailed
@@ -215,88 +220,117 @@ class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
           )
         : LayoutBuilder(
             builder: (context, constraints) {
-              final imageSize = Size(
-                _image!.width.toDouble(),
-                _image!.height.toDouble(),
-              );
               final fitted = applyBoxFit(
                 BoxFit.contain,
-                imageSize,
-                constraints.biggest,
+                Size(_image!.width.toDouble(), _image!.height.toDouble()),
+                Size(constraints.maxWidth - 36, constraints.maxHeight - 36),
               ).destination;
-              final origin = Offset(
-                (constraints.maxWidth - fitted.width) / 2,
-                (constraints.maxHeight - fitted.height) / 2,
-              );
-              final rect = Rect.fromLTRB(
-                origin.dx + _selection.left * fitted.width,
-                origin.dy + _selection.top * fitted.height,
-                origin.dx + _selection.right * fitted.width,
-                origin.dy + _selection.bottom * fitted.height,
+              final imageRect = Rect.fromCenter(
+                center: constraints.biggest.center(Offset.zero),
+                width: fitted.width,
+                height: fitted.height,
               );
               return Stack(
-                clipBehavior: Clip.none,
                 children: [
-                  Positioned.fill(
-                    child: RawImage(image: _image, fit: BoxFit.contain),
-                  ),
                   Positioned.fromRect(
-                    rect: rect,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: MenuPhotoStyle.pale,
-                            width: 2,
+                    rect: imageRect,
+                    child: RepaintBoundary(child: RawImage(image: _image)),
+                  ),
+                  Positioned.fill(
+                    child: RawGestureDetector(
+                      // Claim crop touches immediately. A pan recognizer waits
+                      // for slop and can compete with the enclosing page scroll.
+                      behavior: HitTestBehavior.opaque,
+                      gestures: {
+                        EagerGestureRecognizer:
+                            GestureRecognizerFactoryWithHandlers<
+                              EagerGestureRecognizer
+                            >(EagerGestureRecognizer.new, (_) {}),
+                      },
+                      child: Listener(
+                        key: const ValueKey('crop-gesture-surface'),
+                        behavior: HitTestBehavior.opaque,
+                        onPointerDown: (event) {
+                          if (_saving || _pointer != null) return;
+                          final rect = _displaySelection(
+                            imageRect,
+                            _selection.value,
+                          );
+                          final target = _cropTargetAt(
+                            rect,
+                            event.localPosition,
+                          );
+                          if (target == null) return;
+                          _pointer = event.pointer;
+                          _dragTarget = target;
+                          _dragStart = event.localPosition;
+                          _dragSelection = _selection.value;
+                        },
+                        onPointerMove: (event) {
+                          if (_saving || event.pointer != _pointer) return;
+                          final delta = event.localPosition - _dragStart;
+                          _selection.value = _dragCrop(
+                            _dragSelection,
+                            Offset(
+                              delta.dx / fitted.width,
+                              delta.dy / fitted.height,
+                            ),
+                            _dragTarget!,
+                          );
+                        },
+                        onPointerUp: (event) {
+                          if (event.pointer == _pointer) _pointer = null;
+                        },
+                        onPointerCancel: (event) {
+                          if (event.pointer == _pointer) _pointer = null;
+                        },
+                        child: RepaintBoundary(
+                          child: ValueListenableBuilder<Rect>(
+                            valueListenable: _selection,
+                            builder: (context, selection, _) {
+                              final rect = _displaySelection(
+                                imageRect,
+                                selection,
+                              );
+                              return Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: CustomPaint(
+                                      painter: _CropSelectionPainter(rect),
+                                    ),
+                                  ),
+                                  Positioned.fromRect(
+                                    rect: rect,
+                                    child: const IgnorePointer(
+                                      child: SizedBox(
+                                        key: ValueKey('crop-selection'),
+                                      ),
+                                    ),
+                                  ),
+                                  for (final entry in _cropHandles(
+                                    rect,
+                                  ).entries)
+                                    Positioned(
+                                      left: entry.value.dx - 28,
+                                      top: entry.value.dy - 28,
+                                      child: IgnorePointer(
+                                        child: SizedBox(
+                                          key: ValueKey(
+                                            'crop-${entry.key.name}',
+                                          ),
+                                          width: 56,
+                                          height: 56,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
-                          borderRadius: BorderRadius.circular(5),
                         ),
                       ),
                     ),
                   ),
-                  Positioned.fromRect(
-                    rect: rect.inflate(8),
-                    child: const IgnorePointer(child: _CropFrame()),
-                  ),
-                  for (final corner in MenuCropCorner.values)
-                    Positioned(
-                      left:
-                          (corner == MenuCropCorner.topLeft ||
-                                  corner == MenuCropCorner.bottomLeft
-                              ? rect.left
-                              : rect.right) -
-                          22,
-                      top:
-                          (corner == MenuCropCorner.topLeft ||
-                                  corner == MenuCropCorner.topRight
-                              ? rect.top
-                              : rect.bottom) -
-                          22,
-                      child: GestureDetector(
-                        key: ValueKey('crop-${corner.name}'),
-                        behavior: HitTestBehavior.opaque,
-                        onPanUpdate: _saving
-                            ? null
-                            : (details) {
-                                final box =
-                                    context.findRenderObject()! as RenderBox;
-                                final local =
-                                    box.globalToLocal(details.globalPosition) -
-                                    origin;
-                                setState(
-                                  () => _selection = adjustMenuCrop(
-                                    _selection,
-                                    Offset(
-                                      local.dx / fitted.width,
-                                      local.dy / fitted.height,
-                                    ),
-                                    corner,
-                                  ),
-                                );
-                              },
-                        child: const SizedBox(width: 44, height: 44),
-                      ),
-                    ),
                 ],
               );
             },
@@ -304,18 +338,149 @@ class _MenuPhotoCropPageState extends State<MenuPhotoCropPage> {
   );
 }
 
-// The Figma corner asset has a 262 × 420 viewport. Stretch this decorative
-// overlay to the selected rectangle; the photo itself always uses contain.
-class _CropFrame extends StatelessWidget {
-  const _CropFrame();
-  @override
-  Widget build(BuildContext context) => FittedBox(
-    fit: BoxFit.fill,
-    child: SvgPicture.asset(
-      'assets/icons/menu_analysis/crop_frame.svg',
-      width: 262,
-      height: 420,
-      excludeFromSemantics: true,
-    ),
+enum _CropDragTarget {
+  topLeft,
+  topRight,
+  bottomLeft,
+  bottomRight,
+  top,
+  right,
+  bottom,
+  left,
+  move,
+}
+
+Rect _displaySelection(Rect image, Rect selection) => Rect.fromLTWH(
+  image.left + selection.left * image.width,
+  image.top + selection.top * image.height,
+  selection.width * image.width,
+  selection.height * image.height,
+);
+
+Map<_CropDragTarget, Offset> _cropHandles(Rect rect) => {
+  _CropDragTarget.topLeft: rect.topLeft,
+  _CropDragTarget.topRight: rect.topRight,
+  _CropDragTarget.bottomLeft: rect.bottomLeft,
+  _CropDragTarget.bottomRight: rect.bottomRight,
+  _CropDragTarget.top: rect.topCenter,
+  _CropDragTarget.right: rect.centerRight,
+  _CropDragTarget.bottom: rect.bottomCenter,
+  _CropDragTarget.left: rect.centerLeft,
+};
+
+_CropDragTarget? _cropTargetAt(Rect rect, Offset point) {
+  final corners = _cropHandles(rect).entries.take(4).toList()
+    ..sort(
+      (a, b) => (a.value - point).distanceSquared.compareTo(
+        (b.value - point).distanceSquared,
+      ),
+    );
+  for (final entry in corners) {
+    final delta = point - entry.value;
+    if (delta.dx.abs() <= 32 && delta.dy.abs() <= 32) return entry.key;
+  }
+  if (point.dx >= rect.left && point.dx <= rect.right) {
+    if ((point.dy - rect.top).abs() <= 24) return _CropDragTarget.top;
+    if ((point.dy - rect.bottom).abs() <= 24) return _CropDragTarget.bottom;
+  }
+  if (point.dy >= rect.top && point.dy <= rect.bottom) {
+    if ((point.dx - rect.left).abs() <= 24) return _CropDragTarget.left;
+    if ((point.dx - rect.right).abs() <= 24) return _CropDragTarget.right;
+  }
+  return rect.contains(point) ? _CropDragTarget.move : null;
+}
+
+Rect _dragCrop(Rect rect, Offset delta, _CropDragTarget target) {
+  if (target == _CropDragTarget.move) {
+    return Rect.fromLTWH(
+      (rect.left + delta.dx).clamp(0.0, 1.0 - rect.width),
+      (rect.top + delta.dy).clamp(0.0, 1.0 - rect.height),
+      rect.width,
+      rect.height,
+    );
+  }
+  final left =
+      target == _CropDragTarget.topLeft ||
+      target == _CropDragTarget.bottomLeft ||
+      target == _CropDragTarget.left;
+  final right =
+      target == _CropDragTarget.topRight ||
+      target == _CropDragTarget.bottomRight ||
+      target == _CropDragTarget.right;
+  final top =
+      target == _CropDragTarget.topLeft ||
+      target == _CropDragTarget.topRight ||
+      target == _CropDragTarget.top;
+  final bottom =
+      target == _CropDragTarget.bottomLeft ||
+      target == _CropDragTarget.bottomRight ||
+      target == _CropDragTarget.bottom;
+  return Rect.fromLTRB(
+    left ? (rect.left + delta.dx).clamp(0.0, rect.right - .08) : rect.left,
+    top ? (rect.top + delta.dy).clamp(0.0, rect.bottom - .08) : rect.top,
+    right ? (rect.right + delta.dx).clamp(rect.left + .08, 1.0) : rect.right,
+    bottom ? (rect.bottom + delta.dy).clamp(rect.top + .08, 1.0) : rect.bottom,
   );
+}
+
+class _CropSelectionPainter extends CustomPainter {
+  const _CropSelectionPainter(this.rect);
+  final Rect rect;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mask = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size)
+      ..addRect(rect);
+    canvas.drawPath(mask, Paint()..color = const Color(0x66000000));
+    final grid = Paint()
+      ..color = Colors.white38
+      ..strokeWidth = 1;
+    for (final fraction in [1 / 3, 2 / 3]) {
+      final x = rect.left + rect.width * fraction;
+      final y = rect.top + rect.height * fraction;
+      canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), grid);
+      canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), grid);
+    }
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+    final grip = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    for (final corner in [
+      rect.topLeft,
+      rect.topRight,
+      rect.bottomLeft,
+      rect.bottomRight,
+    ]) {
+      final dx = corner.dx == rect.left ? 18.0 : -18.0;
+      final dy = corner.dy == rect.top ? 18.0 : -18.0;
+      canvas.drawLine(corner, corner + Offset(dx, 0), grip);
+      canvas.drawLine(corner, corner + Offset(0, dy), grip);
+    }
+    for (final center in [rect.topCenter, rect.bottomCenter]) {
+      canvas.drawLine(
+        center - const Offset(12, 0),
+        center + const Offset(12, 0),
+        grip,
+      );
+    }
+    for (final center in [rect.centerLeft, rect.centerRight]) {
+      canvas.drawLine(
+        center - const Offset(0, 12),
+        center + const Offset(0, 12),
+        grip,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CropSelectionPainter oldDelegate) =>
+      rect != oldDelegate.rect;
 }

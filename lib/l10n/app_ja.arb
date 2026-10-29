@@ -566,7 +566,7 @@
   "menuPhotoCropped": "切り抜き済み",
   "menuRestorePhoto": "元に戻す",
   "menuCropHeading": "読み取りたい範囲に合わせる",
-  "menuCropHint": "四隅をドラッグして範囲を調整",
+  "menuCropHint": "角や辺をドラッグして調整・枠の内側で移動",
   "menuConfirmCrop": "この範囲で決定",
   "menuOriginalPreserved": "元の写真は残ります",
   "menuAnalyzingTitle": "解析中",

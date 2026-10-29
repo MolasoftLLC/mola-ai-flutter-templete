@@ -3365,7 +3365,7 @@ abstract class AppLocalizations {
   /// No description provided for @menuCropHint.
   ///
   /// In ja, this message translates to:
-  /// **'四隅をドラッグして範囲を調整'**
+  /// **'角や辺をドラッグして調整・枠の内側で移動'**
   String get menuCropHint;
 
   /// No description provided for @menuConfirmCrop.

@@ -515,12 +515,13 @@ void main() {
     });
     await tester.pumpAndSettle();
     await preview(tester, 'crop');
-    await tester.drag(
-      find.byKey(const ValueKey('crop-topLeft')),
+    await tester.dragFrom(
+      tester.getCenter(find.byKey(const ValueKey('crop-topLeft'))),
       const Offset(30, 40),
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await preview(tester, 'crop-adjusted');
     await tester.runAsync(() async {
       final codec = await ui.instantiateImageCodec(originalBytes!);
       final image = (await codec.getNextFrame()).image;

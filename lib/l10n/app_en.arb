@@ -566,7 +566,7 @@
   "menuPhotoCropped": "Cropped",
   "menuRestorePhoto": "Restore original",
   "menuCropHeading": "Select the area to read",
-  "menuCropHint": "Drag the corners to adjust the area",
+  "menuCropHint": "Drag corners or edges to resize; drag inside to move",
   "menuConfirmCrop": "Use this area",
   "menuOriginalPreserved": "Your original photo is preserved",
   "menuAnalyzingTitle": "Analyzing",

@@ -1722,7 +1722,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get menuCropHeading => '読み取りたい範囲に合わせる';
 
   @override
-  String get menuCropHint => '四隅をドラッグして範囲を調整';
+  String get menuCropHint => '角や辺をドラッグして調整・枠の内側で移動';
 
   @override
   String get menuConfirmCrop => 'この範囲で決定';
