@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 import 'package:mola_gemini_flutter_template/common/prefecture.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/sake_catalog_browse.dart';
+import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/sake_catalog_thumbnail.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/place_map_repository.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/api_client/api_client.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/japan_sake_page.dart';
@@ -17,17 +19,30 @@ import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/japan
 class _Repository extends PlaceMapRepository {
   _Repository() : super(ApiClient.create());
   final requests = <String>[];
-  Future<List<SakeMapSearchResult>> Function(String) loader = (_) async =>
-      const [];
+  Future<SakeCatalogPage<SakeBrandSummary>> Function(String) loader =
+      (_) async => const SakeCatalogPage(items: []);
+  Future<SakeCatalogPage<SakeMapSearchResult>> Function(int, int?)
+  productsLoader = (_, __) async => const SakeCatalogPage(items: []);
+  final productRequests = <(int, int?)>[];
+  final brandCursors = <int?>[];
   @override
-  Future<List<SakeMapSearchResult>> discoverSakeMasters({
-    String? prefecture,
-    List<String>? flavors,
-    List<String>? tastes,
-    List<String>? designs,
+  Future<SakeCatalogPage<SakeBrandSummary>> fetchPrefectureBrands(
+    int code, {
+    int? afterId,
   }) {
-    requests.add(prefecture!);
-    return loader(prefecture);
+    final name = prefectures[code];
+    requests.add(name);
+    brandCursors.add(afterId);
+    return loader(name);
+  }
+
+  @override
+  Future<SakeCatalogPage<SakeMapSearchResult>> fetchBrandProducts(
+    int brandId, {
+    int? beforeId,
+  }) {
+    productRequests.add((brandId, beforeId));
+    return productsLoader(brandId, beforeId);
   }
 }
 
@@ -36,6 +51,17 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     data = await JapanSakeMapData.load();
+    final loaded = Completer<void>();
+    final stream = const ResizeImage(
+      AssetImage('assets/images/sake_catalog_illustration.png'),
+      width: 256,
+    ).resolve(ImageConfiguration.empty);
+    final listener = ImageStreamListener((_, __) {
+      if (!loaded.isCompleted) loaded.complete();
+    });
+    stream.addListener(listener);
+    await loaded.future;
+    stream.removeListener(listener);
     const font = String.fromEnvironment('JAPAN_UI_FONT');
     if (font.isNotEmpty) {
       await (FontLoader('JapanPreview')..addFont(
@@ -105,7 +131,7 @@ void main() {
           offset +
           prefecture.dots[prefecture.dots.length ~/ 2] * scale,
     );
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
   }
 
@@ -134,14 +160,16 @@ void main() {
     'home map opens the tapped prefecture without loading catalogs on home',
     (tester) async {
       final repository = _Repository();
-      repository.loader = (name) async => [
-        SakeMapSearchResult(
-          sakeId: 123,
-          name: '$nameの日本酒',
-          brewery: '蔵元',
-          isMaster: true,
-        ),
-      ];
+      repository.loader = (name) async => SakeCatalogPage(
+        items: [
+          SakeBrandSummary(
+            brandId: 123,
+            name: '$nameのテスト銘柄',
+            brewery: '蔵元',
+            productCount: 3,
+          ),
+        ],
+      );
       await open(
         tester,
         repository,
@@ -155,7 +183,7 @@ void main() {
       await tapPrefecture(tester, 1);
       await tester.pumpAndSettle();
       expect(repository.requests, ['北海道']);
-      expect(find.text('北海道の日本酒'), findsOneWidget);
+      expect(find.text('北海道のテスト銘柄'), findsOneWidget);
       await preview(tester, 'hokkaido');
       expect(tester.takeException(), isNull);
     },
@@ -165,26 +193,44 @@ void main() {
     'switching prefectures ignores late results and reuses loaded catalogs',
     (tester) async {
       final repository = _Repository();
-      final niigata = Completer<List<SakeMapSearchResult>>();
-      final hokkaido = Completer<List<SakeMapSearchResult>>();
+      final niigata = Completer<SakeCatalogPage<SakeBrandSummary>>();
+      final hokkaido = Completer<SakeCatalogPage<SakeBrandSummary>>();
       repository.loader = (name) =>
           name == '新潟県' ? niigata.future : hokkaido.future;
       await open(tester, repository, const JapanSakePage());
       await tapPrefecture(tester, 15);
       await tapPrefecture(tester, 1);
-      niigata.complete([
-        const SakeMapSearchResult(sakeId: 15, name: '新潟のお酒', isMaster: true),
-      ]);
+      niigata.complete(
+        const SakeCatalogPage(
+          items: [
+            SakeBrandSummary(
+              brandId: 15,
+              name: '新潟の銘柄',
+              brewery: '蔵元',
+              productCount: 1,
+            ),
+          ],
+        ),
+      );
       await tester.pump();
-      expect(find.text('新潟のお酒'), findsNothing);
-      hokkaido.complete([
-        const SakeMapSearchResult(sakeId: 1, name: '北海道のテスト商品', isMaster: true),
-      ]);
+      expect(find.text('新潟の銘柄'), findsNothing);
+      hokkaido.complete(
+        const SakeCatalogPage(
+          items: [
+            SakeBrandSummary(
+              brandId: 1,
+              name: '北海道のテスト銘柄',
+              brewery: '蔵元',
+              productCount: 1,
+            ),
+          ],
+        ),
+      );
       await tester.pumpAndSettle();
-      expect(find.text('北海道のテスト商品'), findsOneWidget);
+      expect(find.text('北海道のテスト銘柄'), findsOneWidget);
       await tapPrefecture(tester, 15);
       await tester.pumpAndSettle();
-      expect(find.text('新潟のお酒'), findsOneWidget);
+      expect(find.text('新潟の銘柄'), findsOneWidget);
       expect(repository.requests, ['新潟県', '北海道']);
     },
   );
@@ -201,7 +247,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('再読み込み'), findsOneWidget);
-      repository.loader = (_) async => const [];
+      repository.loader = (_) async => const SakeCatalogPage(items: []);
       await tester.tap(find.text('再読み込み'));
       await tester.pumpAndSettle();
       expect(find.textContaining('カタログに見つかりません'), findsOneWidget);
@@ -233,9 +279,225 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('prefecture-47')));
       await tester.pumpAndSettle();
       expect(repository.requests, ['沖縄県']);
-      expect(find.text('沖縄県のお酒'), findsOneWidget);
+      expect(find.text('沖縄県の銘柄'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await preview(tester, 'small');
+    },
+  );
+
+  testWidgets(
+    'a brand opens its own products with the same illustration fallback',
+    (tester) async {
+      final repository = _Repository();
+      repository.loader = (_) async => const SakeCatalogPage(
+        items: [
+          SakeBrandSummary(
+            brandId: 11,
+            name: 'テスト銘柄',
+            brewery: 'テスト酒造',
+            productCount: 2,
+          ),
+          SakeBrandSummary(
+            brandId: 12,
+            name: 'テスト銘柄',
+            brewery: '別の酒造',
+            productCount: 1,
+          ),
+        ],
+      );
+      repository.productsLoader = (id, cursor) async => SakeCatalogPage(
+        items: [
+          SakeMapSearchResult(
+            sakeId: cursor == null ? 500 : 499,
+            name: cursor == null ? 'テスト銘柄 純米吟醸' : 'テスト銘柄 純米',
+            type: '純米酒',
+            isMaster: true,
+          ),
+        ],
+        nextCursor: cursor == null ? 500 : null,
+      );
+      await open(
+        tester,
+        repository,
+        const JapanSakePage(initialPrefectureCode: 15),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('テスト銘柄'), findsNWidgets(2));
+      expect(find.byType(SakeCatalogThumbnail), findsNWidgets(2));
+      await tester.ensureVisible(find.byKey(const ValueKey('japan-brand-11')));
+      await tester.tap(find.byKey(const ValueKey('japan-brand-11')));
+      await tester.pumpAndSettle();
+      expect(repository.productRequests, [(11, null)]);
+      expect(find.text('テスト銘柄 純米吟醸'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('sake-catalog-illustration')),
+        findsOneWidget,
+      );
+      await preview(tester, 'brand-products');
+      await tester.tap(find.text('もっと見る'));
+      await tester.pumpAndSettle();
+      expect(repository.productRequests, [(11, null), (11, 500)]);
+      expect(find.text('テスト銘柄 純米'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'zoomed map selects the prefecture under the transformed tap and resets',
+    (tester) async {
+      JapanSakePrefecture? selected;
+      await open(
+        tester,
+        _Repository(),
+        Scaffold(
+          body: SizedBox(
+            height: 500,
+            child: ZoomableJapanSakeMap(
+              prefectures: data,
+              onSelected: (p) => selected = p,
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('japan-map-zoom-in')));
+      await tester.pumpAndSettle();
+      final viewer = tester.widget<InteractiveViewer>(
+        find.byType(InteractiveViewer),
+      );
+      final matrix = viewer.transformationController!.value;
+      expect(matrix.getMaxScaleOnAxis(), closeTo(1.6, .01));
+      final map = find.byType(JapanSakeMap);
+      final size = tester.getSize(map);
+      final scale = math.min(size.width / 720, size.height / 760);
+      final offset = Offset(
+        (size.width - 720 * scale) / 2,
+        (size.height - 760 * scale) / 2,
+      );
+      final viewport = tester.getTopLeft(
+        find.byKey(const ValueKey('japan-map-viewer')),
+      );
+      final target = data.firstWhere((p) => p.code == 20);
+      final point = MatrixUtils.transformPoint(
+        matrix,
+        offset + target.dots[target.dots.length ~/ 2] * scale,
+      );
+      expect((Offset.zero & size).contains(point), isTrue);
+      await tester.tapAt(viewport + point);
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(selected?.code, 20);
+      await preview(tester, 'map-zoomed');
+      await tester.tap(find.byKey(const ValueKey('japan-map-reset')));
+      await tester.pumpAndSettle();
+      expect(viewer.transformationController!.value.getMaxScaleOnAxis(), 1);
+    },
+  );
+
+  testWidgets('full screen map returns its chosen prefecture', (tester) async {
+    final repository = _Repository();
+    await open(tester, repository, const JapanSakePage());
+    await tester.tap(find.byKey(const ValueKey('japan-map-expand')));
+    await tester.pumpAndSettle();
+    expect(find.text('産地を選ぶ'), findsOneWidget);
+    await preview(tester, 'fullscreen-map');
+    await tapPrefecture(tester, 1);
+    await tester.pumpAndSettle();
+    expect(repository.requests, ['北海道']);
+    expect(find.text('北海道の銘柄'), findsOneWidget);
+  });
+
+  testWidgets(
+    'pinching zooms without selecting a prefecture and permits panning',
+    (tester) async {
+      JapanSakePrefecture? selected;
+      await open(
+        tester,
+        _Repository(),
+        Scaffold(
+          body: SizedBox(
+            height: 500,
+            child: ZoomableJapanSakeMap(
+              prefectures: data,
+              onSelected: (p) => selected = p,
+            ),
+          ),
+        ),
+      );
+      final center = tester.getCenter(
+        find.byKey(const ValueKey('japan-map-viewer')),
+      );
+      final a = await tester.startGesture(
+        center - const Offset(30, 0),
+        pointer: 1,
+      );
+      final b = await tester.startGesture(
+        center + const Offset(30, 0),
+        pointer: 2,
+      );
+      await a.moveBy(const Offset(-30, 0));
+      await b.moveBy(const Offset(30, 0));
+      await tester.pump();
+      await a.up();
+      await b.up();
+      await tester.pumpAndSettle();
+      final viewer = tester.widget<InteractiveViewer>(
+        find.byType(InteractiveViewer),
+      );
+      expect(
+        viewer.transformationController!.value.getMaxScaleOnAxis(),
+        greaterThan(1.1),
+      );
+      expect(viewer.panEnabled, isTrue);
+      expect(selected, isNull);
+      final before = viewer.transformationController!.value.clone();
+      await tester.dragFrom(center, const Offset(30, 20));
+      await tester.pumpAndSettle();
+      expect(viewer.transformationController!.value, isNot(before));
+      expect(selected, isNull);
+    },
+  );
+
+  testWidgets(
+    'placeholder URLs use the local illustration and broken photos fall back safely',
+    (tester) async {
+      await open(
+        tester,
+        _Repository(),
+        const Scaffold(
+          body: SakeCatalogThumbnail(
+            thumbnailImageUrl:
+                'https://molasoft-ai-central.com/assets/noimage.png',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('sake-catalog-illustration')),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox());
+      await open(
+        tester,
+        _Repository(),
+        const Scaffold(
+          body: SakeCatalogThumbnail(
+            thumbnailImageUrl: 'https://example.com/broken-thumb.jpg',
+            primaryImageUrl: 'https://example.com/broken-primary.jpg',
+          ),
+        ),
+      );
+      // Widget-test HTTP returns 400, exercising both photo error handlers.
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      });
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      });
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('sake-catalog-illustration')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

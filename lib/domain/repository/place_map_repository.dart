@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:chopper/chopper.dart' as chopper;
+import '../eintities/sake_catalog_browse.dart';
 import '../../common/localization/app_locale_resolver.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -397,6 +400,70 @@ class PlaceMapRepository implements SakeMapDataSource {
       );
     }
     return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
+  }
+
+  Future<SakeCatalogPage<SakeBrandSummary>> fetchPrefectureBrands(
+    int prefectureCode, {
+    int? afterId,
+  }) async {
+    final body = await _browseCatalog(
+      'prefectures/$prefectureCode/brands',
+      cursorName: 'afterId',
+      cursor: afterId,
+    );
+    if (body['brands'] is! List) throw const FormatException('銘柄一覧の形式が不正です。');
+    final next = body['nextCursor'];
+    if (next != null &&
+        (next is! int || next < 1 || (afterId != null && next <= afterId))) {
+      throw const FormatException('銘柄一覧の続きの位置が不正です。');
+    }
+    return SakeCatalogPage(
+      items: _parseList(body, 'brands', SakeBrandSummary.fromJson),
+      nextCursor: next as int?,
+    );
+  }
+
+  Future<SakeCatalogPage<SakeMapSearchResult>> fetchBrandProducts(
+    int brandId, {
+    int? beforeId,
+  }) async {
+    final body = await _browseCatalog(
+      'brands/$brandId/products',
+      cursorName: 'beforeId',
+      cursor: beforeId,
+    );
+    if (body['sakes'] is! List) throw const FormatException('商品一覧の形式が不正です。');
+    final next = body['nextCursor'];
+    if (next != null &&
+        (next is! int || next < 1 || (beforeId != null && next >= beforeId))) {
+      throw const FormatException('商品一覧の続きの位置が不正です。');
+    }
+    return SakeCatalogPage(
+      items: _parseList(body, 'sakes', SakeMapSearchResult.fromJson),
+      nextCursor: next as int?,
+    );
+  }
+
+  Future<Map<String, dynamic>> _browseCatalog(
+    String path, {
+    required String cursorName,
+    int? cursor,
+  }) async {
+    final response = await _apiClient.client
+        .send<Map<String, dynamic>, Map<String, dynamic>>(
+          chopper.Request(
+            'GET',
+            Uri.parse('/sakes/$path'),
+            _apiClient.client.baseUrl,
+            parameters: {'limit': 50, if (cursor != null) cursorName: cursor},
+          ),
+        )
+        .timeout(const Duration(seconds: 30));
+    final body = response.body;
+    if (!response.isSuccessful || body == null) {
+      throw const PlaceMapException(message: 'カタログを取得できませんでした。');
+    }
+    return body;
   }
 
   Future<List<SakeMapSearchResult>> discoverSakeMasters({
