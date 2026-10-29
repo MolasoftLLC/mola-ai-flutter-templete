@@ -35,3 +35,7 @@ commit直後のリリース状態APIは `RELEASE_LIFECYCLE_STATE_NOT_SENT_FOR_RE
 管理対象の公開は既存設定でオフ。変更していないため、審査承認後は自動公開される。未関連のストア情報・画像・ポリシー回答・契約・権限は変更していない。画面を確認する際に新しい規約への同意は求められなかった。
 
 [申請受付の記録](data/release_158_android_review_20261029.json)。
+
+## iOS本番申請用の訂正
+
+158は内部テスト専用で送ったためApp Store申請には使えなかった。5.0.29（159）を通常App Store Connect方式で再送信し、17:23 JSTにアップロード完了を確認。[159の訂正記録](RELEASE_159_APP_STORE_UPLOAD_20261029.md)を参照。Androidの申請済み158はそのまま。
