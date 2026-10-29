@@ -27,10 +27,87 @@ import 'package:mola_gemini_flutter_template/infrastructure/api_client/api_clien
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 import 'package:mola_gemini_flutter_template/common/utils/sake_image_utils.dart';
+import 'package:mola_gemini_flutter_template/domain/eintities/sake_catalog_browse.dart';
+import 'package:mola_gemini_flutter_template/presentation/new_home/japan_sake_page.dart';
+import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/japan_sake_map.dart';
 
 void main() {
   setUpAll(loggerConfigure);
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  for (final fromRecords in [false, true]) {
+    for (final fail in [false, true]) {
+      testWidgets(
+        '地図の${fromRecords ? '県別記録' : '銘柄商品'}一覧から詳細を開き、${fail ? '失敗時は履歴を増やさない' : '取得できた商品を最近の履歴へ記録する'}',
+        (tester) async {
+          final repository = _FakeSakeScanRepository()..fail = fail;
+          final saved = SavedSakeNotifier()
+            ..read = (<T>() => _GuestAuthRepository() as T);
+          addTearDown(saved.dispose);
+          if (fromRecords) {
+            await saved.addSavedSake(
+              const Sake(sakeId: 123, name: '一覧での名前', impression: '個人のメモ'),
+            );
+          }
+          final originalRecords = List.of(saved.state.savedSakeList);
+          final history = RecentSakeHistory();
+          await history.load();
+          addTearDown(history.dispose);
+          final prefecture = (await JapanSakeMapData.load()).firstWhere(
+            (p) => p.code == 15,
+          );
+          await _pumpCorrectionPage(
+            tester,
+            repository,
+            saved,
+            history: history,
+            catalog: _MapCatalogRepository(),
+            home: fromRecords
+                ? JapanSakeRecordsPage(prefecture: prefecture)
+                : const JapanSakeBrandProductsPage(
+                    brand: SakeBrandSummary(
+                      brandId: 11,
+                      name: '一覧の銘柄',
+                      brewery: '酒造',
+                      productCount: 1,
+                    ),
+                  ),
+          );
+          expect(history.merge([]), isEmpty);
+          await tester.tap(
+            find.byKey(
+              ValueKey(fromRecords ? 'japan-record-123' : 'japan-product-123'),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(SakeMasterDetailPage), findsOneWidget);
+          expect(repository.lastTrackView, isTrue);
+          if (fail) {
+            expect(history.merge([]), isEmpty);
+          } else {
+            final recent = history.merge([]).single;
+            expect(recent.sakeId, 123);
+            expect(recent.name, 'マスター純米酒');
+            expect(recent.impression, isNull);
+            expect(recent.savedId, isNull);
+            // Reloading a new history object verifies the existing persistent store.
+            final reloaded = RecentSakeHistory();
+            addTearDown(reloaded.dispose);
+            await reloaded.load();
+            expect(reloaded.merge([]).single.sakeId, 123);
+          }
+          expect(saved.state.savedSakeList.length, originalRecords.length);
+          if (fromRecords) {
+            expect(saved.state.savedSakeList.single.impression, '個人のメモ');
+            expect(
+              saved.state.savedSakeList.single.savedId,
+              originalRecords.single.savedId,
+            );
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
   for (final isSaved in [false, true]) {
     testWidgets(
       isSaved ? '保存済みなら同銘柄の続きの商品へ記録を保って付け替える' : '自分の保存記録がない商品には同銘柄の選び直しを表示しない',
@@ -1180,8 +1257,11 @@ void main() {
 Future<void> _pumpCorrectionPage(
   WidgetTester tester,
   SakeScanRepository repository,
-  SavedSakeNotifier saved,
-) async {
+  SavedSakeNotifier saved, {
+  Widget? home,
+  RecentSakeHistory? history,
+  PlaceMapRepository? catalog,
+}) async {
   final visibilityController = VisibilityDetectorController.instance;
   final previousInterval = visibilityController.updateInterval;
   visibilityController.updateInterval = Duration.zero;
@@ -1196,19 +1276,26 @@ Future<void> _pumpCorrectionPage(
       providers: [
         Provider<SakeScanRepository>.value(value: repository),
         Provider<SavedSakeNotifier>.value(value: saved),
-        ChangeNotifierProvider(create: (_) => RecentSakeHistory()),
+        if (history != null)
+          ChangeNotifierProvider.value(value: history)
+        else
+          ChangeNotifierProvider(create: (_) => RecentSakeHistory()),
+        Provider<SavedSakeState>.value(value: saved.state),
+        if (catalog != null) Provider<PlaceMapRepository>.value(value: catalog),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        locale: Locale('ja'),
-        home: SakeMasterDetailPage(
-          venueSake: VenueSake(
-            sakeId: 123,
-            name: 'KURAMOTO 元の商品',
-            recordCount: 0,
-          ),
-        ),
+        locale: const Locale('ja'),
+        home:
+            home ??
+            const SakeMasterDetailPage(
+              venueSake: VenueSake(
+                sakeId: 123,
+                name: 'KURAMOTO 元の商品',
+                recordCount: 0,
+              ),
+            ),
       ),
     ),
   );
@@ -1223,6 +1310,27 @@ Future<void> _openSameBrandSelection(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('同じ銘柄から選び直す'));
   await tester.pumpAndSettle();
+}
+
+class _MapCatalogRepository extends PlaceMapRepository {
+  _MapCatalogRepository() : super(_UnusedApiClient());
+  @override
+  Future<SakeCatalogPage<SakeMapSearchResult>> fetchBrandProducts(
+    int brandId, {
+    int? beforeId,
+  }) async => const SakeCatalogPage(
+    items: [SakeMapSearchResult(sakeId: 123, name: '一覧での名前', isMaster: true)],
+  );
+  @override
+  Future<List<SakeProductOrigin>> fetchSakeOrigins(List<int> ids) async => [
+    for (final id in ids)
+      SakeProductOrigin(
+        sakeId: id,
+        canonicalSakeId: id,
+        brandId: 11,
+        prefectureCode: 15,
+      ),
+  ];
 }
 
 class _RelatedSelectionRepository extends _FakeSakeScanRepository

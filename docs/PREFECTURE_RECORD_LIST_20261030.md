@@ -14,3 +14,5 @@ iOS / Android配信、版番号変更、バックエンド更新は行ってい�
 
 ![ボタン](images/prefecture_records_20261030/button.png)
 ![一覧](images/prefecture_records_20261030/list.png)
+
+追加の見出し統一・閲覧履歴対応は[変更記録](MAP_TITLE_RECENT_HISTORY_20261030.md)を参照。

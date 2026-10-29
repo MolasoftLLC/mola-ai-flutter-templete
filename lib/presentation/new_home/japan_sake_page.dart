@@ -9,6 +9,7 @@ import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/japan_sake_map.dart';
 import 'widgets/sake_journey_progress.dart';
 import '../my_page/saved_sake_detail_page.dart';
+import '../common/widgets/primary_app_bar.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -183,8 +184,8 @@ class _JapanSakePageState extends State<JapanSakePage> {
         builder: (context) => SakeJourneyProgressBuilder(
           builder: (context, progress, legend, ready) => Scaffold(
             backgroundColor: const Color(0xFFF4F7F6),
-            appBar: AppBar(
-              title: Text(_english(context) ? 'Choose a prefecture' : '産地を選ぶ'),
+            appBar: PrimaryAppBar(
+              title: _english(context) ? 'Choose a prefecture' : '産地を選ぶ',
             ),
             body: SafeArea(
               child: Padding(
@@ -249,11 +250,8 @@ class _JapanSakePageState extends State<JapanSakePage> {
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
-      appBar: AppBar(
-        title: Text(_english(context) ? 'Sake map of Japan' : '日本酒を旅する'),
-        backgroundColor: Colors.white,
-        foregroundColor: japanMapNavy,
-        surfaceTintColor: Colors.transparent,
+      appBar: PrimaryAppBar(
+        title: _english(context) ? 'Sake map of Japan' : '日本酒を旅する',
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
@@ -420,15 +418,10 @@ class JapanSakeRecordsPage extends StatelessWidget {
           progress.productsByPrefecture[prefecture.code] ?? const [];
       return Scaffold(
         backgroundColor: const Color(0xFFF7F9F8),
-        appBar: AppBar(
-          title: Text(
-            _english(context)
-                ? 'Your sake from ${prefecture.label(context)}'
-                : '${prefecture.name}のお酒の記録',
-          ),
-          backgroundColor: Colors.white,
-          foregroundColor: japanMapNavy,
-          surfaceTintColor: Colors.transparent,
+        appBar: PrimaryAppBar(
+          title: _english(context)
+              ? 'Your sake from ${prefecture.label(context)}'
+              : '${prefecture.name}のお酒の記録',
         ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
@@ -475,7 +468,10 @@ class JapanSakeRecordsPage extends StatelessWidget {
                   ),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => SavedSakeDetailPage.forSake(sake),
+                      builder: (_) => SavedSakeDetailPage.forSake(
+                        sake,
+                        recordRecentView: true,
+                      ),
                     ),
                   ),
                 ),
@@ -493,12 +489,7 @@ class JapanSakeBrandProductsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFFF7F9F8),
-    appBar: AppBar(
-      title: Text(brand.name),
-      backgroundColor: Colors.white,
-      foregroundColor: japanMapNavy,
-      surfaceTintColor: Colors.transparent,
-    ),
+    appBar: PrimaryAppBar(title: brand.name),
     body: ListView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
       children: [
@@ -524,6 +515,7 @@ class JapanSakeBrandProductsPage extends StatelessWidget {
                 ? () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => SakeMasterDetailPage(
+                        recordRecentView: true,
                         venueSake: VenueSake(
                           sakeId: sake.sakeId,
                           searchToken: sake.searchToken,
