@@ -15,3 +15,5 @@
 追加依頼により「写真は消えません」と直前の20pt余白を削除。中止操作・写真データの扱いは維持。既存の中止操作テスト成功、変更箇所analyzeの指摘0。未配信。
 
 [解析中の画面](images/menu_photo_confirmation_20261029/progress.png)
+
+2026-10-29追記：上記の163以後の修正は、[iOS 5.0.34（164）](RELEASE_164_IOS_UI_REFINEMENTS_20261029.md)としてAppleへアップロード済み。
