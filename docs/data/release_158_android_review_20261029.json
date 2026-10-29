@@ -1,0 +1,73 @@
+{
+  "packageName": "okinawa.molasoft_ai.sake",
+  "versionCode": 158,
+  "versionName": "5.0.29",
+  "track": "production",
+  "sha256": "4b54d4ad5e650817ea8b7441a1af8d5f6f0304d2eec723a90dabdbb3f0802e51",
+  "validatedAt": "2026-10-29T08:05:32.830Z",
+  "committedAt": "2026-10-29T08:05:35.173Z",
+  "productionLifecycleBefore": {
+    "releases": [
+      {
+        "releaseName": "5.0.24",
+        "activeArtifacts": [
+          {
+            "versionCode": 151
+          }
+        ],
+        "releaseLifecycleState": "RELEASE_LIFECYCLE_STATE_PUBLISHED",
+        "track": "production"
+      }
+    ]
+  },
+  "productionLifecycleAfter": {
+    "releases": [
+      {
+        "releaseName": "5.0.29",
+        "activeArtifacts": [
+          {
+            "versionCode": 158
+          }
+        ],
+        "releaseLifecycleState": "RELEASE_LIFECYCLE_STATE_NOT_SENT_FOR_REVIEW",
+        "track": "production"
+      },
+      {
+        "releaseName": "5.0.24",
+        "activeArtifacts": [
+          {
+            "versionCode": 151
+          }
+        ],
+        "releaseLifecycleState": "RELEASE_LIFECYCLE_STATE_PUBLISHED",
+        "track": "production"
+      }
+    ]
+  },
+  "internalLifecycleAfter": {
+    "releases": [
+      {
+        "releaseName": "5.0.29",
+        "activeArtifacts": [
+          {
+            "versionCode": 158
+          }
+        ],
+        "releaseLifecycleState": "RELEASE_LIFECYCLE_STATE_PUBLISHED",
+        "track": "internal"
+      }
+    ]
+  },
+  "consoleVerification": {
+    "observedAt": "2026-10-29T08:08:30.747014+00:00",
+    "url": "https://play.google.com/console/u/0/developers/8320612700732627984/app/4975502612763485757/publishing",
+    "section": "審査中の変更",
+    "release": "5.0.29",
+    "status": "一般的な問題のクイック チェックを実行する",
+    "automaticallySendsToReviewAfterChecks": true,
+    "managedPublishingEnabled": false,
+    "publication": "既存設定により承認後は自動公開。現在の公開済みバージョンは151。"
+  },
+  "reviewApproved": false,
+  "publicReleaseConfirmed": false
+}
