@@ -19,6 +19,7 @@ class SakeStampBook extends StatefulWidget {
     required this.loading,
     required this.failed,
     required this.loadMore,
+    this.height = 212,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -29,6 +30,7 @@ class SakeStampBook extends StatefulWidget {
   final bool loading;
   final bool failed;
   final VoidCallback loadMore;
+  final double height;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
@@ -82,7 +84,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
         .length;
     return Container(
       key: const ValueKey('sake-stamp-book'),
-      height: 212,
+      height: widget.height,
       margin: const EdgeInsets.only(top: 12, bottom: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../common/analytics/app_analytics.dart';
+import '../../common/sake/personal_sake_record.dart';
+import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/eintities/sake_catalog_browse.dart';
 import 'widgets/japan_catalog_list.dart';
@@ -12,6 +14,7 @@ import '../my_page/saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'widgets/japan_sake_feedback_button.dart';
 import 'widgets/sake_stamp_book.dart';
+import 'widgets/recorded_sake_seal.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -515,53 +518,75 @@ class JapanSakeBrandProductsPage extends StatelessWidget {
   const JapanSakeBrandProductsPage({super.key, required this.brand});
   final SakeBrandSummary brand;
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF7F9F8),
-    appBar: PrimaryAppBar(title: brand.name),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-      children: [
-        Text(brand.brewery, style: const TextStyle(color: Color(0xFF687880))),
-        const SizedBox(height: 16),
-        JapanCatalogList<SakeMapSearchResult>(
-          loadPage: (cursor) => context
-              .read<PlaceMapRepository>()
-              .fetchBrandProducts(brand.brandId, beforeId: cursor),
-          itemId: (sake) => sake.sakeId ?? sake.searchToken ?? sake.name,
-          emptyText: _english(context)
-              ? 'No catalog products found yet.'
-              : '登録された商品はまだありません。',
-          itemBuilder: (sake) => _CatalogCard(
-            rowKey: ValueKey('japan-product-${sake.sakeId}'),
-            title: sake.name,
-            subtitle: [sake.brewery, sake.type].whereType<String>().join(' ・ '),
-            thumbnail: SakeCatalogThumbnail(
-              thumbnailImageUrl: sake.thumbnailImageUrl,
-              primaryImageUrl: sake.primaryImageUrl,
+  Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    builder: (context, progress, legend, ready) {
+      // Exact product IDs work even when origin lookup is unavailable. Only use
+      // verified canonical IDs after the current account's lookup completes.
+      final recordedIds = <int>{
+        for (final record
+            in Provider.of<SavedSakeState?>(context)?.savedSakeList ?? const [])
+          if (hasPersonalSakeRecord(record) && (record.sakeId ?? 0) > 0)
+            record.sakeId!,
+        if (ready)
+          for (final records in progress.productsByPrefecture.values)
+            for (final record in records) record.sakeId!,
+      };
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F9F8),
+        appBar: PrimaryAppBar(title: brand.name),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+          children: [
+            Text(
+              brand.brewery,
+              style: const TextStyle(color: Color(0xFF687880)),
             ),
-            onTap: (sake.sakeId ?? 0) > 0
-                ? () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => SakeMasterDetailPage(
-                        recordRecentView: true,
-                        venueSake: VenueSake(
-                          sakeId: sake.sakeId,
-                          searchToken: sake.searchToken,
-                          name: sake.name,
-                          brewery: sake.brewery,
-                          type: sake.type,
-                          recordCount: 0,
-                          thumbnailImageUrl: sake.thumbnailImageUrl,
-                          primaryImageUrl: sake.primaryImageUrl,
+            const SizedBox(height: 16),
+            JapanCatalogList<SakeMapSearchResult>(
+              loadPage: (cursor) => context
+                  .read<PlaceMapRepository>()
+                  .fetchBrandProducts(brand.brandId, beforeId: cursor),
+              itemId: (sake) => sake.sakeId ?? sake.searchToken ?? sake.name,
+              emptyText: _english(context)
+                  ? 'No catalog products found yet.'
+                  : '登録された商品はまだありません。',
+              itemBuilder: (sake) => _CatalogCard(
+                rowKey: ValueKey('japan-product-${sake.sakeId}'),
+                recorded: recordedIds.contains(sake.sakeId),
+                title: sake.name,
+                subtitle: [
+                  sake.brewery,
+                  sake.type,
+                ].whereType<String>().join(' ・ '),
+                thumbnail: SakeCatalogThumbnail(
+                  thumbnailImageUrl: sake.thumbnailImageUrl,
+                  primaryImageUrl: sake.primaryImageUrl,
+                ),
+                onTap: (sake.sakeId ?? 0) > 0
+                    ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SakeMasterDetailPage(
+                            recordRecentView: true,
+                            venueSake: VenueSake(
+                              sakeId: sake.sakeId,
+                              searchToken: sake.searchToken,
+                              name: sake.name,
+                              brewery: sake.brewery,
+                              type: sake.type,
+                              recordCount: 0,
+                              thumbnailImageUrl: sake.thumbnailImageUrl,
+                              primaryImageUrl: sake.primaryImageUrl,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  )
-                : null,
-          ),
+                      )
+                    : null,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
+      );
+    },
   );
 }
 
@@ -572,7 +597,9 @@ class _CatalogCard extends StatelessWidget {
     required this.subtitle,
     required this.thumbnail,
     required this.onTap,
+    this.recorded = false,
   });
+  final bool recorded;
   final Key rowKey;
   final String title;
   final String subtitle;
@@ -591,6 +618,9 @@ class _CatalogCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
+          crossAxisAlignment: recorded
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
           children: [
             thumbnail,
             const SizedBox(width: 14),
@@ -618,7 +648,20 @@ class _CatalogCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, color: japanMapNavy),
+            if (recorded)
+              const SizedBox(
+                width: 42,
+                height: 76,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    RecordedSakeSeal(),
+                    Icon(Icons.chevron_right, color: japanMapNavy),
+                  ],
+                ),
+              )
+            else
+              const Icon(Icons.chevron_right, color: japanMapNavy),
           ],
         ),
       ),

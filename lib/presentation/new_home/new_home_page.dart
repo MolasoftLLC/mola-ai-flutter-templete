@@ -29,6 +29,7 @@ import '../timeline/timeline_page_notifier.dart';
 import 'new_home_page_notifier.dart';
 import 'recent_sake_list_page.dart';
 import 'japan_sake_page.dart';
+import 'sake_stamp_book_page.dart';
 import 'widgets/home_notice_ticker.dart';
 import '../common/widgets/sake_card_rail.dart';
 
@@ -334,6 +335,7 @@ class _NewHomePageState extends State<NewHomePage> {
                   ),
                   const SizedBox(height: 28),
                   const _ObiDivider(),
+                  const SakeStampBookSection(),
                   JapanSakeSection(
                     key: context
                         .read<AppPageNotifier>()
