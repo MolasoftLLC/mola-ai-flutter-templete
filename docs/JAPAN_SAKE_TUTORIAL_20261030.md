@@ -14,3 +14,7 @@
 以下はガイドの表示検証用画面（上部の案内起動ボタンはテスト用）。
 
 ![日本酒を旅するの案内](images/japan_sake_tutorial_20261030/tutorial.png)
+
+## 配信結果
+
+iOS 5.0.38（168）を2026-10-30 00:59 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_168_IOS_SAKE_STAMP_BOOK_20261030.md)。

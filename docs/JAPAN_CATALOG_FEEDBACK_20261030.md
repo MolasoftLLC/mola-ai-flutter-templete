@@ -21,3 +21,7 @@
 
 ![＋メニュー](images/japan_catalog_feedback_20261030/menu.png)
 ![報告入力](images/japan_catalog_feedback_20261030/correction.png)
+
+## 配信結果
+
+iOS 5.0.38（168）を2026-10-30 00:59 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_168_IOS_SAKE_STAMP_BOOK_20261030.md)。

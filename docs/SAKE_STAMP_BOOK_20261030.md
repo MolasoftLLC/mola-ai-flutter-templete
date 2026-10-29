@@ -31,3 +31,7 @@
 
 ![実装プレビュー](images/sake_stamp_book_20261030/stamp-book.png)
 ![小さい画面と文字拡大](images/sake_stamp_book_20261030/stamp-book-small.png)
+
+## 配信結果
+
+iOS 5.0.38（168）を2026-10-30 00:59 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_168_IOS_SAKE_STAMP_BOOK_20261030.md)。

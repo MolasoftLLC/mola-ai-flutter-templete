@@ -18,3 +18,7 @@ SavedSakeDetailPage.forSakeには省略時falseの引数を加え、他の既存
 
 ![共通見出しと県別記録ボタン](images/map_title_history_20261030/map.png)
 ![県別記録一覧](images/map_title_history_20261030/records.png)
+
+## 配信結果
+
+iOS 5.0.38（168）を2026-10-30 00:59 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_168_IOS_SAKE_STAMP_BOOK_20261030.md)。

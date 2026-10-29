@@ -16,3 +16,7 @@ iOS / Android配信、版番号変更、バックエンド更新は行ってい�
 ![一覧](images/prefecture_records_20261030/list.png)
 
 追加の見出し統一・閲覧履歴対応は[変更記録](MAP_TITLE_RECENT_HISTORY_20261030.md)を参照。
+
+## 配信結果
+
+iOS 5.0.38（168）を2026-10-30 00:59 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_168_IOS_SAKE_STAMP_BOOK_20261030.md)。
