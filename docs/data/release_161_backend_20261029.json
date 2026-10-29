@@ -1,0 +1,9 @@
+{
+  "commit": "93f562a4467266bda8cf661d425d23d74e1d09dd",
+  "migrationApplied": true,
+  "indexColumns": 4,
+  "firstPageCount": 2,
+  "secondPageCount": 2,
+  "pagesDistinct": true,
+  "readOnly": true
+}

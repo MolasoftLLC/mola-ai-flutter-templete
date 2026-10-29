@@ -1,0 +1,22 @@
+{
+  "version": "5.0.31",
+  "build": 161,
+  "bundleId": "okinawa.molasoft.sakepedia",
+  "sourceCommit": "ac8bca0",
+  "archive": "/private/tmp/sakepedia-usage-client/build/ios/archive/SAKEPEDIA-5.0.31-161.xcarchive",
+  "appBinarySha256": "ae79412c0d0825a37c2f538c96c49df47e74313df80b8cc70ae8bed2423c681e",
+  "productionFlavorVerified": true,
+  "mapsKeyResolved": true,
+  "uploadMethod": "App Store Connect",
+  "testFlightInternalOnly": false,
+  "uploadedToApple": true,
+  "uploadedAtJstMinute": "2026-10-29 20:23",
+  "appleProcessing": "not_verified",
+  "testFlightAvailability": "not_verified",
+  "appStoreReviewSubmitted": false,
+  "reviewBlocker": "Browser App Store Connect authentication required; reopening Chrome and Safari did not reach the application page.",
+  "androidDistributionPerformed": false,
+  "backendCommit": "93f562a4467266bda8cf661d425d23d74e1d09dd",
+  "backendDeploymentRun": "https://github.com/MolasoftLLC/molasoft-ai-central/actions/runs/40864727085",
+  "backendDeploymentConclusion": "success"
+}
