@@ -94,10 +94,10 @@ Widget buildMenuSakeTypesRow(
             return Chip(
               label: Text(type),
               backgroundColor: dark
-                  ? Colors.white.withValues(alpha: 0.08)
+                  ? const Color(0xFFEAF0F7)
                   : const Color(0xFF1D3567).withValues(alpha: 0.1),
-              labelStyle: TextStyle(
-                color: dark ? Colors.white : const Color(0xFF1D3567),
+              labelStyle: const TextStyle(
+                color: Color(0xFF1D3567),
                 fontWeight: FontWeight.bold,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

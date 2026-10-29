@@ -686,6 +686,7 @@ void main() {
           details: const Sake(
             name: '正雪 純米',
             type: '純米',
+            types: ['純米', '火入れ酒'],
             description: 'すっきりとした口当たりのお酒です。',
           ),
           matchPercent: 75,
@@ -714,6 +715,8 @@ void main() {
     await tester.tap(find.text('正雪 純米'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('すっきりとした口当たりのお酒です。'));
+    await tester.ensureVisible(find.text('火入れ酒'));
+    await tester.pumpAndSettle();
     await preview(tester, 'history-sake');
     tester
         .state<ScrollableState>(find.byType(Scrollable).first)
