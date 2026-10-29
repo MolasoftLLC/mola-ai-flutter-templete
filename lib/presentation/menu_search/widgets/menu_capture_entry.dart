@@ -30,30 +30,54 @@ class MenuCaptureEntry extends StatelessWidget {
           style: MenuPhotoStyle.text(23, bold: true).copyWith(height: 34 / 23),
         ),
         const SizedBox(height: 14),
-        Material(
-          color: MenuPhotoStyle.yellow,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            onTap: onCamera,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 140),
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const MenuPhotoIcon('camera', size: 40, color: Colors.white),
-                  const SizedBox(height: 10),
-                  Text(
-                    context.l10n.menuCapturePhoto,
-                    style: MenuPhotoStyle.text(
-                      21,
-                      bold: true,
-                      color: Colors.white,
+        Semantics(
+          button: true,
+          label: context.l10n.menuCapturePhoto,
+          onTap: onCamera,
+          excludeSemantics: true,
+          child: Material(
+            key: const ValueKey('menu-capture-button'),
+            color: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(
+                color: MenuPhotoStyle.scanOrange,
+                width: 3,
+              ),
+            ),
+            child: InkWell(
+              onTap: onCamera,
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 160),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/menu_capture_illustration.png',
+                      width: 176,
+                      height: 92,
+                      fit: BoxFit.contain,
+                      cacheWidth: 528,
+                      excludeFromSemantics: true,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      context.l10n.menuCapturePhoto,
+                      style: MenuPhotoStyle.text(
+                        21,
+                        bold: true,
+                        color: MenuPhotoStyle.ink,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

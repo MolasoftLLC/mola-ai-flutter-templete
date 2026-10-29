@@ -70,6 +70,21 @@ void main() {
     stream.addListener(listener);
     await loaded.future;
     stream.removeListener(listener);
+    final illustrationLoaded = Completer<void>();
+    final illustrationStream = const ResizeImage(
+      AssetImage('assets/images/menu_capture_illustration.png'),
+      width: 528,
+    ).resolve(ImageConfiguration.empty);
+    final illustrationListener = ImageStreamListener(
+      (_, _) {
+        if (!illustrationLoaded.isCompleted) illustrationLoaded.complete();
+      },
+      onError: (Object error, StackTrace? stack) =>
+          illustrationLoaded.completeError(error, stack),
+    );
+    illustrationStream.addListener(illustrationListener);
+    await illustrationLoaded.future;
+    illustrationStream.removeListener(illustrationListener);
     const fontPath = String.fromEnvironment('MENU_UI_FONT');
     if (fontPath.isNotEmpty) {
       final loader = FontLoader('MenuPreview')
@@ -210,17 +225,21 @@ void main() {
     expect(find.text('選択した写真を確認'), findsNothing);
     expect(
       tester.widget<Text>(find.text('メニューを撮影')).style!.color,
-      Colors.white,
+      MenuPhotoStyle.ink,
+    );
+    final button = tester.widget<Material>(
+      find.byKey(const ValueKey('menu-capture-button')),
+    );
+    expect(button.color, Colors.white);
+    expect(
+      (button.shape! as RoundedRectangleBorder).side.color,
+      MenuPhotoStyle.scanOrange,
     );
     expect(
-      tester
-          .widget<MenuPhotoIcon>(
-            find.byWidgetPredicate(
-              (w) => w is MenuPhotoIcon && w.name == 'camera',
-            ),
-          )
-          .color,
-      Colors.white,
+      find.byWidgetPredicate(
+        (widget) => widget is MenuPhotoIcon && widget.name == 'camera',
+      ),
+      findsNothing,
     );
     expect(tester.takeException(), isNull);
     await preview(tester, 'entry');

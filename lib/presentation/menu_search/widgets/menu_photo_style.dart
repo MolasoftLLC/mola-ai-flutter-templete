@@ -8,6 +8,8 @@ abstract final class MenuPhotoStyle {
   static const deep = Color(0xFF112B4B);
   static const pale = Color(0xFFEAF0F7);
   static const yellow = Color(0xFFFFD54F);
+  // Matches the border of the center scan button in the app navigation.
+  static const scanOrange = Color(0xFFFF914D);
 
   static TextStyle text(
     double size, {
