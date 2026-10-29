@@ -21,6 +21,71 @@ void main() {
     );
   });
   test(
+    'queued identity is captured before login changes, without raw account IDs',
+    () async {
+      var identity = const UsageIdentity.guest();
+      var available = false;
+      final accepted = <Map<String, dynamic>>[];
+      final analytics = AppAnalytics(
+        enabled: true,
+        isTest: true,
+        identityReader: () => identity,
+        tokenReader: () async => 'current-account-B-token',
+        client: MockClient((request) async {
+          if (!available) return http.Response('{}', 503);
+          accepted.add(jsonDecode(request.body) as Map<String, dynamic>);
+          return http.Response('{}', 200);
+        }),
+      );
+      await analytics.initialize('example.com');
+      await Future<void>.delayed(Duration.zero);
+      identity = UsageIdentity.account('raw-account-A');
+      analytics.event(
+        'scan',
+        'label_analysis',
+        kind: 'success',
+        labelVariant: 'front_back',
+      );
+      identity = UsageIdentity.account('raw-account-B');
+      analytics.event('menu', 'menu_analysis', kind: 'success');
+      await analytics.close();
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getStringList('usage_queue_v1')!;
+      expect(stored.join(), isNot(contains('raw-account-A')));
+      expect(stored.join(), isNot(contains('raw-account-B')));
+      available = true;
+      final restarted = AppAnalytics(
+        enabled: true,
+        isTest: true,
+        identityReader: () => identity,
+        tokenReader: () async => 'current-account-B-token',
+        client: MockClient((request) async {
+          accepted.add(jsonDecode(request.body) as Map<String, dynamic>);
+          return http.Response('{}', 200);
+        }),
+      );
+      await restarted.initialize('example.com');
+      await Future<void>.delayed(Duration.zero);
+      await restarted.flush();
+      await restarted.close();
+      final events = accepted.expand((b) => b['events'] as List).toList();
+      expect(events.every((e) => e['isTest'] == true), true);
+      expect(events.first['identityType'], 'guest');
+      final label = events.firstWhere((e) => e['target'] == 'label_analysis');
+      expect(
+        label['accountContext'],
+        UsageIdentity.account('raw-account-A').accountContext,
+      );
+      expect(label['labelVariant'], 'front_back');
+      final menu = events.firstWhere((e) => e['target'] == 'menu_analysis');
+      expect(
+        menu['accountContext'],
+        UsageIdentity.account('raw-account-B').accountContext,
+      );
+      expect(label['accountContext'], isNot(menu['accountContext']));
+    },
+  );
+  test(
     'offline queue survives restart; resend keeps event IDs and clears only after acceptance',
     () async {
       final requests = <Map<String, dynamic>>[];

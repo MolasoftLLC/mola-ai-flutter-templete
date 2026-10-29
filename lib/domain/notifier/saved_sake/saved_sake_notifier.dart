@@ -197,6 +197,13 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     state = state.copyWith(savedSakeList: [newSake, ...state.savedSakeList]);
     await _persistSavedSakes();
     logger.info('保存済み日本酒を追加: ${newSake.name ?? '不明な日本酒'} (id=$savedId)');
+    if (newSake.isBookmarked && !alreadySaved) {
+      AppAnalytics.instance.event(
+        AppAnalytics.instance.screen,
+        'save',
+        kind: 'success',
+      );
+    }
     return savedId;
   }
 
@@ -268,6 +275,13 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
     );
     _syncFiltersWithAvailableTags();
     await _persistSavedSakes();
+    if (bookmark) {
+      AppAnalytics.instance.event(
+        AppAnalytics.instance.screen,
+        'save',
+        kind: 'success',
+      );
+    }
   }
 
   Future<void> updateSavedSake(Sake sake) async {

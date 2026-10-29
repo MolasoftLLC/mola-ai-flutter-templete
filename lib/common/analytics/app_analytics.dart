@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -19,6 +20,19 @@ String analyticsId() {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
+/// Captured at operation time. Only a namespaced hash, never a raw UID, is queued.
+class UsageIdentity {
+  const UsageIdentity.guest() : type = 'guest', accountContext = null;
+  const UsageIdentity.unresolved() : type = 'unresolved', accountContext = null;
+  UsageIdentity.account(String uid)
+    : type = 'account',
+      accountContext = sha256
+          .convert(utf8.encode('sakepedia-usage-account-context-v1:$uid'))
+          .toString();
+  final String type;
+  final String? accountContext;
+}
+
 /// First-party usage events. No photos, free text, location, advertising ID or raw user ID.
 class AppAnalytics with WidgetsBindingObserver {
   static final instance = AppAnalytics();
@@ -26,14 +40,31 @@ class AppAnalytics with WidgetsBindingObserver {
     bool enabled = kReleaseMode,
     http.Client? client,
     Future<String?> Function()? tokenReader,
+    UsageIdentity Function()? identityReader,
+    bool isTest = const bool.fromEnvironment('USAGE_ANALYTICS_TEST'),
   }) : _enabled = enabled,
        _client = client ?? http.Client(),
-       _tokenReader = tokenReader ?? _firebaseToken;
+       _tokenReader = tokenReader ?? _firebaseToken,
+       _identityReader = identityReader ?? _firebaseIdentity,
+       _isTest = isTest;
   static Future<String?> _firebaseToken() async =>
       FirebaseAuth.instance.currentUser?.getIdToken();
+  static UsageIdentity _firebaseIdentity() {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      return user == null || user.isAnonymous
+          ? const UsageIdentity.guest()
+          : UsageIdentity.account(user.uid);
+    } catch (_) {
+      return const UsageIdentity.unresolved();
+    }
+  }
+
   final bool _enabled;
   final http.Client _client;
   final Future<String?> Function() _tokenReader;
+  final UsageIdentity Function() _identityReader;
+  final bool _isTest;
   Timer? _timer;
   bool _initialized = false;
   Future<void> close() async {
@@ -106,13 +137,20 @@ class AppAnalytics with WidgetsBindingObserver {
     String kind = 'tap',
     String? source,
     String? flowId,
+    String? labelVariant,
   }) {
     if (_endpoint == null || _info == null) return;
+    final identity = _identityReader();
     _queue.add({
       'eventId': analyticsId(),
       'sessionId': session,
       'flowId': flowId,
       'kind': kind,
+      'isTest': _isTest,
+      'identityType': identity.type,
+      if (identity.accountContext != null)
+        'accountContext': identity.accountContext,
+      if (labelVariant != null) 'labelVariant': labelVariant,
       'screen': screen,
       'target': target,
       'source': source ?? this.screen,

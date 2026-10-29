@@ -119,6 +119,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   String? _usageFlow;
   bool _usageComplete = false;
+  bool _usageUsedBack = false;
 
   void setShareToTimeline(bool value) {
     if (_disposed) return;
@@ -142,6 +143,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     }
     _usageFlow = analyticsId();
     _usageComplete = false;
+    _usageUsedBack = false;
     AppAnalytics.instance.event(
       'scan',
       'label_analysis',
@@ -211,6 +213,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       flowId: _usageFlow,
     );
     if (!_beginSubmission()) return;
+    _usageUsedBack = true;
     var sessionId = state.scanSessionId;
     final operation = ++_operation;
     _emit(
@@ -721,6 +724,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
           'label_analysis',
           kind: 'success',
           flowId: _usageFlow,
+          labelVariant: _usageUsedBack ? 'front_back' : 'front_only',
         );
       }
       state = next;
