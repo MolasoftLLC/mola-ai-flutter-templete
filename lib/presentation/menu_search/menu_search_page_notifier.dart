@@ -35,6 +35,8 @@ import '../../common/sake/menu_taste_summary.dart';
 import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 
+import 'menu_camera_page.dart';
+
 part 'menu_search_page_notifier.freezed.dart';
 
 @freezed
@@ -228,7 +230,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       source == ImageSource.camera ? 'camera' : 'gallery',
     );
     try {
-      final image = await CustomImagePicker.pickImage(source: source);
+      final image = source == ImageSource.camera
+          ? await Navigator.of(context).push<File>(
+              MaterialPageRoute(builder: (_) => const MenuCameraPage()),
+            )
+          : await CustomImagePicker.pickImage(source: source);
       if (image != null && mounted) await selectPhoto(image);
     } catch (error) {
       if (!mounted || !context.mounted) return;

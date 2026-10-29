@@ -550,6 +550,8 @@
   "menuCaptureTitle": "Capture the menu",
   "menuCaptureDescription": "Capture the whole menu so the sake names are readable.",
   "menuCaptureTagline": "Find your next sake\nfrom the menu",
+  "menuPhotoCaptureFailed": "Could not take the photo. Please try again.",
+  "menuCameraFlash": "Toggle light",
   "menuCapturePhoto": "Photograph a menu",
   "menuChoosePhoto": "Choose a photo",
   "menuResumePhoto": "Review selected photo",

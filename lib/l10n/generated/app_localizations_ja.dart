@@ -1672,6 +1672,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get menuCaptureTagline => 'メニューから、\n好みのお酒が見つかる';
 
   @override
+  String get menuPhotoCaptureFailed => '撮影できませんでした。もう一度撮影してください。';
+
+  @override
+  String get menuCameraFlash => 'ライトの切り替え';
+
+  @override
   String get menuCapturePhoto => 'メニューを撮影';
 
   @override

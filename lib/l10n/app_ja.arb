@@ -550,6 +550,8 @@
   "menuCaptureTitle": "メニューを撮影",
   "menuCaptureDescription": "日本酒の名前が読めるように、メニュー全体を撮影してください。",
   "menuCaptureTagline": "メニューから、\n好みのお酒が見つかる",
+  "menuPhotoCaptureFailed": "撮影できませんでした。もう一度撮影してください。",
+  "menuCameraFlash": "ライトの切り替え",
   "menuCapturePhoto": "メニューを撮影",
   "menuChoosePhoto": "写真から選ぶ",
   "menuResumePhoto": "選択した写真を確認",

@@ -32,6 +32,10 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_histo
 import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
 import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
 
+import 'package:camera_platform_interface/camera_platform_interface.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_camera_page.dart';
+import '../../support/fake_menu_camera.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory directory;
@@ -552,6 +556,73 @@ void main() {
     return (notifier, repository, history);
   }
 
+  Future<void> settleUntil(
+    WidgetTester tester,
+    bool Function() condition,
+  ) async {
+    for (var i = 0; i < 100 && !condition(); i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(
+      condition(),
+      isTrue,
+      reason: 'Asynchronous menu operation did not settle',
+    );
+  }
+
+  testWidgets('撮影は使用確認を挟まず切り抜き・撮り直し画面へ進み、キャンセルなら元写真を保つ', (tester) async {
+    final originalPlatform = CameraPlatform.instance;
+    final camera = FakeMenuCamera(path: photo.path);
+    CameraPlatform.instance = camera;
+    addTearDown(() async {
+      CameraPlatform.instance = originalPlatform;
+      await camera.close();
+    });
+    final (notifier, repo, _) = await setupNotifier(tester);
+    MenuSearchPageState? state;
+    notifier.addListener((value) => state = value);
+    var picked = false;
+    unawaited(notifier.pickImageFromCamera().then((_) => picked = true));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuCameraPage), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('menu-camera-shutter')));
+    await settleUntil(tester, () => picked);
+    await tester.pumpAndSettle();
+    expect(state!.sakeImage, isNotNull);
+    expect(repo.requests, isEmpty);
+    final selected = state!.sakeImage;
+    final flow = Navigator.of(notifier.context).push<void>(
+      MaterialPageRoute(builder: (_) => MenuPhotoFlowPage(notifier: notifier)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('この写真で解析する'), findsOneWidget);
+    expect(find.text('切り抜き'), findsOneWidget);
+    expect(find.text('撮り直す'), findsOneWidget);
+    await tester.tap(find.text('撮り直す'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuCameraPage), findsOneWidget);
+    await tester.tap(find.byTooltip('戻る'));
+    await tester.pumpAndSettle();
+    expect(state!.sakeImage, selected);
+    expect(repo.requests, isEmpty);
+    await tester.tap(find.text('撮り直す'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('menu-camera-shutter')));
+    await settleUntil(tester, () => state!.sakeImage != selected);
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuCameraPage), findsNothing);
+    expect(find.text('この写真で解析する'), findsOneWidget);
+    expect(camera.captures, 2);
+    expect(repo.requests, isEmpty);
+    Navigator.of(notifier.context).pop();
+    await tester.pumpAndSettle();
+    await flow;
+    notifier.dispose();
+  });
+
   testWidgets('過去の解析詳細も青背景で、場所変更後のタイトル・位置情報が残る', (tester) async {
     await size(tester);
     final (notifier, _, history) = await setupNotifier(tester);
@@ -635,23 +706,6 @@ void main() {
     notifier.restoreOriginalPhoto();
     expect(state!.sakeImage, original);
   });
-
-  Future<void> settleUntil(
-    WidgetTester tester,
-    bool Function() condition,
-  ) async {
-    for (var i = 0; i < 100 && !condition(); i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 5)),
-      );
-      await tester.pump(const Duration(milliseconds: 16));
-    }
-    expect(
-      condition(),
-      isTrue,
-      reason: 'Asynchronous menu operation did not settle',
-    );
-  }
 
   testWidgets('確認→任意の切り抜きキャンセル→解析中止→再解析→結果へ進む', (tester) async {
     final (notifier, repo, history) = await setupNotifier(tester);

@@ -3266,6 +3266,18 @@ abstract class AppLocalizations {
   /// **'メニューから、\n好みのお酒が見つかる'**
   String get menuCaptureTagline;
 
+  /// No description provided for @menuPhotoCaptureFailed.
+  ///
+  /// In ja, this message translates to:
+  /// **'撮影できませんでした。もう一度撮影してください。'**
+  String get menuPhotoCaptureFailed;
+
+  /// No description provided for @menuCameraFlash.
+  ///
+  /// In ja, this message translates to:
+  /// **'ライトの切り替え'**
+  String get menuCameraFlash;
+
   /// No description provided for @menuCapturePhoto.
   ///
   /// In ja, this message translates to:
