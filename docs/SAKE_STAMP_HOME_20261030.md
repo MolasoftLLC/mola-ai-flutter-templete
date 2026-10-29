@@ -15,3 +15,7 @@
 ![ホーム](images/sake_stamp_home_20261030/home-stamp-book.png)
 ![専用ページ](images/sake_stamp_home_20261030/dedicated-stamp-book.png)
 ![小画面・文字拡大](images/sake_stamp_home_20261030/dedicated-stamp-book-small.png)
+
+## iOS配信
+
+iOS 5.0.39（169）を2026-10-30 02:12 JSTにAppleへ送信済み。[送信結果と検証](RELEASE_169_IOS_SAKE_STAMP_HOME_20261030.md)。
