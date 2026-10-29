@@ -1566,7 +1566,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontLabelScanDescription =>
-      'Fit the entire front label inside the guide.';
+      'Align the bottle with the guide and move close enough to capture a large, clear label.';
 
   @override
   String get backLabelScanTitle => 'Capture the back label';

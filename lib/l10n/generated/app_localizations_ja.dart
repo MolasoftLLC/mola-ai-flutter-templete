@@ -1495,7 +1495,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get frontLabelScanTitle => '正面ラベルを撮影';
 
   @override
-  String get frontLabelScanDescription => 'ラベル全体がガイド枠に収まるように撮影してください。';
+  String get frontLabelScanDescription => '瓶を枠に合わせ、ラベルが大きく写る距離で撮影してください。';
 
   @override
   String get backLabelScanTitle => '裏ラベルを撮影';

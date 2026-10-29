@@ -2927,7 +2927,7 @@ abstract class AppLocalizations {
   /// No description provided for @frontLabelScanDescription.
   ///
   /// In ja, this message translates to:
-  /// **'ラベル全体がガイド枠に収まるように撮影してください。'**
+  /// **'瓶を枠に合わせ、ラベルが大きく写る距離で撮影してください。'**
   String get frontLabelScanDescription;
 
   /// No description provided for @backLabelScanTitle.

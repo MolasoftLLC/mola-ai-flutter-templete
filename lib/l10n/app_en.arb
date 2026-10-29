@@ -492,7 +492,7 @@
   "noPreferenceConfigured": "Set your preferences before trying this feature.",
   "fastLabelScan": "Scan a label",
   "frontLabelScanTitle": "Capture the front label",
-  "frontLabelScanDescription": "Fit the entire front label inside the guide.",
+  "frontLabelScanDescription": "Align the bottle with the guide and move close enough to capture a large, clear label.",
   "backLabelScanTitle": "Capture the back label",
   "backLabelScanDescription": "Make sure the product name, producer, and volume are readable.",
   "scanBackPromptTitle": "Capture the back label",

@@ -960,13 +960,10 @@ class _SakeScanPageState extends State<SakeScanPage>
                       state.status == SakeScanViewStatus.backScanning))
                 Positioned.fill(
                   child: IgnorePointer(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 136, 20, 166),
-                      child: LabelCaptureGuide(
-                        isBackLabel:
-                            _isMenuCapture ||
-                            state.status == SakeScanViewStatus.backScanning,
-                      ),
+                    child: LabelCaptureGuide(
+                      isBackLabel:
+                          _isMenuCapture ||
+                          state.status == SakeScanViewStatus.backScanning,
                     ),
                   ),
                 ),

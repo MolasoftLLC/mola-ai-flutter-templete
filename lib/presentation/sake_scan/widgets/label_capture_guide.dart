@@ -7,10 +7,22 @@ class LabelCaptureGuide extends StatelessWidget {
   final bool isBackLabel;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: AspectRatio(
-      aspectRatio: isBackLabel ? 0.80 : 0.50,
-      child: CustomPaint(painter: _LabelCaptureGuidePainter(isBackLabel)),
+  Widget build(BuildContext context) => Padding(
+    // The front bottle is intentionally large and extends behind the floating
+    // controls. This is a visual overlay only; it must not intercept touch.
+    padding: isBackLabel
+        ? const EdgeInsets.fromLTRB(20, 136, 20, 166)
+        : EdgeInsets.fromLTRB(
+            12,
+            128 + (MediaQuery.textScalerOf(context).scale(12) - 12) * 5,
+            12,
+            12,
+          ),
+    child: Center(
+      child: AspectRatio(
+        aspectRatio: isBackLabel ? 0.80 : 0.34,
+        child: CustomPaint(painter: _LabelCaptureGuidePainter(isBackLabel)),
+      ),
     ),
   );
 }
@@ -31,27 +43,33 @@ class _LabelCaptureGuidePainter extends CustomPainter {
     } else {
       final width = size.width;
       final height = size.height;
-      // Sake bottle: a narrow capped neck, gently rounded shoulders,
-      // straight body and a softly rounded base.
+      // A four-go/issho sake bottle: short cap, slim neck, long sloping
+      // shoulders and a tall cylindrical body, rather than a broad wine shape.
       path
-        ..moveTo(width * 0.39, height * 0.02)
-        ..lineTo(width * 0.61, height * 0.02)
+        ..moveTo(width * 0.37, height * 0.02)
+        ..lineTo(width * 0.63, height * 0.02)
         ..quadraticBezierTo(
-          width * 0.63,
+          width * 0.65,
           height * 0.02,
-          width * 0.63,
-          height * 0.035,
+          width * 0.65,
+          height * 0.03,
         )
-        ..lineTo(width * 0.63, height * 0.055)
-        ..lineTo(width * 0.61, height * 0.065)
-        ..lineTo(width * 0.61, height * 0.24)
+        ..lineTo(width * 0.65, height * 0.06)
+        ..lineTo(width * 0.63, height * 0.07)
+        ..lineTo(width * 0.63, height * 0.18)
         ..cubicTo(
-          width * 0.61,
+          width * 0.63,
+          height * 0.23,
+          width * 0.85,
+          height * 0.27,
+          width * 0.90,
           height * 0.32,
+        )
+        ..quadraticBezierTo(
           width * 0.92,
           height * 0.34,
           width * 0.92,
-          height * 0.46,
+          height * 0.38,
         )
         ..lineTo(width * 0.92, height * 0.95)
         ..quadraticBezierTo(
@@ -67,22 +85,28 @@ class _LabelCaptureGuidePainter extends CustomPainter {
           width * 0.08,
           height * 0.95,
         )
-        ..lineTo(width * 0.08, height * 0.46)
-        ..cubicTo(
+        ..lineTo(width * 0.08, height * 0.38)
+        ..quadraticBezierTo(
           width * 0.08,
           height * 0.34,
-          width * 0.39,
+          width * 0.10,
           height * 0.32,
-          width * 0.39,
-          height * 0.24,
         )
-        ..lineTo(width * 0.39, height * 0.065)
-        ..lineTo(width * 0.37, height * 0.055)
-        ..lineTo(width * 0.37, height * 0.035)
-        ..quadraticBezierTo(
+        ..cubicTo(
+          width * 0.15,
+          height * 0.27,
           width * 0.37,
+          height * 0.23,
+          width * 0.37,
+          height * 0.18,
+        )
+        ..lineTo(width * 0.37, height * 0.07)
+        ..lineTo(width * 0.35, height * 0.06)
+        ..lineTo(width * 0.35, height * 0.03)
+        ..quadraticBezierTo(
+          width * 0.35,
           height * 0.02,
-          width * 0.39,
+          width * 0.37,
           height * 0.02,
         )
         ..close();

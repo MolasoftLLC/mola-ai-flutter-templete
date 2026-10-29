@@ -492,7 +492,7 @@
   "noPreferenceConfigured": "好みの設定が完了していません。好みを登録してからお試しください。",
   "fastLabelScan": "ラベルを撮る",
   "frontLabelScanTitle": "正面ラベルを撮影",
-  "frontLabelScanDescription": "ラベル全体がガイド枠に収まるように撮影してください。",
+  "frontLabelScanDescription": "瓶を枠に合わせ、ラベルが大きく写る距離で撮影してください。",
   "backLabelScanTitle": "裏ラベルを撮影",
   "backLabelScanDescription": "商品名・製造者・容量などが読めるように裏ラベルを撮影してください。",
   "scanBackPromptTitle": "裏ラベルを撮影しましょう",
