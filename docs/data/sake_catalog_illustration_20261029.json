@@ -1,0 +1,7 @@
+{
+  "tool": "built-in image_gen",
+  "asset": "assets/images/sake_catalog_illustration.png",
+  "prompt": "Use case: stylized-concept. Asset type: a single square fallback thumbnail used inside Japanese sake app SAKEPEDIA for sake brands and individual products with no photograph. Primary request: tasteful hand-drawn illustration of one traditional Japanese nihonshu sake bottle with softly sloping shoulders, narrow neck and plain paper label, accompanied by a small ceramic ochoko cup. Style: warm minimal editorial pen-and-ink sketch, slightly imperfect hand-drawn navy outlines, restrained soft sage-green wash on the bottle, tiny warm orange accent on label, off-white background #F4F7F6. Composition: centered, entire bottle and cup visible, no cropping, generous clear margins, recognizable at 64 pixels. Flat front view with subtle pencil texture, no photorealism, no people, no lettering or Japanese characters, no brand logo, no watermark, no frame, no drop shadows. Match a calm premium Japanese sake discovery app with navy #143861 and warm orange #FF914D.",
+  "original": "/Users/mukae-mini/.codex/generated_images/01a17b75-0932-74a0-bd6e-87df46404c69/exec-81722f3c-a342-475b-8265-cd4dfb73738b.png",
+  "usage": "共通の欠損画像サムネイル。銘柄の公式ロゴや実商品のラベルではない。"
+}

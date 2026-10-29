@@ -7,6 +7,14 @@ import 'package:flutter/services.dart';
 const japanMapNavy = Color(0xFF143861);
 const japanMapOrange = Color(0xFFFF914D);
 
+Color sakeJourneyColor(int count) => count >= 10
+    ? japanMapOrange
+    : count >= 5
+    ? const Color(0xFFFFD54F)
+    : count >= 1
+    ? const Color(0xFFFFEDB2)
+    : const Color(0xFFE1E9E9);
+
 class JapanSakePrefecture {
   JapanSakePrefecture({
     required this.code,
@@ -80,10 +88,12 @@ class JapanSakeMap extends StatelessWidget {
     super.key,
     required this.prefectures,
     this.selectedCode,
+    this.productCounts = const {},
     required this.onSelected,
   });
   final List<JapanSakePrefecture> prefectures;
   final int? selectedCode;
+  final Map<int, int> productCounts;
   final ValueChanged<JapanSakePrefecture> onSelected;
 
   @override
@@ -109,7 +119,7 @@ class JapanSakeMap extends StatelessWidget {
         },
         child: CustomPaint(
           size: size,
-          painter: _JapanMapPainter(prefectures, selectedCode),
+          painter: _JapanMapPainter(prefectures, selectedCode, productCounts),
         ),
       );
     },
@@ -117,9 +127,14 @@ class JapanSakeMap extends StatelessWidget {
 }
 
 class _JapanMapPainter extends CustomPainter {
-  const _JapanMapPainter(this.prefectures, this.selectedCode);
+  const _JapanMapPainter(
+    this.prefectures,
+    this.selectedCode,
+    this.productCounts,
+  );
   final List<JapanSakePrefecture> prefectures;
   final int? selectedCode;
+  final Map<int, int> productCounts;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -134,9 +149,9 @@ class _JapanMapPainter extends CustomPainter {
       final selected = prefecture.code == selectedCode;
       canvas.drawPath(
         prefecture.path,
-        Paint()..color = selected ? japanMapOrange : const Color(0xFFE1E9E9),
+        Paint()..color = sakeJourneyColor(productCounts[prefecture.code] ?? 0),
       );
-      if (!selected) {
+      if ((productCounts[prefecture.code] ?? 0) == 0) {
         final dot = Paint()..color = japanMapNavy.withValues(alpha: .58);
         for (final point in prefecture.dots) {
           canvas.drawCircle(point, 2.15, dot);
@@ -145,9 +160,9 @@ class _JapanMapPainter extends CustomPainter {
       canvas.drawPath(
         prefecture.path,
         Paint()
-          ..color = Colors.white
+          ..color = selected ? japanMapNavy : Colors.white
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
+          ..strokeWidth = selected ? 4 : 2,
       );
     }
     // Separate the southwest-islands inset without moving the main islands.
@@ -164,5 +179,157 @@ class _JapanMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(_JapanMapPainter oldDelegate) =>
       oldDelegate.selectedCode != selectedCode ||
-      oldDelegate.prefectures != prefectures;
+      oldDelegate.prefectures != prefectures ||
+      !mapEquals(oldDelegate.productCounts, productCounts);
+}
+
+/// Keeps taps in map coordinates while the viewer applies zoom and pan.
+class ZoomableJapanSakeMap extends StatefulWidget {
+  const ZoomableJapanSakeMap({
+    super.key,
+    required this.prefectures,
+    required this.onSelected,
+    this.selectedCode,
+    this.productCounts = const {},
+    this.onExpand,
+  });
+  final List<JapanSakePrefecture> prefectures;
+  final ValueChanged<JapanSakePrefecture> onSelected;
+  final int? selectedCode;
+  final Map<int, int> productCounts;
+  final VoidCallback? onExpand;
+  @override
+  State<ZoomableJapanSakeMap> createState() => _ZoomableJapanSakeMapState();
+}
+
+class _ZoomableJapanSakeMapState extends State<ZoomableJapanSakeMap> {
+  final _transform = TransformationController();
+  double _scale = 1;
+  Offset _doubleTap = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _transform.addListener(_changed);
+  }
+
+  void _changed() {
+    final next = _transform.value.getMaxScaleOnAxis();
+    if ((next - _scale).abs() > .01) setState(() => _scale = next);
+  }
+
+  @override
+  void dispose() {
+    _transform.removeListener(_changed);
+    _transform.dispose();
+    super.dispose();
+  }
+
+  void _zoom(double target, Offset center) {
+    final scale = target.clamp(1.0, 6.0);
+    final scene = _transform.toScene(center);
+    _transform.value = scale == 1
+        ? Matrix4.identity()
+        : (Matrix4.diagonal3Values(scale, scale, 1)..setTranslationRaw(
+            center.dx - scene.dx * scale,
+            center.dy - scene.dy * scale,
+            0,
+          ));
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final center = Size(
+        constraints.maxWidth,
+        constraints.maxHeight - 56,
+      ).center(Offset.zero);
+      final english = Localizations.localeOf(context).languageCode == 'en';
+      return Stack(
+        children: [
+          Positioned.fill(
+            bottom: 56,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: GestureDetector(
+                onDoubleTapDown: (details) =>
+                    _doubleTap = details.localPosition,
+                onDoubleTap: () => _zoom(_scale > 1.1 ? 1 : 2.5, _doubleTap),
+                child: InteractiveViewer(
+                  key: const ValueKey('japan-map-viewer'),
+                  transformationController: _transform,
+                  minScale: 1,
+                  maxScale: 6,
+                  panEnabled: _scale > 1.01,
+                  child: JapanSakeMap(
+                    prefectures: widget.prefectures,
+                    selectedCode: widget.selectedCode,
+                    productCounts: widget.productCounts,
+                    onSelected: widget.onSelected,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: Colors.white.withValues(alpha: .95),
+              borderRadius: BorderRadius.circular(14),
+              elevation: 1,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: const ValueKey('japan-map-zoom-in'),
+                    tooltip: english ? 'Zoom in' : '拡大',
+                    color: japanMapNavy,
+                    onPressed: _scale >= 5.99
+                        ? null
+                        : () => _zoom(_scale * 1.6, center),
+                    icon: const Icon(Icons.add),
+                  ),
+                  IconButton(
+                    key: const ValueKey('japan-map-zoom-out'),
+                    tooltip: english ? 'Zoom out' : '縮小',
+                    color: japanMapNavy,
+                    onPressed: _scale <= 1.01
+                        ? null
+                        : () => _zoom(_scale / 1.6, center),
+                    icon: const Icon(Icons.remove),
+                  ),
+                  IconButton(
+                    key: const ValueKey('japan-map-reset'),
+                    tooltip: english ? 'Show all Japan' : '全体を表示',
+                    color: japanMapNavy,
+                    onPressed: () => _transform.value = Matrix4.identity(),
+                    icon: const Icon(Icons.fit_screen),
+                  ),
+                  if (widget.onExpand != null)
+                    IconButton(
+                      key: const ValueKey('japan-map-expand'),
+                      tooltip: english ? 'Full screen map' : '大きな地図で選ぶ',
+                      color: japanMapNavy,
+                      onPressed: widget.onExpand,
+                      icon: const Icon(Icons.fullscreen),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 8,
+            top: 8,
+            child: IgnorePointer(
+              child: Text(
+                english ? 'Pinch to zoom · drag to move' : 'ピンチで拡大・ドラッグで移動',
+                style: const TextStyle(fontSize: 11, color: japanMapNavy),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }
