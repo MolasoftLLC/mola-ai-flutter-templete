@@ -79,7 +79,7 @@ void main() {
       expect(find.textContaining('カメラの使用が許可されていません'), findsOneWidget);
       expect(
         tester
-            .widget<OutlinedButton>(
+            .widget<FilledButton>(
               find.byKey(const ValueKey('menu-camera-shutter')),
             )
             .onPressed,
@@ -90,7 +90,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester
-            .widget<OutlinedButton>(
+            .widget<FilledButton>(
               find.byKey(const ValueKey('menu-camera-shutter')),
             )
             .onPressed,

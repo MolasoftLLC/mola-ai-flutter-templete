@@ -284,24 +284,27 @@ class _MenuCameraPageState extends State<MenuCameraPage>
                     const SizedBox(width: 64),
                     const Spacer(),
                     SizedBox.square(
-                      dimension: 80,
-                      child: OutlinedButton(
+                      dimension: 76,
+                      child: FilledButton(
                         key: const ValueKey('menu-camera-shutter'),
                         onPressed: ready && !_capturing ? _capture : null,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: MenuPhotoStyle.ink,
-                          disabledBackgroundColor: Colors.white24,
+                        style: FilledButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          shape: const CircleBorder(),
-                          side: const BorderSide(
-                            color: MenuPhotoStyle.yellow,
-                            width: 5,
+                          shape: const CircleBorder(
+                            side: BorderSide(color: Colors.white, width: 4),
                           ),
+                          backgroundColor: const Color(0xFFFFD54F),
+                          foregroundColor: const Color(0xFF1D3567),
                         ),
                         child: _capturing
-                            ? const CircularProgressIndicator()
-                            : const MenuPhotoIcon('camera', size: 36),
+                            ? const SizedBox.square(
+                                dimension: 24,
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF1D3567),
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : const Icon(Icons.camera_alt_rounded, size: 34),
                       ),
                     ),
                     const Spacer(),

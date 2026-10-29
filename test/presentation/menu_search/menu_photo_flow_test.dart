@@ -593,6 +593,7 @@ void main() {
   }
 
   testWidgets('撮影は使用確認を挟まず切り抜き・撮り直し画面へ進み、キャンセルなら元写真を保つ', (tester) async {
+    await size(tester);
     final originalPlatform = CameraPlatform.instance;
     final camera = FakeMenuCamera(path: photo.path);
     CameraPlatform.instance = camera;
@@ -607,6 +608,7 @@ void main() {
     unawaited(notifier.pickImageFromCamera().then((_) => picked = true));
     await tester.pumpAndSettle();
     expect(find.byType(MenuCameraPage), findsOneWidget);
+    await preview(tester, 'menu-camera');
     await tester.tap(find.byKey(const ValueKey('menu-camera-shutter')));
     await settleUntil(tester, () => picked);
     await tester.pumpAndSettle();
