@@ -8,6 +8,7 @@ import 'widgets/sake_catalog_thumbnail.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/japan_sake_map.dart';
 import 'widgets/sake_journey_progress.dart';
+import '../my_page/saved_sake_detail_page.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -314,11 +315,39 @@ class _JapanSakePageState extends State<JapanSakePage> {
           ),
           const SizedBox(height: 12),
           if (_selected != null && ready)
-            Text(
-              _english(context)
-                  ? '${progress.counts[_selected!.code] ?? 0} products in your records'
-                  : '${_selected!.name}：記録したお酒 ${progress.counts[_selected!.code] ?? 0}商品',
-              style: const TextStyle(color: japanMapNavy, fontSize: 13),
+            OutlinedButton(
+              key: const ValueKey('open-prefecture-records'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => JapanSakeRecordsPage(prefecture: _selected!),
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: japanMapNavy,
+                backgroundColor: const Color(0xFFFFF4D0),
+                side: const BorderSide(color: Color(0xFFF2D47E)),
+                padding: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _english(context)
+                          ? '${_selected!.label(context)}: ${progress.counts[_selected!.code] ?? 0} products in your records'
+                          : '${_selected!.name}：記録したお酒 ${progress.counts[_selected!.code] ?? 0}商品',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 20),
+                ],
+              ),
             ),
           const SizedBox(height: 16),
           if (_selected == null)
@@ -377,6 +406,84 @@ class _JapanSakePageState extends State<JapanSakePage> {
         ],
       ),
     ),
+  );
+}
+
+class JapanSakeRecordsPage extends StatelessWidget {
+  const JapanSakeRecordsPage({super.key, required this.prefecture});
+  final JapanSakePrefecture prefecture;
+
+  @override
+  Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    builder: (context, progress, legend, ready) {
+      final records =
+          progress.productsByPrefecture[prefecture.code] ?? const [];
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F9F8),
+        appBar: AppBar(
+          title: Text(
+            _english(context)
+                ? 'Your sake from ${prefecture.label(context)}'
+                : '${prefecture.name}のお酒の記録',
+          ),
+          backgroundColor: Colors.white,
+          foregroundColor: japanMapNavy,
+          surfaceTintColor: Colors.transparent,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+          children: [
+            if (!ready)
+              legend
+            else ...[
+              Text(
+                _english(context)
+                    ? '${records.length} products · based on brewery origin'
+                    : '${records.length}商品・蔵元の所在地で集計',
+                style: const TextStyle(color: japanMapNavy),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _english(context)
+                    ? 'The same product is shown once, even with multiple records.'
+                    : '同じ商品は、複数の記録があっても1つにまとめています。',
+                style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              if (records.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Text(
+                    _english(context)
+                        ? 'No sake recorded from this prefecture yet.'
+                        : 'この県のお酒の記録はまだありません。',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: japanMapNavy),
+                  ),
+                ),
+              for (final sake in records)
+                _CatalogCard(
+                  rowKey: ValueKey('japan-record-${sake.sakeId}'),
+                  title: sake.name ?? (_english(context) ? 'Sake' : '名称不明の日本酒'),
+                  subtitle: [
+                    sake.brewery,
+                    sake.type,
+                  ].whereType<String>().join(' ・ '),
+                  thumbnail: SakeCatalogThumbnail(
+                    thumbnailImageUrl: sake.thumbnailImageUrl,
+                    primaryImageUrl: sake.primaryImageUrl,
+                  ),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SavedSakeDetailPage.forSake(sake),
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      );
+    },
   );
 }
 
