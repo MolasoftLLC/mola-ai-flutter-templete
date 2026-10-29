@@ -10,6 +10,7 @@ import 'widgets/japan_sake_map.dart';
 import 'widgets/sake_journey_progress.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
+import 'widgets/japan_sake_feedback_button.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -252,6 +253,7 @@ class _JapanSakePageState extends State<JapanSakePage> {
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: PrimaryAppBar(
         title: _english(context) ? 'Sake map of Japan' : '日本酒を旅する',
+        actions: const [JapanSakeFeedbackButton()],
       ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
