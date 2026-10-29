@@ -1,0 +1,16 @@
+{
+  "bundleId": "okinawa.molasoft.sakepedia",
+  "versionName": "5.0.30",
+  "buildNumber": 160,
+  "sourceCommit": "9b522bb",
+  "implementationCommit": "c9342ef",
+  "mapsResolved": true,
+  "archive": "build/ios/archive/SAKEPEDIA-5.0.30-160.xcarchive",
+  "distributionMethod": "App Store Connect",
+  "internalOnly": false,
+  "organizerStatus": "Uploaded to Apple",
+  "appleProcessingConfirmed": false,
+  "appReviewSubmitted": false,
+  "uploadedAtJst": "2026-10-29 19:35 JST",
+  "uploadedTimePrecision": "Organizer display: minute"
+}
