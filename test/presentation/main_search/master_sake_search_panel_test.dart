@@ -61,7 +61,12 @@ Widget _app(_FakePlaceMapRepository repository) =>
     );
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  // These cases exercise search results after AI data-sharing consent.
+  setUp(
+    () => SharedPreferences.setMockInitialValues({
+      'ai_data_sharing_consent_v1_guest': true,
+    }),
+  );
 
   testWidgets('空欄ではAI解析ボタンを灰色の無効状態で常時表示する', (tester) async {
     final repository = _FakePlaceMapRepository(normalResults: const []);
