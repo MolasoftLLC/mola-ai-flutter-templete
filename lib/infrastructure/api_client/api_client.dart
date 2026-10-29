@@ -51,6 +51,12 @@ abstract class ApiClient extends ChopperService {
   @Get(path: 'menu-analysis-history')
   Future<Response> fetchMenuAnalysisHistory(@Query('ownerUid') String ownerUid);
 
+  @Get(path: 'menu-analysis-history/page')
+  Future<Response> fetchMenuAnalysisHistoryPage(
+    @Query('ownerUid') String ownerUid, {
+    @Query('cursor') String? cursor,
+  });
+
   @Put(path: 'menu-analysis-history/{id}')
   Future<Response> saveMenuAnalysisHistoryItem(
     @Path('id') String id,

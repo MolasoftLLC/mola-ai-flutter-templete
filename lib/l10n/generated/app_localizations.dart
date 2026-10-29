@@ -3182,6 +3182,18 @@ abstract class AppLocalizations {
   /// **'解析結果を履歴へ保存できませんでした。結果を残したまま再試行できます。'**
   String get menuHistorySaveFailed;
 
+  /// No description provided for @menuRemovePlace.
+  ///
+  /// In ja, this message translates to:
+  /// **'飲んだ場所を解除'**
+  String get menuRemovePlace;
+
+  /// No description provided for @retryLoad.
+  ///
+  /// In ja, this message translates to:
+  /// **'再読み込み'**
+  String get retryLoad;
+
   /// No description provided for @menuHistoryLoadFailed.
   ///
   /// In ja, this message translates to:

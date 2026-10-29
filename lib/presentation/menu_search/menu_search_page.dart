@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
-import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_section.dart';
+import 'menu_history_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sake_result_tile.dart';
 import 'package:provider/provider.dart';
 
@@ -99,28 +99,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
 
   Future<void> _showHistory(String? id) async {
     final notifier = context.read<MenuSearchPageNotifier>();
-    if (id != null) notifier.restoreHistoryDetails(id);
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) =>
-            StateNotifierProvider<
-              MenuSearchPageNotifier,
-              MenuSearchPageState
-            >.value(
-              value: notifier,
-              child: Scaffold(
-                backgroundColor: MenuPhotoStyle.blue,
-                appBar: MenuPhotoStyle.appBar(
-                  context.l10n.menuRecentAnalyses,
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                body: SingleChildScrollView(
-                  child: MenuHistorySection(historyId: id),
-                ),
-              ),
-            ),
-      ),
-    );
+    await MenuHistoryPage.open(context, notifier, historyId: id);
   }
 
   @override
@@ -149,9 +128,6 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
     );
     final isMasterLookupComplete = context.select(
       (MenuSearchPageState state) => state.isMasterLookupComplete,
-    );
-    final sakeImage = context.select(
-      (MenuSearchPageState state) => state.sakeImage,
     );
     final extractedSakes = context.select(
       (MenuSearchPageState state) => state.extractedSakes,
@@ -225,9 +201,6 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                   history: history,
                   onCamera: () => _pickPhoto(notifier.pickImageFromCamera),
                   onGallery: () => _pickPhoto(notifier.pickImageFromGallery),
-                  onResume: sakeImage == null || extractedSakes.isNotEmpty
-                      ? null
-                      : _showPhotoFlow,
                   onHistory: (id) => _showHistory(id),
                   onMore: () => _showHistory(null),
                 ),

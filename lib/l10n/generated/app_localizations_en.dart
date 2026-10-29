@@ -1711,6 +1711,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'The analysis could not be saved to history. You can retry without losing the result.';
 
   @override
+  String get menuRemovePlace => 'Remove drinking location';
+
+  @override
+  String get retryLoad => 'Retry';
+
+  @override
   String get menuHistoryLoadFailed =>
       'The analysis history could not be loaded.';
 

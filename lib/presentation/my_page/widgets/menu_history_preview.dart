@@ -7,9 +7,8 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../common/localization/localization_extensions.dart';
 import '../../../common/utils/file_utils.dart';
-import '../../common/widgets/primary_app_bar.dart';
 import '../../menu_search/menu_search_page_notifier.dart';
-import '../../menu_search/widgets/menu_history_section.dart';
+import '../../menu_search/menu_history_page.dart';
 
 class MenuHistoryPreview extends StatelessWidget {
   const MenuHistoryPreview._();
@@ -27,34 +26,7 @@ class MenuHistoryPreview extends StatelessWidget {
       historyId == null ? 'more' : 'history',
     );
     final notifier = context.read<MenuSearchPageNotifier>();
-    if (historyId != null) {
-      // Populate missing details in older histories without another AI analysis.
-      notifier.restoreHistoryDetails(historyId);
-    }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) =>
-            StateNotifierProvider<
-              MenuSearchPageNotifier,
-              MenuSearchPageState
-            >.value(
-              value: notifier,
-              child: AnalyticsScreen(
-                name: 'menu',
-                child: Scaffold(
-                  backgroundColor: const Color(0xFF1D3567),
-                  appBar: PrimaryAppBar(title: context.l10n.pastMenuAnalysis),
-                  body: SingleChildScrollView(
-                    child: MenuHistorySection(
-                      historyId: historyId,
-                      showHeading: false,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-      ),
-    );
+    await MenuHistoryPage.open(context, notifier, historyId: historyId);
     if (context.mounted) await notifier.loadMenuAnalysisHistory();
   }
 

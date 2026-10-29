@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
 import '../../../common/localization/localization_extensions.dart';
 
-Widget buildMenuSakeInfoRow(String key, String value, IconData icon) {
+Widget buildMenuSakeInfoRow(
+  String key,
+  String value,
+  IconData icon, {
+  bool dark = false,
+}) {
   return Container(
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Colors.grey.shade50,
+      color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade50,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
+      border: Border.all(color: dark ? Colors.white24 : Colors.grey.shade200),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF1D3567), size: 20),
+        Icon(
+          icon,
+          color: dark ? Colors.white : const Color(0xFF1D3567),
+          size: 20,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -21,14 +30,20 @@ Widget buildMenuSakeInfoRow(String key, String value, IconData icon) {
             children: [
               Text(
                 key,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Color(0xFF1D3567),
+                  color: dark ? Colors.white : const Color(0xFF1D3567),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(fontSize: 16)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: dark ? Colors.white : null,
+                ),
+              ),
             ],
           ),
         ),
@@ -37,28 +52,36 @@ Widget buildMenuSakeInfoRow(String key, String value, IconData icon) {
   );
 }
 
-Widget buildMenuSakeTypesRow(BuildContext context, List<String> types) {
+Widget buildMenuSakeTypesRow(
+  BuildContext context,
+  List<String> types, {
+  bool dark = false,
+}) {
   return Container(
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: Colors.grey.shade50,
+      color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade50,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
+      border: Border.all(color: dark ? Colors.white24 : Colors.grey.shade200),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.local_bar, color: const Color(0xFF1D3567), size: 20),
+            Icon(
+              Icons.local_bar,
+              color: dark ? Colors.white : const Color(0xFF1D3567),
+              size: 20,
+            ),
             const SizedBox(width: 12),
             Text(
               context.l10n.type,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: Color(0xFF1D3567),
+                color: dark ? Colors.white : const Color(0xFF1D3567),
               ),
             ),
           ],
@@ -70,9 +93,11 @@ Widget buildMenuSakeTypesRow(BuildContext context, List<String> types) {
           children: types.map((type) {
             return Chip(
               label: Text(type),
-              backgroundColor: const Color(0xFF1D3567).withOpacity(0.1),
-              labelStyle: const TextStyle(
-                color: Color(0xFF1D3567),
+              backgroundColor: dark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFF1D3567).withValues(alpha: 0.1),
+              labelStyle: TextStyle(
+                color: dark ? Colors.white : const Color(0xFF1D3567),
                 fontWeight: FontWeight.bold,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

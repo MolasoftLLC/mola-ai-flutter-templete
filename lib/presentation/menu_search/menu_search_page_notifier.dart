@@ -1076,6 +1076,23 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   // メニュー解析履歴を読み込む
+  Future<String?> loadMoreMenuHistory({String? cursor}) async {
+    bool isOwner() =>
+        mounted &&
+        context.mounted &&
+        context.read<AuthRepository>().currentUser?.uid ==
+            _historyRepository.ownerId;
+    if (!isOwner()) return null;
+    if (_historyRepository.ownerId == null) return null;
+    final next = await _historyRepository.fetchPage(
+      context.read<ApiClient>(),
+      isOwner,
+      cursor: cursor,
+    );
+    if (isOwner()) await loadMenuAnalysisHistory();
+    return isOwner() ? next : null;
+  }
+
   Future<void> loadMenuAnalysisHistory() async {
     try {
       final history = await _historyRepository.load();
@@ -1212,7 +1229,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       updatedHistory.sort((a, b) => b.date.compareTo(a.date));
       _pendingHistoryItem = null;
       state = state.copyWith(
-        menuAnalysisHistory: updatedHistory.take(20).toList(growable: false),
+        menuAnalysisHistory: updatedHistory.toList(growable: false),
         errorMessage: state.errorMessage == context.l10n.menuHistorySaveFailed
             ? null
             : state.errorMessage,
@@ -1252,7 +1269,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       ]..sort((a, b) => b.date.compareTo(a.date));
       _pendingHistoryItem = null;
       state = state.copyWith(
-        menuAnalysisHistory: updated.take(20).toList(growable: false),
+        menuAnalysisHistory: updated.toList(growable: false),
         errorMessage: null,
       );
     } catch (e) {
@@ -1303,48 +1320,51 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                 SakeOverview.fromJson(Map<String, dynamic>.from(row as Map)),
           )
           .toList();
-      final latest = state.menuAnalysisHistory
-          .where((item) => item.id == historyId)
-          .firstOrNull;
-      if (latest == null) return;
-      final myPage = read<MyPageNotifier>().state;
-      final preference = menuTastePreference(
-        profile: myPage.tasteProfile,
-        preferences: myPage.preferences,
-      );
-      final sakes = latest.sakes.map((sake) {
-        final overview = overviews
-            .where((detail) => detail.sake.sakeId == sake.sakeId)
+      await _writeHistory(() async {
+        if (!mounted) return;
+        final latest = state.menuAnalysisHistory
+            .where((item) => item.id == historyId)
             .firstOrNull;
-        if (overview == null) return sake;
-        final profile = sake.tasteProfile ?? overview.master.tasteProfile;
-        final percent =
-            sake.matchPercent ??
-            calculateOptionalSakeTasteMatchPercent(
-              profile: profile,
-              preference: preference,
-            );
-        return SavedSake(
-          name: sake.name,
-          type: sake.type,
-          extractedName: sake.extractedName,
-          sakeId: sake.sakeId,
-          matchPercent: percent,
-          recommendationBasis: sake.recommendationBasis,
-          isRecommended: percent == null ? sake.isRecommended : percent >= 70,
-          details: sake.details ?? overview.sake,
-          tasteProfile: profile,
+        if (latest == null) return;
+        final myPage = read<MyPageNotifier>().state;
+        final preference = menuTastePreference(
+          profile: myPage.tasteProfile,
+          preferences: myPage.preferences,
         );
-      }).toList();
-      final updated = latest.copyWith(sakes: sakes);
-      await _historyRepository.upsert(updated);
-      _scheduleHistorySync();
-      if (!mounted) return;
-      state = state.copyWith(
-        menuAnalysisHistory: state.menuAnalysisHistory
-            .map((item) => item.id == historyId ? updated : item)
-            .toList(),
-      );
+        final sakes = latest.sakes.map((sake) {
+          final overview = overviews
+              .where((detail) => detail.sake.sakeId == sake.sakeId)
+              .firstOrNull;
+          if (overview == null) return sake;
+          final profile = sake.tasteProfile ?? overview.master.tasteProfile;
+          final percent =
+              sake.matchPercent ??
+              calculateOptionalSakeTasteMatchPercent(
+                profile: profile,
+                preference: preference,
+              );
+          return SavedSake(
+            name: sake.name,
+            type: sake.type,
+            extractedName: sake.extractedName,
+            sakeId: sake.sakeId,
+            matchPercent: percent,
+            recommendationBasis: sake.recommendationBasis,
+            isRecommended: percent == null ? sake.isRecommended : percent >= 70,
+            details: sake.details ?? overview.sake,
+            tasteProfile: profile,
+          );
+        }).toList();
+        final updated = latest.copyWith(sakes: sakes);
+        await _historyRepository.upsert(updated);
+        _scheduleHistorySync();
+        if (!mounted) return;
+        state = state.copyWith(
+          menuAnalysisHistory: state.menuAnalysisHistory
+              .map((item) => item.id == historyId ? updated : item)
+              .toList(),
+        );
+      });
     } catch (error) {
       logger.warning('以前のメニュー履歴の詳細補完に失敗しました: $error');
     } finally {
@@ -1412,7 +1432,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   // 履歴項目を削除する
-  Future<void> deleteHistoryItem(String historyId) async {
+  Future<void> deleteHistoryItem(String historyId) =>
+      _writeHistory(() => _deleteHistoryItem(historyId));
+
+  Future<void> _deleteHistoryItem(String historyId) async {
     try {
       // 削除対象の履歴項目を取得
       final itemToDelete = state.menuAnalysisHistory.firstWhere(
@@ -1445,6 +1468,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     } catch (e) {
       logger.shout('メニュー解析履歴の削除に失敗しました: $e');
       state = state.copyWith(errorMessage: context.l10n.menuHistorySaveFailed);
+      rethrow;
     }
   }
 }

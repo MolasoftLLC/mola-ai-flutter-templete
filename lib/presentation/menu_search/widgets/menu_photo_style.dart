@@ -41,9 +41,10 @@ abstract final class MenuPhotoStyle {
 }
 
 class MenuPhotoIcon extends StatelessWidget {
-  const MenuPhotoIcon(this.name, {super.key, this.size = 20});
+  const MenuPhotoIcon(this.name, {super.key, this.size = 20, this.color});
   final String name;
   final double size;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => SvgPicture.asset(
@@ -51,6 +52,9 @@ class MenuPhotoIcon extends StatelessWidget {
     width: size,
     height: size,
     excludeFromSemantics: true,
+    colorFilter: color == null
+        ? null
+        : ColorFilter.mode(color!, BlendMode.srcIn),
   );
 }
 

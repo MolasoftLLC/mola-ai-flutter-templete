@@ -536,6 +536,8 @@
   "recentPublicPosts": "Recent public posts",
   "sameBrandSakes": "More from this brand",
   "menuHistorySaveFailed": "The analysis could not be saved to history. You can retry without losing the result.",
+  "menuRemovePlace": "Remove drinking location",
+  "retryLoad": "Retry",
   "menuHistoryLoadFailed": "The analysis history could not be loaded.",
   "retryHistorySave": "Retry saving history",
   "menuHistoryPartial": "Partially resolved",

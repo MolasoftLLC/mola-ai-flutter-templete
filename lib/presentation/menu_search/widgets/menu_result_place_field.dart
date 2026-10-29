@@ -11,8 +11,10 @@ class MenuResultPlaceField extends StatefulWidget {
     super.key,
     required this.history,
     required this.onSave,
+    this.pickPlace,
   });
 
+  final Future<DrinkingPlace?> Function(BuildContext, String?)? pickPlace;
   final MenuAnalysisHistoryItem? history;
   final Future<void> Function(DrinkingPlace) onSave;
 
@@ -27,12 +29,11 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
   Future<void> _pickPlace() async {
     AppAnalytics.instance.event('menu', 'place');
     if (_saving || widget.history == null) return;
-    final place = await PlacePickerSheet.show(
-      context,
-      initialPlace:
-          widget.history!.drinkingPlace?.displayName ??
-          widget.history!.storeName,
-    );
+    final initial =
+        widget.history!.drinkingPlace?.displayName ?? widget.history!.storeName;
+    final place = widget.pickPlace == null
+        ? await PlacePickerSheet.show(context, initialPlace: initial)
+        : await widget.pickPlace!(context, initial);
     if (!mounted || place == null) return;
     setState(() {
       _saving = true;
@@ -80,7 +81,9 @@ class _MenuResultPlaceFieldState extends State<MenuResultPlaceField> {
                     ),
                   )
                 : IconButton(
-                    tooltip: context.l10n.addConsumedPlace,
+                    tooltip: name?.trim().isNotEmpty == true
+                        ? context.l10n.changeConsumedPlace
+                        : context.l10n.addConsumedPlace,
                     onPressed: enabled ? _pickPlace : null,
                     icon: const Icon(
                       Icons.location_on_outlined,

@@ -29,6 +29,7 @@ class SakeResultTile extends StatefulWidget {
     required this.isLoading,
     required this.matchPercent,
     this.tasteProfile,
+    this.dark = false,
     required this.isUnverified,
     required this.candidates,
     required this.onCandidateSelected,
@@ -39,6 +40,7 @@ class SakeResultTile extends StatefulWidget {
     required this.buildTypesRow,
   });
 
+  final bool dark;
   final Sake sake;
   final Sake? detailedSake;
   final bool hasDetails;
@@ -65,6 +67,9 @@ class SakeResultTile extends StatefulWidget {
 }
 
 class _SakeResultTileState extends State<SakeResultTile> {
+  Color get _ink => widget.dark ? Colors.white : const Color(0xFF1D3567);
+  Color get _muted => widget.dark ? Colors.white70 : Colors.grey;
+
   late final ExpansionTileController _expansionController;
   final _storageBucket = PageStorageBucket();
   final _tagsScrollController = ScrollController(keepScrollOffset: false);
@@ -117,7 +122,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
             children: [
               IconButton(
                 tooltip: '商品詳細を開く',
-                icon: const Icon(Icons.open_in_new, size: 21),
+                icon: Icon(Icons.open_in_new, size: 21, color: _ink),
                 onPressed: widget.onOpenDetails == null
                     ? null
                     : () {
@@ -131,7 +136,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     : context.l10n.saveSake,
                 icon: Icon(
                   widget.isSaved ? Icons.bookmark : Icons.bookmark_outline,
-                  color: widget.isSaved ? const Color(0xFF1D3567) : Colors.grey,
+                  color: widget.isSaved ? _ink : _muted,
                   size: 22,
                 ),
                 onPressed: () async {
@@ -152,7 +157,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     : context.l10n.favorite,
                 icon: Icon(
                   widget.isFavorited ? Icons.favorite : Icons.favorite_border,
-                  color: widget.isFavorited ? Colors.red : Colors.grey,
+                  color: widget.isFavorited ? Colors.redAccent : _muted,
                   size: 22,
                 ),
                 onPressed: () {
@@ -194,7 +199,9 @@ class _SakeResultTileState extends State<SakeResultTile> {
         child: Stack(
           children: [
             Card(
-              elevation: 2,
+              color: widget.dark ? const Color(0xFF112B4B) : null,
+              margin: widget.dark ? EdgeInsets.zero : null,
+              elevation: widget.dark ? 0 : 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -241,7 +248,8 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                 ? (widget.detailedSake!.name ??
                                       context.l10n.unknown)
                                 : (widget.sake.name ?? context.l10n.unknown),
-                            style: const TextStyle(
+                            style: TextStyle(
+                              color: widget.dark ? Colors.white : null,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -263,7 +271,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 6),
                                 child: Chip(
-                                  label: Text(tag),
+                                  label: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      color: Color(0xFF17395F),
+                                    ),
+                                  ),
                                   visualDensity: VisualDensity.compact,
                                   backgroundColor: const Color(0xFFEAF0F7),
                                   side: BorderSide.none,
@@ -276,11 +289,20 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     if (matchPercent != null || profile != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: SakeTasteMatchPreview(
-                          percent: matchPercent,
-                          profile: profile,
-                          preference: preference,
-                          radarSize: 128,
+                        child: Container(
+                          padding: widget.dark
+                              ? const EdgeInsets.all(12)
+                              : EdgeInsets.zero,
+                          decoration: BoxDecoration(
+                            color: widget.dark ? const Color(0xFFEAF0F7) : null,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: SakeTasteMatchPreview(
+                            percent: matchPercent,
+                            profile: profile,
+                            preference: preference,
+                            radarSize: 128,
+                          ),
                         ),
                       ),
                   ],
@@ -290,7 +312,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   children: [
                     Text(
                       widget.sake.type ?? context.l10n.unknownType,
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: _muted),
                     ),
                     if (widget.candidates.isNotEmpty)
                       Padding(
@@ -328,10 +350,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                   ?.trim()
                                   .isNotEmpty ==
                               true) ...[
-                            const Text(
+                            Text(
                               'このお酒について',
                               style: TextStyle(
-                                color: Color(0xFF143861),
+                                color: _ink,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -339,9 +361,11 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             const SizedBox(height: 8),
                             Text(
                               widget.detailedSake!.description!.trim(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 height: 1.75,
-                                color: Color(0xFF404A56),
+                                color: widget.dark
+                                    ? Colors.white
+                                    : const Color(0xFF404A56),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -418,11 +442,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      icon: const Icon(
-                        Icons.expand_more,
-                        color: Color(0xFF1D3567),
-                        size: 28,
-                      ),
+                      icon: Icon(Icons.expand_more, color: _ink, size: 28),
                       onPressed: () {
                         if (_expansionController.isExpanded) {
                           _expansionController.collapse();

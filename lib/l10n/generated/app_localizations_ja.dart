@@ -1630,6 +1630,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get menuHistorySaveFailed => '解析結果を履歴へ保存できませんでした。結果を残したまま再試行できます。';
 
   @override
+  String get menuRemovePlace => '飲んだ場所を解除';
+
+  @override
+  String get retryLoad => '再読み込み';
+
+  @override
   String get menuHistoryLoadFailed => '解析履歴を読み込めませんでした。';
 
   @override

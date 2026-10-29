@@ -201,6 +201,25 @@ class _$ApiClient extends ApiClient {
   }
 
   @override
+  Future<Response<dynamic>> fetchMenuAnalysisHistoryPage(
+    String ownerUid, {
+    String? cursor,
+  }) {
+    final Uri $url = Uri.parse('/menu-analysis-history/page');
+    final Map<String, dynamic> $params = <String, dynamic>{
+      'ownerUid': ownerUid,
+      'cursor': cursor,
+    };
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+      parameters: $params,
+    );
+    return client.send<dynamic, dynamic>($request);
+  }
+
+  @override
   Future<Response<dynamic>> saveMenuAnalysisHistoryItem(
     String id,
     Map<String, dynamic> body,

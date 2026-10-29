@@ -24,6 +24,14 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_searc
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_capture_entry.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_photo_style.dart';
 
+import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_list.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_history_tile.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/menu_result_place_field.dart';
+import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_history_page.dart';
+
+import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_notifier.dart';
+import 'package:mola_gemini_flutter_template/domain/notifier/saved_sake/saved_sake_notifier.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory directory;
@@ -67,6 +75,9 @@ void main() {
           ),
         );
       await loader.load();
+      final icons = FontLoader('MaterialIcons')
+        ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+      await icons.load();
     }
   });
   tearDownAll(() => directory.delete(recursive: true));
@@ -96,23 +107,27 @@ void main() {
     Widget home, {
     double scale = 1,
     Locale locale = const Locale('ja'),
-  }) => MaterialApp(
-    theme: ThemeData(
-      fontFamily: const String.fromEnvironment('MENU_UI_FONT').isEmpty
-          ? null
-          : 'MenuPreview',
-    ),
-    locale: locale,
-    supportedLocales: AppLocalizations.supportedLocales,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(scale),
-        padding: const EdgeInsets.only(top: 44, bottom: 34),
+  }) => RepaintBoundary(
+    key: const ValueKey('preview'),
+    child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: const String.fromEnvironment('MENU_UI_FONT').isEmpty
+            ? null
+            : 'MenuPreview',
       ),
-      child: child!,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(scale),
+          padding: const EdgeInsets.only(top: 44, bottom: 34),
+        ),
+        child: child!,
+      ),
+      home: home,
     ),
-    home: RepaintBoundary(key: const ValueKey('preview'), child: home),
   );
 
   Future<void> preview(WidgetTester tester, String name) async {
@@ -146,7 +161,7 @@ void main() {
     onRestore: () {},
   );
 
-  testWidgets('撮影と写真選択を入口にし、最新2件から実際の履歴を開ける', (tester) async {
+  testWidgets('撮影と写真選択を入口にし、最新5件から実際の履歴を開ける', (tester) async {
     await size(tester);
     String? opened;
     var camera = 0, gallery = 0, more = 0;
@@ -158,16 +173,13 @@ void main() {
           body: SingleChildScrollView(
             child: MenuCaptureEntry(
               history: List.generate(
-                3,
+                7,
                 (i) => MenuAnalysisHistoryItem(
                   id: 'history-$i',
                   date: DateTime(2026, 10, 29 - i),
                   storeName: i == 0 ? 'とんかつ大将' : null,
                   imagePath: photo.path,
-                  sakes: List.generate(
-                    7 - i * 2,
-                    (n) => SavedSake(name: '酒$n'),
-                  ),
+                  sakes: List.generate(7 - i, (n) => SavedSake(name: '酒$n')),
                 ),
               ),
               onCamera: () => camera++,
@@ -189,9 +201,197 @@ void main() {
     await tester.tap(find.text('とんかつ大将'));
     await tester.tap(find.text('もっと見る'));
     expect((camera, gallery, more, opened), (1, 1, 1, 'history-0'));
-    expect(find.text('10/27のメニュー'), findsNothing);
+    expect(find.text('10/25のメニュー'), findsOneWidget);
+    expect(find.text('10/24のメニュー'), findsNothing);
+    expect(find.text('選択した写真を確認'), findsNothing);
+    expect(
+      tester.widget<Text>(find.text('メニューを撮影')).style!.color,
+      Colors.white,
+    );
+    expect(
+      tester
+          .widget<MenuPhotoIcon>(
+            find.byWidgetPredicate(
+              (w) => w is MenuPhotoIcon && w.name == 'camera',
+            ),
+          )
+          .color,
+      Colors.white,
+    );
     expect(tester.takeException(), isNull);
     await preview(tester, 'entry');
+  });
+
+  testWidgets('履歴を20件ずつ追加し、二重取得せず最後までスクロールできる', (tester) async {
+    await size(tester);
+    var requests = 0;
+    final items = <MenuAnalysisHistoryItem>[];
+    final waiting = Completer<bool>();
+    String? opened;
+    late StateSetter update;
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          backgroundColor: MenuPhotoStyle.blue,
+          appBar: MenuPhotoStyle.appBar('過去の解析'),
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return MenuHistoryList(
+                history: items,
+                onOpen: (id) => opened = id,
+                loadMore: () async {
+                  requests++;
+                  if (requests == 1) {
+                    update(
+                      () => items.addAll(
+                        List.generate(
+                          20,
+                          (i) => MenuAnalysisHistoryItem(
+                            id: 'history-$i',
+                            date: DateTime(
+                              2026,
+                              10,
+                              29,
+                            ).subtract(Duration(days: i)),
+                            imagePath: photo.path,
+                            storeName: '店舗$i',
+                            sakes: [SavedSake(name: '正雪')],
+                          ),
+                        ),
+                      ),
+                    );
+                    return true;
+                  }
+                  final more = await waiting.future;
+                  update(
+                    () => items.addAll(
+                      List.generate(
+                        5,
+                        (i) => MenuAnalysisHistoryItem(
+                          id: 'older-$i',
+                          date: DateTime(2026, 9, 1),
+                          imagePath: photo.path,
+                          storeName: '古い店舗$i',
+                          sakes: [],
+                        ),
+                      ),
+                    ),
+                  );
+                  return more;
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(requests, 1);
+    await preview(tester, 'history');
+    expect(find.byType(MenuHistoryTile).evaluate().length, lessThan(20));
+    await tester.scrollUntilVisible(
+      find.text('店舗19'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(requests, 2);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
+    expect(requests, 2);
+    waiting.complete(false);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('古い店舗4'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('古い店舗4'));
+    expect(opened, 'older-4');
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(requests, 2);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('履歴追加の失敗でも表示済み行を保持し、再読み込みで復旧する', (tester) async {
+    var requests = 0;
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: MenuHistoryList(
+            history: [
+              MenuAnalysisHistoryItem(
+                id: 'kept',
+                date: DateTime(2026),
+                storeName: '保持する店舗',
+                imagePath: photo.path,
+                sakes: [],
+              ),
+            ],
+            onOpen: (_) {},
+            loadMore: () async {
+              if (++requests == 1) throw StateError('offline');
+              return false;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('保持する店舗'), findsOneWidget);
+    expect(requests, 1);
+    await tester.tap(find.text('再読み込み'));
+    await tester.pumpAndSettle();
+    expect(requests, 2);
+    expect(find.text('再読み込み'), findsNothing);
+    expect(find.text('保持する店舗'), findsOneWidget);
+  });
+
+  testWidgets('履歴の場所を選び直し、座標付きで保存し、失敗時は再試行できる', (tester) async {
+    var calls = 0;
+    DrinkingPlace? saved;
+    const place = DrinkingPlace(
+      displayName: '新しい店舗',
+      latitude: 35,
+      longitude: 135,
+      providerPlaceId: 'g-2',
+    );
+    final original = MenuAnalysisHistoryItem(
+      id: 'place',
+      date: DateTime(2026),
+      sakes: [],
+      storeName: '元の店舗',
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          backgroundColor: MenuPhotoStyle.blue,
+          body: MenuResultPlaceField(
+            history: original,
+            pickPlace: (_, initial) async {
+              expect(initial, '元の店舗');
+              return place;
+            },
+            onSave: (value) async {
+              if (++calls == 1) throw StateError('disk full');
+              saved = value;
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('元の店舗'));
+    await tester.pumpAndSettle();
+    expect(saved, isNull);
+    expect(find.text('元の店舗'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.location_on_outlined));
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(saved, place);
+    expect(saved!.latitude, 35);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('写真全体を確認し、明示的に押すまで解析しない。拡大できる', (tester) async {
@@ -315,8 +515,14 @@ void main() {
   ) async {
     late BuildContext context;
     await tester.pumpWidget(
-      Provider<AuthRepository>.value(
-        value: _Auth(),
+      MultiProvider(
+        providers: [
+          Provider<AuthRepository>.value(value: _Auth()),
+          Provider<FavoriteState>.value(value: const FavoriteState()),
+          Provider<SavedSakeState>.value(value: const SavedSakeState()),
+          Provider<FavoriteNotifier>.value(value: _Favorites()),
+          Provider<SavedSakeNotifier>.value(value: _Saved()),
+        ],
         child: app(
           Builder(
             builder: (c) {
@@ -345,6 +551,73 @@ void main() {
     await tester.runAsync(() => notifier.selectPhoto(photo));
     return (notifier, repository, history);
   }
+
+  testWidgets('過去の解析詳細も青背景で、場所変更後のタイトル・位置情報が残る', (tester) async {
+    await size(tester);
+    final (notifier, _, history) = await setupNotifier(tester);
+    final record = MenuAnalysisHistoryItem(
+      id: 'detail',
+      date: DateTime(2026, 10, 28),
+      storeName: '魚処 天悟',
+      imagePath: photo.path,
+      sakes: [
+        SavedSake(
+          name: '正雪 純米',
+          details: const Sake(
+            name: '正雪 純米',
+            type: '純米',
+            description: 'すっきりとした口当たりのお酒です。',
+          ),
+          matchPercent: 75,
+        ),
+      ],
+    );
+    history.items.add(record);
+    await notifier.loadMenuAnalysisHistory();
+    final opened = MenuHistoryPage.open(
+      notifier.context,
+      notifier,
+      historyId: record.id,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+      MenuPhotoStyle.blue,
+    );
+    expect(find.byType(MenuResultPlaceField), findsOneWidget);
+    await preview(tester, 'history-detail');
+    await tester.scrollUntilVisible(
+      find.text('正雪 純米'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('正雪 純米'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('すっきりとした口当たりのお酒です。'));
+    await preview(tester, 'history-sake');
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(0);
+    await tester.pumpAndSettle();
+    const place = DrinkingPlace(
+      displayName: '移動後の店舗',
+      formattedAddress: '京都府',
+      latitude: 35,
+      longitude: 135,
+    );
+    await tester.runAsync(() => notifier.setHistoryPlace('detail', place));
+    await tester.pumpAndSettle();
+    expect(find.text('移動後の店舗'), findsNWidgets(2));
+    expect(find.text('京都府'), findsOneWidget);
+    expect(history.items.single.date, record.date);
+    expect(history.items.single.imagePath, record.imagePath);
+    expect(history.items.single.drinkingPlace, place);
+    Navigator.of(notifier.context).pop();
+    await tester.pumpAndSettle();
+    await opened;
+    notifier.dispose();
+  });
 
   testWidgets('選んだ写真は自動解析しない。切り抜きを戻し、中止後も元写真を保持する', (tester) async {
     final (notifier, repo, _) = await setupNotifier(tester);
@@ -525,6 +798,8 @@ class _Repository implements SakeMenuRecognitionRepository {
 class _History implements MenuAnalysisHistoryRepository {
   final items = <MenuAnalysisHistoryItem>[];
   @override
+  Future<List<MenuAnalysisHistoryItem>> load() async => items.toList();
+  @override
   String get ownerId => 'test-user';
   @override
   Future<void> upsert(MenuAnalysisHistoryItem item) async {
@@ -532,6 +807,16 @@ class _History implements MenuAnalysisHistoryRepository {
     items.add(item);
   }
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Favorites implements FavoriteNotifier {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Saved implements SavedSakeNotifier {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
