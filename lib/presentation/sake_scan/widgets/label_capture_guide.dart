@@ -20,7 +20,7 @@ class LabelCaptureGuide extends StatelessWidget {
           ),
     child: Center(
       child: AspectRatio(
-        aspectRatio: isBackLabel ? 0.80 : 0.34,
+        aspectRatio: isBackLabel ? 0.80 : 0.30,
         child: CustomPaint(painter: _LabelCaptureGuidePainter(isBackLabel)),
       ),
     ),
@@ -43,70 +43,79 @@ class _LabelCaptureGuidePainter extends CustomPainter {
     } else {
       final width = size.width;
       final height = size.height;
-      // A four-go/issho sake bottle: short cap, slim neck, long sloping
-      // shoulders and a tall cylindrical body, rather than a broad wine shape.
+      // Follow the reference bottle's proportions: a tall narrow closure,
+      // a neck flowing into a long curved taper, and straight sides only in
+      // the lower third. Keep the neck/shoulder/body joins tangent-continuous.
       path
-        ..moveTo(width * 0.37, height * 0.02)
-        ..lineTo(width * 0.63, height * 0.02)
+        ..moveTo(width * 0.39, height * 0.02)
+        ..quadraticBezierTo(
+          width * 0.50,
+          height * 0.015,
+          width * 0.61,
+          height * 0.02,
+        )
         ..quadraticBezierTo(
           width * 0.65,
           height * 0.02,
           width * 0.65,
           height * 0.03,
         )
-        ..lineTo(width * 0.65, height * 0.06)
-        ..lineTo(width * 0.63, height * 0.07)
-        ..lineTo(width * 0.63, height * 0.18)
+        ..lineTo(width * 0.65, height * 0.135)
+        ..quadraticBezierTo(
+          width * 0.68,
+          height * 0.145,
+          width * 0.64,
+          height * 0.15,
+        )
+        ..lineTo(width * 0.64, height * 0.25)
         ..cubicTo(
-          width * 0.63,
-          height * 0.23,
-          width * 0.85,
-          height * 0.27,
-          width * 0.90,
-          height * 0.32,
+          width * 0.64,
+          height * 0.42,
+          width * 0.92,
+          height * 0.49,
+          width * 0.92,
+          height * 0.70,
         )
+        ..lineTo(width * 0.92, height * 0.94)
         ..quadraticBezierTo(
           width * 0.92,
-          height * 0.34,
-          width * 0.92,
-          height * 0.38,
-        )
-        ..lineTo(width * 0.92, height * 0.95)
-        ..quadraticBezierTo(
-          width * 0.92,
-          height * 0.98,
-          width * 0.85,
+          height * 0.975,
+          width * 0.83,
           height * 0.98,
         )
-        ..lineTo(width * 0.15, height * 0.98)
         ..quadraticBezierTo(
-          width * 0.08,
+          width * 0.50,
+          height * 0.995,
+          width * 0.17,
           height * 0.98,
-          width * 0.08,
-          height * 0.95,
         )
-        ..lineTo(width * 0.08, height * 0.38)
         ..quadraticBezierTo(
           width * 0.08,
-          height * 0.34,
-          width * 0.10,
-          height * 0.32,
+          height * 0.975,
+          width * 0.08,
+          height * 0.94,
         )
+        ..lineTo(width * 0.08, height * 0.70)
         ..cubicTo(
-          width * 0.15,
-          height * 0.27,
-          width * 0.37,
-          height * 0.23,
-          width * 0.37,
-          height * 0.18,
+          width * 0.08,
+          height * 0.49,
+          width * 0.36,
+          height * 0.42,
+          width * 0.36,
+          height * 0.25,
         )
-        ..lineTo(width * 0.37, height * 0.07)
-        ..lineTo(width * 0.35, height * 0.06)
+        ..lineTo(width * 0.36, height * 0.15)
+        ..quadraticBezierTo(
+          width * 0.32,
+          height * 0.145,
+          width * 0.35,
+          height * 0.135,
+        )
         ..lineTo(width * 0.35, height * 0.03)
         ..quadraticBezierTo(
           width * 0.35,
           height * 0.02,
-          width * 0.37,
+          width * 0.39,
           height * 0.02,
         )
         ..close();
