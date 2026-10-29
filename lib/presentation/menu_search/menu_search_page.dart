@@ -193,6 +193,8 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
         ),
         body: SingleChildScrollView(
           controller: _scrollController,
+          // Clear the scan button's 43pt overlap plus a little breathing room.
+          padding: const EdgeInsets.only(bottom: 64),
           child: Center(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
