@@ -24,4 +24,4 @@
 
 [ホーム用セクション](images/japan_sake_map_20261029/home-section.png) / [北海道の選択（テストデータ）](images/japan_sake_map_20261029/hokkaido.png) / [小画面](images/japan_sake_map_20261029/small.png)
 
-配信結果は165のリリース記録へ記載。
+[iOS 5.0.35（165）の配信記録](RELEASE_165_IOS_JAPAN_SAKE_MAP_20261029.md)。Appleアップロード完了。
