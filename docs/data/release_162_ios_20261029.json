@@ -1,0 +1,31 @@
+{
+  "version": "5.0.32",
+  "build": 162,
+  "bundleId": "okinawa.molasoft.sakepedia",
+  "sourceCommit": "f55e65a",
+  "menuButtonCommits": [
+    "529f2f2",
+    "f2ab8ed"
+  ],
+  "archive": "/tmp/sakepedia-usage-client/build/ios/archive/SAKEPEDIA-5.0.32-162.xcarchive",
+  "appBinarySha256": "37a0af62e12bcaeb319a5dd3b057307d9cbedd3f84e13457a8b92edfc3e1154c",
+  "productionFlavorVerified": true,
+  "mapsKeyResolved": true,
+  "menuIllustrationBundled": true,
+  "uploadMethod": "App Store Connect",
+  "testFlightInternalOnly": false,
+  "appleProcessing": "not_verified",
+  "testFlightAvailability": "not_verified",
+  "appStoreReviewSubmitted": false,
+  "reviewStatus": "not_requested_by_user",
+  "androidDistributionPerformed": false,
+  "backendDeploymentPerformed": false,
+  "compatibleBackendCommit": "93f562a4467266bda8cf661d425d23d74e1d09dd",
+  "testsPassed": 73,
+  "analyzeErrors": 0,
+  "analyzeExistingFindings": 419,
+  "uploadedToApple": true,
+  "uploadedAtJstMinute": "2026-10-29 21:25",
+  "uploadProof": "docs/images/release_162_20261029/ios_upload.png",
+  "preGuideArchiveUploaded": false
+}
