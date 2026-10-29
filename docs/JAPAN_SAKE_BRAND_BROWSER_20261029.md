@@ -35,3 +35,7 @@
 ![県の銘柄](images/japan_brand_browser_20261029/hokkaido.png)
 ![銘柄の商品](images/japan_brand_browser_20261029/brand-products.png)
 ![拡大した地図](images/japan_brand_browser_20261029/map-zoomed.png)
+
+## 配信記録
+
+実装時点の未配信状態は上記のとおり。以後の本番反映・iOS 5.0.37（167）の検証結果は[配信記録](RELEASE_167_IOS_JAPAN_MAP_20261029.md)を参照。

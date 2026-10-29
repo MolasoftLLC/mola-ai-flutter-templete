@@ -21,3 +21,7 @@ Flutter関連28件成功。色の境界0/1/4/5/9/10、商品/重複IDの集約�
 
 ![ホームの色付け](images/sake_journey_20261029/home.png)
 ![全画面地図の色付け](images/sake_journey_20261029/fullscreen.png)
+
+## 配信記録
+
+実装時点の未配信状態は上記のとおり。以後の本番反映・iOS 5.0.37（167）の検証結果は[配信記録](RELEASE_167_IOS_JAPAN_MAP_20261029.md)を参照。

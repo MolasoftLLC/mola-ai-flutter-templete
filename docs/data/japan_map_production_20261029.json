@@ -1,0 +1,67 @@
+{
+  "verifiedAtUtc": "2026-10-29T14:54:46.411465+00:00",
+  "health": "ok",
+  "prefectures": [
+    {
+      "code": "01",
+      "brandCountFirstPage": 2,
+      "brandId": 16,
+      "brandName": "男山",
+      "productCount": 13,
+      "productIds": [
+        7498,
+        7497
+      ],
+      "originsMatched": true,
+      "nextPagesVerified": {
+        "brands": 2,
+        "products": 2
+      },
+      "thumbnailPresent": true
+    },
+    {
+      "code": "15",
+      "brandCountFirstPage": 2,
+      "brandId": 22,
+      "brandName": "久保田",
+      "productCount": 17,
+      "productIds": [
+        3432,
+        3431
+      ],
+      "originsMatched": true,
+      "nextPagesVerified": {
+        "brands": 2,
+        "products": 2
+      },
+      "thumbnailPresent": true
+    },
+    {
+      "code": "26",
+      "brandCountFirstPage": 2,
+      "brandId": 27,
+      "brandName": "月桂冠",
+      "productCount": 6,
+      "productIds": [
+        7857,
+        3768
+      ],
+      "originsMatched": true,
+      "nextPagesVerified": {
+        "brands": 2,
+        "products": 2
+      },
+      "thumbnailPresent": true
+    }
+  ],
+  "emptyAndInvalidRequestsVerified": true,
+  "representativeImageCheck": {
+    "status": 200,
+    "contentType": "image/png",
+    "brandId": 22
+  },
+  "backendCommit": "22b21c9e9c53e53b938b9ba246faadca7f988725",
+  "workflowRun": "https://github.com/MolasoftLLC/molasoft-ai-central/actions/runs/40895408947",
+  "workflowConclusion": "success",
+  "productionProcessStatus": "online"
+}
