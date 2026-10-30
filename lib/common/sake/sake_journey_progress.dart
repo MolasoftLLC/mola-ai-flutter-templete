@@ -6,6 +6,7 @@ class SakeJourneyProgress {
   const SakeJourneyProgress({
     this.counts = const {},
     this.productsByPrefecture = const {},
+    this.productsByBrand = const {},
     this.brandIdsByPrefecture = const {},
     this.unresolvedRecords = 0,
   });
@@ -13,6 +14,9 @@ class SakeJourneyProgress {
 
   /// One representative record per product, using its current canonical ID.
   final Map<int, List<Sake>> productsByPrefecture;
+
+  /// Recorded products grouped only by the catalog-confirmed brand.
+  final Map<int, List<Sake>> productsByBrand;
   final Map<int, Set<int>> brandIdsByPrefecture;
   final int unresolvedRecords;
 }
@@ -25,6 +29,7 @@ SakeJourneyProgress aggregateSakeJourney(
   final byId = {for (final origin in origins) origin.sakeId: origin};
   final products = <int, Map<int, Sake>>{};
   final brands = <int, Set<int>>{};
+  final brandProducts = <int, Map<int, Sake>>{};
   var unresolved = 0;
   for (final record in records.where(hasPersonalSakeRecord)) {
     final origin = byId[record.sakeId];
@@ -39,6 +44,12 @@ SakeJourneyProgress aggregateSakeJourney(
           () => record.copyWith(sakeId: origin.canonicalSakeId),
         );
     brands.putIfAbsent(origin.prefectureCode, () => {}).add(origin.brandId);
+    brandProducts
+        .putIfAbsent(origin.brandId, () => {})
+        .putIfAbsent(
+          origin.canonicalSakeId,
+          () => record.copyWith(sakeId: origin.canonicalSakeId),
+        );
   }
   return SakeJourneyProgress(
     counts: {
@@ -46,6 +57,10 @@ SakeJourneyProgress aggregateSakeJourney(
     },
     productsByPrefecture: {
       for (final entry in products.entries)
+        entry.key: entry.value.values.toList(growable: false),
+    },
+    productsByBrand: {
+      for (final entry in brandProducts.entries)
         entry.key: entry.value.values.toList(growable: false),
     },
     brandIdsByPrefecture: brands,

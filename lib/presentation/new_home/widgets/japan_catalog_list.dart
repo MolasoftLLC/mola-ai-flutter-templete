@@ -12,12 +12,18 @@ class JapanCatalogList<T> extends StatefulWidget {
     required this.emptyText,
     this.firstPage,
     this.headerBuilder,
+    this.leadingItems = const [],
+    this.isPreferred,
   });
   final Future<SakeCatalogPage<T>> Function(int? cursor) loadPage;
   final Future<SakeCatalogPage<T>>? firstPage;
   final Object Function(T item) itemId;
   final Widget Function(T item) itemBuilder;
   final String emptyText;
+
+  /// Known items shown before pagination reaches them; fetched data wins by ID.
+  final List<T> leadingItems;
+  final bool Function(T item)? isPreferred;
   final Widget Function(
     List<T> items,
     bool hasMore,
@@ -68,6 +74,17 @@ class _JapanCatalogListState<T> extends State<JapanCatalogList<T>> {
   @override
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
+    final merged = <Object, T>{
+      for (final item in widget.leadingItems) widget.itemId(item): item,
+      ..._items,
+    }.values.toList(growable: false);
+    final preferred = widget.isPreferred;
+    final visible = preferred == null
+        ? merged
+        : [
+            ...merged.where(preferred),
+            ...merged.where((item) => !preferred(item)),
+          ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -79,7 +96,7 @@ class _JapanCatalogListState<T> extends State<JapanCatalogList<T>> {
             _failed,
             () => _load(),
           ),
-        for (final item in _items.values) widget.itemBuilder(item),
+        for (final item in visible) widget.itemBuilder(item),
         if (_loading)
           const Padding(
             padding: EdgeInsets.all(28),
@@ -102,7 +119,7 @@ class _JapanCatalogListState<T> extends State<JapanCatalogList<T>> {
               ],
             ),
           )
-        else if (_items.isEmpty)
+        else if (visible.isEmpty)
           Padding(
             padding: const EdgeInsets.all(20),
             child: Text(

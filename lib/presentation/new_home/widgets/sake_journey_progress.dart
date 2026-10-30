@@ -81,6 +81,7 @@ class _SakeJourneyProgressBuilderState
         progress = SakeJourneyProgress(
           counts: progress.counts,
           productsByPrefecture: progress.productsByPrefecture,
+          productsByBrand: progress.productsByBrand,
           brandIdsByPrefecture: brands,
           unresolvedRecords: progress.unresolvedRecords,
         );

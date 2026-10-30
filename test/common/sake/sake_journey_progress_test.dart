@@ -90,9 +90,41 @@ void main() {
         '同じ銘柄の別商品',
       ]);
       expect(result.productsByPrefecture.keys, [15]);
+      expect(result.productsByBrand.keys, [11]);
+      expect(result.productsByBrand[11]!.map((sake) => sake.sakeId), [1, 2]);
       expect(result.unresolvedRecords, 1);
     },
   );
+  test(
+    'groups records by confirmed brand without matching names or mixing other brands',
+    () {
+      final result = aggregateSakeJourney(
+        const [
+          Sake(sakeId: 1, name: '同じ名前', impression: '記録'),
+          Sake(sakeId: 2, name: '同じ名前', impression: '記録'),
+          Sake(sakeId: 3, name: '同じ名前', impression: '未照合'),
+        ],
+        const [
+          SakeProductOrigin(
+            sakeId: 1,
+            canonicalSakeId: 1,
+            brandId: 11,
+            prefectureCode: 15,
+          ),
+          SakeProductOrigin(
+            sakeId: 2,
+            canonicalSakeId: 2,
+            brandId: 12,
+            prefectureCode: 15,
+          ),
+        ],
+      );
+      expect(result.productsByBrand[11]!.map((sake) => sake.sakeId), [1]);
+      expect(result.productsByBrand[12]!.map((sake) => sake.sakeId), [2]);
+      expect(result.unresolvedRecords, 1);
+    },
+  );
+
   test('changes color at 1, 5 and 10 distinct products', () {
     expect(sakeJourneyColor(0), isNot(sakeJourneyColor(1)));
     expect(sakeJourneyColor(1), sakeJourneyColor(4));

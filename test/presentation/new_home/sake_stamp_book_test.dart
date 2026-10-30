@@ -937,6 +937,53 @@ void main() {
     await step(next, 0, '全国');
   });
 
+  testWidgets('都道府県メニューは高さを抑えて全国と遠い県も選べる', (tester) async {
+    for (final size in [const Size(390, 844), const Size(320, 568)]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await open(
+        tester,
+        const SakeStampBookPage(initialPrefectureCode: 0),
+        size: size,
+        scale: size.width == 320 ? 1.5 : 1,
+      );
+      final picker = find.byKey(const ValueKey('stamp-prefecture-picker'));
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+      final menu = find.byType(Scrollable).last;
+      expect(tester.getSize(menu).height, lessThanOrEqualTo(size.height * .4));
+      if (size.width == 390) await preview(tester, 'compact-prefecture-menu');
+      final okinawa = find.descendant(of: menu, matching: find.text('沖縄県'));
+      await tester.scrollUntilVisible(okinawa, 180, scrollable: menu);
+      await tester.pumpAndSettle();
+      await tester.tap(okinawa);
+      await tester.pumpAndSettle();
+      expect(tester.state<FormFieldState<int>>(picker).value, 47);
+      expect(await SakeStampPreferences.lastPrefecture(), 47);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pumpAndSettle();
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+      final reopenedMenu = find.byType(Scrollable).last;
+      final nationwide = find.descendant(
+        of: reopenedMenu,
+        matching: find.text('全国'),
+      );
+      await tester.scrollUntilVisible(
+        nationwide,
+        -180,
+        scrollable: reopenedMenu,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(nationwide);
+      await tester.pumpAndSettle();
+      expect(tester.state<FormFieldState<int>>(picker).value, 0);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('不正な記憶値は無視し、明示した県は前回の県より優先する', (tester) async {
     SharedPreferences.setMockInitialValues({
       SakeStampPreferences.prefectureKey: 999,

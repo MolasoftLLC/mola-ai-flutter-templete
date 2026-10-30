@@ -263,6 +263,11 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 key: const ValueKey('stamp-prefecture-picker'),
+                menuMaxHeight: (MediaQuery.sizeOf(context).height * .4)
+                    .clamp(0.0, 300.0)
+                    .toDouble(),
+                dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(16),
                 initialValue: selectedCode,
                 isExpanded: true,
                 decoration: InputDecoration(
