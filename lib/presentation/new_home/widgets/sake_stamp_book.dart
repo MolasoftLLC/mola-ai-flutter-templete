@@ -97,7 +97,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
         ],
       ),
       child: CustomPaint(
-        painter: const _PaperPainter(),
+        painter: const SakeStampPaperPainter(),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(19, 8, 10, 8),
           child: Column(
@@ -372,7 +372,7 @@ class _BrandSeal extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(6),
             child: CustomPaint(
-              painter: _SealPainter(brand.brandId, color),
+              painter: SakeStampSealPainter(brand.brandId, color),
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -407,8 +407,9 @@ class _BrandSeal extends StatelessWidget {
   }
 }
 
-class _PaperPainter extends CustomPainter {
-  const _PaperPainter();
+/// Shared washi background for the stamp book and its animation preview.
+class SakeStampPaperPainter extends CustomPainter {
+  const SakeStampPaperPainter();
   @override
   void paint(Canvas canvas, Size size) {
     final rect = RRect.fromRectAndRadius(
@@ -463,11 +464,12 @@ class _PaperPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _PaperPainter oldDelegate) => false;
+  bool shouldRepaint(covariant SakeStampPaperPainter oldDelegate) => false;
 }
 
-class _SealPainter extends CustomPainter {
-  const _SealPainter(this.seed, this.color);
+/// Deterministic, distressed seal outline shared by book stamps and previews.
+class SakeStampSealPainter extends CustomPainter {
+  const SakeStampSealPainter(this.seed, this.color);
   final int seed;
   final Color color;
   @override
@@ -556,6 +558,6 @@ class _SealPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SealPainter oldDelegate) =>
+  bool shouldRepaint(covariant SakeStampSealPainter oldDelegate) =>
       oldDelegate.seed != seed || oldDelegate.color != color;
 }
