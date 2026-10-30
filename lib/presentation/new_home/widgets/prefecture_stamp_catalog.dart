@@ -14,12 +14,14 @@ class PrefectureStampCatalog extends StatefulWidget {
     required this.recordsReady,
     required this.onBrandTap,
     this.preview = false,
+    this.earnedOnly = false,
   });
   final JapanSakePrefecture prefecture;
   final Set<int> recordedBrandIds;
   final bool recordsReady;
   final ValueChanged<SakeBrandSummary> onBrandTap;
   final bool preview;
+  final bool earnedOnly;
 
   @override
   State<PrefectureStampCatalog> createState() => _PrefectureStampCatalogState();
@@ -29,6 +31,7 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
   final _brands = <int, SakeBrandSummary>{};
   int? _cursor;
   bool _loading = false;
+  bool _loaded = false;
   bool _failed = false;
   int _generation = 0;
 
@@ -44,30 +47,54 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
     if (oldWidget.prefecture.code != widget.prefecture.code) {
       _generation++;
       _brands.clear();
+      _loaded = false;
       _cursor = null;
       _loading = false;
+      _load();
+    } else if (!_failed &&
+        ((!_loaded && !widget.earnedOnly) ||
+            (widget.earnedOnly &&
+                (_needsFilteredPage ||
+                    (!_loaded && widget.recordedBrandIds.isNotEmpty))))) {
       _load();
     }
   }
 
+  bool get _needsFilteredPage =>
+      _cursor != null &&
+      widget.recordsReady &&
+      widget.recordedBrandIds.any((id) => !_brands.containsKey(id));
+
   Future<void> _load() async {
-    if (_loading) return;
+    if (_loading ||
+        (widget.earnedOnly &&
+            widget.recordsReady &&
+            widget.recordedBrandIds.isEmpty)) {
+      return;
+    }
     final generation = _generation;
     setState(() {
       _loading = true;
       _failed = false;
     });
     try {
-      final page = await context
-          .read<PlaceMapRepository>()
-          .fetchPrefectureBrands(widget.prefecture.code, afterId: _cursor);
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        for (final brand in page.items) {
-          _brands[brand.brandId] = brand;
+      do {
+        final previousCursor = _cursor;
+        final page = await context
+            .read<PlaceMapRepository>()
+            .fetchPrefectureBrands(widget.prefecture.code, afterId: _cursor);
+        if (!mounted || generation != _generation) return;
+        if (page.nextCursor != null && page.nextCursor == previousCursor) {
+          throw StateError('Catalog pagination did not advance');
         }
-        _cursor = page.nextCursor;
-      });
+        setState(() {
+          _loaded = true;
+          for (final brand in page.items) {
+            _brands[brand.brandId] = brand;
+          }
+          _cursor = page.nextCursor;
+        });
+      } while (widget.earnedOnly && _needsFilteredPage);
     } catch (_) {
       if (mounted && generation == _generation) {
         setState(() => _failed = true);
@@ -82,25 +109,32 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
   @override
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
-    if (_brands.isNotEmpty) {
+    final visible = _brands.values
+        .where(
+          (brand) =>
+              !widget.earnedOnly ||
+              (widget.recordsReady &&
+                  widget.recordedBrandIds.contains(brand.brandId)),
+        )
+        .toList(growable: false);
+    if (visible.isNotEmpty) {
       return IgnorePointer(
         ignoring: widget.preview,
         child: ExcludeSemantics(
           excluding: widget.preview,
           child: SakeStampBook(
-            key: ValueKey('stamp-catalog-${widget.prefecture.code}'),
+            key: ValueKey(
+              'stamp-catalog-${widget.prefecture.code}-${widget.earnedOnly ? (widget.recordedBrandIds.toList()..sort()).join(',') : 'all'}',
+            ),
             prefectureName: widget.prefecture.label(context),
-            brands: _brands.values.toList(growable: false),
+            brands: visible,
             recordedBrandIds: widget.recordedBrandIds,
             recordsReady: widget.recordsReady,
             onBrandTap: widget.onBrandTap,
-            hasMore: _cursor != null,
+            hasMore: widget.earnedOnly ? _needsFilteredPage : _cursor != null,
             loading: _loading,
             failed: _failed,
             loadMore: _load,
-            height: widget.preview
-                ? 212
-                : (MediaQuery.sizeOf(context).width - 48).clamp(260, 400),
           ),
         ),
       );
@@ -123,7 +157,15 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
                 ],
               )
             : Text(
-                english ? 'No brands found yet.' : 'この県の銘柄はまだ登録されていません。',
+                widget.earnedOnly
+                    ? (!widget.recordsReady
+                          ? (english ? 'Records unconfirmed' : '記録未確認')
+                          : (english
+                                ? 'No earned stamps in this prefecture yet.'
+                                : 'この県には押印済みの酒印がまだありません。'))
+                    : (english
+                          ? 'No brands found yet.'
+                          : 'この県の銘柄はまだ登録されていません。'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: japanMapNavy),
               ),
