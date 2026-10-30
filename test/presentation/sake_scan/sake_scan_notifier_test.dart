@@ -14,6 +14,58 @@ void main() {
   final image = File('/tmp/sake_scan_test.jpg');
 
   group('SakeScanNotifier', () {
+    test('マスターを先に安定整列し、選んだ行のIDと追加候補キーを確定する', () async {
+      const discovery = SakeScanCandidate(
+        sakeId: 0,
+        name: 'W 純米 出羽燦々 無濾過生原酒',
+        candidateSource: 'lens_discovery',
+        candidateKey: 'isobe',
+      );
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.candidates,
+          scanSessionId: 'w_scan',
+          candidates: [
+            discovery,
+            SakeScanCandidate(
+              sakeId: 8488,
+              name: 'W 出羽燦々50',
+              candidateSource: 'master',
+            ),
+            SakeScanCandidate(
+              sakeId: 0,
+              name: 'W 火入れ',
+              candidateSource: 'lens_discovery',
+              candidateKey: 'fire',
+            ),
+            SakeScanCandidate(
+              sakeId: 8487,
+              name: 'W 出羽燦々17度',
+              candidateSource: 'master',
+            ),
+          ],
+        ),
+      );
+      final notifier = _buildNotifier(repository);
+      await notifier.submitFront(image);
+      expect(notifier.currentState.candidates.map((c) => c.sakeId), [
+        8488,
+        8487,
+        0,
+        0,
+      ]);
+      expect(notifier.currentState.selectedCandidate?.sakeId, 8488);
+      await notifier.confirmCandidate();
+      expect(repository.confirmedSakeId, 8488);
+      expect(repository.selectedDiscoveryKey, isNull);
+
+      final other = _buildNotifier(repository);
+      await other.submitFront(image);
+      other.selectCandidate(2);
+      await other.confirmCandidate();
+      expect(repository.selectedDiscoveryKey, 'isobe');
+    });
+
     test('新発見を選択すると仮マスターの正IDで保存しAI解析を呼ばない', () async {
       final repository = _FakeScanRepository(
         frontResult: SakeScanResult.fromJson({
@@ -636,6 +688,7 @@ class _FakeScanRepository
   Object? fallbackError;
   File? lastBackImage;
   int confirmCalls = 0;
+  int? confirmedSakeId;
   List<int>? rejectedSakeIds;
 
   @override
@@ -671,6 +724,7 @@ class _FakeScanRepository
   @override
   Future<SakeScanConfirmation> confirm(String scanSessionId, int sakeId) async {
     confirmCalls++;
+    confirmedSakeId = sakeId;
     return confirmation ??
         SakeScanConfirmation(
           status: SakeScanApiStatus.cacheHit,

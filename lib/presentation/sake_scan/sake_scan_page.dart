@@ -35,6 +35,7 @@ import 'sake_scan_notifier.dart';
 import '../common/dialogs/share_opt_out_dialog.dart';
 import 'widgets/lens_progress_toasts.dart';
 import 'widgets/label_capture_guide.dart';
+import 'widgets/sake_scan_candidate_origin.dart';
 import '../new_home/widgets/sake_stamp_awards.dart';
 
 class SakeScanPage extends StatefulWidget {
@@ -1403,16 +1404,23 @@ class _SakeScanPageState extends State<SakeScanPage>
                             leading: _ScanCandidateThumbnail(
                               imageUrl: item.imageUrl,
                             ),
-                            title: Text(
-                              item.displayProductName,
-                              maxLines: null,
-                              overflow: TextOverflow.visible,
-                              style: const TextStyle(
-                                color: Color(0xFF1D3567),
-                                fontSize: 14,
-                                height: 1.28,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SakeScanCandidateOrigin(candidate: item),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.displayProductName,
+                                  maxLines: null,
+                                  overflow: TextOverflow.visible,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1D3567),
+                                    fontSize: 14,
+                                    height: 1.28,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                             subtitle:
                                 (brewery == null || brewery.isEmpty) &&
@@ -1450,7 +1458,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                                           labelHint.isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          'ラベル照合情報：$labelHint',
+                                          '照合元の商品名：$labelHint',
                                           maxLines: null,
                                           style: const TextStyle(
                                             color: Color(0xFF76521C),

@@ -458,19 +458,21 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       state.copyWith(
         status: SakeScanViewStatus.confirmingCandidate,
         scanSessionId: scanSessionId,
-        candidates: identified
-            .map(
-              (candidate) => SakeScanCandidate(
-                sakeId: candidate.sakeId ?? 0,
-                brandId: candidate.brandId,
-                name: candidate.name ?? '',
-                type: candidate.type,
-                brewery: candidate.brewery,
-                imageUrl:
-                    candidate.thumbnailImageUrl ?? candidate.primaryImageUrl,
-              ),
-            )
-            .toList(growable: false),
+        candidates: _mastersFirst(
+          identified
+              .map(
+                (candidate) => SakeScanCandidate(
+                  sakeId: candidate.sakeId ?? 0,
+                  brandId: candidate.brandId,
+                  name: candidate.name ?? '',
+                  type: candidate.type,
+                  brewery: candidate.brewery,
+                  imageUrl:
+                      candidate.thumbnailImageUrl ?? candidate.primaryImageUrl,
+                ),
+              )
+              .toList(growable: false),
+        ),
         selectedCandidateIndex: 0,
         isSubmitting: false,
       ),
@@ -513,12 +515,17 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       state.copyWith(
         status: SakeScanViewStatus.confirmingCandidate,
         scanSessionId: result.scanSessionId,
-        candidates: result.candidates,
+        candidates: _mastersFirst(result.candidates),
         selectedCandidateIndex: 0,
         isSubmitting: false,
       ),
     );
   }
+
+  List<SakeScanCandidate> _mastersFirst(List<SakeScanCandidate> candidates) => [
+    ...candidates.where((item) => item.isRegisteredProduct),
+    ...candidates.where((item) => !item.isRegisteredProduct),
+  ];
 
   Future<void> _runAiAnalysis(int operation) async {
     final basicSake = state.sake;
