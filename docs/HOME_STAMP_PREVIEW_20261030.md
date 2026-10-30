@@ -52,3 +52,8 @@
 ![記録済み商品が先頭](images/home_stamp_preview_20261030/recorded_first_products.png)
 
 ![高さを抑えた県の選択](images/home_stamp_preview_20261030/compact_prefecture_menu.png)
+
+
+## 配信結果
+
+iOS 5.0.42（172）を通常のApp Store Connectへ送信済み。Apple送信完了を確認し、TestFlightの処理完了は未確認。[配信・検証記録](RELEASE_172_IOS_STAMP_BOOK_NAVIGATION_20261030.md)を参照。
