@@ -5,11 +5,13 @@ import 'japan_sake_map.dart';
 class SakeStampCollectionLabel extends StatelessWidget {
   const SakeStampCollectionLabel({
     super.key,
-    required this.prefecture,
+    this.prefecture,
+    this.nationwideCount,
     required this.count,
     required this.ready,
   });
-  final String prefecture;
+  final String? prefecture;
+  final int? nationwideCount;
   final int count;
   final bool ready;
 
@@ -24,46 +26,69 @@ class SakeStampCollectionLabel extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 72, 12),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text.rich(
-              ready
-                  ? TextSpan(
-                      children: [
-                        TextSpan(
-                          text: english
-                              ? 'Stamps in $prefecture '
-                              : '$prefectureで集めた酒印 ',
-                        ),
-                        TextSpan(
-                          text: '$count',
-                          style: const TextStyle(
-                            fontSize: 27,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFB73927),
-                          ),
-                        ),
-                        TextSpan(
-                          text: english ? ' brands' : '銘柄',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFFB73927),
-                          ),
-                        ),
-                      ],
-                    )
-                  : TextSpan(text: english ? 'Records unconfirmed' : '記録未確認'),
-              style: TextStyle(
-                fontFamily: english ? null : 'SakeSeal',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-                color: japanMapNavy,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (nationwideCount != null)
+                  _countLine(
+                    english,
+                    english ? 'Stamps nationwide ' : '全国で集めた酒印 ',
+                    nationwideCount!,
+                    key: const ValueKey('nationwide-stamp-count'),
+                    compact: prefecture != null,
+                  ),
+                if (nationwideCount != null && prefecture != null)
+                  const SizedBox(height: 2),
+                if (prefecture != null)
+                  _countLine(
+                    english,
+                    english ? 'Stamps in $prefecture ' : '$prefectureで集めた酒印 ',
+                    count,
+                  ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+
+  Widget _countLine(
+    bool english,
+    String label,
+    int value, {
+    Key? key,
+    bool compact = false,
+  }) => Text.rich(
+    ready
+        ? TextSpan(
+            children: [
+              TextSpan(text: label),
+              TextSpan(
+                text: '$value',
+                style: TextStyle(
+                  fontSize: compact ? 22 : 27,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFB73927),
+                ),
+              ),
+              TextSpan(
+                text: english ? ' brands' : '銘柄',
+                style: const TextStyle(color: Color(0xFFB73927)),
+              ),
+            ],
+          )
+        : TextSpan(text: english ? 'Records unconfirmed' : '記録未確認'),
+    key: key,
+    style: TextStyle(
+      fontFamily: english ? null : 'SakeSeal',
+      fontSize: compact ? 14 : 16,
+      fontWeight: FontWeight.w500,
+      height: 1.3,
+      color: japanMapNavy,
+    ),
+  );
 }
 
 class _CollectionLabelPainter extends CustomPainter {
