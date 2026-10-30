@@ -16,6 +16,11 @@ import '../domain/eintities/app_content.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
 import 'my_page/my_page.dart';
+import 'main_search/main_search_page.dart';
+import 'new_home/explore_page.dart';
+import 'new_home/widgets/sake_bottom_navigation.dart';
+import 'new_home/japan_sake_page.dart';
+import 'new_home/sake_stamp_book_page.dart';
 
 class AppPage extends StatelessWidget {
   const AppPage._({Key? key}) : super(key: key);
@@ -31,7 +36,7 @@ class AppPage extends StatelessWidget {
     );
   }
 
-  static const double snackBarBottomObstacleHeight = 43;
+  static const double snackBarBottomObstacleHeight = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -61,14 +66,15 @@ class AppPage extends StatelessWidget {
     }
 
     return PopScope(
-      canPop: currentIndex != 3,
+      canPop: currentIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && currentIndex == 3) notifier.onTabTapped(0);
+        if (!didPop) {
+          notifier.onTabTapped(currentIndex == 1 || currentIndex == 2 ? 5 : 0);
+        }
       },
       child: Scaffold(
         body: SnackBarAvoidanceScope(
-          // Scaffoldがナビ本体とSafe Areaを避けるため、本文側へ張り出す
-          // 中央撮影ボタンの高さだけを追加で退避する。
+          // All navigation items stay within the bottom bar.
           bottomObstacleHeight: snackBarBottomObstacleHeight,
           child: IndexedStack(
             index: currentIndex,
@@ -107,22 +113,45 @@ class AppPage extends StatelessWidget {
                 active: currentIndex == 4,
                 child: MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
               ),
+              ExplorePage(
+                onSearch: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => MainSearchPage.wrapped(
+                      onPreferenceSearchTap: notifier.openPreferenceSearch,
+                    ),
+                  ),
+                ),
+                onMenu: () => notifier.onTabTapped(1),
+                onJapan: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const JapanSakePage(),
+                  ),
+                ),
+                onMap: () => notifier.onTabTapped(2),
+              ),
+              _DeferredTab(
+                key: ValueKey('stamp-tab-${historyOwner ?? 'guest'}'),
+                active: currentIndex == 6,
+                builder: () => const SakeStampBookPage(isTab: true),
+              ),
             ],
           ),
         ),
-        bottomNavigationBar: _NewHomeBottomNavigation(
+        bottomNavigationBar: SakeBottomNavigation(
           currentPageIndex: currentIndex,
           onPageSelected: (index) {
-            AppAnalytics.instance.event(
-              'app',
-              const {
-                0: 'home',
-                1: 'menu',
-                2: 'map',
-                3: 'timeline',
-                4: 'my_page',
-              }[index]!,
-            );
+            final target = const {
+              0: 'home',
+              1: 'menu',
+              2: 'map',
+              3: 'timeline',
+              4: 'my_page',
+            }[index];
+            if (target != null) AppAnalytics.instance.event('app', target);
+            if (index == 5) AppAnalytics.instance.event('home', 'search');
+            if (index == 6) {
+              AppAnalytics.instance.event('home', 'sake_stamp_book');
+            }
             if (index == 0 && currentIndex == 0) {
               final controller = notifier.homeFeatureGuide.homeScrollController;
               if (controller.hasClients) {
@@ -135,7 +164,7 @@ class AppPage extends StatelessWidget {
             }
             notifier.onTabTapped(index);
           },
-          onScanTap: () => openNewHomeScanner(context),
+          onScanTap: () => _openCapture(context, notifier),
           scanKey: notifier.homeFeatureGuide.bottomScanKey,
           menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
           mapKey: notifier.homeFeatureGuide.mapKey,
@@ -146,158 +175,58 @@ class AppPage extends StatelessWidget {
   }
 }
 
-class _NewHomeBottomNavigation extends StatelessWidget {
-  const _NewHomeBottomNavigation({
-    required this.currentPageIndex,
-    required this.onPageSelected,
-    required this.onScanTap,
-    required this.scanKey,
-    required this.menuAnalysisKey,
-    required this.mapKey,
-    required this.myPageKey,
-  });
-
-  static const _backgroundColor = Color(0xFF143861);
-
-  final int currentPageIndex;
-  final ValueChanged<int> onPageSelected;
-  final VoidCallback onScanTap;
-  final GlobalKey scanKey;
-  final GlobalKey menuAnalysisKey;
-  final GlobalKey mapKey;
-  final GlobalKey myPageKey;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.paddingOf(context).bottom;
-    return SizedBox(
-      height: 78 + bottomPadding,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
+Future<void> _openCapture(
+  BuildContext context,
+  AppPageNotifier notifier,
+) async {
+  final en = Localizations.localeOf(context).languageCode == 'en';
+  final menu = await showModalBottomSheet<bool>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Positioned.fill(
-            child: ColoredBox(
-              color: _backgroundColor,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: bottomPadding),
-                child: Row(
-                  children: [
-                    _NavigationItem(
-                      icon: Icons.home_outlined,
-                      label: context.l10n.navigationHome,
-                      selected: currentPageIndex == 0 || currentPageIndex == 3,
-                      onTap: () => onPageSelected(0),
-                    ),
-                    _NavigationItem(
-                      focusKey: menuAnalysisKey,
-                      icon: Icons.menu_book_outlined,
-                      label: context.l10n.navigationMenuAnalysis,
-                      selected: currentPageIndex == 1,
-                      onTap: () => onPageSelected(1),
-                    ),
-                    const Expanded(child: SizedBox()),
-                    _NavigationItem(
-                      focusKey: mapKey,
-                      icon: Icons.map_outlined,
-                      label: context.l10n.navigationMap,
-                      selected: currentPageIndex == 2,
-                      onTap: () => onPageSelected(2),
-                    ),
-                    _NavigationItem(
-                      focusKey: myPageKey,
-                      icon: Icons.person_outline,
-                      label: context.l10n.navigationMyPage,
-                      selected: currentPageIndex == 4,
-                      onTap: () => onPageSelected(4),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text(en ? 'Scan a label' : 'ラベルを撮る'),
+            onTap: () => Navigator.pop(sheetContext, false),
           ),
-          Positioned(
-            top: -43,
-            child: Column(
-              children: [
-                Material(
-                  key: scanKey,
-                  color: Colors.white,
-                  elevation: 2,
-                  shape: const CircleBorder(
-                    side: BorderSide(color: Color(0xFFFF914D), width: 5),
-                  ),
-                  child: InkWell(
-                    onTap: onScanTap,
-                    customBorder: const CircleBorder(),
-                    child: const SizedBox.square(
-                      dimension: 87,
-                      child: Icon(
-                        Icons.camera_alt,
-                        color: Color(0xFFFF7A1A),
-                        size: 52,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.navigationScan,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ],
-            ),
+          ListTile(
+            leading: const Icon(Icons.menu_book_outlined),
+            title: Text(en ? 'Photograph a menu' : 'メニューを撮る'),
+            onTap: () => Navigator.pop(sheetContext, true),
           ),
+          const SizedBox(height: 16),
         ],
       ),
-    );
+    ),
+  );
+  if (menu == null || !context.mounted) return;
+  if (menu) {
+    notifier.onTabTapped(1);
+  } else {
+    await openNewHomeScanner(context);
   }
 }
 
-class _NavigationItem extends StatelessWidget {
-  const _NavigationItem({
-    this.focusKey,
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+/// Avoid opening the stamp cover or loading its catalog before the first visit.
+class _DeferredTab extends StatefulWidget {
+  const _DeferredTab({super.key, required this.active, required this.builder});
+  final bool active;
+  final Widget Function() builder;
+  @override
+  State<_DeferredTab> createState() => _DeferredTabState();
+}
 
-  final GlobalKey? focusKey;
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  static const _selectedColor = Color(0xFFFFD166);
-
+class _DeferredTabState extends State<_DeferredTab> {
+  Widget? _child;
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? _selectedColor
-        : Colors.white.withValues(alpha: 0.78);
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          key: focusKey,
-          padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 31),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.fade,
-                softWrap: false,
-                style: TextStyle(color: color, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ),
+    if (widget.active) _child ??= widget.builder();
+    return TickerMode(
+      enabled: widget.active,
+      child: _child ?? const SizedBox.shrink(),
     );
   }
 }

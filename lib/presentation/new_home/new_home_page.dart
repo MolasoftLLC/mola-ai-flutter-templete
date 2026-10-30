@@ -148,8 +148,6 @@ class _NewHomePageState extends State<NewHomePage> {
                 ),
                 padding: const EdgeInsets.only(top: 8, bottom: 34),
                 children: [
-                  const _HomePromotionBanners(),
-                  const _ObiDivider(topPadding: 0),
                   _SectionTitle(
                     title: context.l10n.newHomeRecentSakes,
                     onMoreTap: () {
@@ -240,6 +238,15 @@ class _NewHomePageState extends State<NewHomePage> {
                         }
                       },
                     ),
+                  const SizedBox(height: 28),
+                  const _ObiDivider(),
+                  const SakeStampBookSection(),
+                  JapanSakeSection(
+                    key: context
+                        .read<AppPageNotifier>()
+                        .homeFeatureGuide
+                        .japanSakeKey,
+                  ),
                   const SizedBox(height: 16),
                   _HomeRecommendations(
                     key: context
@@ -334,14 +341,7 @@ class _NewHomePageState extends State<NewHomePage> {
                     ],
                   ),
                   const SizedBox(height: 28),
-                  const _ObiDivider(),
-                  const SakeStampBookSection(),
-                  JapanSakeSection(
-                    key: context
-                        .read<AppPageNotifier>()
-                        .homeFeatureGuide
-                        .japanSakeKey,
-                  ),
+                  const _HomePromotionBanners(),
                 ],
               ),
             ),
@@ -802,13 +802,11 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _ObiDivider extends StatelessWidget {
-  const _ObiDivider({this.topPadding = 14});
-
-  final double topPadding;
+  const _ObiDivider();
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(20, topPadding, 20, 8),
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
     child: SizedBox(
       key: const Key('home-obi-divider'),
       height: 42,
