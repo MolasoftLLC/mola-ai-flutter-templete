@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/sake_stamp_preferences.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_catalog_browse.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -79,6 +81,19 @@ class _Catalog extends PlaceMapRepository {
   }) async => const SakeCatalogPage(items: []);
 }
 
+class _TwoPrefecturesCatalog extends _Catalog {
+  @override
+  Future<List<SakeProductOrigin>> fetchSakeOrigins(List<int> ids) async => [
+    for (final id in ids)
+      SakeProductOrigin(
+        sakeId: id,
+        canonicalSakeId: id == 100 ? 1 : id,
+        brandId: id == 100 ? 1 : id,
+        prefectureCode: id == 10 ? 3 : 6,
+      ),
+  ];
+}
+
 class _DelayedCatalog extends _Catalog {
   final first = Completer<SakeCatalogPage<SakeBrandSummary>>();
   @override
@@ -90,6 +105,7 @@ class _DelayedCatalog extends _Catalog {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     await JapanSakeMapData.load();
@@ -185,6 +201,125 @@ void main() {
     });
   }
 
+  testWidgets('全国数は県をまたいで銘柄を重複除外し、最後の県を再起動後とホームで復元する', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      SakeStampPreferences.prefectureKey: 3,
+    });
+    final repo = _TwoPrefecturesCatalog();
+    final saved = ValueNotifier(
+      const SavedSakeState(
+        savedSakeList: [
+          Sake(sakeId: 1, impression: '飲んだ'),
+          Sake(sakeId: 100, impression: '同商品'),
+          Sake(sakeId: 2, impression: '飲んだ'),
+          Sake(sakeId: 10, impression: '岩手'),
+          Sake(sakeId: 3),
+        ],
+      ),
+    );
+    addTearDown(saved.dispose);
+    await open(tester, const SakeStampBookPage(), repo: repo, saved: saved);
+    expect(find.text('全国で集めた酒印 3銘柄'), findsOneWidget);
+    expect(find.text('岩手県で集めた酒印 1銘柄'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('山形県').last);
+    await tester.pumpAndSettle();
+    expect(find.text('山形県で集めた酒印 2銘柄'), findsOneWidget);
+    expect(await SakeStampPreferences.lastPrefecture(), 6);
+    expect(find.text('全国で集めた酒印 3銘柄'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(tester, const SakeStampBookPage(), repo: repo, saved: saved);
+    expect(find.text('山形県で集めた酒印 2銘柄'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(
+      tester,
+      const Scaffold(body: SakeStampBookSection()),
+      repo: repo,
+      saved: saved,
+    );
+    expect(find.text('山形県 酒印帳'), findsOneWidget);
+    expect(find.text('全国で集めた酒印 3銘柄'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open-sake-stamp-book')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('岩手県').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('岩手県').last);
+    await tester.pumpAndSettle();
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('岩手県 酒印帳'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('押印済みのみは次ページも取得し、取得失敗から再試行して記録削除にも追従する', (tester) async {
+    final repo = _Catalog()..failMore = true;
+    final saved = ValueNotifier(
+      const SavedSakeState(savedSakeList: [Sake(sakeId: 10, impression: '記録')]),
+    );
+    addTearDown(saved.dispose);
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+      saved: saved,
+    );
+    await tester.tap(find.byKey(const ValueKey('stamp-earned-only')));
+    await tester.pumpAndSettle();
+    expect(repo.cursors, [null, 9]);
+    expect(find.text('酒印帳を読み込めませんでした。'), findsOneWidget);
+    repo.failMore = false;
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('stamp-catalog-retry')),
+    );
+    await tester.tap(find.byKey(const ValueKey('stamp-catalog-retry')));
+    await tester.pumpAndSettle();
+    expect(repo.cursors, [null, 9, 9]);
+    expect(find.text('1 / 1'), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('brand-stamp-10')), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsNothing);
+    await preview(tester, 'earned-stamps-only');
+    await tester.ensureVisible(find.byKey(const ValueKey('brand-stamp-10')));
+    await tester.tap(find.byKey(const ValueKey('brand-stamp-10')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<JapanSakeBrandProductsPage>(
+            find.byType(JapanSakeBrandProductsPage),
+          )
+          .brand
+          .brandId,
+      10,
+    );
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+    saved.value = const SavedSakeState();
+    await tester.pumpAndSettle();
+    expect(find.text('この県には押印済みの酒印がまだありません。'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('stamp-earned-only')));
+    await tester.tap(find.byKey(const ValueKey('stamp-earned-only')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    expect(repo.cursors, [null, 9, 9]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('不正な記憶値は無視し、明示した県は前回の県より優先する', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      SakeStampPreferences.prefectureKey: 999,
+    });
+    expect(await SakeStampPreferences.lastPrefecture(), isNull);
+    await open(tester, const SakeStampBookPage(initialPrefectureCode: 6));
+    expect(find.text('山形県 酒印帳'), findsOneWidget);
+    expect(await SakeStampPreferences.lastPrefecture(), 6);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(tester, const SakeStampBookPage(initialPrefectureCode: 3));
+    expect(find.text('岩手県 酒印帳'), findsOneWidget);
+    expect(await SakeStampPreferences.lastPrefecture(), 3);
+  });
+
   testWidgets(
     'home book appears above the journey and tapping the paper opens a dedicated book, then brand products',
     (tester) async {
@@ -261,6 +396,10 @@ void main() {
       );
       expect(find.text('酒印帳を読み込めませんでした。'), findsOneWidget);
       repo.failFirst = false;
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('stamp-catalog-retry')),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('stamp-catalog-retry')));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byKey(const ValueKey('stamp-next')));
@@ -293,6 +432,8 @@ void main() {
           .jumpTo(0);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('岩手県').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('岩手県').last);
       await tester.pumpAndSettle();
