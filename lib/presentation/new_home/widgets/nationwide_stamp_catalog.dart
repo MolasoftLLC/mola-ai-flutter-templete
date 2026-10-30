@@ -33,6 +33,8 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
   bool _loading = false;
   bool _failed = false;
 
+  bool get _previewFull => widget.preview && _brands.length >= 9;
+
   Map<int, Set<int>> get _targets => {
     for (final entry in widget.recordedBrands.entries)
       if (entry.value.isNotEmpty) entry.key: {...entry.value},
@@ -54,7 +56,7 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
     final targets = _targets;
     final codes = targets.keys.toList()..sort();
     final signature =
-        '${widget.recordsReady}:${codes.map((code) => '$code:${(targets[code]!.toList()..sort()).join(',')}').join(';')}';
+        '${widget.preview}:${widget.recordsReady}:${codes.map((code) => '$code:${(targets[code]!.toList()..sort()).join(',')}').join(';')}';
     if (_signature == signature) return;
     _signature = signature;
     _generation++;
@@ -68,7 +70,7 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
   }
 
   Future<void> _load() async {
-    if (_loading || !widget.recordsReady) return;
+    if (_loading || !widget.recordsReady || _previewFull) return;
     final targets = _targets;
     if (targets.isEmpty) return;
     final generation = _generation;
@@ -80,7 +82,9 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
     });
     try {
       for (final code in codes) {
-        while (!_complete.contains(code) &&
+        if (_previewFull) break;
+        while (!_previewFull &&
+            !_complete.contains(code) &&
             targets[code]!.any((id) => !_brands.containsKey(id))) {
           final cursor = _cursors[code];
           final page = await repo.fetchPrefectureBrands(code, afterId: cursor);
@@ -93,6 +97,7 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
           setState(() {
             seen.add(cursor);
             for (final brand in page.items) {
+              if (_previewFull) break;
               if (targets[code]!.contains(brand.brandId)) {
                 _brands[brand.brandId] = brand;
               }
@@ -129,6 +134,7 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
                 brands: _brands.values.toList(),
                 recordedBrandIds: earned,
                 recordsReady: widget.recordsReady,
+                preview: widget.preview,
                 onBrandTap: widget.onBrandTap,
                 hasMore: false,
                 loading: _loading,
@@ -171,6 +177,7 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
             child: Text(english ? 'Retry loading stamps' : '酒印を再読み込み'),
           )
         else if (!_loading &&
+            !_previewFull &&
             widget.recordsReady &&
             missing > 0 &&
             _brands.isNotEmpty)

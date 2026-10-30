@@ -101,10 +101,6 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
                 style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
               ),
               const SizedBox(height: 8),
-              _NationwideStampCount(
-                progress.brandIdsByPrefecture,
-                ready: ready,
-              ),
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -367,33 +363,6 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
       ),
     ),
   );
-}
-
-class _NationwideStampCount extends StatelessWidget {
-  const _NationwideStampCount(this.brandIdsByPrefecture, {required this.ready});
-  final Map<int, Set<int>> brandIdsByPrefecture;
-  final bool ready;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = brandIdsByPrefecture.values
-        .expand((ids) => ids)
-        .toSet()
-        .length;
-    return Text(
-      ready
-          ? (_english(context)
-                ? '$total brands collected nationwide'
-                : '全国で集めた酒印 $total銘柄')
-          : (_english(context) ? 'Checking collected stamps…' : '全国の酒印を確認中…'),
-      key: const ValueKey('nationwide-stamp-count'),
-      style: const TextStyle(
-        color: Color(0xFFB73927),
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
 }
 
 class _PrefectureStepButton extends StatelessWidget {

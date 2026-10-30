@@ -127,11 +127,14 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
               'stamp-catalog-${widget.prefecture.code}-${widget.earnedOnly ? (widget.recordedBrandIds.toList()..sort()).join(',') : 'all'}',
             ),
             prefectureName: widget.prefecture.label(context),
-            brands: visible,
+            brands: widget.preview ? visible.take(9).toList() : visible,
+            preview: widget.preview,
             recordedBrandIds: widget.recordedBrandIds,
             recordsReady: widget.recordsReady,
             onBrandTap: widget.onBrandTap,
-            hasMore: widget.earnedOnly ? _needsFilteredPage : _cursor != null,
+            hasMore:
+                !widget.preview &&
+                (widget.earnedOnly ? _needsFilteredPage : _cursor != null),
             loading: _loading,
             failed: _failed,
             loadMore: _load,

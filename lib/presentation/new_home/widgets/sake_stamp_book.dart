@@ -20,6 +20,7 @@ class SakeStampBook extends StatefulWidget {
     required this.failed,
     required this.loadMore,
     this.height = 212,
+    this.preview = false,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -31,6 +32,9 @@ class SakeStampBook extends StatefulWidget {
   final bool failed;
   final VoidCallback loadMore;
   final double height;
+
+  /// A single, non-interactive cover showing the total collected brand count.
+  final bool preview;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
@@ -46,7 +50,8 @@ class _SakeStampBookState extends State<SakeStampBook> {
   );
 
   void _loadIfNeeded() {
-    if (!widget.hasMore ||
+    if (widget.preview ||
+        !widget.hasMore ||
         widget.loading ||
         widget.failed ||
         (_page + 1) * 9 <= widget.brands.length ||
@@ -122,9 +127,11 @@ class _SakeStampBookState extends State<SakeStampBook> {
                     ),
                     const SizedBox(width: 8),
                     Semantics(
-                      label: english
-                          ? 'Recorded brands on this page'
-                          : 'このページの記録した銘柄',
+                      label: widget.preview
+                          ? (english ? 'Collected brands' : '現在の酒印銘柄数')
+                          : (english
+                                ? 'Recorded brands on this page'
+                                : 'このページの記録した銘柄'),
                       child: Text(
                         visible.isEmpty && widget.hasMore
                             ? (english
@@ -133,7 +140,11 @@ class _SakeStampBookState extends State<SakeStampBook> {
                                   ? '未取得'
                                   : '読込中…')
                             : widget.recordsReady
-                            ? '$earned / ${visible.length}'
+                            ? widget.preview
+                                  ? (english
+                                        ? '${widget.recordedBrandIds.length} brands collected'
+                                        : '現在${widget.recordedBrandIds.length}銘柄')
+                                  : '$earned / ${visible.length}'
                             : (english ? 'Unconfirmed' : '記録未確認'),
                         key: const ValueKey('stamp-page-earned'),
                         style: TextStyle(
@@ -151,7 +162,10 @@ class _SakeStampBookState extends State<SakeStampBook> {
                 child: PageView.builder(
                   key: const ValueKey('sake-stamp-pages'),
                   controller: _controller,
-                  itemCount: _pages,
+                  itemCount: widget.preview ? 1 : _pages,
+                  physics: widget.preview
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
                   onPageChanged: (page) {
                     setState(() => _page = page);
                     _loadIfNeeded();
@@ -206,92 +220,95 @@ class _SakeStampBookState extends State<SakeStampBook> {
                   },
                 ),
               ),
-              SizedBox(
-                height: 28,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _PageArrow(
-                      key: const ValueKey('stamp-previous'),
-                      icon: Icons.chevron_left,
-                      label: english ? 'Previous stamp page' : '前の酒印帳',
-                      onTap: _page > 0
-                          ? () => _controller.previousPage(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                            )
-                          : null,
-                    ),
-                    if (widget.failed &&
-                        (_page + 1) * 9 > widget.brands.length &&
-                        widget.hasMore)
-                      TextButton(
-                        key: const ValueKey('stamp-retry'),
-                        onPressed: widget.loadMore,
-                        style: TextButton.styleFrom(
-                          minimumSize: Size.zero,
+              if (!widget.preview)
+                SizedBox(
+                  height: 28,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _PageArrow(
+                        key: const ValueKey('stamp-previous'),
+                        icon: Icons.chevron_left,
+                        label: english ? 'Previous stamp page' : '前の酒印帳',
+                        onTap: _page > 0
+                            ? () => _controller.previousPage(
+                                duration: const Duration(milliseconds: 220),
+                                curve: Curves.easeOut,
+                              )
+                            : null,
+                      ),
+                      if (widget.failed &&
+                          (_page + 1) * 9 > widget.brands.length &&
+                          widget.hasMore)
+                        TextButton(
+                          key: const ValueKey('stamp-retry'),
+                          onPressed: widget.loadMore,
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            foregroundColor: _ink,
+                          ),
+                          child: Text(
+                            english ? 'Retry' : '再読み込み',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        )
+                      else if (widget.loading &&
+                          (_page + 1) * 9 > widget.brands.length)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: SizedBox.square(
+                            dimension: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              color: _ink,
+                            ),
+                          ),
+                        )
+                      else
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
-                          foregroundColor: _ink,
+                          child: Text(
+                            '${_page + 1} / ${widget.hasMore ? '…' : _pages}',
+                            key: const ValueKey('stamp-page-number'),
+                            style: const TextStyle(
+                              color: japanMapNavy,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          english ? 'Retry' : '再読み込み',
-                          style: const TextStyle(fontSize: 11),
-                        ),
+                      for (
+                        var i = math.max(0, math.min(_page - 1, _pages - 4));
+                        i < math.min(_pages, math.max(4, _page + 3));
+                        i++
                       )
-                    else if (widget.loading &&
-                        (_page + 1) * 9 > widget.brands.length)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: SizedBox.square(
-                          dimension: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.5,
-                            color: _ink,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Container(
+                            width: i == _page ? 6 : 4,
+                            height: i == _page ? 6 : 4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: i == _page
+                                  ? _ink
+                                  : const Color(0xFFD7D1C7),
+                            ),
                           ),
                         ),
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(
-                          '${_page + 1} / ${widget.hasMore ? '…' : _pages}',
-                          key: const ValueKey('stamp-page-number'),
-                          style: const TextStyle(
-                            color: japanMapNavy,
-                            fontSize: 11,
-                          ),
-                        ),
+                      _PageArrow(
+                        key: const ValueKey('stamp-next'),
+                        icon: Icons.chevron_right,
+                        label: english ? 'Next stamp page' : '次の酒印帳',
+                        onTap: _page + 1 < _pages
+                            ? () => _controller.nextPage(
+                                duration: const Duration(milliseconds: 220),
+                                curve: Curves.easeOut,
+                              )
+                            : null,
                       ),
-                    for (
-                      var i = math.max(0, math.min(_page - 1, _pages - 4));
-                      i < math.min(_pages, math.max(4, _page + 3));
-                      i++
-                    )
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Container(
-                          width: i == _page ? 6 : 4,
-                          height: i == _page ? 6 : 4,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: i == _page ? _ink : const Color(0xFFD7D1C7),
-                          ),
-                        ),
-                      ),
-                    _PageArrow(
-                      key: const ValueKey('stamp-next'),
-                      icon: Icons.chevron_right,
-                      label: english ? 'Next stamp page' : '次の酒印帳',
-                      onTap: _page + 1 < _pages
-                          ? () => _controller.nextPage(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                            )
-                          : null,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
