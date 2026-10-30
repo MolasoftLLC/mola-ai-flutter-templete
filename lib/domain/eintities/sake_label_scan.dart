@@ -102,7 +102,14 @@ class SakeScanCandidate {
     final alreadyDescribed =
         parts.isNotEmpty &&
         compactType!.replaceAll(classifications, '').isEmpty &&
-        parts.every(compactName.contains);
+        parts.every(
+          (part) =>
+              compactName.contains(part) ||
+              (RegExp(
+                    r'^(?:純米大吟醸|純米吟醸|特別純米|特別本醸造|大吟醸|吟醸|本醸造|純米)酒$',
+                  ).hasMatch(part) &&
+                  compactName.contains(part.substring(0, part.length - 1))),
+        );
     return productType == null ||
             productType.isEmpty ||
             compactName.contains(compactType!) ||

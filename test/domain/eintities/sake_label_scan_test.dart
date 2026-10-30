@@ -11,6 +11,14 @@ void main() {
     expect(w.displayProductName, 'W 純米 出羽燦々 無濾過生原酒');
     expect(w.toSake().name, w.name);
     expect(w.toSake().type, w.type);
+    expect(
+      const SakeScanCandidate(
+        sakeId: 8488,
+        name: 'W 出羽燦々50 純米無濾過生原酒',
+        type: '純米酒',
+      ).displayProductName,
+      'W 出羽燦々50 純米無濾過生原酒',
+    );
     const fire = SakeScanCandidate(
       sakeId: 0,
       name: 'W 出羽燦々',
