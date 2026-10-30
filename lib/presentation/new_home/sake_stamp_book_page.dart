@@ -214,8 +214,18 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 _previewPrefecture(prefectures, progress.brandIdsByPrefecture),
           );
           final index = ordered.indexWhere((p) => p.code == selected.code);
-          final previous = index > 0 ? ordered[index - 1] : null;
-          final next = index + 1 < ordered.length ? ordered[index + 1] : null;
+          // Nationwide sits between the last and first prefecture in the loop.
+          final previous = nationwide
+              ? ordered.last
+              : index > 0
+              ? ordered[index - 1]
+              : null;
+          final next = nationwide
+              ? ordered.first
+              : index + 1 < ordered.length
+              ? ordered[index + 1]
+              : null;
+          final nationwideLabel = _english(context) ? 'Nationwide' : '全国';
           final earned =
               progress.brandIdsByPrefecture[selected.code] ?? const {};
           final selectedCode = nationwide ? 0 : selected.code;
@@ -327,35 +337,26 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                         onBrandTap: (brand) => _openBrand(context, brand),
                       ),
               ),
-              if (!nationwide)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _PrefectureStepButton(
-                        key: const ValueKey('stamp-previous-prefecture'),
-                        label:
-                            previous?.label(context) ??
-                            (_english(context) ? 'Previous' : '前の県'),
-                        onPressed: previous == null
-                            ? null
-                            : () => _select(previous.code),
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-previous-prefecture'),
+                      label: previous?.label(context) ?? nationwideLabel,
+                      onPressed: () => _select(previous?.code ?? 0),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _PrefectureStepButton(
-                        key: const ValueKey('stamp-next-prefecture'),
-                        label:
-                            next?.label(context) ??
-                            (_english(context) ? 'Next' : '次の県'),
-                        forward: true,
-                        onPressed: next == null
-                            ? null
-                            : () => _select(next.code),
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-next-prefecture'),
+                      label: next?.label(context) ?? nationwideLabel,
+                      forward: true,
+                      onPressed: () => _select(next?.code ?? 0),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
               if (!ready) legend,
             ],
           );
