@@ -1,0 +1,33 @@
+{
+  "version": "5.0.40",
+  "build": 170,
+  "bundleId": "okinawa.molasoft.sakepedia",
+  "archive": "/private/tmp/sakepedia-usage-client/build/ios/archive/SAKEPEDIA-5.0.40-170.xcarchive",
+  "appBinarySha256": "83bd79faa4b5b2f0020a99760ea4e4d9db0847e24fd0f39aa3446f6518fe9bd5",
+  "productionFlavorVerified": true,
+  "mapsKeyResolved": true,
+  "fontManifestVerified": true,
+  "assetHashes": {
+    "assets/data/japan_sake_map.json": "9ab70eb234c99abfafa7659c1b879e2b32af9ffddb802c790f5acc09b4682a6e",
+    "assets/images/sake_catalog_illustration.png": "7949ab3e44756c1765104fb8f0df37b32d6e0f07a263aa5313ba1505eec66632",
+    "assets/fonts/YujiSyuku-Regular.ttf": "82728ebafc8c97391e2dab633414a806f344b8e4e2227d307179f07b548fca61",
+    "assets/fonts/YujiSyuku-OFL.txt": "ef7c85c72ae94381c8bc4832ae4e6fbabdeafa2bb8a31313cd75dce95a690256"
+  },
+  "originalIosSettingsPreserved": true,
+  "sourceCommit": "7b2fd0951576ae1633f39733ced444757dd6a82a",
+  "mergeCommit": "52c15d45712d6417ff9d7a683c42de8e4dc849b4",
+  "uploadMethod": "App Store Connect",
+  "testFlightInternalOnly": false,
+  "uploadedToApple": true,
+  "uploadedAtJstMinute": "2026-10-30 10:26",
+  "uploadProof": "docs/images/release_170_20261030/ios_upload.png",
+  "appleProcessing": "not_verified",
+  "testFlightAvailability": "not_verified",
+  "appStoreReviewSubmitted": false,
+  "androidDistributionPerformed": false,
+  "backendDeploymentPerformed": false,
+  "flutterTestsPassed": 47,
+  "analyzeErrors": 0,
+  "analyzeExistingFindings": 418,
+  "changedFilesAnalyzeFindings": 0
+}
