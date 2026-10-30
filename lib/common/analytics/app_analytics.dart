@@ -82,6 +82,7 @@ class AppAnalytics with WidgetsBindingObserver {
   bool _sending = false;
   DateTime? _retryAfter;
   String _installation = '';
+  int _batchSize = 50;
   String session = analyticsId();
   String screen = 'app';
   final homeVisit = ValueNotifier<String>(analyticsId());
@@ -143,6 +144,7 @@ class AppAnalytics with WidgetsBindingObserver {
     final identity = _identityReader();
     _queue.add({
       'eventId': analyticsId(),
+      'schemaVersion': 3,
       'sessionId': session,
       'flowId': flowId,
       'kind': kind,
@@ -202,7 +204,7 @@ class AppAnalytics with WidgetsBindingObserver {
     _sending = true;
     try {
       for (var i = 0; i < 10 && _queue.isNotEmpty; i++) {
-        final batch = _queue.take(50).toList();
+        final batch = _queue.take(_batchSize).toList();
         final headers = <String, String>{'Content-Type': 'application/json'};
         final token = await _tokenReader().timeout(const Duration(seconds: 5));
         if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -216,13 +218,54 @@ class AppAnalytics with WidgetsBindingObserver {
               }),
             )
             .timeout(const Duration(seconds: 10));
+        if (response.statusCode == 400 && batch.length > 1) {
+          // Older servers reject the entire batch. Isolate the offending event
+          // before removing anything; valid neighbors must still be delivered.
+          _batchSize = 1;
+          continue;
+        }
         if (response.statusCode != 200 && response.statusCode != 400) {
           _retryAfter = DateTime.now().add(const Duration(seconds: 30));
           break;
         }
         _retryAfter = null;
-        final ids = batch.map((e) => e['eventId']).toSet();
+        final batchIds = batch.map((e) => e['eventId']).toSet();
+        Set<dynamic> ids = batchIds;
+        Set<dynamic> rejected = response.statusCode == 400 ? batchIds : {};
+        if (response.statusCode == 200) {
+          final receipt = jsonDecode(response.body);
+          if (receipt is Map &&
+              receipt['acceptedEventIds'] is List &&
+              receipt['rejectedEventIds'] is List) {
+            rejected = (receipt['rejectedEventIds'] as List)
+                .toSet()
+                .intersection(batchIds);
+            ids = {
+              ...receipt['acceptedEventIds'] as List,
+              ...rejected,
+            }.intersection(batchIds);
+            if (ids.isEmpty) {
+              _retryAfter = DateTime.now().add(const Duration(seconds: 30));
+              break;
+            }
+          }
+        }
+        if (rejected.isNotEmpty) {
+          // Bounded, local diagnostics only; contains the same sanitized events
+          // as the queue and is never counted as successful usage.
+          final failed = [
+            ...?_prefs?.getStringList('usage_rejected_v1'),
+            ...batch
+                .where((e) => rejected.contains(e['eventId']))
+                .map(jsonEncode),
+          ];
+          await _prefs?.setStringList(
+            'usage_rejected_v1',
+            failed.skip(failed.length > 50 ? failed.length - 50 : 0).toList(),
+          );
+        }
         _queue.removeWhere((e) => ids.contains(e['eventId']));
+        if (_queue.isEmpty) _batchSize = 50;
         _persist();
       }
     } catch (_) {

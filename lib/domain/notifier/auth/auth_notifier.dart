@@ -8,6 +8,7 @@ import 'package:state_notifier/state_notifier.dart';
 import '../../repository/auth_repository.dart';
 import '../../repository/sake_user_repository.dart';
 import '../favorite/favorite_notifier.dart';
+import '../sake_stamp_store.dart';
 import '../my_page/my_page_notifier.dart';
 import '../saved_sake/saved_sake_notifier.dart';
 
@@ -304,6 +305,7 @@ class AuthNotifier extends StateNotifier<AuthState> with LocatorMixin {
       );
     }
 
+    await read<SakeStampStore>().clearDeletedAccount(user.uid);
     try {
       await _repository.deleteCurrentUser();
       await _handleUserSignedOut();

@@ -6,6 +6,7 @@ import 'package:provider/single_child_widget.dart';
 import '../common/access_url.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
 import '../domain/notifier/sake_stamp_store.dart';
+import '../domain/repository/sake_stamp_repository.dart';
 import '../domain/notifier/favorite/favorite_notifier.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
 import '../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -60,6 +61,12 @@ List<SingleChildWidget> get _repositoryProviders {
           MolaApiRepository(ApiClient.create(chopperClient(url: apiURL()))),
     ),
     Provider<AuthRepository>(create: (_) => AuthRepository()),
+    Provider<SakeStampRepository>(
+      create: (context) => SakeStampRepository(
+        baseUrl: context.read<ApiClient>().client.baseUrl,
+      ),
+      dispose: (_, repository) => repository.close(),
+    ),
     Provider<SharedPreference>(create: (_) => SharedPreference()),
     Provider<SakeMenuRecognitionApiClient>(
       create: (_) => SakeMenuRecognitionApiClient.create(
@@ -133,9 +140,12 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
     ),
     ChangeNotifierProxyProvider<AuthState, SakeStampStore>(
       create: (_) => SakeStampStore(),
-      update: (_, auth, previous) => previous?.accountId == auth.user?.uid
+      update: (context, auth, previous) => previous?.accountId == auth.user?.uid
           ? previous!
-          : SakeStampStore(accountId: auth.user?.uid),
+          : SakeStampStore(
+              accountId: auth.user?.uid,
+              remote: context.read<SakeStampRepository>(),
+            ),
     ),
   ];
 }
