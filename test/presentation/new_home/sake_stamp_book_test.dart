@@ -289,6 +289,35 @@ void main() {
     });
   }
 
+  for (final usePicker in [false, true]) {
+    testWidgets('閉じた表紙から${usePicker ? "県選択" : "矢印"}で移動すると選択県を開く', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        const SakeStampBookPage(initialPrefectureCode: 6),
+        repo: _Catalog(),
+        openCover: false,
+      );
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      if (usePicker) {
+        await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('福島県').last);
+      } else {
+        final next = find.byKey(const ValueKey('stamp-next-prefecture'));
+        await tester.ensureVisible(next);
+        await tester.tap(next);
+      }
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+      expect(find.text('福島県 酒印帳'), findsOneWidget);
+      expect(find.text('1 / …'), findsOneWidget);
+      expect(await SakeStampPreferences.lastPrefecture(), 7);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('最後の紙面の矢印で次県へ進み、表紙へ戻って再び開ける', (tester) async {
     final repo = _Catalog();
     await open(

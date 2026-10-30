@@ -205,6 +205,11 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
       );
     } else {
       change();
+      if (animate && !_bookOpened) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _opening.open();
+        });
+      }
     }
   }
 

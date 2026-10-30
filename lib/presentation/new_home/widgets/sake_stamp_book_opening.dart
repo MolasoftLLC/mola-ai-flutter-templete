@@ -4,6 +4,7 @@ import 'japan_sake_map.dart';
 
 class SakeStampBookOpeningController {
   _SakeStampBookOpeningState? _state;
+  void open() => _state?._finish(true);
   void close() => _state?._finish(false);
 }
 
