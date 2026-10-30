@@ -13,6 +13,7 @@ class NationwideStampCatalog extends StatefulWidget {
     required this.recordsReady,
     required this.onBrandTap,
     this.preview = false,
+    this.pageResetVersion = 0,
     this.onNextSection,
     this.onReturnToCover,
   });
@@ -20,6 +21,9 @@ class NationwideStampCatalog extends StatefulWidget {
   final bool recordsReady;
   final ValueChanged<SakeBrandSummary> onBrandTap;
   final bool preview;
+
+  /// Resets the pager while keeping the loaded catalog in memory.
+  final int pageResetVersion;
   final VoidCallback? onNextSection;
   final VoidCallback? onReturnToCover;
 
@@ -133,7 +137,9 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
             child: ExcludeSemantics(
               excluding: widget.preview,
               child: SakeStampBook(
-                key: ValueKey('national-stamp-book-$_signature'),
+                key: ValueKey(
+                  'national-stamp-book-${widget.pageResetVersion}-$_signature',
+                ),
                 prefectureName: english ? 'Nationwide' : '全国',
                 brands: _brands.values.toList(),
                 recordedBrandIds: earned,

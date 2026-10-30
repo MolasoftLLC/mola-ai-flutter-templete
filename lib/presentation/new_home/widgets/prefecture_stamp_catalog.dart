@@ -14,6 +14,7 @@ class PrefectureStampCatalog extends StatefulWidget {
     required this.recordsReady,
     required this.onBrandTap,
     this.preview = false,
+    this.pageResetVersion = 0,
     this.onNextSection,
     this.onReturnToCover,
     this.earnedOnly = false,
@@ -23,6 +24,9 @@ class PrefectureStampCatalog extends StatefulWidget {
   final bool recordsReady;
   final ValueChanged<SakeBrandSummary> onBrandTap;
   final bool preview;
+
+  /// Resets the pager while keeping the loaded catalog in memory.
+  final int pageResetVersion;
   final VoidCallback? onNextSection;
   final VoidCallback? onReturnToCover;
   final bool earnedOnly;
@@ -128,7 +132,7 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
           excluding: widget.preview,
           child: SakeStampBook(
             key: ValueKey(
-              'stamp-catalog-${widget.prefecture.code}-${widget.earnedOnly ? (widget.recordedBrandIds.toList()..sort()).join(',') : 'all'}',
+              'stamp-catalog-${widget.pageResetVersion}-${widget.prefecture.code}-${widget.earnedOnly ? (widget.recordedBrandIds.toList()..sort()).join(',') : 'all'}',
             ),
             prefectureName: widget.prefecture.label(context),
             brands: widget.preview ? visible.take(9).toList() : visible,

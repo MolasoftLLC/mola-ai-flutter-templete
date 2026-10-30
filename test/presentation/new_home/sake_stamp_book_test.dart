@@ -352,7 +352,9 @@ void main() {
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.text('福島県 酒印帳'), findsOneWidget);
+    expect(repo.codes, [6, 6, 7, 7]);
     expect(tester.takeException(), isNull);
   });
 
@@ -869,6 +871,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 / 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stamp-next')));
+    await tester.pumpAndSettle();
+    final close = find.byKey(const ValueKey('stamp-return-cover'));
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    expect(repo.codes, [6, 6]);
     expect(tester.takeException(), isNull);
   });
 
