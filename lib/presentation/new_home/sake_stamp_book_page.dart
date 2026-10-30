@@ -201,11 +201,16 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
           if (prefectures == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          final selected = prefectures.firstWhere(
+          final ordered = [...prefectures]
+            ..sort((a, b) => a.code.compareTo(b.code));
+          final selected = ordered.firstWhere(
             (p) => p.code == (_selectedCode ?? widget.initialPrefectureCode),
             orElse: () =>
                 _previewPrefecture(prefectures, progress.brandIdsByPrefecture),
           );
+          final index = ordered.indexWhere((p) => p.code == selected.code);
+          final previous = index > 0 ? ordered[index - 1] : null;
+          final next = index + 1 < ordered.length ? ordered[index + 1] : null;
           final earned =
               progress.brandIdsByPrefecture[selected.code] ?? const {};
           if (_selectedCode != selected.code) {
@@ -288,6 +293,32 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 recordsReady: ready,
                 onBrandTap: (brand) => _openBrand(context, brand),
               ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-previous-prefecture'),
+                      label:
+                          previous?.label(context) ??
+                          (_english(context) ? 'Previous' : '前の県'),
+                      onPressed: previous == null
+                          ? null
+                          : () => _select(previous.code),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-next-prefecture'),
+                      label:
+                          next?.label(context) ??
+                          (_english(context) ? 'Next' : '次の県'),
+                      forward: true,
+                      onPressed: next == null ? null : () => _select(next.code),
+                    ),
+                  ),
+                ],
+              ),
               if (!ready) legend,
             ],
           );
@@ -322,4 +353,50 @@ class _NationwideStampCount extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PrefectureStepButton extends StatelessWidget {
+  const _PrefectureStepButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.forward = false,
+  });
+  final String label;
+  final VoidCallback? onPressed;
+  final bool forward;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+    onPressed: onPressed,
+    style: OutlinedButton.styleFrom(
+      foregroundColor: japanMapNavy,
+      backgroundColor: Colors.white,
+      disabledForegroundColor: const Color(0xFFBAC1C4),
+      side: BorderSide(
+        color: japanMapNavy.withValues(alpha: onPressed == null ? .08 : .2),
+      ),
+      minimumSize: const Size(0, 56),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+        fontSize: 15,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (!forward) ...[
+          const Icon(Icons.arrow_back_rounded, size: 32),
+          const SizedBox(width: 8),
+        ],
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
+        if (forward) ...[
+          const SizedBox(width: 8),
+          const Icon(Icons.arrow_forward_rounded, size: 32),
+        ],
+      ],
+    ),
+  );
 }

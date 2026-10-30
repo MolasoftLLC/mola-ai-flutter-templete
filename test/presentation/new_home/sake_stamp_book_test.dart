@@ -306,6 +306,89 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('下の左右ボタンで県ID順に移動し、選択欄・記憶と同期して両端で止まる', (tester) async {
+    final repo = _Catalog();
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+      size: const Size(320, 568),
+      scale: 1.5,
+    );
+    final previous = find.byKey(const ValueKey('stamp-previous-prefecture'));
+    final next = find.byKey(const ValueKey('stamp-next-prefecture'));
+    await tester.scrollUntilVisible(
+      previous,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(previous);
+    await tester.pumpAndSettle();
+    expect(repo.codes.last, 5);
+    expect(find.text('秋田県 酒印帳'), findsOneWidget);
+    expect(
+      tester
+          .state<FormFieldState<int>>(
+            find.byKey(const ValueKey('stamp-prefecture-picker')),
+          )
+          .value,
+      5,
+    );
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(repo.codes.last, 7);
+    expect(await SakeStampPreferences.lastPrefecture(), 7);
+    expect(tester.takeException(), isNull);
+    await preview(tester, 'prefecture-arrows-small');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(tester, const SakeStampBookPage(initialPrefectureCode: 1));
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.descendant(
+              of: previous,
+              matching: find.byType(OutlinedButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.descendant(of: next, matching: find.byType(OutlinedButton)),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(tester, const SakeStampBookPage(initialPrefectureCode: 47));
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.descendant(of: next, matching: find.byType(OutlinedButton)),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.descendant(
+              of: previous,
+              matching: find.byType(OutlinedButton),
+            ),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('不正な記憶値は無視し、明示した県は前回の県より優先する', (tester) async {
     SharedPreferences.setMockInitialValues({
       SakeStampPreferences.prefectureKey: 999,
