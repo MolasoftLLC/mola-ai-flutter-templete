@@ -104,11 +104,31 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  for (final scanId in <int?>[null, 0, 999]) {
+    testWidgets('閲覧のみ・別商品では解析済みでも付与しない: $scanId', (tester) async {
+      final store = SakeStampStore();
+      addTearDown(store.dispose);
+      await open(tester, store);
+      await SakeStampAwardSession.detail(
+        screen,
+        overview(),
+        scannedSakeId: scanId,
+      );
+      await tester.pumpAndSettle();
+      expect(store.contains(11), isFalse);
+      expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
+    });
+  }
+
   testWidgets('解析済み詳細から実際の銘柄・県の酒印を1回だけ付与し、飲んだ件数は増えない', (tester) async {
     final s = SakeStampStore(accountId: 'A');
     addTearDown(s.dispose);
     await open(tester, s);
-    final award = SakeStampAwardSession.detail(screen, overview());
+    final award = SakeStampAwardSession.detail(
+      screen,
+      overview(),
+      scannedSakeId: 123,
+    );
     await tester.pumpAndSettle();
     expect(s.contains(11), true);
     expect(find.byType(SakeStampAcquisitionDemo), findsOneWidget);
@@ -119,7 +139,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
     await tester.pumpAndSettle();
     await award;
-    await SakeStampAwardSession.detail(screen, overview());
+    await SakeStampAwardSession.detail(screen, overview(), scannedSakeId: 123);
     await tester.pumpAndSettle();
     expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
     await tester.pumpWidget(
@@ -139,7 +159,11 @@ void main() {
     addTearDown(s.dispose);
     await open(tester, s, records: [const Sake(sakeId: 123)]);
     for (final status in ['partial', 'failed', 'idle', 'running']) {
-      await SakeStampAwardSession.detail(screen, overview(status: status));
+      await SakeStampAwardSession.detail(
+        screen,
+        overview(status: status),
+        scannedSakeId: 123,
+      );
     }
     final session = await SakeStampAwardSession.prepare(screen);
     await session!.record(screen, const Sake(sakeId: 123));
@@ -155,7 +179,7 @@ void main() {
       s,
       records: [const Sake(sakeId: 124, impression: '以前の記録')],
     );
-    await SakeStampAwardSession.detail(screen, overview());
+    await SakeStampAwardSession.detail(screen, overview(), scannedSakeId: 123);
     await tester.pumpAndSettle();
     expect(s.contains(11), true);
     expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
@@ -287,7 +311,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final award = SakeStampAwardSession.detail(screen, overview());
+    final award = SakeStampAwardSession.detail(
+      screen,
+      overview(),
+      scannedSakeId: 123,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(SakeStampAcquisitionDemo), findsOneWidget);
     scope.value = second;

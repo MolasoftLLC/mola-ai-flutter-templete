@@ -37,7 +37,7 @@ import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/japan
 void main() {
   setUpAll(loggerConfigure);
   setUp(() => SharedPreferences.setMockInitialValues({}));
-  testWidgets('解析済み詳細が表示された後に実際の酒印を付与し、再表示では演出しない', (tester) async {
+  testWidgets('閲覧だけでは酒印を付与せず、自分のラベル解析からのみ付与する', (tester) async {
     final store = SakeStampStore(accountId: 'award-test');
     await store.ready;
     addTearDown(store.dispose);
@@ -71,6 +71,21 @@ void main() {
       saved,
       stampStore: store,
       catalog: _MapCatalogRepository(),
+    );
+    expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
+    expect(store.contains(11), false);
+    expect(saved.savedSakes, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpCorrectionPage(
+      tester,
+      _FakeSakeScanRepository(overview: data),
+      saved,
+      stampStore: store,
+      catalog: _MapCatalogRepository(),
+      home: const SakeMasterDetailPage(
+        stampScanSakeId: 123,
+        venueSake: VenueSake(sakeId: 123, name: '出羽桜 純米酒', recordCount: 0),
+      ),
     );
     expect(find.byType(SakeStampAcquisitionDemo), findsOneWidget);
     expect(store.contains(11), true);

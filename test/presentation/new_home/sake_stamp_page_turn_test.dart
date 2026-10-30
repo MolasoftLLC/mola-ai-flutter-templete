@@ -51,6 +51,7 @@ void main() {
     await tester.pumpWidget(book());
     controller.turn(() => page.value = 1);
     await tester.pump();
+    await tester.pump(); // Rebuild after the post-paint snapshot.
     expect(paper, findsOneWidget);
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('page 1'), findsOneWidget);
@@ -82,6 +83,7 @@ void main() {
     await tester.pumpWidget(book());
     controller.turn(() => page.value = 1, backwards: true);
     await tester.pump();
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.widget<Transform>(sheet).alignment, Alignment.centerRight);
     expect(
@@ -98,6 +100,7 @@ void main() {
     controller.begin(() => page.value = 1, backwards: false);
     controller.update(.25);
     await tester.pump();
+    await tester.pump();
     final first = tester.widget<Transform>(sheet).transform.entry(0, 0);
     controller.update(.55);
     await tester.pump();
@@ -109,6 +112,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(page.value, 0);
     expect(paper, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('描画待ち中にスワイプを取り消しても操作可能に戻る', (tester) async {
+    await tester.pumpWidget(book());
+    controller.begin(() => page.value = 1, backwards: false);
+    controller.update(.4);
+    expect(controller.isBusy, isTrue);
+    controller.finish(commit: false, onCancel: () => page.value = 0);
+    await tester.pumpAndSettle();
+    expect(page.value, 0);
+    expect(controller.isBusy, isFalse);
+    await tester.tap(find.text('page 0'));
+    expect(taps, 1);
+    controller.turn(() => page.value = 1);
+    await tester.pumpAndSettle();
+    expect(page.value, 1);
+    expect(controller.isBusy, isFalse);
     expect(tester.takeException(), isNull);
   });
 

@@ -715,6 +715,7 @@ void main() {
     await drag.moveBy(const Offset(-40, 0));
     await tester.pump(const Duration(milliseconds: 100));
     await drag.moveBy(const Offset(-20, 0));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
@@ -904,6 +905,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(previous);
     await tester.pump();
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
@@ -940,6 +942,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(button);
+      await tester.pump();
       await tester.pump();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
