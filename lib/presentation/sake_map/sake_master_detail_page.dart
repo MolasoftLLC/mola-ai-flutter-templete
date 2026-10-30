@@ -1945,6 +1945,13 @@ class _Details extends StatelessWidget {
                   ),
                 ),
               ),
+            PrefectureStampLink(
+              prefectureCode: int.tryParse(
+                overview?.brewery.prefectureCode ??
+                    overview?.sake.prefectureCode ??
+                    '',
+              ),
+            ),
             if ((detailSake.sakeId ?? 0) > 0)
               _Section(
                 title: 'みんなの評価',
@@ -2058,13 +2065,6 @@ class _Details extends StatelessWidget {
                   ],
                 ),
               ),
-            PrefectureStampLink(
-              prefectureCode: int.tryParse(
-                overview?.brewery.prefectureCode ??
-                    overview?.sake.prefectureCode ??
-                    '',
-              ),
-            ),
             if (master.officialUrl != null || master.sourceUrl != null)
               _WebLink(
                 url: master.officialUrl ?? master.sourceUrl!,
