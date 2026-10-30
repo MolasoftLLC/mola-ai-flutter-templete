@@ -166,7 +166,7 @@ class _RecordImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = _preferredImagePath(sake);
-    if (path == null) return _placeholder();
+    if (path == null || isSakePlaceholderImagePath(path)) return _placeholder();
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return Image.network(
         path,
@@ -183,7 +183,10 @@ class _RecordImage extends StatelessWidget {
   Widget _placeholder() => Container(
     color: const Color(0xFFF1F3F5),
     alignment: Alignment.center,
-    child: Image.asset('assets/images/sake_placeholder.png'),
+    child: Image.asset(
+      'assets/images/sake_placeholder.png',
+      fit: BoxFit.contain,
+    ),
   );
 }
 

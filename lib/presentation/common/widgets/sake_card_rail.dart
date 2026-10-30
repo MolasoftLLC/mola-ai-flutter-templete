@@ -163,7 +163,9 @@ class _SakeImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imagePath = preferredSakeCardImagePath(sake);
-    if (imagePath == null || imagePath.trim().isEmpty) {
+    if (imagePath == null ||
+        imagePath.trim().isEmpty ||
+        isSakePlaceholderImagePath(imagePath)) {
       return _placeholder();
     }
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {

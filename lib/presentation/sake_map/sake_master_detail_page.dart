@@ -4327,7 +4327,7 @@ class _BottleImage extends StatelessWidget {
       errorBuilder: (_, __, ___) =>
           const Icon(Icons.wine_bar_outlined, color: _navy),
     );
-    return url == null || url!.trim().isEmpty
+    return url == null || url!.trim().isEmpty || isSakePlaceholderImagePath(url)
         ? placeholder()
         : Image.network(
             url!,
@@ -4351,7 +4351,9 @@ class _DetailSakeImage extends StatelessWidget {
           const Icon(Icons.wine_bar_outlined, color: _navy),
     );
     final value = path?.trim();
-    if (value == null || value.isEmpty) return placeholder();
+    if (value == null || value.isEmpty || isSakePlaceholderImagePath(value)) {
+      return placeholder();
+    }
     if (value.startsWith('http://') || value.startsWith('https://')) {
       return Image.network(
         value,

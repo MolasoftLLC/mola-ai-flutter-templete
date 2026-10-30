@@ -1152,7 +1152,7 @@ class _SakeThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     final fallback = Image.asset(
       'assets/images/sake_placeholder.png',
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       errorBuilder: (_, __, ___) => const Icon(Icons.wine_bar_outlined),
     );
     return ClipRRect(
@@ -1162,7 +1162,7 @@ class _SakeThumbnail extends StatelessWidget {
         height: 84,
         child: ColoredBox(
           color: const Color(0xFFE7EBEF),
-          child: imageUrl == null
+          child: imageUrl == null || isSakePlaceholderImagePath(imageUrl)
               ? fallback
               : Image.network(
                   imageUrl!,
