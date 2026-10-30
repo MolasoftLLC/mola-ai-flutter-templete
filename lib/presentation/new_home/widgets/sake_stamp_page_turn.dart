@@ -123,12 +123,13 @@ class _SakeStampPageTurnState extends State<SakeStampPageTurn>
       if (finish != null) _finish(finish, _onCancel);
     }
 
-    final render = _boundary.currentContext?.findRenderObject();
-    if (render is RenderRepaintBoundary && render.debugNeedsPaint) {
+    // Capture after paint in every build mode. debugNeedsPaint throws in
+    // release/profile and would leave _preparing stuck, blocking navigation.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      capture();
+    } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => capture());
       WidgetsBinding.instance.ensureVisualUpdate();
-    } else {
-      capture();
     }
   }
 
