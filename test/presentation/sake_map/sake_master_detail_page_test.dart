@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:mola_gemini_flutter_template/domain/notifier/sake_stamp_store.dart';
+import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/sake_stamp_acquisition_demo.dart';
 
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
@@ -34,6 +36,58 @@ import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/japan
 void main() {
   setUpAll(loggerConfigure);
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  testWidgets('解析済み詳細が表示された後に実際の酒印を付与し、再表示では演出しない', (tester) async {
+    final store = SakeStampStore(accountId: 'award-test');
+    await store.ready;
+    addTearDown(store.dispose);
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    const data = SakeOverview(
+      sake: Sake(
+        sakeId: 123,
+        brandId: 11,
+        name: '出羽桜 純米酒',
+        description: '商品固有の説明です。',
+      ),
+      analysisCompleted: true,
+      brand: SakeBrandDetails(id: 11, name: '出羽桜'),
+      brewery: SakeBreweryDetails(prefectureCode: '06'),
+      master: SakeMasterDetails(
+        tasteProfile: SakeTasteProfileDetails(
+          fruity: .5,
+          sweetness: .5,
+          acidity: .5,
+          umami: .5,
+          kire: .5,
+          dryness: .5,
+        ),
+      ),
+    );
+    await _pumpCorrectionPage(
+      tester,
+      _FakeSakeScanRepository(overview: data),
+      saved,
+      stampStore: store,
+      catalog: _MapCatalogRepository(),
+    );
+    expect(find.byType(SakeStampAcquisitionDemo), findsOneWidget);
+    expect(store.contains(11), true);
+    expect(saved.savedSakes, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpCorrectionPage(
+      tester,
+      _FakeSakeScanRepository(overview: data),
+      saved,
+      stampStore: store,
+      catalog: _MapCatalogRepository(),
+    );
+    expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
+    expect(saved.savedSakes, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
   for (final fromRecords in [false, true]) {
     for (final fail in [false, true]) {
       testWidgets(
@@ -1261,6 +1315,7 @@ Future<void> _pumpCorrectionPage(
   Widget? home,
   RecentSakeHistory? history,
   PlaceMapRepository? catalog,
+  SakeStampStore? stampStore,
 }) async {
   final visibilityController = VisibilityDetectorController.instance;
   final previousInterval = visibilityController.updateInterval;
@@ -1274,6 +1329,7 @@ Future<void> _pumpCorrectionPage(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        if (stampStore != null) ChangeNotifierProvider.value(value: stampStore),
         Provider<SakeScanRepository>.value(value: repository),
         Provider<SavedSakeNotifier>.value(value: saved),
         if (history != null)

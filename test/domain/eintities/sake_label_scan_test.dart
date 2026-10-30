@@ -2,6 +2,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.dart';
 
 void main() {
+  test('種類が酒米の前後に分かれていても商品名を二重にしない', () {
+    const w = SakeScanCandidate(
+      sakeId: 0,
+      name: 'W 純米 出羽燦々 無濾過生原酒',
+      type: '純米無濾過生原酒',
+    );
+    expect(w.displayProductName, 'W 純米 出羽燦々 無濾過生原酒');
+    expect(w.toSake().name, w.name);
+    expect(w.toSake().type, w.type);
+    expect(
+      const SakeScanCandidate(
+        sakeId: 8488,
+        name: 'W 出羽燦々50 純米無濾過生原酒',
+        type: '純米酒',
+      ).displayProductName,
+      'W 出羽燦々50 純米無濾過生原酒',
+    );
+    const fire = SakeScanCandidate(
+      sakeId: 0,
+      name: 'W 出羽燦々',
+      type: '純米無濾過原酒 火入れ',
+    );
+    expect(fire.displayProductName, contains('火入れ'));
+    const special = SakeScanCandidate(
+      sakeId: 0,
+      name: '銘柄 純米吟醸',
+      type: '純米大吟醸',
+    );
+    expect(special.displayProductName, contains('純米大吟醸'));
+  });
+
+  test('登録済みと未登録は順位や正のIDだけでは決めない', () {
+    expect(
+      const SakeScanCandidate(
+        sakeId: 8488,
+        name: 'W',
+        candidateSource: 'master',
+      ).isRegisteredProduct,
+      isTrue,
+    );
+    expect(
+      const SakeScanCandidate(
+        sakeId: 8752,
+        name: 'W',
+        candidateSource: 'lens_discovery',
+        candidateKey: 'new',
+      ).isRegisteredProduct,
+      isFalse,
+    );
+    expect(
+      const SakeScanCandidate(
+        sakeId: 0,
+        name: 'W',
+        candidateSource: 'ai_temporary',
+      ).isRegisteredProduct,
+      isFalse,
+    );
+  });
+
   test('不明な味わいは0へ変換せずチャートを保留する', () {
     final profile = <String, dynamic>{
       'fruity': 0.8,

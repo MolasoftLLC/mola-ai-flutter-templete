@@ -253,6 +253,7 @@ class _JapanSakePageState extends State<JapanSakePage> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    includeEncounterStamps: true,
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: PrimaryAppBar(

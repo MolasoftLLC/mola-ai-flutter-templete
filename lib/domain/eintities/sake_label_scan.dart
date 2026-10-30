@@ -82,11 +82,38 @@ class SakeScanCandidate {
   bool get isTemporary =>
       isOfficialTemporary || isAiTemporary || isLensDiscovery;
 
+  bool get isRegisteredProduct =>
+      sakeId > 0 &&
+      !isTemporary &&
+      (candidateSource == null || candidateSource == 'master');
+
   String get canonicalProductName {
     final productType = type?.trim();
+    final compactName = name.replaceAll(RegExp(r'\s+'), '');
+    final compactType = productType?.replaceAll(RegExp(r'\s+'), '');
+    // Classification can surround the rice name (e.g. 純米 出羽燦々 無濾過生原酒).
+    // Suppress repetition only when every recognized classification is present.
+    final classifications = RegExp(
+      r'純米大吟醸酒?|純米吟醸酒?|特別純米酒?|特別本醸造酒?|大吟醸酒?|吟醸酒?|本醸造酒?|純米酒?|無濾過|生原酒|生酒|原酒|火入れ',
+    );
+    final parts = compactType == null
+        ? const <String>[]
+        : classifications.allMatches(compactType).map((m) => m[0]!).toList();
+    final alreadyDescribed =
+        parts.isNotEmpty &&
+        compactType!.replaceAll(classifications, '').isEmpty &&
+        parts.every(
+          (part) =>
+              compactName.contains(part) ||
+              (RegExp(
+                    r'^(?:純米大吟醸|純米吟醸|特別純米|特別本醸造|大吟醸|吟醸|本醸造|純米)酒$',
+                  ).hasMatch(part) &&
+                  compactName.contains(part.substring(0, part.length - 1))),
+        );
     return productType == null ||
             productType.isEmpty ||
-            name.contains(productType)
+            compactName.contains(compactType!) ||
+            alreadyDescribed
         ? name
         : '$name $productType';
   }

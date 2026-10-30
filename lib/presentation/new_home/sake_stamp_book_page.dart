@@ -5,10 +5,12 @@ import '../common/widgets/primary_app_bar.dart';
 import 'japan_sake_page.dart';
 import 'widgets/japan_sake_map.dart';
 import 'widgets/prefecture_stamp_catalog.dart';
+import 'widgets/nationwide_stamp_catalog.dart';
 import 'widgets/sake_journey_progress.dart';
 import 'widgets/sake_stamp_acquisition_demo.dart';
 import 'widgets/sake_stamp_preferences.dart';
 import 'widgets/sake_stamp_collection_label.dart';
+import 'widgets/sake_stamp_book_opening.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -17,7 +19,10 @@ JapanSakePrefecture _previewPrefecture(
   List<JapanSakePrefecture> prefectures,
   Map<int, Set<int>> recordedBrands,
 ) {
-  var selected = prefectures.first;
+  var selected = prefectures.firstWhere(
+    (p) => p.code == 35,
+    orElse: () => prefectures.first,
+  );
   for (final prefecture in prefectures) {
     if ((recordedBrands[prefecture.code]?.length ?? 0) >
         (recordedBrands[selected.code]?.length ?? 0)) {
@@ -42,38 +47,30 @@ class SakeStampBookSection extends StatefulWidget {
 }
 
 class _SakeStampBookSectionState extends State<SakeStampBookSection> {
-  int? _rememberedCode;
-  late final _map = _loadMap();
+  late final _map = JapanSakeMapData.load();
 
-  Future<List<JapanSakePrefecture>> _loadMap() async {
-    _rememberedCode = await SakeStampPreferences.lastPrefecture();
-    return JapanSakeMapData.load();
-  }
-
-  Future<void> _open(JapanSakePrefecture prefecture) async {
+  Future<void> _open(int initialCode) async {
     AppAnalytics.instance.event('home', 'sake_stamp_book');
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            SakeStampBookPage(initialPrefectureCode: prefecture.code),
+        builder: (_) => SakeStampBookPage(initialPrefectureCode: initialCode),
       ),
     );
-    final code = await SakeStampPreferences.lastPrefecture();
-    if (mounted) setState(() => _rememberedCode = code);
   }
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    includeEncounterStamps: true,
     builder: (context, progress, legend, ready) => FutureBuilder(
       future: _map,
       builder: (context, snapshot) {
         final prefectures = snapshot.data;
         if (prefectures == null) return const SizedBox.shrink();
-        final prefecture = prefectures.firstWhere(
-          (p) => p.code == _rememberedCode,
-          orElse: () =>
-              _previewPrefecture(prefectures, progress.brandIdsByPrefecture),
-        );
+        final nationwide =
+            !ready ||
+            progress.unresolvedRecords > 0 ||
+            progress.brandIdsByPrefecture.values.any((ids) => ids.isNotEmpty);
+        final prefecture = prefectures.firstWhere((p) => p.code == 35);
         return Padding(
           key: const ValueKey('home-sake-stamp-section'),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
@@ -99,8 +96,8 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
               const SizedBox(height: 8),
               Text(
                 _english(context)
-                    ? 'Collect a stamp for each brand you record.'
-                    : '飲んだお酒の記録を、銘柄の酒印に。',
+                    ? 'Turn each sake encounter into an everyday memory.'
+                    : '一杯の出会いを、日々の思い出に',
                 style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
               ),
               const SizedBox(height: 8),
@@ -113,19 +110,27 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
                 child: InkWell(
                   key: const ValueKey('open-sake-stamp-book'),
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () => _open(prefecture),
+                  onTap: () => _open(nationwide ? 0 : prefecture.code),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      PrefectureStampCatalog(
-                        prefecture: prefecture,
-                        recordedBrandIds:
-                            progress.brandIdsByPrefecture[prefecture.code] ??
-                            const {},
-                        recordsReady: ready,
-                        preview: true,
-                        onBrandTap: (_) => _open(prefecture),
-                      ),
+                      if (nationwide)
+                        NationwideStampCatalog(
+                          recordedBrands: progress.brandIdsByPrefecture,
+                          recordsReady: ready,
+                          preview: true,
+                          onBrandTap: (_) => _open(0),
+                        )
+                      else
+                        PrefectureStampCatalog(
+                          prefecture: prefecture,
+                          recordedBrandIds:
+                              progress.brandIdsByPrefecture[prefecture.code] ??
+                              const {},
+                          recordsReady: ready,
+                          preview: true,
+                          onBrandTap: (_) => _open(prefecture.code),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Row(
@@ -171,6 +176,7 @@ class SakeStampBookPage extends StatefulWidget {
 class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
+  bool _bookOpened = false;
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -189,6 +195,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    includeEncounterStamps: true,
     compactStatus: true,
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
@@ -204,6 +211,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
           }
           final ordered = [...prefectures]
             ..sort((a, b) => a.code.compareTo(b.code));
+          final nationwide = _selectedCode == 0;
           final selected = ordered.firstWhere(
             (p) => p.code == (_selectedCode ?? widget.initialPrefectureCode),
             orElse: () =>
@@ -214,21 +222,26 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
           final next = index + 1 < ordered.length ? ordered[index + 1] : null;
           final earned =
               progress.brandIdsByPrefecture[selected.code] ?? const {};
-          if (_selectedCode != selected.code) {
+          final selectedCode = nationwide ? 0 : selected.code;
+          final total = progress.brandIdsByPrefecture.values
+              .expand((ids) => ids)
+              .toSet()
+              .length;
+          if (_selectedCode != selectedCode) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && ready) _select(selected.code);
+              if (mounted && ready) _select(selectedCode);
             });
-          } else if (_persistedCode != selected.code) {
-            _persistedCode = selected.code;
-            SakeStampPreferences.rememberPrefecture(selected.code);
+          } else if (_persistedCode != selectedCode) {
+            _persistedCode = selectedCode;
+            SakeStampPreferences.rememberPrefecture(selectedCode);
           }
           return ListView(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
             children: [
               Text(
                 _english(context)
-                    ? 'A collection of the sake you have enjoyed.'
-                    : '飲んだ一杯を、旅のしるしに。',
+                    ? 'Turn each sake encounter into an everyday memory.'
+                    : '一杯の出会いを、日々の思い出に',
                 style: const TextStyle(
                   color: japanMapNavy,
                   fontSize: 20,
@@ -236,14 +249,9 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              _NationwideStampCount(
-                progress.brandIdsByPrefecture,
-                ready: ready,
-              ),
-              const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 key: const ValueKey('stamp-prefecture-picker'),
-                initialValue: selected.code,
+                initialValue: selectedCode,
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: _english(context) ? 'Prefecture' : '都道府県',
@@ -254,7 +262,11 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                   ),
                 ),
                 items: [
-                  for (final prefecture in prefectures)
+                  DropdownMenuItem(
+                    value: 0,
+                    child: Text(_english(context) ? 'Nationwide' : '全国'),
+                  ),
+                  for (final prefecture in ordered)
                     DropdownMenuItem(
                       value: prefecture.code,
                       child: Text(prefecture.label(context)),
@@ -266,57 +278,88 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               ),
               const SizedBox(height: 16),
               SakeStampCollectionLabel(
-                prefecture: selected.label(context),
+                prefecture: nationwide ? null : selected.label(context),
                 count: earned.length,
+                nationwideCount: total,
                 ready: ready,
               ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilterChip(
-                  key: const ValueKey('stamp-earned-only'),
-                  label: Text(
-                    _english(context) ? 'Earned stamps only' : '押印済みだけ表示',
+              if (!nationwide)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Semantics(
+                    toggled: _earnedOnly,
+                    child: TextButton.icon(
+                      key: const ValueKey('stamp-earned-only'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _earnedOnly
+                            ? const Color(0xFFB73927)
+                            : const Color(0xFF687880),
+                        textStyle: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(fontSize: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
+                      icon: Icon(
+                        _earnedOnly
+                            ? Icons.check_circle_outline
+                            : Icons.circle_outlined,
+                        size: 15,
+                      ),
+                      label: Text(
+                        _english(context) ? 'Earned stamps only' : '押印済みだけ表示',
+                      ),
+                      onPressed: () =>
+                          setState(() => _earnedOnly = !_earnedOnly),
+                    ),
                   ),
-                  selected: _earnedOnly,
-                  selectedColor: const Color(0xFFFFF0CF),
-                  checkmarkColor: const Color(0xFFB73927),
-                  onSelected: (value) => setState(() => _earnedOnly = value),
                 ),
+              SakeStampBookOpening(
+                key: const ValueKey('stamp-book-opening'),
+                initiallyOpen: _bookOpened,
+                onOpened: () => _bookOpened = true,
+                child: nationwide
+                    ? NationwideStampCatalog(
+                        recordedBrands: progress.brandIdsByPrefecture,
+                        recordsReady: ready,
+                        onBrandTap: (brand) => _openBrand(context, brand),
+                      )
+                    : PrefectureStampCatalog(
+                        prefecture: selected,
+                        earnedOnly: _earnedOnly,
+                        recordedBrandIds: earned,
+                        recordsReady: ready,
+                        onBrandTap: (brand) => _openBrand(context, brand),
+                      ),
               ),
-              PrefectureStampCatalog(
-                prefecture: selected,
-                earnedOnly: _earnedOnly,
-                recordedBrandIds: earned,
-                recordsReady: ready,
-                onBrandTap: (brand) => _openBrand(context, brand),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _PrefectureStepButton(
-                      key: const ValueKey('stamp-previous-prefecture'),
-                      label:
-                          previous?.label(context) ??
-                          (_english(context) ? 'Previous' : '前の県'),
-                      onPressed: previous == null
-                          ? null
-                          : () => _select(previous.code),
+              if (!nationwide)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PrefectureStepButton(
+                        key: const ValueKey('stamp-previous-prefecture'),
+                        label:
+                            previous?.label(context) ??
+                            (_english(context) ? 'Previous' : '前の県'),
+                        onPressed: previous == null
+                            ? null
+                            : () => _select(previous.code),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _PrefectureStepButton(
-                      key: const ValueKey('stamp-next-prefecture'),
-                      label:
-                          next?.label(context) ??
-                          (_english(context) ? 'Next' : '次の県'),
-                      forward: true,
-                      onPressed: next == null ? null : () => _select(next.code),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _PrefectureStepButton(
+                        key: const ValueKey('stamp-next-prefecture'),
+                        label:
+                            next?.label(context) ??
+                            (_english(context) ? 'Next' : '次の県'),
+                        forward: true,
+                        onPressed: next == null
+                            ? null
+                            : () => _select(next.code),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               if (!ready) legend,
             ],
           );
