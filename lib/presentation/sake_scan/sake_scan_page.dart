@@ -112,6 +112,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   ScanRecordAnswers _scanAnswers = ScanRecordAnswers();
   bool _questionsDone = false;
   bool _nonSakeDialogOpen = false;
+  bool _limitDialogOpen = false;
   String _recordBaseMemo = '';
   bool _recordMemoEdited = false;
   bool _recordTagsEdited = false;
@@ -971,6 +972,38 @@ class _SakeScanPageState extends State<SakeScanPage>
         _resetAnalysisRecordDraft();
         context.read<SakeScanNotifier>().retry();
         _nonSakeDialogOpen = false;
+      });
+    }
+    if (state.status == SakeScanViewStatus.error &&
+        state.error?.statusCode == 429 &&
+        !_limitDialogOpen) {
+      _limitDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final daily = state.error?.kind == SakeScanErrorKind.dailyLimit;
+        final busy = state.error?.kind == SakeScanErrorKind.analysisBusy;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(
+              daily
+                  ? '1日の解析上限に達しました'
+                  : busy
+                  ? '解析中です'
+                  : 'しばらくお待ちください',
+            ),
+            content: Text(_errorText(state.error)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        context.read<SakeScanNotifier>().retry();
+        _limitDialogOpen = false;
       });
     }
     final bottomPanelKey = switch (state.status) {
@@ -2094,6 +2127,8 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   String _errorText(SakeScanException? error) {
     return switch (error?.kind) {
+      SakeScanErrorKind.dailyLimit => error!.message,
+      SakeScanErrorKind.analysisBusy => '前の解析が処理中です。完了してからもう一度お試しください。',
       SakeScanErrorKind.faceDetected =>
         '背景などに顔が写っている可能性があるため、解析を開始できませんでした。瓶のラベルだけが写るように撮り直してください。',
       SakeScanErrorKind.savedLimit =>
