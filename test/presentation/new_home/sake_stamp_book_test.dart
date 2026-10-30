@@ -1108,14 +1108,10 @@ void main() {
         find.byKey(const ValueKey('sake-stamp-book')),
       );
       await preview(tester, 'home-stamp-book');
-      await tester.tap(find.byKey(const ValueKey('sake-stamp-demo-button')));
-      await tester.pumpAndSettle();
-      expect(find.text('新しい酒印を獲得！'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
-      await tester.pumpAndSettle();
-      expect(find.text('1 / 1'), findsNothing);
-      expect(find.text('現在1銘柄'), findsOneWidget);
-      expect(repo.codes.last, 6);
+      expect(
+        find.byKey(const ValueKey('sake-stamp-demo-button')),
+        findsNothing,
+      );
       await tester.tapAt(
         tester.getCenter(find.byKey(const ValueKey('sake-stamp-book'))),
       );

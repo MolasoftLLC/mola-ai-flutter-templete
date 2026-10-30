@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mola_gemini_flutter_template/domain/notifier/auth/auth_notifier.dart';
 import 'dart:io';
 import 'package:mola_gemini_flutter_template/domain/notifier/sake_stamp_store.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/sake_stamp_acquisition_demo.dart';
@@ -342,6 +343,24 @@ void main() {
     expect(find.text('解析後の日本酒'), findsWidgets);
     expect(find.textContaining('3,456'), findsWidgets);
     expect(repository.starts, 1);
+  });
+
+  testWidgets('ラベル詳細解析中に回答し、完了しても下書きを保持する', (tester) async {
+    final repository = _LensDetailsRepository();
+    await _pumpLensPage(tester, repository, offerScanQuestions: true);
+    await tester.pump();
+    await tester.pump();
+    await tester.scrollUntilVisible(find.text('YES →'), 180);
+    await tester.tap(find.text('YES →'));
+    await tester.pump();
+    expect(find.text('好きな味だった？'), findsOneWidget);
+    repository.done = true;
+    repository.completion.complete('completed');
+    await tester.pumpAndSettle();
+    expect(find.text('飲んだ'), findsOneWidget);
+    expect(find.text('回答を確認して記録する'), findsOneWidget);
+    expect(find.text('好きな味だった？'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Lens解析失敗は情報を残し再試行できる', (tester) async {
@@ -943,6 +962,71 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('解析回答は確認フォームに引き継ぎ、明示保存まで記録を変更しない', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final saved = SavedSakeNotifier()
+      ..read = (<T>() => _GuestAuthRepository() as T);
+    addTearDown(saved.dispose);
+    await tester.pump();
+    await saved.addSavedSake(
+      const Sake(
+        sakeId: 123,
+        name: '日本酒',
+        impression: '元のメモ',
+        userTags: ['フルーティ'],
+      ),
+    );
+    final original = saved.savedSakes.single;
+    await tester.pumpWidget(
+      Provider<AuthState>.value(
+        value: const AuthState(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('ja'),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showSakeRecordEditorSheet(
+                  context,
+                  notifier: saved,
+                  sake: original,
+                  draftMemo: '飲んだ\n好きな味だった',
+                  draftPlace: const DrinkingPlace(displayName: '選んだお店'),
+                ),
+                child: const Text('確認'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('確認'));
+    await tester.pumpAndSettle();
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList();
+    expect(
+      fields.any((f) => f.controller?.text == '元のメモ\n飲んだ\n好きな味だった'),
+      isTrue,
+    );
+    expect(find.text('選んだお店'), findsOneWidget);
+    expect(saved.savedSakes.single.impression, '元のメモ');
+    expect(saved.savedSakes.single.drinkingPlace, isNull);
+    await tester.scrollUntilVisible(
+      find.text('記録を保存'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('記録を保存'));
+    await tester.pumpAndSettle();
+    expect(saved.savedSakes.single.impression, '元のメモ\n飲んだ\n好きな味だった');
+    expect(saved.savedSakes.single.place, '選んだお店');
+    expect(saved.savedSakes.single.userTags, ['フルーティ']);
     expect(tester.takeException(), isNull);
   });
 
@@ -1648,16 +1732,22 @@ class _FakeSakeScanRepository implements SakeScanRepository {
 
 Future<void> _pumpLensPage(
   WidgetTester tester,
-  SakeScanRepository repository,
-) async {
+  SakeScanRepository repository, {
+  bool offerScanQuestions = false,
+}) async {
   await tester.binding.setSurfaceSize(const Size(390, 844));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     Provider<SakeScanRepository>.value(
       value: repository,
-      child: const MaterialApp(
+      child: MaterialApp(
         home: SakeMasterDetailPage(
-          venueSake: VenueSake(sakeId: 123, name: '取得済みの名前', recordCount: 0),
+          offerScanQuestions: offerScanQuestions,
+          venueSake: const VenueSake(
+            sakeId: 123,
+            name: '取得済みの名前',
+            recordCount: 0,
+          ),
         ),
       ),
     ),

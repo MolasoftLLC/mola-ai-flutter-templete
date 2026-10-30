@@ -7,9 +7,11 @@ class SakeStampCollectionLabel extends StatelessWidget {
     super.key,
     this.prefecture,
     this.nationwideCount,
+    this.catalogLink = false,
     required this.count,
     required this.ready,
   });
+  final bool catalogLink;
   final String? prefecture;
   final int? nationwideCount;
   final int count;
@@ -19,11 +21,11 @@ class SakeStampCollectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
     return CustomPaint(
-      painter: const _CollectionLabelPainter(),
+      painter: _CollectionLabelPainter(catalogLink: catalogLink),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 68),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 72, 12),
+          padding: EdgeInsets.fromLTRB(16, 12, catalogLink ? 100 : 72, 12),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Column(
@@ -43,7 +45,13 @@ class SakeStampCollectionLabel extends StatelessWidget {
                 if (prefecture != null)
                   _countLine(
                     english,
-                    english ? 'Stamps in $prefecture ' : '$prefectureで集めた酒印 ',
+                    catalogLink
+                        ? (english
+                              ? 'Sake from $prefecture '
+                              : '$prefectureの日本酒 ')
+                        : (english
+                              ? 'Stamps in $prefecture '
+                              : '$prefectureで集めた酒印 '),
                     count,
                   ),
               ],
@@ -79,7 +87,11 @@ class SakeStampCollectionLabel extends StatelessWidget {
               ),
             ],
           )
-        : TextSpan(text: english ? 'Records unconfirmed' : '記録未確認'),
+        : TextSpan(
+            text: catalogLink
+                ? (english ? 'Sake from $prefecture' : '$prefectureの日本酒')
+                : (english ? 'Records unconfirmed' : '記録未確認'),
+          ),
     key: key,
     style: TextStyle(
       fontFamily: english ? null : 'SakeSeal',
@@ -92,7 +104,8 @@ class SakeStampCollectionLabel extends StatelessWidget {
 }
 
 class _CollectionLabelPainter extends CustomPainter {
-  const _CollectionLabelPainter();
+  const _CollectionLabelPainter({this.catalogLink = false});
+  final bool catalogLink;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -136,7 +149,7 @@ class _CollectionLabelPainter extends CustomPainter {
 
     // A loose bottle-and-cup sketch, kept clear of the text at any text scale.
     canvas.save();
-    canvas.translate(w - 65, h / 2 - 25);
+    canvas.translate(w - (catalogLink ? 92 : 65), h / 2 - 25);
     final ink = Paint()
       ..color = japanMapNavy.withValues(alpha: .58)
       ..style = PaintingStyle.stroke
@@ -183,8 +196,26 @@ class _CollectionLabelPainter extends CustomPainter {
     );
     canvas.drawLine(const Offset(38, 50), const Offset(45, 50), ink);
     canvas.restore();
+    if (catalogLink) {
+      final arrow = Paint()
+        ..color = japanMapNavy
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(
+        Path()
+          ..moveTo(w - 32, h / 2)
+          ..lineTo(w - 16, h / 2)
+          ..moveTo(w - 23, h / 2 - 7)
+          ..lineTo(w - 16, h / 2)
+          ..lineTo(w - 23, h / 2 + 7),
+        arrow,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _CollectionLabelPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CollectionLabelPainter oldDelegate) =>
+      catalogLink != oldDelegate.catalogLink;
 }

@@ -7,7 +7,6 @@ import 'widgets/japan_sake_map.dart';
 import 'widgets/prefecture_stamp_catalog.dart';
 import 'widgets/nationwide_stamp_catalog.dart';
 import 'widgets/sake_journey_progress.dart';
-import 'widgets/sake_stamp_acquisition_demo.dart';
 import 'widgets/sake_stamp_preferences.dart';
 import 'widgets/sake_stamp_collection_label.dart';
 import 'widgets/sake_stamp_book_opening.dart';
@@ -90,8 +89,6 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const SakeStampDemoButton(),
                 ],
               ),
               const SizedBox(height: 8),

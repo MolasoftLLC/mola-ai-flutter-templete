@@ -41,6 +41,8 @@ import '../sake_scan/sake_scan_page.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'sake_map_page.dart';
 import 'same_brand_sake_section.dart';
+import 'prefecture_stamp_link.dart';
+import '../sake_scan/widgets/scan_record_questions.dart';
 import '../new_home/widgets/sake_stamp_awards.dart';
 
 const _navy = Color(0xFF143861);
@@ -51,8 +53,10 @@ class SakeMasterDetailPage extends StatefulWidget {
     super.key,
     required this.venueSake,
     this.recordRecentView = false,
+    this.offerScanQuestions = false,
   });
   final bool recordRecentView;
+  final bool offerScanQuestions;
   final VenueSake venueSake;
 
   @override
@@ -60,6 +64,32 @@ class SakeMasterDetailPage extends StatefulWidget {
 }
 
 class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
+  final _detailAnswers = ScanRecordAnswers();
+  DrinkingPlace? _questionPlace;
+  bool _detailQuestionsDone = false;
+  bool _detailQuestionsDismissed = false;
+  bool _openingQuestionRecord = false;
+
+  Future<void> _confirmQuestionRecord(Sake sake) async {
+    final notifier = _savedSakeNotifier;
+    if (notifier == null || _openingQuestionRecord) return;
+    final saved = _findSavedSake(notifier, sake);
+    if (saved == null) return;
+    setState(() => _openingQuestionRecord = true);
+    try {
+      final didSave = await showSakeRecordEditorSheet(
+        context,
+        notifier: notifier,
+        sake: saved,
+        draftMemo: _detailAnswers.memo,
+        draftPlace: _questionPlace,
+      );
+      if (mounted && didSave) setState(() => _detailQuestionsDismissed = true);
+    } finally {
+      if (mounted) setState(() => _openingQuestionRecord = false);
+    }
+  }
+
   Future<SakeOverview>? _future;
   final ScrollController _scrollController = ScrollController();
   bool _initialized = false;
@@ -1164,6 +1194,61 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                             child: Text(_detailErrorMessage(snapshot.error)),
                           ),
                         ),
+                      if (widget.offerScanQuestions &&
+                          !_detailQuestionsDismissed &&
+                          (_isLensAnalyzing ||
+                              isProfileEnrichmentPending ||
+                              _detailAnswers.drank != null ||
+                              _detailQuestionsDone))
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child:
+                                !_detailQuestionsDone &&
+                                    (_isLensAnalyzing ||
+                                        isProfileEnrichmentPending)
+                                ? ScanRecordQuestions(
+                                    answers: _detailAnswers,
+                                    onChanged: () => setState(() {}),
+                                    onChoosePlace: () async {
+                                      final place = await PlacePickerSheet.show(
+                                        context,
+                                      );
+                                      if (mounted && place != null) {
+                                        setState(() => _questionPlace = place);
+                                      }
+                                    },
+                                    onDone: () => setState(
+                                      () => _detailQuestionsDone = true,
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (_detailAnswers.memo.isNotEmpty)
+                                        Text(_detailAnswers.memo),
+                                      if (_questionPlace != null)
+                                        Text(_questionPlace!.displayName),
+                                      FilledButton(
+                                        onPressed: _openingQuestionRecord
+                                            ? null
+                                            : () => _confirmQuestionRecord(
+                                                detailSake,
+                                              ),
+                                        child: const Text('回答を確認して記録する'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => setState(
+                                          () =>
+                                              _detailQuestionsDismissed = true,
+                                        ),
+                                        child: const Text('あとで'),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
                       const SliverToBoxAdapter(child: _ShopPriceTitle()),
                       SliverPersistentHeader(
                         pinned: true,
@@ -1958,6 +2043,13 @@ class _Details extends StatelessWidget {
                   ],
                 ),
               ),
+            PrefectureStampLink(
+              prefectureCode: int.tryParse(
+                overview?.brewery.prefectureCode ??
+                    overview?.sake.prefectureCode ??
+                    '',
+              ),
+            ),
             if (master.officialUrl != null || master.sourceUrl != null)
               _WebLink(
                 url: master.officialUrl ?? master.sourceUrl!,
@@ -2586,20 +2678,22 @@ class _PersonalRecordSection extends StatelessWidget {
   }
 }
 
-Future<void> showSakeRecordEditorSheet(
+Future<bool> showSakeRecordEditorSheet(
   BuildContext context, {
   required SavedSakeNotifier notifier,
   required Sake sake,
+  String? draftMemo,
+  DrinkingPlace? draftPlace,
 }) async {
   final stampSession = await SakeStampAwardSession.prepare(context);
-  if (!context.mounted) return;
+  if (!context.mounted) return false;
   if (sake.syncStatus == SavedSakeSyncStatus.serverSynced &&
       (sake.imagePaths ?? const <String>[]).any(
         (path) => !path.startsWith('https://') && !path.startsWith('http://'),
       )) {
     await notifier.refreshFromServer();
   }
-  if (!context.mounted) return;
+  if (!context.mounted) return false;
   final current =
       notifier.savedSakes
           .where((record) => record.savedId == sake.savedId)
@@ -2670,6 +2764,8 @@ Future<void> showSakeRecordEditorSheet(
                     child: _InlineRecordEditor(
                       notifier: notifier,
                       sake: current,
+                      draftMemo: draftMemo,
+                      draftPlace: draftPlace,
                     ),
                   ),
                 ),
@@ -2687,6 +2783,7 @@ Future<void> showSakeRecordEditorSheet(
         .firstOrNull;
     if (updated != null) await stampSession?.record(context, updated);
   }
+  return saved == true;
 }
 
 Sake? _findSavedSake(SavedSakeNotifier? notifier, Sake sake) {
@@ -2928,7 +3025,14 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _InlineRecordEditor extends StatefulWidget {
-  const _InlineRecordEditor({required this.notifier, required this.sake});
+  const _InlineRecordEditor({
+    required this.notifier,
+    required this.sake,
+    this.draftMemo,
+    this.draftPlace,
+  });
+  final String? draftMemo;
+  final DrinkingPlace? draftPlace;
   final SavedSakeNotifier notifier;
   final Sake sake;
 
@@ -2960,12 +3064,20 @@ class _InlineRecordEditorState extends State<_InlineRecordEditor> {
       if (mounted) setState(() {});
     }, fireImmediately: false);
     _impressionController = TextEditingController(
-      text: widget.sake.impression ?? '',
+      text: [
+        if (widget.sake.impression?.trim().isNotEmpty == true)
+          widget.sake.impression!,
+        if (widget.draftMemo?.isNotEmpty == true) widget.draftMemo!,
+      ].join('\n'),
     );
     _placeController = TextEditingController(
-      text: widget.sake.drinkingPlace?.displayName ?? widget.sake.place ?? '',
+      text:
+          widget.draftPlace?.displayName ??
+          widget.sake.drinkingPlace?.displayName ??
+          widget.sake.place ??
+          '',
     );
-    _selectedPlace = widget.sake.drinkingPlace;
+    _selectedPlace = widget.draftPlace ?? widget.sake.drinkingPlace;
     _tags = {...(widget.sake.userTags ?? const <String>[])};
   }
 
