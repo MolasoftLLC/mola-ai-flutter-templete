@@ -113,6 +113,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _questionsDone = false;
   bool _nonSakeDialogOpen = false;
   bool _limitDialogOpen = false;
+  bool _faceDialogOpen = false;
   String _recordBaseMemo = '';
   bool _recordMemoEdited = false;
   bool _recordTagsEdited = false;
@@ -1004,6 +1005,33 @@ class _SakeScanPageState extends State<SakeScanPage>
         if (!mounted) return;
         context.read<SakeScanNotifier>().retry();
         _limitDialogOpen = false;
+      });
+    }
+    if (state.status == SakeScanViewStatus.error &&
+        state.error?.kind == SakeScanErrorKind.faceDetected &&
+        !_faceDialogOpen) {
+      _faceDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('人の顔が検出されました'),
+            content: const Text('顔が写らないように撮影してください。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        _resetAnalysisRecordDraft();
+        context.read<SakeScanNotifier>().retry();
+        _faceDialogOpen = false;
+        unawaited(_initializeCamera());
       });
     }
     final bottomPanelKey = switch (state.status) {
@@ -2129,8 +2157,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     return switch (error?.kind) {
       SakeScanErrorKind.dailyLimit => error!.message,
       SakeScanErrorKind.analysisBusy => '前の解析が処理中です。完了してからもう一度お試しください。',
-      SakeScanErrorKind.faceDetected =>
-        '背景などに顔が写っている可能性があるため、解析を開始できませんでした。瓶のラベルだけが写るように撮り直してください。',
+      SakeScanErrorKind.faceDetected => '人の顔が検出されました。顔が写らないように撮影してください。',
       SakeScanErrorKind.savedLimit =>
         '保存酒が上限に達しています。マイページで保存を解除してから、もう一度お試しください。',
       SakeScanErrorKind.cameraPermission =>
