@@ -160,7 +160,12 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
 }
 
 class SakeStampBookPage extends StatefulWidget {
-  const SakeStampBookPage({super.key, this.initialPrefectureCode});
+  const SakeStampBookPage({
+    super.key,
+    this.initialPrefectureCode,
+    this.isTab = false,
+  });
+  final bool isTab;
   final int? initialPrefectureCode;
 
   @override
@@ -208,6 +213,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: PrimaryAppBar(
         title: _english(context) ? 'My sake stamp book' : '日本酒ご酒印帳',
+        automaticallyImplyLeading: !widget.isTab,
       ),
       body: FutureBuilder(
         future: _map,
