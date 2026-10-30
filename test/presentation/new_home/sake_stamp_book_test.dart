@@ -345,6 +345,9 @@ void main() {
       expect(repo.codes.last, 6);
       expect(repo.codes.toSet().difference({1, 6}), isEmpty);
       expect(find.text('1 / 9'), findsOneWidget);
+      final homeBookSize = tester.getSize(
+        find.byKey(const ValueKey('sake-stamp-book')),
+      );
       await preview(tester, 'home-stamp-book');
       await tester.tap(find.byKey(const ValueKey('sake-stamp-demo-button')));
       await tester.pumpAndSettle();
@@ -360,6 +363,13 @@ void main() {
       expect(find.byType(SakeStampBookPage), findsOneWidget);
       expect(find.text('山形県で集めた酒印 1銘柄'), findsOneWidget);
       expect(find.byType(JapanSakeMap), findsNothing);
+      expect(
+        tester.getSize(find.byKey(const ValueKey('sake-stamp-book'))),
+        homeBookSize,
+      );
+      expect(find.textContaining('お酒の記録をつけると'), findsNothing);
+      expect(find.textContaining('保存だけでは押印'), findsNothing);
+      expect(find.text('記録した商品数'), findsNothing);
       await preview(tester, 'dedicated-stamp-book');
       await tester.tap(find.byKey(const ValueKey('brand-stamp-2')));
       await tester.pumpAndSettle();

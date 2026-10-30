@@ -9,7 +9,12 @@ import '../../../domain/repository/place_map_repository.dart';
 import 'japan_sake_map.dart';
 
 class SakeJourneyProgressBuilder extends StatefulWidget {
-  const SakeJourneyProgressBuilder({super.key, required this.builder});
+  const SakeJourneyProgressBuilder({
+    super.key,
+    required this.builder,
+    this.compactStatus = false,
+  });
+  final bool compactStatus;
   final Widget Function(
     BuildContext context,
     SakeJourneyProgress progress,
@@ -146,7 +151,18 @@ class _SakeJourneyProgressBuilderState
       return widget.builder(
         context,
         progress,
-        legend,
+        widget.compactStatus
+            ? (snapshot.hasError
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        tooltip: english ? 'Retry checking stamps' : '酒印を再確認',
+                        onPressed: () => setState(_reload),
+                        icon: const Icon(Icons.refresh, color: japanMapNavy),
+                      ),
+                    )
+                  : const SizedBox.shrink())
+            : legend,
         !loading && !snapshot.hasError,
       );
     },

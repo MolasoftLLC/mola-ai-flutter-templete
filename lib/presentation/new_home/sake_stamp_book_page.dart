@@ -188,6 +188,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    compactStatus: true,
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: PrimaryAppBar(
@@ -287,31 +288,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 recordsReady: ready,
                 onBrandTap: (brand) => _openBrand(context, brand),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _english(context)
-                    ? 'Record a sake to earn its brand stamp. Tap a stamp to explore that brand’s products.'
-                    : 'お酒の記録をつけると、銘柄の酒印が朱色になります。酒印をタップすると、その銘柄の商品を見られます。',
-                style: const TextStyle(
-                  color: Color(0xFF687880),
-                  fontSize: 13,
-                  height: 1.6,
-                ),
-              ),
-              Text(
-                _english(context)
-                    ? 'Bookmarks alone do not earn stamps. Based on records loaded on this device and verified brewery origins.'
-                    : '保存だけでは押印されません。この端末に読み込まれた記録と、確認できた銘柄の産地が対象です。',
-                style: const TextStyle(
-                  color: Color(0xFF687880),
-                  fontSize: 11,
-                  height: 1.6,
-                ),
-              ),
-              if (!ready || progress.unresolvedRecords > 0) ...[
-                const SizedBox(height: 16),
-                legend,
-              ],
+              if (!ready) legend,
             ],
           );
         },

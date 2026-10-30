@@ -135,9 +135,6 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
             loading: _loading,
             failed: _failed,
             loadMore: _load,
-            height: widget.preview
-                ? 212
-                : (MediaQuery.sizeOf(context).width - 48).clamp(260, 400),
           ),
         ),
       );
