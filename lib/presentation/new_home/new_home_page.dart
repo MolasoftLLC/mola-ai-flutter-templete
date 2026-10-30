@@ -31,11 +31,11 @@ import 'recent_sake_list_page.dart';
 import 'japan_sake_page.dart';
 import 'sake_stamp_book_page.dart';
 import 'widgets/home_notice_ticker.dart';
+import 'widgets/home_section_title.dart';
 import '../common/widgets/sake_card_rail.dart';
 
 const _brandColor = Color(0xFF143861);
 const _scanColor = Color(0xFFFF7A1A);
-const _bodyTextColor = Color(0xFF404040);
 
 /// 一覧カードの味わいプロフィールをレール単位でまとめて取得する。
 /// 詳細APIを使わないため、AI・EC検索・コミュニティ取得は発生しない。
@@ -148,7 +148,7 @@ class _NewHomePageState extends State<NewHomePage> {
                 ),
                 padding: const EdgeInsets.only(top: 8, bottom: 34),
                 children: [
-                  _SectionTitle(
+                  HomeSectionTitle(
                     title: context.l10n.newHomeRecentSakes,
                     onMoreTap: () {
                       AppAnalytics.instance.event(
@@ -264,7 +264,7 @@ class _NewHomePageState extends State<NewHomePage> {
                         .timelineKey,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionTitle(
+                      HomeSectionTitle(
                         title: context.l10n.newHomeTimeline,
                         onMoreTap: () {
                           AppAnalytics.instance.event(
@@ -593,7 +593,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SectionTitle(
+                HomeSectionTitle(
                   title: 'あなたが好きそうな日本酒',
                   onMoreTap: sakes.isEmpty ? null : _refresh,
                   actionLabel: _isRefreshing ? '更新中…' : '再選定',
@@ -819,73 +819,6 @@ class _ObiDivider extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    this.onMoreTap,
-    this.actionLabel = 'もっとみる',
-    this.actionAsButton = false,
-  });
-
-  final String title;
-  final VoidCallback? onMoreTap;
-  final String actionLabel;
-  final bool actionAsButton;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Container(width: 5, height: 17, color: const Color(0xFF494949)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: _bodyTextColor,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          if (onMoreTap != null)
-            TextButton(
-              onPressed: onMoreTap,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: _brandColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                minimumSize: const Size(60, 36),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (actionAsButton) ...[
-                    const Icon(Icons.refresh_rounded, size: 16),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(
-                    actionLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 }
 
 class _RoundCardAction extends StatelessWidget {

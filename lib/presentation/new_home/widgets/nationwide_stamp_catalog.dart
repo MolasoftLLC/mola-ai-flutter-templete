@@ -13,11 +13,15 @@ class NationwideStampCatalog extends StatefulWidget {
     required this.recordsReady,
     required this.onBrandTap,
     this.preview = false,
+    this.onNextSection,
+    this.onReturnToCover,
   });
   final Map<int, Set<int>> recordedBrands;
   final bool recordsReady;
   final ValueChanged<SakeBrandSummary> onBrandTap;
   final bool preview;
+  final VoidCallback? onNextSection;
+  final VoidCallback? onReturnToCover;
 
   @override
   State<NationwideStampCatalog> createState() => _NationwideStampCatalogState();
@@ -136,6 +140,8 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
                 recordsReady: widget.recordsReady,
                 preview: widget.preview,
                 onBrandTap: widget.onBrandTap,
+                onNextSection: widget.onNextSection,
+                onReturnToCover: widget.onReturnToCover,
                 hasMore: false,
                 loading: _loading,
                 failed: _failed,

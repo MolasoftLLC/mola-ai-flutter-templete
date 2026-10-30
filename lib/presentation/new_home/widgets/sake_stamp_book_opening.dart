@@ -2,6 +2,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'japan_sake_map.dart';
 
+class SakeStampBookOpeningController {
+  _SakeStampBookOpeningState? _state;
+  void open() => _state?._finish(true);
+  void close() => _state?._finish(false);
+}
+
 /// A cover that lifts around the left binding, like Coffee AI's passport.
 /// Once opened, the existing stamp pager owns horizontal gestures as before.
 class SakeStampBookOpening extends StatefulWidget {
@@ -10,10 +16,14 @@ class SakeStampBookOpening extends StatefulWidget {
     required this.child,
     this.initiallyOpen = false,
     this.onOpened,
+    this.onClosed,
+    this.controller,
   });
   final Widget child;
   final bool initiallyOpen;
   final VoidCallback? onOpened;
+  final VoidCallback? onClosed;
+  final SakeStampBookOpeningController? controller;
 
   @override
   State<SakeStampBookOpening> createState() => _SakeStampBookOpeningState();
@@ -28,6 +38,7 @@ class _SakeStampBookOpeningState extends State<SakeStampBookOpening>
   @override
   void initState() {
     super.initState();
+    widget.controller?._state = this;
     _turn = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -35,13 +46,35 @@ class _SakeStampBookOpeningState extends State<SakeStampBookOpening>
   }
 
   @override
+  void didUpdateWidget(covariant SakeStampBookOpening oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller?._state == this) {
+        oldWidget.controller?._state = null;
+      }
+      widget.controller?._state = this;
+    }
+  }
+
+  @override
   void dispose() {
+    if (widget.controller?._state == this) widget.controller?._state = null;
     _turn.dispose();
     super.dispose();
   }
 
   Future<void> _finish(bool open) async {
-    if (_opened || _settling || (!open && _turn.value == 0)) return;
+    if (_settling ||
+        (open && _opened) ||
+        (!open && !_opened && _turn.value == 0)) {
+      return;
+    }
+    if (!open && _opened) {
+      setState(() {
+        _turn.value = 1;
+        _opened = false;
+      });
+    }
     _settling = true;
     if (!MediaQuery.disableAnimationsOf(context)) {
       try {
@@ -67,6 +100,7 @@ class _SakeStampBookOpeningState extends State<SakeStampBookOpening>
       _turn.value = open ? 1 : 0;
     });
     if (open) widget.onOpened?.call();
+    if (!open) widget.onClosed?.call();
   }
 
   @override

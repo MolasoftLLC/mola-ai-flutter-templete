@@ -11,6 +11,7 @@ import 'widgets/sake_stamp_preferences.dart';
 import 'widgets/sake_stamp_collection_label.dart';
 import 'widgets/sake_stamp_book_opening.dart';
 import 'widgets/sake_stamp_page_turn.dart';
+import 'widgets/home_section_title.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -73,82 +74,83 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
         final prefecture = prefectures.firstWhere((p) => p.code == 35);
         return Padding(
           key: const ValueKey('home-sake-stamp-section'),
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+          padding: const EdgeInsets.only(top: 12, bottom: 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _english(context) ? 'My sake stamp book' : '日本酒ご酒印帳',
+              HomeSectionTitle(
+                title: _english(context) ? 'My sake stamp book' : '日本酒ご酒印帳',
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text(
+                      _english(context)
+                          ? 'Turn each sake encounter into an everyday memory.'
+                          : '一杯の出会いを、日々の思い出に',
                       style: const TextStyle(
-                        color: japanMapNavy,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF687880),
+                        fontSize: 13,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _english(context)
-                    ? 'Turn each sake encounter into an everyday memory.'
-                    : '一杯の出会いを、日々の思い出に',
-                style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  key: const ValueKey('open-sake-stamp-book'),
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _open(nationwide ? 0 : prefecture.code),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (nationwide)
-                        NationwideStampCatalog(
-                          recordedBrands: progress.brandIdsByPrefecture,
-                          recordsReady: ready,
-                          preview: true,
-                          onBrandTap: (_) => _open(0),
-                        )
-                      else
-                        PrefectureStampCatalog(
-                          prefecture: prefecture,
-                          recordedBrandIds:
-                              progress.brandIdsByPrefecture[prefecture.code] ??
-                              const {},
-                          recordsReady: ready,
-                          preview: true,
-                          onBrandTap: (_) => _open(prefecture.code),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                    const SizedBox(height: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        key: const ValueKey('open-sake-stamp-book'),
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => _open(nationwide ? 0 : prefecture.code),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              _english(context)
-                                  ? 'Open my stamp book'
-                                  : 'ご酒印帳をひらく',
-                              style: const TextStyle(
-                                color: japanMapNavy,
-                                fontWeight: FontWeight.bold,
+                            if (nationwide)
+                              NationwideStampCatalog(
+                                recordedBrands: progress.brandIdsByPrefecture,
+                                recordsReady: ready,
+                                preview: true,
+                                onBrandTap: (_) => _open(0),
+                              )
+                            else
+                              PrefectureStampCatalog(
+                                prefecture: prefecture,
+                                recordedBrandIds:
+                                    progress.brandIdsByPrefecture[prefecture
+                                        .code] ??
+                                    const {},
+                                recordsReady: ready,
+                                preview: true,
+                                onBrandTap: (_) => _open(prefecture.code),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward,
-                              color: japanMapNavy,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    _english(context)
+                                        ? 'Open my stamp book'
+                                        : 'ご酒印帳をひらく',
+                                    style: const TextStyle(
+                                      color: japanMapNavy,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.arrow_forward,
+                                    color: japanMapNavy,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -177,6 +179,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   bool _earnedOnly = false;
   bool _bookOpened = false;
   final _catalogTurn = SakeStampPageTurnController();
+  final _opening = SakeStampBookOpeningController();
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -202,6 +205,11 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
       );
     } else {
       change();
+      if (animate && !_bookOpened) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _opening.open();
+        });
+      }
     }
   }
 
@@ -343,8 +351,10 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 ),
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
+                controller: _opening,
+                onClosed: () => setState(() => _bookOpened = false),
                 initiallyOpen: _bookOpened,
-                onOpened: () => _bookOpened = true,
+                onOpened: () => setState(() => _bookOpened = true),
                 child: SakeStampPageTurn(
                   controller: _catalogTurn,
                   child: nationwide
@@ -352,6 +362,9 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           recordedBrands: progress.brandIdsByPrefecture,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
+                          onNextSection: () =>
+                              _select(next?.code ?? 0, backwards: false),
+                          onReturnToCover: _opening.close,
                         )
                       : PrefectureStampCatalog(
                           prefecture: selected,
@@ -359,9 +372,24 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           recordedBrandIds: earned,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
+                          onNextSection: () =>
+                              _select(next?.code ?? 0, backwards: false),
+                          onReturnToCover: _opening.close,
                         ),
                 ),
               ),
+              if (_bookOpened)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    key: const ValueKey('stamp-return-cover'),
+                    onPressed: _opening.close,
+                    icon: const Icon(Icons.menu_book_outlined, size: 18),
+                    label: Text(
+                      _english(context) ? 'Return to cover' : '表紙に戻る',
+                    ),
+                  ),
+                ),
               Row(
                 children: [
                   Expanded(

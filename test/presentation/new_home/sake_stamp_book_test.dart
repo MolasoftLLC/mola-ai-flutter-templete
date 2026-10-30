@@ -289,6 +289,126 @@ void main() {
     });
   }
 
+  for (final usePicker in [false, true]) {
+    testWidgets('閉じた表紙から${usePicker ? "県選択" : "矢印"}で移動すると選択県を開く', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        const SakeStampBookPage(initialPrefectureCode: 6),
+        repo: _Catalog(),
+        openCover: false,
+      );
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      if (usePicker) {
+        await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('福島県').last);
+      } else {
+        final next = find.byKey(const ValueKey('stamp-next-prefecture'));
+        await tester.ensureVisible(next);
+        await tester.tap(next);
+      }
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+      expect(find.text('福島県 酒印帳'), findsOneWidget);
+      expect(find.text('1 / …'), findsOneWidget);
+      expect(await SakeStampPreferences.lastPrefecture(), 7);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('最後の紙面の矢印で次県へ進み、表紙へ戻って再び開ける', (tester) async {
+    final repo = _Catalog();
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+    );
+    final next = find.byKey(const ValueKey('stamp-next'));
+    await tester.ensureVisible(next);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(repo.codes, [6, 6]);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(find.text('福島県 酒印帳'), findsOneWidget);
+    expect(await SakeStampPreferences.lastPrefecture(), 7);
+    expect(repo.codes, [6, 6, 7]);
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('stamp-previous')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+    await tester.pumpAndSettle();
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    final close = find.byKey(const ValueKey('stamp-return-cover'));
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('最後の紙面のスワイプは短い操作で移動せず確定したら次県へ進む', (tester) async {
+    final repo = _Catalog();
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+    );
+    final next = find.byKey(const ValueKey('stamp-next'));
+    await tester.ensureVisible(next);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    final pages = find.byKey(const ValueKey('sake-stamp-pages'));
+    await tester.drag(pages, const Offset(-40, 0));
+    await tester.pumpAndSettle();
+    expect(repo.codes, [6, 6]);
+    await tester.fling(pages, const Offset(-240, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('福島県 酒印帳'), findsOneWidget);
+    await tester.fling(pages, const Offset(240, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('追加ページの取得失敗では次県へ飛ばさず再試行できる', (tester) async {
+    final repo = _Catalog()..failMore = true;
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+    );
+    final next = find.byKey(const ValueKey('stamp-next'));
+    await tester.ensureVisible(next);
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    await tester.tap(next);
+    await tester.fling(
+      find.byKey(const ValueKey('sake-stamp-pages')),
+      const Offset(-240, 0),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    expect(repo.codes, [6, 6]);
+    expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);
+    repo.failMore = false;
+    await tester.tap(find.byKey(const ValueKey('stamp-retry')));
+    await tester.pumpAndSettle();
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+    expect(find.text('福島県 酒印帳'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('詳細閲覧で取得した酒印はホーム・専用帳・旅するの帳に反映し飲酒件数は増やさない', (tester) async {
     final store = SakeStampStore();
     await store.ready;
@@ -678,7 +798,14 @@ void main() {
       );
     }
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(milliseconds: 30));
     await preview(tester, 'stamp-paper-next');
     await preview(tester, 'page-turn-forward-04', paperOnly: true);
@@ -704,7 +831,14 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 40));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('1 / 2'), findsOneWidget);
@@ -718,7 +852,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     final transform = tester
         .widget<Transform>(find.byKey(const ValueKey('stamp-page-turn-sheet')))
         .transform;
@@ -908,18 +1049,32 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
-    final sheet = tester.widget<Transform>(
-      find.byKey(const ValueKey('stamp-page-turn-sheet')),
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
     );
-    expect(sheet.alignment, Alignment.centerRight);
-    expect(sheet.transform.entry(2, 0), greaterThan(0));
+    final sheet = tester.widget<Transform>(
+      find.byKey(const ValueKey('stamp-returning-sheet')).first,
+    );
+    expect(sheet.alignment, Alignment.centerLeft);
+    expect(sheet.transform.entry(2, 0), lessThan(0));
     await preview(tester, 'prefecture-paper-previous');
     await tester.pumpAndSettle();
     expect(find.text('秋田県 酒印帳'), findsOneWidget);
     expect(repo.codes, [6, 5]);
     expect(await SakeStampPreferences.lastPrefecture(), 5);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -945,7 +1100,14 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w.key == const ValueKey('stamp-turning-paper') ||
+              w.key == const ValueKey('stamp-previous-paper-background'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       tester
@@ -1192,7 +1354,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w.key == const ValueKey('stamp-turning-paper') ||
+              w.key == const ValueKey('stamp-previous-paper-background'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);

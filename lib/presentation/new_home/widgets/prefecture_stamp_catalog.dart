@@ -14,6 +14,8 @@ class PrefectureStampCatalog extends StatefulWidget {
     required this.recordsReady,
     required this.onBrandTap,
     this.preview = false,
+    this.onNextSection,
+    this.onReturnToCover,
     this.earnedOnly = false,
   });
   final JapanSakePrefecture prefecture;
@@ -21,6 +23,8 @@ class PrefectureStampCatalog extends StatefulWidget {
   final bool recordsReady;
   final ValueChanged<SakeBrandSummary> onBrandTap;
   final bool preview;
+  final VoidCallback? onNextSection;
+  final VoidCallback? onReturnToCover;
   final bool earnedOnly;
 
   @override
@@ -132,6 +136,8 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
             recordedBrandIds: widget.recordedBrandIds,
             recordsReady: widget.recordsReady,
             onBrandTap: widget.onBrandTap,
+            onNextSection: widget.onNextSection,
+            onReturnToCover: widget.onReturnToCover,
             hasMore:
                 !widget.preview &&
                 (widget.earnedOnly ? _needsFilteredPage : _cursor != null),

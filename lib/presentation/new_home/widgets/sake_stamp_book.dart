@@ -22,6 +22,8 @@ class SakeStampBook extends StatefulWidget {
     required this.loadMore,
     this.height = 212,
     this.preview = false,
+    this.onNextSection,
+    this.onReturnToCover,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -36,6 +38,8 @@ class SakeStampBook extends StatefulWidget {
 
   /// A single, non-interactive cover showing the total collected brand count.
   final bool preview;
+  final VoidCallback? onNextSection;
+  final VoidCallback? onReturnToCover;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
@@ -47,6 +51,11 @@ class _SakeStampBookState extends State<SakeStampBook> {
   double _dragDistance = 0;
   bool _allowDrag = false;
   int _page = 0;
+  bool get _canLeaveSection =>
+      !widget.hasMore &&
+      !widget.loading &&
+      !widget.failed &&
+      widget.onNextSection != null;
   int? _requestedLength;
   int get _pages => math.max(
     1,
@@ -86,7 +95,15 @@ class _SakeStampBookState extends State<SakeStampBook> {
   }
 
   void _goTo(int page) {
-    if (page == _page || page < 0 || page >= _pages) return;
+    if (_pageTurn.isBusy || page == _page) return;
+    if (page < 0) {
+      widget.onReturnToCover?.call();
+      return;
+    }
+    if (page >= _pages) {
+      if (_canLeaveSection) widget.onNextSection?.call();
+      return;
+    }
     _pageTurn.turn(() => _showPage(page), backwards: page < _page);
   }
 
@@ -103,13 +120,16 @@ class _SakeStampBookState extends State<SakeStampBook> {
     if (_dragTarget == null) {
       if (_dragDistance == 0) return;
       final target = _dragStartPage + (_dragDistance < 0 ? 1 : -1);
-      if (target < 0 || target >= _pages) return;
+      if (target < 0 && widget.onReturnToCover == null) return;
+      if (target >= _pages && !_canLeaveSection) return;
       _dragTarget = target;
+      if (target < 0 || target >= _pages) return;
       _pageTurn.begin(
         () => _showPage(target),
         backwards: target < _dragStartPage,
       );
     }
+    if (_dragTarget! < 0 || _dragTarget! >= _pages) return;
     final distance = _dragTarget! < _dragStartPage
         ? _dragDistance
         : -_dragDistance;
@@ -131,6 +151,10 @@ class _SakeStampBookState extends State<SakeStampBook> {
             : progress > .24);
     _allowDrag = false;
     _dragTarget = null;
+    if (target < 0 || target >= _pages) {
+      if (commit) _goTo(target);
+      return;
+    }
     _pageTurn.finish(commit: commit, onCancel: () => _showPage(from));
   }
 
@@ -263,8 +287,12 @@ class _SakeStampBookState extends State<SakeStampBook> {
                       _PageArrow(
                         key: const ValueKey('stamp-previous'),
                         icon: Icons.chevron_left,
-                        label: english ? 'Previous stamp page' : '前の酒印帳',
-                        onTap: _page > 0 ? () => _goTo(_page - 1) : null,
+                        label: _page == 0 && widget.onReturnToCover != null
+                            ? (english ? 'Return to cover' : '表紙に戻る')
+                            : (english ? 'Previous stamp page' : '前の酒印帳'),
+                        onTap: _page > 0 || widget.onReturnToCover != null
+                            ? () => _goTo(_page - 1)
+                            : null,
                       ),
                       if (widget.failed &&
                           (_page + 1) * 9 > widget.brands.length &&
@@ -327,8 +355,10 @@ class _SakeStampBookState extends State<SakeStampBook> {
                       _PageArrow(
                         key: const ValueKey('stamp-next'),
                         icon: Icons.chevron_right,
-                        label: english ? 'Next stamp page' : '次の酒印帳',
-                        onTap: _page + 1 < _pages
+                        label: _page + 1 == _pages && _canLeaveSection
+                            ? (english ? 'Next prefecture' : '次の都道府県')
+                            : (english ? 'Next stamp page' : '次の酒印帳'),
+                        onTap: _page + 1 < _pages || _canLeaveSection
                             ? () => _goTo(_page + 1)
                             : null,
                       ),

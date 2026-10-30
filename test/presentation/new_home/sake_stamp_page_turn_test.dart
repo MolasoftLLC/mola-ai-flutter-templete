@@ -79,16 +79,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('前のページは右綴じで逆向きにめくる', (tester) async {
+  testWidgets('前のページが左の綴じ目から戻り、現在の紙面を覆う', (tester) async {
     await tester.pumpWidget(book());
     controller.turn(() => page.value = 1, backwards: true);
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(tester.widget<Transform>(sheet).alignment, Alignment.centerRight);
     expect(
-      tester.widget<Transform>(sheet).transform.entry(2, 0),
-      greaterThan(0),
+      tester
+          .widget<Transform>(
+            find.byKey(const ValueKey('stamp-returning-sheet')),
+          )
+          .alignment,
+      Alignment.centerLeft,
+    );
+    final background = tester.widget<RawImage>(
+      find.byKey(const ValueKey('stamp-previous-paper-background')),
+    );
+    final bytes = await tester.runAsync(
+      () => background.image!.toByteData(format: ui.ImageByteFormat.rawRgba),
+    );
+    expect(bytes!.getUint8(0), 255); // Current red page remains underneath.
+    final first = tester
+        .widget<Transform>(find.byKey(const ValueKey('stamp-returning-sheet')))
+        .transform
+        .entry(0, 0);
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester
+          .widget<Transform>(
+            find.byKey(const ValueKey('stamp-returning-sheet')),
+          )
+          .transform
+          .entry(0, 0),
+      greaterThan(first),
+    );
+    expect(
+      tester
+          .widget<Transform>(
+            find.byKey(const ValueKey('stamp-returning-sheet')),
+          )
+          .transform
+          .entry(2, 0),
+      lessThan(0),
     );
     await tester.pumpAndSettle();
     expect(paper, findsNothing);
@@ -112,6 +145,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(page.value, 0);
     expect(paper, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('戻るドラッグを取り消すと前の紙を戻して現在ページを保つ', (tester) async {
+    await tester.pumpWidget(book());
+    controller.begin(() => page.value = 1, backwards: true);
+    controller.update(.4);
+    await tester.pump();
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('stamp-previous-paper-background')),
+      findsOneWidget,
+    );
+    controller.finish(commit: false, onCancel: () => page.value = 0);
+    await tester.pumpAndSettle();
+    expect(page.value, 0);
+    expect(controller.isBusy, isFalse);
+    expect(
+      find.byKey(const ValueKey('stamp-previous-paper-background')),
+      findsNothing,
+    );
+    await tester.tap(find.text('page 0'));
+    expect(taps, 1);
     expect(tester.takeException(), isNull);
   });
 
