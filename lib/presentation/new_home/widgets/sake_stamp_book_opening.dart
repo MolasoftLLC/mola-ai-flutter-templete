@@ -10,10 +10,14 @@ class SakeStampBookOpening extends StatefulWidget {
     required this.child,
     this.initiallyOpen = false,
     this.onOpened,
+    this.replayToken = 0,
   });
   final Widget child;
   final bool initiallyOpen;
   final VoidCallback? onOpened;
+
+  /// Change after navigation to automatically replay the cover opening.
+  final int replayToken;
 
   @override
   State<SakeStampBookOpening> createState() => _SakeStampBookOpeningState();
@@ -27,6 +31,18 @@ class _SakeStampBookOpeningState extends State<SakeStampBookOpening>
   );
   late bool _opened = widget.initiallyOpen;
   bool _settling = false;
+
+  @override
+  void didUpdateWidget(covariant SakeStampBookOpening oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.replayToken != oldWidget.replayToken) {
+      _turn.stop();
+      _opened = false;
+      _settling = false;
+      _turn.value = 0;
+      _finish(true);
+    }
+  }
 
   @override
   void dispose() {

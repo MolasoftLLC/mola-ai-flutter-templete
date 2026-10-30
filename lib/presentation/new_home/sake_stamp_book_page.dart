@@ -173,6 +173,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
   bool _bookOpened = false;
+  int _openingRevision = 0;
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -183,8 +184,13 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
     return JapanSakeMapData.load();
   }
 
-  void _select(int code) {
-    setState(() => _selectedCode = code);
+  void _reopenBook() => setState(() => _openingRevision++);
+
+  void _select(int code, {bool animate = true}) {
+    setState(() {
+      if (animate && _selectedCode != code) _openingRevision++;
+      _selectedCode = code;
+    });
     _persistedCode = code;
     SakeStampPreferences.rememberPrefecture(code);
   }
@@ -235,7 +241,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               .length;
           if (_selectedCode != selectedCode) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && ready) _select(selectedCode);
+              if (mounted && ready) _select(selectedCode, animate: false);
             });
           } else if (_persistedCode != selectedCode) {
             _persistedCode = selectedCode;
@@ -322,12 +328,14 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
                 initiallyOpen: _bookOpened,
+                replayToken: _openingRevision,
                 onOpened: () => _bookOpened = true,
                 child: nationwide
                     ? NationwideStampCatalog(
                         recordedBrands: progress.brandIdsByPrefecture,
                         recordsReady: ready,
                         onBrandTap: (brand) => _openBrand(context, brand),
+                        onPageTurn: _reopenBook,
                       )
                     : PrefectureStampCatalog(
                         prefecture: selected,
@@ -335,6 +343,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                         recordedBrandIds: earned,
                         recordsReady: ready,
                         onBrandTap: (brand) => _openBrand(context, brand),
+                        onPageTurn: _reopenBook,
                       ),
               ),
               Row(

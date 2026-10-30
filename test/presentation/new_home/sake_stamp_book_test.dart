@@ -656,10 +656,27 @@ void main() {
       11,
     );
     await tester.tap(find.byKey(const ValueKey('stamp-next')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 80));
+    await preview(tester, 'stamp-arrow-reopening');
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('2 / 2'), findsNWidgets(2));
     expect(find.byKey(const ValueKey('brand-stamp-10')), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-11')), findsOneWidget);
+    await tester.fling(
+      find.byKey(const ValueKey('sake-stamp-pages')),
+      const Offset(250, 0),
+      1000,
+    );
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -844,7 +861,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       await tester.tap(button);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       tester
           .state<ScrollableState>(find.byType(Scrollable).first)
           .position
@@ -1043,7 +1063,11 @@ void main() {
       await tester.pumpAndSettle();
       repo.failMore = true;
       await tester.tap(find.byKey(const ValueKey('stamp-next')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);
       expect(
         tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,

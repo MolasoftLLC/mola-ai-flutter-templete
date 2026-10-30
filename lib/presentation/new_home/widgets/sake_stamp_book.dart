@@ -21,6 +21,7 @@ class SakeStampBook extends StatefulWidget {
     required this.loadMore,
     this.height = 212,
     this.preview = false,
+    this.onPageTurn,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -35,6 +36,7 @@ class SakeStampBook extends StatefulWidget {
 
   /// A single, non-interactive cover showing the total collected brand count.
   final bool preview;
+  final VoidCallback? onPageTurn;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
@@ -167,8 +169,10 @@ class _SakeStampBookState extends State<SakeStampBook> {
                       ? const NeverScrollableScrollPhysics()
                       : null,
                   onPageChanged: (page) {
+                    if (page == _page) return;
                     setState(() => _page = page);
                     _loadIfNeeded();
+                    widget.onPageTurn?.call();
                   },
                   itemBuilder: (context, page) {
                     final entries = widget.brands
