@@ -263,11 +263,22 @@ void main() {
     }
   }
 
-  Future<void> preview(WidgetTester tester, String name) async {
+  Future<void> preview(
+    WidgetTester tester,
+    String name, {
+    bool paperOnly = false,
+  }) async {
     const output = String.fromEnvironment('JAPAN_UI_OUTPUT');
     if (output.isEmpty) return;
     final boundary = tester.renderObject<RenderRepaintBoundary>(
-      find.byKey(const ValueKey('book-preview')),
+      paperOnly
+          ? find
+                .ancestor(
+                  of: find.byKey(const ValueKey('sake-stamp-book')),
+                  matching: find.byType(RepaintBoundary),
+                )
+                .first
+          : find.byKey(const ValueKey('book-preview')),
     );
     await tester.runAsync(() async {
       final image = await boundary.toImage();
@@ -655,12 +666,32 @@ void main() {
       tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,
       11,
     );
+    await preview(tester, 'page-turn-forward-00', paperOnly: true);
     await tester.tap(find.byKey(const ValueKey('stamp-next')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 80));
-    await preview(tester, 'stamp-arrow-reopening');
+    for (var frame = 1; frame <= 3; frame++) {
+      await tester.pump(const Duration(milliseconds: 30));
+      await preview(
+        tester,
+        'page-turn-forward-${frame.toString().padLeft(2, '0')}',
+        paperOnly: true,
+      );
+    }
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 30));
+    await preview(tester, 'stamp-paper-next');
+    await preview(tester, 'page-turn-forward-04', paperOnly: true);
+    if (const String.fromEnvironment('JAPAN_UI_OUTPUT').isNotEmpty) {
+      for (var frame = 5; frame <= 12; frame++) {
+        await tester.pump(const Duration(milliseconds: 30));
+        await preview(
+          tester,
+          'page-turn-forward-${frame.toString().padLeft(2, '0')}',
+          paperOnly: true,
+        );
+      }
+    }
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('2 / 2'), findsNWidgets(2));
@@ -672,9 +703,28 @@ void main() {
       1000,
     );
     await tester.pump(const Duration(milliseconds: 40));
-    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    final drag = await tester.startGesture(
+      tester.getCenter(find.byKey(const ValueKey('sake-stamp-pages'))),
+    );
+    await drag.moveBy(const Offset(-40, 0));
+    await tester.pump(const Duration(milliseconds: 100));
+    await drag.moveBy(const Offset(-20, 0));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    final transform = tester
+        .widget<Transform>(find.byKey(const ValueKey('stamp-page-turn-sheet')))
+        .transform;
+    expect(transform.entry(0, 0), inExclusiveRange(0, 1));
+    await preview(tester, 'stamp-paper-drag');
+    await drag.up();
+    await tester.pumpAndSettle();
     expect(find.text('1 / 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -842,6 +892,35 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('県の矢印では表示中の紙面を逆向きにめくり、表紙へ戻らない', (tester) async {
+    final repo = _Catalog();
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      repo: repo,
+    );
+    final previous = find.byKey(const ValueKey('stamp-previous-prefecture'));
+    await tester.ensureVisible(previous);
+    await tester.pumpAndSettle();
+    await tester.tap(previous);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    final sheet = tester.widget<Transform>(
+      find.byKey(const ValueKey('stamp-page-turn-sheet')),
+    );
+    expect(sheet.alignment, Alignment.centerRight);
+    expect(sheet.transform.entry(2, 0), greaterThan(0));
+    await preview(tester, 'prefecture-paper-previous');
+    await tester.pumpAndSettle();
+    expect(find.text('秋田県 酒印帳'), findsOneWidget);
+    expect(repo.codes, [6, 5]);
+    expect(await SakeStampPreferences.lastPrefecture(), 5);
+    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('全国・北海道・沖縄の左右ボタンは両方向にループし選択と記憶を更新する', (tester) async {
     final repo = _Catalog();
     await open(
@@ -862,7 +941,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(button);
       await tester.pump();
-      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       tester
@@ -1028,14 +1108,10 @@ void main() {
         find.byKey(const ValueKey('sake-stamp-book')),
       );
       await preview(tester, 'home-stamp-book');
-      await tester.tap(find.byKey(const ValueKey('sake-stamp-demo-button')));
-      await tester.pumpAndSettle();
-      expect(find.text('新しい酒印を獲得！'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
-      await tester.pumpAndSettle();
-      expect(find.text('1 / 1'), findsNothing);
-      expect(find.text('現在1銘柄'), findsOneWidget);
-      expect(repo.codes.last, 6);
+      expect(
+        find.byKey(const ValueKey('sake-stamp-demo-button')),
+        findsNothing,
+      );
       await tester.tapAt(
         tester.getCenter(find.byKey(const ValueKey('sake-stamp-book'))),
       );
@@ -1112,7 +1188,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('stamp-next')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);

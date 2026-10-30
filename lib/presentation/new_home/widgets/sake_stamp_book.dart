@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../domain/eintities/sake_catalog_browse.dart';
 import 'japan_sake_map.dart';
+import 'sake_stamp_page_turn.dart';
 
 const _ink = Color(0xFFB73927);
 const _unearnedInk = Color(0xFFAAA59A);
@@ -21,7 +22,6 @@ class SakeStampBook extends StatefulWidget {
     required this.loadMore,
     this.height = 212,
     this.preview = false,
-    this.onPageTurn,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -36,13 +36,16 @@ class SakeStampBook extends StatefulWidget {
 
   /// A single, non-interactive cover showing the total collected brand count.
   final bool preview;
-  final VoidCallback? onPageTurn;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
 
 class _SakeStampBookState extends State<SakeStampBook> {
-  final _controller = PageController();
+  final _pageTurn = SakeStampPageTurnController();
+  int? _dragTarget;
+  int _dragStartPage = 0;
+  double _dragDistance = 0;
+  bool _allowDrag = false;
   int _page = 0;
   int? _requestedLength;
   int get _pages => math.max(
@@ -76,10 +79,59 @@ class _SakeStampBookState extends State<SakeStampBook> {
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _showPage(int page) {
+    if (!mounted) return;
+    setState(() => _page = page);
+    _loadIfNeeded();
+  }
+
+  void _goTo(int page) {
+    if (page == _page || page < 0 || page >= _pages) return;
+    _pageTurn.turn(() => _showPage(page), backwards: page < _page);
+  }
+
+  void _startDrag(DragStartDetails details) {
+    _allowDrag = !_pageTurn.isBusy;
+    _dragStartPage = _page;
+    _dragTarget = null;
+    _dragDistance = 0;
+  }
+
+  void _updateDrag(DragUpdateDetails details) {
+    if (!_allowDrag) return;
+    _dragDistance += details.delta.dx;
+    if (_dragTarget == null) {
+      if (_dragDistance == 0) return;
+      final target = _dragStartPage + (_dragDistance < 0 ? 1 : -1);
+      if (target < 0 || target >= _pages) return;
+      _dragTarget = target;
+      _pageTurn.begin(
+        () => _showPage(target),
+        backwards: target < _dragStartPage,
+      );
+    }
+    final distance = _dragTarget! < _dragStartPage
+        ? _dragDistance
+        : -_dragDistance;
+    _pageTurn.update(distance / (context.size?.width ?? 1));
+  }
+
+  void _endDrag([DragEndDetails? details]) {
+    final target = _dragTarget;
+    if (target == null) return;
+    final from = _dragStartPage;
+    final speed = details?.primaryVelocity ?? 0;
+    final forward = target > from;
+    final progress =
+        (forward ? -_dragDistance : _dragDistance) / (context.size?.width ?? 1);
+    final commit =
+        details != null &&
+        (speed.abs() > 650
+            ? (forward ? speed < 0 : speed > 0)
+            : progress > .24);
+    _allowDrag = false;
+    _dragTarget = null;
+    _pageTurn.finish(commit: commit, onCancel: () => _showPage(from));
   }
 
   @override
@@ -89,7 +141,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
     final earned = visible
         .where((b) => widget.recordedBrandIds.contains(b.brandId))
         .length;
-    return Container(
+    final paper = Container(
       key: const ValueKey('sake-stamp-book'),
       height: widget.height,
       margin: const EdgeInsets.only(top: 12, bottom: 12),
@@ -161,67 +213,45 @@ class _SakeStampBookState extends State<SakeStampBook> {
               ),
               const SizedBox(height: 4),
               Expanded(
-                child: PageView.builder(
-                  key: const ValueKey('sake-stamp-pages'),
-                  controller: _controller,
-                  itemCount: widget.preview ? 1 : _pages,
-                  physics: widget.preview
-                      ? const NeverScrollableScrollPhysics()
-                      : null,
-                  onPageChanged: (page) {
-                    if (page == _page) return;
-                    setState(() => _page = page);
-                    _loadIfNeeded();
-                    widget.onPageTurn?.call();
-                  },
-                  itemBuilder: (context, page) {
-                    final entries = widget.brands
-                        .skip(page * 9)
-                        .take(9)
-                        .toList();
-                    return Column(
-                      children: [
-                        for (var row = 0; row < 3; row++)
-                          Expanded(
-                            child: Row(
-                              children: [
-                                for (var col = 0; col < 3; col++)
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(2),
-                                      child: row * 3 + col < entries.length
-                                          ? _BrandSeal(
-                                              brand: entries[row * 3 + col],
-                                              earned:
-                                                  widget.recordsReady &&
-                                                  widget.recordedBrandIds
-                                                      .contains(
-                                                        entries[row * 3 + col]
-                                                            .brandId,
-                                                      ),
-                                              ready: widget.recordsReady,
-                                              onTap: () => widget.onBrandTap(
-                                                entries[row * 3 + col],
+                child: Column(
+                  children: [
+                    for (var row = 0; row < 3; row++)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            for (var col = 0; col < 3; col++)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: row * 3 + col < visible.length
+                                      ? _BrandSeal(
+                                          brand: visible[row * 3 + col],
+                                          earned:
+                                              widget.recordsReady &&
+                                              widget.recordedBrandIds.contains(
+                                                visible[row * 3 + col].brandId,
                                               ),
-                                            )
-                                          : const ExcludeSemantics(
-                                              child: Center(
-                                                child: Text(
-                                                  '・',
-                                                  style: TextStyle(
-                                                    color: Color(0xFFDCD3C1),
-                                                  ),
-                                                ),
+                                          ready: widget.recordsReady,
+                                          onTap: () => widget.onBrandTap(
+                                            visible[row * 3 + col],
+                                          ),
+                                        )
+                                      : const ExcludeSemantics(
+                                          child: Center(
+                                            child: Text(
+                                              '・',
+                                              style: TextStyle(
+                                                color: Color(0xFFDCD3C1),
                                               ),
                                             ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                                          ),
+                                        ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (!widget.preview)
@@ -234,12 +264,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
                         key: const ValueKey('stamp-previous'),
                         icon: Icons.chevron_left,
                         label: english ? 'Previous stamp page' : '前の酒印帳',
-                        onTap: _page > 0
-                            ? () => _controller.previousPage(
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeOut,
-                              )
-                            : null,
+                        onTap: _page > 0 ? () => _goTo(_page - 1) : null,
                       ),
                       if (widget.failed &&
                           (_page + 1) * 9 > widget.brands.length &&
@@ -304,10 +329,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
                         icon: Icons.chevron_right,
                         label: english ? 'Next stamp page' : '次の酒印帳',
                         onTap: _page + 1 < _pages
-                            ? () => _controller.nextPage(
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeOut,
-                              )
+                            ? () => _goTo(_page + 1)
                             : null,
                       ),
                     ],
@@ -316,6 +338,19 @@ class _SakeStampBookState extends State<SakeStampBook> {
             ],
           ),
         ),
+      ),
+    );
+    if (widget.preview) return paper;
+    return SakeStampPageTurn(
+      controller: _pageTurn,
+      child: GestureDetector(
+        key: const ValueKey('sake-stamp-pages'),
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: _startDrag,
+        onHorizontalDragUpdate: _updateDrag,
+        onHorizontalDragEnd: _endDrag,
+        onHorizontalDragCancel: _endDrag,
+        child: paper,
       ),
     );
   }

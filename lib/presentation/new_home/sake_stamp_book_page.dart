@@ -7,10 +7,10 @@ import 'widgets/japan_sake_map.dart';
 import 'widgets/prefecture_stamp_catalog.dart';
 import 'widgets/nationwide_stamp_catalog.dart';
 import 'widgets/sake_journey_progress.dart';
-import 'widgets/sake_stamp_acquisition_demo.dart';
 import 'widgets/sake_stamp_preferences.dart';
 import 'widgets/sake_stamp_collection_label.dart';
 import 'widgets/sake_stamp_book_opening.dart';
+import 'widgets/sake_stamp_page_turn.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -89,8 +89,6 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const SakeStampDemoButton(),
                 ],
               ),
               const SizedBox(height: 8),
@@ -173,7 +171,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
   bool _bookOpened = false;
-  int _openingRevision = 0;
+  final _catalogTurn = SakeStampPageTurnController();
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -184,15 +182,22 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
     return JapanSakeMapData.load();
   }
 
-  void _reopenBook() => setState(() => _openingRevision++);
+  void _select(int code, {bool animate = true, bool? backwards}) {
+    void change() {
+      if (!mounted) return;
+      setState(() => _selectedCode = code);
+      _persistedCode = code;
+      SakeStampPreferences.rememberPrefecture(code);
+    }
 
-  void _select(int code, {bool animate = true}) {
-    setState(() {
-      if (animate && _selectedCode != code) _openingRevision++;
-      _selectedCode = code;
-    });
-    _persistedCode = code;
-    SakeStampPreferences.rememberPrefecture(code);
+    if (animate && _bookOpened && _selectedCode != code) {
+      _catalogTurn.turn(
+        change,
+        backwards: backwards ?? code < (_selectedCode ?? code),
+      );
+    } else {
+      change();
+    }
   }
 
   @override
@@ -333,23 +338,23 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
                 initiallyOpen: _bookOpened,
-                replayToken: _openingRevision,
                 onOpened: () => _bookOpened = true,
-                child: nationwide
-                    ? NationwideStampCatalog(
-                        recordedBrands: progress.brandIdsByPrefecture,
-                        recordsReady: ready,
-                        onBrandTap: (brand) => _openBrand(context, brand),
-                        onPageTurn: _reopenBook,
-                      )
-                    : PrefectureStampCatalog(
-                        prefecture: selected,
-                        earnedOnly: _earnedOnly,
-                        recordedBrandIds: earned,
-                        recordsReady: ready,
-                        onBrandTap: (brand) => _openBrand(context, brand),
-                        onPageTurn: _reopenBook,
-                      ),
+                child: SakeStampPageTurn(
+                  controller: _catalogTurn,
+                  child: nationwide
+                      ? NationwideStampCatalog(
+                          recordedBrands: progress.brandIdsByPrefecture,
+                          recordsReady: ready,
+                          onBrandTap: (brand) => _openBrand(context, brand),
+                        )
+                      : PrefectureStampCatalog(
+                          prefecture: selected,
+                          earnedOnly: _earnedOnly,
+                          recordedBrandIds: earned,
+                          recordsReady: ready,
+                          onBrandTap: (brand) => _openBrand(context, brand),
+                        ),
+                ),
               ),
               Row(
                 children: [
@@ -357,7 +362,8 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                     child: _PrefectureStepButton(
                       key: const ValueKey('stamp-previous-prefecture'),
                       label: previous?.label(context) ?? nationwideLabel,
-                      onPressed: () => _select(previous?.code ?? 0),
+                      onPressed: () =>
+                          _select(previous?.code ?? 0, backwards: true),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -366,7 +372,8 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                       key: const ValueKey('stamp-next-prefecture'),
                       label: next?.label(context) ?? nationwideLabel,
                       forward: true,
-                      onPressed: () => _select(next?.code ?? 0),
+                      onPressed: () =>
+                          _select(next?.code ?? 0, backwards: false),
                     ),
                   ),
                 ],

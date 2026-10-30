@@ -20,7 +20,6 @@ void main() {
     bool reduced = false,
     double scale = 1,
     String label = 'stamps',
-    int replayToken = 0,
     bool initiallyOpen = false,
   }) => MaterialApp(
     home: MediaQuery(
@@ -36,7 +35,6 @@ void main() {
             child: RepaintBoundary(
               key: const ValueKey('opening-preview'),
               child: SakeStampBookOpening(
-                replayToken: replayToken,
                 initiallyOpen: initiallyOpen,
                 child: SizedBox(
                   height: 236,
@@ -95,51 +93,14 @@ void main() {
     expect(taps, 2);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('移動時は自動で開き直し、連続移動は最新の動作を完了する', (tester) async {
-    taps = 0;
+  testWidgets('開いた帳面は中身が変わっても表紙に戻らない', (tester) async {
     await tester.pumpWidget(book(initiallyOpen: true));
     expect(cover, findsNothing);
-    await tester.pumpWidget(book(initiallyOpen: true, replayToken: 1));
-    expect(cover, findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(
-      tester.widget<Transform>(sheet).transform.entry(0, 0),
-      inExclusiveRange(0, 1),
-    );
-    await shot(tester, '03-navigation-opening');
-    await tester.tap(find.text('stamps'), warnIfMissed: false);
-    expect(taps, 0);
-    await tester.pumpWidget(
-      book(initiallyOpen: true, replayToken: 2, label: 'latest'),
-    );
-    expect(cover, findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(
-      tester.widget<Transform>(sheet).transform.entry(0, 0),
-      inExclusiveRange(0, 1),
-    );
+    await tester.pumpWidget(book(initiallyOpen: true, label: 'next page'));
     await tester.pumpAndSettle();
+    expect(find.text('next page'), findsOneWidget);
     expect(cover, findsNothing);
-    await tester.tap(find.text('latest'));
-    expect(taps, 1);
-    await tester.pumpWidget(
-      book(initiallyOpen: true, replayToken: 2, label: 'loaded'),
-    );
-    expect(cover, findsNothing);
-    await tester.pumpWidget(book(initiallyOpen: true, replayToken: 3));
-    await tester.pump(const Duration(milliseconds: 60));
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('モーション低減では移動時も即座に開く', (tester) async {
-    await tester.pumpWidget(book(reduced: true, initiallyOpen: true));
-    await tester.pumpWidget(
-      book(reduced: true, initiallyOpen: true, replayToken: 1),
-    );
-    expect(cover, findsNothing);
-    expect(tester.hasRunningAnimations, isFalse);
+    expect(sheet, findsNothing);
     expect(tester.takeException(), isNull);
   });
 

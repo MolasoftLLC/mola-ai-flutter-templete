@@ -159,6 +159,76 @@ void main() {
       expect(events.where((e) => e['kind'] == 'impression'), hasLength(2));
     },
   );
+  test(
+    'partial receipts keep valid neighbors and quarantine only explicitly rejected IDs',
+    () async {
+      final delivered = <String>[];
+      final analytics = AppAnalytics(
+        enabled: true,
+        tokenReader: () async => null,
+        client: MockClient((r) async {
+          final events = jsonDecode(r.body)['events'] as List;
+          final good = events.where((e) => e['target'] != 'unknown').toList();
+          delivered.addAll(good.map((e) => e['target'] as String));
+          return http.Response(
+            jsonEncode({
+              'acceptedEventIds': good.map((e) => e['eventId']).toList(),
+              'rejectedEventIds': events
+                  .where((e) => e['target'] == 'unknown')
+                  .map((e) => e['eventId'])
+                  .toList(),
+            }),
+            200,
+          );
+        }),
+      );
+      await analytics.initialize('example.com');
+      await Future<void>.delayed(Duration.zero);
+      analytics.event('home', 'sake_stamp_book');
+      analytics.event('home', 'unknown');
+      analytics.event('home', 'japan_sake_map');
+      await analytics.flush();
+      await analytics.close();
+      final prefs = await SharedPreferences.getInstance();
+      expect(delivered, containsAll(['sake_stamp_book', 'japan_sake_map']));
+      expect(prefs.getStringList('usage_queue_v1'), isEmpty);
+      expect(
+        prefs
+            .getStringList('usage_rejected_v1')!
+            .map((s) => jsonDecode(s)['target']),
+        ['unknown'],
+      );
+    },
+  );
+  test(
+    'old-server 400 splits batch before discarding the single invalid event',
+    () async {
+      final delivered = <String>[];
+      final analytics = AppAnalytics(
+        enabled: true,
+        tokenReader: () async => null,
+        client: MockClient((r) async {
+          final events = jsonDecode(r.body)['events'] as List;
+          if (events.any((e) => e['target'] == 'unknown')) {
+            return http.Response('{}', 400);
+          }
+          delivered.addAll(events.map((e) => e['target'] as String));
+          return http.Response('{}', 200);
+        }),
+      );
+      await analytics.initialize('example.com');
+      await Future<void>.delayed(Duration.zero);
+      analytics.event('home', 'sake_stamp_book');
+      analytics.event('home', 'unknown');
+      analytics.event('home', 'japan_sake_map');
+      await analytics.flush();
+      await analytics.close();
+      final prefs = await SharedPreferences.getInstance();
+      expect(delivered, containsAll(['sake_stamp_book', 'japan_sake_map']));
+      expect(prefs.getStringList('usage_queue_v1'), isEmpty);
+      expect(prefs.getStringList('usage_rejected_v1'), hasLength(1));
+    },
+  );
   testWidgets('active tab only; detail pop restores home screen', (
     tester,
   ) async {

@@ -36,6 +36,7 @@ import '../common/dialogs/share_opt_out_dialog.dart';
 import 'widgets/lens_progress_toasts.dart';
 import 'widgets/label_capture_guide.dart';
 import 'widgets/sake_scan_candidate_origin.dart';
+import 'widgets/scan_record_questions.dart';
 import '../new_home/widgets/sake_stamp_awards.dart';
 
 class SakeScanPage extends StatefulWidget {
@@ -108,6 +109,11 @@ class _SakeScanPageState extends State<SakeScanPage>
   late final TextEditingController _recordImpressionController;
   DrinkingPlace? _recordPlace;
   Set<String> _recordTags = <String>{};
+  ScanRecordAnswers _scanAnswers = ScanRecordAnswers();
+  bool _questionsDone = false;
+  String _recordBaseMemo = '';
+  bool _recordMemoEdited = false;
+  bool _recordTagsEdited = false;
   bool _recordDirty = false;
   bool _recordSaved = false;
   bool _recordSaving = false;
@@ -613,15 +619,30 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   void _resetAnalysisRecordDraft() {
-    _recordImpressionController.clear();
+    final existing = widget.reassignTarget;
+    _recordBaseMemo = existing?.impression ?? '';
+    _recordImpressionController.text = _recordBaseMemo;
     setState(() {
-      _recordPlace = null;
-      _recordTags = <String>{};
+      _recordMemoEdited = false;
+      _recordTagsEdited = false;
+      _scanAnswers = ScanRecordAnswers();
+      _questionsDone = false;
+      _recordPlace = existing?.drinkingPlace;
+      _recordTags = {...?existing?.userTags};
       _recordDirty = false;
       _recordSaved = false;
       _recordSaving = false;
       _recordSaveError = null;
     });
+  }
+
+  void _updateQuestionDraft() {
+    final memo = _scanAnswers.memo;
+    _recordImpressionController.text = [
+      if (_recordBaseMemo.trim().isNotEmpty) _recordBaseMemo,
+      if (memo.isNotEmpty) memo,
+    ].join('\n');
+    if (memo.isNotEmpty) _markRecordDirty();
   }
 
   Future<void> _startCandidateAnalysis() async {
@@ -648,6 +669,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   void _markRecordDirty() {
+    _recordMemoEdited = true;
     if (_recordDirty && !_recordSaved && _recordSaveError == null) return;
     setState(() {
       _recordDirty = true;
@@ -671,16 +693,22 @@ class _SakeScanPageState extends State<SakeScanPage>
       final stampSession = await SakeStampAwardSession.prepare(context);
       if (!mounted) return false;
       final placeName = _recordPlace?.displayName.trim();
-      final updated = saved.copyWith(
-        impression: _recordImpressionController.text.trim().isEmpty
-            ? null
-            : _recordImpressionController.text.trim(),
-        place: placeName == null || placeName.isEmpty ? null : placeName,
-        drinkingPlace: _recordPlace,
-        userTags: _recordTags.isEmpty ? null : _recordTags.toList(),
+      final savedNotifier = context.read<SavedSakeNotifier>();
+      final latest = savedNotifier.savedSakes.firstWhere(
+        (item) => item.savedId == saved.savedId,
+        orElse: () => saved,
+      );
+      final updated = latest.copyWith(
+        impression: _recordMemoEdited
+            ? _recordImpressionController.text.trim()
+            : latest.impression,
+        place: placeName == null || placeName.isEmpty
+            ? latest.place
+            : placeName,
+        drinkingPlace: _recordPlace ?? latest.drinkingPlace,
+        userTags: _recordTagsEdited ? _recordTags.toList() : latest.userTags,
         isPublic: _shareToTimeline,
       );
-      final savedNotifier = context.read<SavedSakeNotifier>();
       await savedNotifier.updateSavedSake(updated);
       if (saved.isPublic != _shareToTimeline) {
         final visibilityUpdated = await savedNotifier.updateTimelineVisibility(
@@ -850,6 +878,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (!mounted) return;
     final detailPage = (sake.sakeId ?? 0) > 0
         ? SakeMasterDetailPage(
+            offerScanQuestions: !_questionsDone && _scanAnswers.drank == null,
             venueSake: VenueSake(
               sakeId: sake.sakeId,
               name: sake.name ?? '',
@@ -1594,6 +1623,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Widget _buildAnalysisRecordPanel(SakeScanState state) {
     final analysisCompleted = state.status == SakeScanViewStatus.completed;
     final recordReady = state.savedSake != null;
+    final showQuestions = !analysisCompleted && !_questionsDone;
     final canSave = recordReady && _recordDirty && !_recordSaving;
     final actionLabel = _recordSaving
         ? '保存中…'
@@ -1613,9 +1643,7 @@ class _SakeScanPageState extends State<SakeScanPage>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              analysisCompleted
-                  ? '感想や公開設定を確認して、詳細へ進めます'
-                  : '待っている間に、あなたの記録を残せます',
+              analysisCompleted ? '回答を確認して、記録できます' : '解析を待つ間に、ひとつだけ',
               style: const TextStyle(
                 color: Color(0xFF1D3567),
                 fontSize: 17,
@@ -1634,138 +1662,150 @@ class _SakeScanPageState extends State<SakeScanPage>
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(right: 4, bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        '飲んだ場所・買った場所',
-                        style: TextStyle(
-                          color: Color(0xFF1D3567),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Material(
-                        color: const Color(0xFFF7F8FA),
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: _openRecordPlacePicker,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 14,
+                  child: showQuestions
+                      ? ScanRecordQuestions(
+                          answers: _scanAnswers,
+                          onChanged: _updateQuestionDraft,
+                          onChoosePlace: _openRecordPlacePicker,
+                          onDone: () => setState(() => _questionsDone = true),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              '飲んだ場所・買った場所',
+                              style: TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.near_me_outlined,
-                                  color: Color(0xFFFF7A1A),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _recordPlace?.displayName
-                                                .trim()
-                                                .isNotEmpty ==
-                                            true
-                                        ? _recordPlace!.displayName.trim()
-                                        : '現在地・店舗名から選ぶ',
-                                    style: TextStyle(
-                                      color: _recordPlace == null
-                                          ? const Color(0xFF697386)
-                                          : const Color(0xFF1D3567),
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            const SizedBox(height: 8),
+                            Material(
+                              color: const Color(0xFFF7F8FA),
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: _openRecordPlacePicker,
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.near_me_outlined,
+                                        color: Color(0xFFFF7A1A),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          _recordPlace?.displayName
+                                                      .trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? _recordPlace!.displayName.trim()
+                                              : '現在地・店舗名から選ぶ',
+                                          style: TextStyle(
+                                            color: _recordPlace == null
+                                                ? const Color(0xFF697386)
+                                                : const Color(0xFF1D3567),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: Color(0xFF697386),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: Color(0xFF697386),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              'タグ',
+                              style: TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: sake_master.Sake.userMemoTags.map((
+                                tag,
+                              ) {
+                                final selected = _recordTags.contains(tag);
+                                return FilterChip(
+                                  label: Text(tag),
+                                  selected: selected,
+                                  selectedColor: const Color(0xFFFFEDD8),
+                                  checkmarkColor: const Color(0xFFFF7A1A),
+                                  labelStyle: const TextStyle(
+                                    color: Color(0xFF1D3567),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  onSelected: (_) {
+                                    setState(() {
+                                      _recordTagsEdited = true;
+                                      if (selected) {
+                                        _recordTags.remove(tag);
+                                      } else {
+                                        _recordTags.add(tag);
+                                      }
+                                      _recordDirty = true;
+                                      _recordSaved = false;
+                                      _recordSaveError = null;
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              'ひとこと・感想',
+                              style: TextStyle(
+                                color: Color(0xFF1D3567),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _recordImpressionController,
+                              onTapOutside: (_) =>
+                                  FocusManager.instance.primaryFocus?.unfocus(),
+                              maxLength: 200,
+                              maxLines: 4,
+                              onChanged: (_) => _markRecordDirty(),
+                              style: const TextStyle(color: Color(0xFF1D3567)),
+                              decoration: InputDecoration(
+                                hintText: '香りや味、食事との相性を残す',
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF8B96A6),
                                 ),
-                              ],
+                                filled: true,
+                                fillColor: const Color(0xFFF7F8FA),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (_recordSaveError != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _recordSaveError!,
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'タグ',
-                        style: TextStyle(
-                          color: Color(0xFF1D3567),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: sake_master.Sake.userMemoTags.map((tag) {
-                          final selected = _recordTags.contains(tag);
-                          return FilterChip(
-                            label: Text(tag),
-                            selected: selected,
-                            selectedColor: const Color(0xFFFFEDD8),
-                            checkmarkColor: const Color(0xFFFF7A1A),
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF1D3567),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            onSelected: (_) {
-                              setState(() {
-                                if (selected) {
-                                  _recordTags.remove(tag);
-                                } else {
-                                  _recordTags.add(tag);
-                                }
-                                _recordDirty = true;
-                                _recordSaved = false;
-                                _recordSaveError = null;
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'ひとこと・感想',
-                        style: TextStyle(
-                          color: Color(0xFF1D3567),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _recordImpressionController,
-                        onTapOutside: (_) =>
-                            FocusManager.instance.primaryFocus?.unfocus(),
-                        maxLength: 200,
-                        maxLines: 4,
-                        onChanged: (_) => _markRecordDirty(),
-                        style: const TextStyle(color: Color(0xFF1D3567)),
-                        decoration: InputDecoration(
-                          hintText: '香りや味、食事との相性を残す',
-                          hintStyle: const TextStyle(color: Color(0xFF8B96A6)),
-                          filled: true,
-                          fillColor: const Color(0xFFF7F8FA),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                      if (_recordSaveError != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          _recordSaveError!,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -1871,6 +1911,8 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ? null
                   : analysisCompleted
                   ? () => unawaited(_openAnalyzedDetail(state))
+                  : showQuestions
+                  ? () => setState(() => _questionsDone = true)
                   : canSave
                   ? () => unawaited(_saveAnalysisRecord(state))
                   : null,
@@ -1884,6 +1926,8 @@ class _SakeScanPageState extends State<SakeScanPage>
               child: Text(
                 _openingDetail
                     ? (_autoTweetEnabled ? '解析結果を確認してXへ投稿中…' : '保存中…')
+                    : showQuestions
+                    ? '回答を確認する'
                     : actionLabel,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),

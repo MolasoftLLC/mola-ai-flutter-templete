@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../common/analytics/app_analytics.dart';
 import 'package:provider/provider.dart';
 import '../../../common/sake/personal_sake_record.dart';
 import '../../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -149,6 +150,16 @@ class SakeStampAwardSession {
         stamp,
         isCurrent: () => context.mounted && _current(context),
       );
+      if (fresh &&
+          context.mounted &&
+          _current(context) &&
+          !priorBrands.contains(brandId)) {
+        AppAnalytics.instance.event(
+          AppAnalytics.instance.screen,
+          'stamp_acquired',
+          kind: 'success',
+        );
+      }
       if (!fresh ||
           !context.mounted ||
           !_current(context) ||
