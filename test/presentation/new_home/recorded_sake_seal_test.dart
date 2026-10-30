@@ -74,6 +74,40 @@ class _Catalog extends PlaceMapRepository {
   }
 }
 
+class _PagedCatalog extends _Catalog {
+  bool failMore = false;
+  @override
+  Future<SakeCatalogPage<SakeMapSearchResult>> fetchBrandProducts(
+    int brandId, {
+    int? beforeId,
+  }) async {
+    if (beforeId != null && failMore) {
+      productRequests++;
+      throw StateError('offline');
+    }
+    final all = await super.fetchBrandProducts(brandId, beforeId: beforeId);
+    return SakeCatalogPage(
+      items: all.items
+          .where(
+            (sake) => beforeId == null ? sake.sakeId! <= 2 : sake.sakeId! > 2,
+          )
+          .toList(),
+      nextCursor: beforeId == null ? 2 : null,
+    );
+  }
+
+  @override
+  Future<List<SakeProductOrigin>> fetchSakeOrigins(List<int> ids) async => [
+    for (final id in ids)
+      SakeProductOrigin(
+        sakeId: id,
+        canonicalSakeId: id,
+        brandId: id == 9 ? 99 : 11,
+        prefectureCode: 5,
+      ),
+  ];
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -196,6 +230,12 @@ void main() {
       expect(seal(2), findsNothing);
       expect(seal(3), findsOneWidget);
       expect(seal(4), findsNothing);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('japan-product-3'))).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const ValueKey('japan-product-2'))).dy,
+        ),
+      );
       expect(find.bySemanticsLabel(RegExp('飲んだ記録あり')), findsNWidgets(2));
       await preview(tester, 'recorded-sake-seal');
       saved.value = const SavedSakeState(
@@ -211,10 +251,78 @@ void main() {
       expect(seal(2), findsOneWidget);
       expect(seal(3), findsNothing);
       expect(repo.productRequests, 1);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('japan-product-2'))).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const ValueKey('japan-product-1'))).dy,
+        ),
+      );
       semantics.dispose();
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('記録済みは未取得のページ分も先頭に表示し、追加取得・再試行・アカウント変更で重複しない', (tester) async {
+    final repo = _PagedCatalog();
+    const records = SavedSakeState(
+      savedSakeList: [
+        Sake(sakeId: 4, name: '記録した大吟醸', impression: '飲んだ'),
+        Sake(sakeId: 9, name: '別の銘柄', impression: '飲んだ'),
+        Sake(sakeId: 2, name: '保存だけ', isBookmarked: true),
+      ],
+    );
+    final saved = ValueNotifier(records);
+    addTearDown(saved.dispose);
+    await open(tester, repo, saved);
+    expect(repo.productRequests, 1);
+    expect(seal(4), findsOneWidget);
+    expect(find.byKey(const ValueKey('japan-product-9')), findsNothing);
+    expect(find.text('保存だけ'), findsNothing);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('japan-product-4'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('japan-product-1'))).dy,
+      ),
+    );
+    saved.value = const SavedSakeState();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('japan-product-4')), findsNothing);
+    saved.value = records;
+    await tester.pumpAndSettle();
+    expect(seal(4), findsOneWidget);
+    expect(repo.productRequests, 1);
+    repo.failMore = true;
+    await tester.tap(find.text('もっと見る'));
+    await tester.pumpAndSettle();
+    expect(find.text('一覧を取得できませんでした。'), findsOneWidget);
+    expect(seal(4), findsOneWidget);
+    repo.failMore = false;
+    await tester.tap(find.text('再読み込み'));
+    await tester.pumpAndSettle();
+    expect(repo.productRequests, 3);
+    expect(find.byKey(const ValueKey('japan-product-4')), findsOneWidget);
+    expect(find.text('記録した大吟醸'), findsNothing);
+    expect(find.text('雪の茅舎 大吟醸'), findsOneWidget);
+    expect(seal(4), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('japan-product-4'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('japan-product-1'))).dy,
+      ),
+    );
+    await preview(tester, 'recorded-first-products');
+    saved.value = const SavedSakeState();
+    await tester.pumpAndSettle();
+    expect(find.byType(RecordedSakeSeal), findsNothing);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('japan-product-1'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('japan-product-4'))).dy,
+      ),
+    );
+    expect(repo.productRequests, 3);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'failed origin lookup keeps exact ID stamps without guessing aliases; small screen and enlarged text fit',

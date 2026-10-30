@@ -97,6 +97,42 @@ class _TwoPrefecturesCatalog extends _Catalog {
   ];
 }
 
+class _PreviewCatalog extends _Catalog {
+  @override
+  Future<SakeCatalogPage<SakeBrandSummary>> fetchPrefectureBrands(
+    int code, {
+    int? afterId,
+  }) async {
+    codes.add(code);
+    cursors.add(afterId);
+    final start = code == 35 ? 21 : (afterId == null ? 1 : 13);
+    final end = code == 35 ? 43 : (afterId == null ? 12 : 20);
+    return SakeCatalogPage(
+      items: [
+        for (var id = start; id <= end; id++)
+          SakeBrandSummary(
+            brandId: id,
+            name: _names[(id - 1) % _names.length],
+            brewery: '酒造',
+            productCount: 1,
+          ),
+      ],
+      nextCursor: code == 6 && afterId == null ? 12 : null,
+    );
+  }
+
+  @override
+  Future<List<SakeProductOrigin>> fetchSakeOrigins(List<int> ids) async => [
+    for (final id in ids)
+      SakeProductOrigin(
+        sakeId: id,
+        canonicalSakeId: id == 100 ? 1 : id,
+        brandId: id == 100 ? 1 : id,
+        prefectureCode: id <= 20 || id == 100 ? 6 : 35,
+      ),
+  ];
+}
+
 class _PartialNationalCatalog extends _TwoPrefecturesCatalog {
   bool failYamagata = true;
   @override
@@ -312,6 +348,8 @@ void main() {
       saved: saved,
     );
     expect(find.text('山口県 酒印帳'), findsOneWidget);
+    expect(find.text('現在0銘柄'), findsOneWidget);
+    expect(find.byKey(const ValueKey('stamp-page-number')), findsNothing);
     expect(repo.codes, [35]);
     await preview(tester, 'home-yamaguchi');
     saved.value = const SavedSakeState(
@@ -388,7 +426,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(await SakeStampPreferences.lastPrefecture(), 0);
     expect(find.byKey(const ValueKey('stamp-earned-only')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-next-prefecture')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-next-prefecture')), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-10')), findsOneWidget);
     expect(find.byKey(const ValueKey('national-stamp-retry')), findsOneWidget);
     repo.failYamagata = false;
@@ -497,6 +535,102 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('ホームは最初の9銘柄で取得を止め、全国の総数だけを帳面に表示する', (tester) async {
+    final repo = _PreviewCatalog();
+    final saved = ValueNotifier(
+      SavedSakeState(
+        savedSakeList: [
+          for (var id = 1; id <= 43; id++) Sake(sakeId: id, impression: '記録'),
+          const Sake(sakeId: 100, impression: '同じ銘柄'),
+        ],
+      ),
+    );
+    addTearDown(saved.dispose);
+    await open(
+      tester,
+      const Scaffold(body: SakeStampBookSection()),
+      repo: repo,
+      saved: saved,
+    );
+    final book = tester.widget<SakeStampBook>(find.byType(SakeStampBook));
+    expect(book.preview, isTrue);
+    expect(book.brands.map((b) => b.brandId), List.generate(9, (i) => i + 1));
+    expect(book.recordedBrandIds.length, 43);
+    expect(repo.codes, [6]);
+    expect(repo.cursors, [null]);
+    expect(find.text('現在43銘柄'), findsOneWidget);
+    expect(find.textContaining('全国で集めた'), findsNothing);
+    expect(find.text('9 / 9'), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-page-number')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-next')), findsNothing);
+    expect(find.byKey(const ValueKey('stamp-previous')), findsNothing);
+    expect(find.textContaining('取得できませんでした'), findsNothing);
+    await preview(tester, 'home-first-nine');
+    await tester.tap(find.byKey(const ValueKey('open-sake-stamp-book')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,
+      43,
+    );
+    expect(repo.codes, [6, 6, 6, 35]);
+    expect(repo.cursors, [null, null, 12, null]);
+    expect(find.text('全国で集めた酒印 43銘柄'), findsOneWidget);
+    expect(find.byKey(const ValueKey('stamp-next')), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('stamp-next-prefecture')),
+    );
+    await tester.pumpAndSettle();
+    await preview(tester, 'national-prefecture-buttons');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('同じ全国カタログでもプレビューから全件表示への変更を再取得する', (tester) async {
+    final repo = _PreviewCatalog();
+    final isPreview = ValueNotifier(true);
+    addTearDown(isPreview.dispose);
+    await open(
+      tester,
+      Scaffold(
+        body: ValueListenableBuilder<bool>(
+          valueListenable: isPreview,
+          builder: (_, preview, __) => NationwideStampCatalog(
+            recordedBrands: {
+              6: {for (var id = 1; id <= 20; id++) id},
+              35: {for (var id = 21; id <= 43; id++) id},
+            },
+            recordsReady: true,
+            preview: preview,
+            onBrandTap: (_) {},
+          ),
+        ),
+      ),
+      repo: repo,
+    );
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,
+      9,
+    );
+    isPreview.value = false;
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,
+      43,
+    );
+    expect(repo.codes, [6, 6, 6, 35]);
+    isPreview.value = true;
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,
+      9,
+    );
+    expect(repo.codes, [6, 6, 6, 35, 6]);
+    expect(find.text('現在43銘柄'), findsOneWidget);
+    expect(find.textContaining('取得できませんでした'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('全国も9銘柄ずつページ送りし、銘柄はIDで重複除外する', (tester) async {
     final repo = _Catalog();
     final saved = ValueNotifier(
@@ -522,10 +656,27 @@ void main() {
       11,
     );
     await tester.tap(find.byKey(const ValueKey('stamp-next')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 80));
+    await preview(tester, 'stamp-arrow-reopening');
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('2 / 2'), findsNWidgets(2));
     expect(find.byKey(const ValueKey('brand-stamp-10')), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-11')), findsOneWidget);
+    await tester.fling(
+      find.byKey(const ValueKey('sake-stamp-pages')),
+      const Offset(250, 0),
+      1000,
+    );
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -567,7 +718,8 @@ void main() {
       saved: saved,
     );
     expect(find.text('全国 酒印帳'), findsOneWidget);
-    expect(find.text('全国で集めた酒印 3銘柄'), findsOneWidget);
+    expect(find.text('現在3銘柄'), findsOneWidget);
+    expect(find.text('全国で集めた酒印 3銘柄'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('open-sake-stamp-book')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('stamp-prefecture-picker')));
@@ -638,7 +790,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('下の左右ボタンで県ID順に移動し、選択欄・記憶と同期して両端で止まる', (tester) async {
+  testWidgets('下の左右ボタンで県ID順に移動し、選択欄・記憶と同期する', (tester) async {
     final repo = _Catalog();
     await open(
       tester,
@@ -687,49 +839,149 @@ void main() {
     expect(tester.takeException(), isNull);
     await preview(tester, 'prefecture-arrows-small');
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await open(tester, const SakeStampBookPage(initialPrefectureCode: 1));
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.descendant(
-              of: previous,
-              matching: find.byType(OutlinedButton),
-            ),
-          )
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.descendant(of: next, matching: find.byType(OutlinedButton)),
-          )
-          .onPressed,
-      isNotNull,
-    );
-    await tester.pumpWidget(const SizedBox.shrink());
-    await open(tester, const SakeStampBookPage(initialPrefectureCode: 47));
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.descendant(of: next, matching: find.byType(OutlinedButton)),
-          )
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<OutlinedButton>(
-            find.descendant(
-              of: previous,
-              matching: find.byType(OutlinedButton),
-            ),
-          )
-          .onPressed,
-      isNotNull,
-    );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('全国・北海道・沖縄の左右ボタンは両方向にループし選択と記憶を更新する', (tester) async {
+    final repo = _Catalog();
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 0),
+      repo: repo,
+      size: const Size(320, 568),
+      scale: 1.5,
+    );
+    final previous = find.byKey(const ValueKey('stamp-previous-prefecture'));
+    final next = find.byKey(const ValueKey('stamp-next-prefecture'));
+    Future<void> step(Finder button, int code, String title) async {
+      await tester.scrollUntilVisible(
+        button,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(await SakeStampPreferences.lastPrefecture(), code);
+      expect(
+        tester
+            .state<FormFieldState<int>>(
+              find.byKey(const ValueKey('stamp-prefecture-picker')),
+            )
+            .value,
+        code,
+      );
+      if (code != 0) {
+        expect(repo.codes.last, code);
+        expect(find.text('$title 酒印帳'), findsOneWidget);
+      } else {
+        expect(find.text('押印済みの酒印がまだありません。'), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    }
+
+    await tester.scrollUntilVisible(
+      previous,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: previous, matching: find.text('沖縄県')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: next, matching: find.text('北海道')),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(next);
+    await tester.pumpAndSettle();
+    await preview(tester, 'national-prefecture-loop');
+    await step(previous, 47, '沖縄県');
+    await tester.scrollUntilVisible(
+      next,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.descendant(of: next, matching: find.text('全国')),
+      findsOneWidget,
+    );
+    await step(next, 0, '全国');
+    await step(next, 1, '北海道');
+    await tester.scrollUntilVisible(
+      previous,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.descendant(of: previous, matching: find.text('全国')),
+      findsOneWidget,
+    );
+    await step(previous, 0, '全国');
+    await step(next, 1, '北海道');
+    await step(next, 2, '青森県');
+    await step(previous, 1, '北海道');
+    await step(previous, 0, '全国');
+    await step(previous, 47, '沖縄県');
+    await step(previous, 46, '鹿児島県');
+    await step(next, 47, '沖縄県');
+    await step(next, 0, '全国');
+  });
+
+  testWidgets('都道府県メニューは高さを抑えて全国と遠い県も選べる', (tester) async {
+    for (final size in [const Size(390, 844), const Size(320, 568)]) {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await open(
+        tester,
+        const SakeStampBookPage(initialPrefectureCode: 0),
+        size: size,
+        scale: size.width == 320 ? 1.5 : 1,
+      );
+      final picker = find.byKey(const ValueKey('stamp-prefecture-picker'));
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+      final menu = find.byType(Scrollable).last;
+      expect(tester.getSize(menu).height, lessThanOrEqualTo(size.height * .4));
+      if (size.width == 390) await preview(tester, 'compact-prefecture-menu');
+      final okinawa = find.descendant(of: menu, matching: find.text('沖縄県'));
+      await tester.scrollUntilVisible(okinawa, 180, scrollable: menu);
+      await tester.pumpAndSettle();
+      await tester.tap(okinawa);
+      await tester.pumpAndSettle();
+      expect(tester.state<FormFieldState<int>>(picker).value, 47);
+      expect(await SakeStampPreferences.lastPrefecture(), 47);
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pumpAndSettle();
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+      final reopenedMenu = find.byType(Scrollable).last;
+      final nationwide = find.descendant(
+        of: reopenedMenu,
+        matching: find.text('全国'),
+      );
+      await tester.scrollUntilVisible(
+        nationwide,
+        -180,
+        scrollable: reopenedMenu,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(nationwide);
+      await tester.pumpAndSettle();
+      expect(tester.state<FormFieldState<int>>(picker).value, 0);
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('不正な記憶値は無視し、明示した県は前回の県より優先する', (tester) async {
@@ -770,7 +1022,8 @@ void main() {
       );
       expect(repo.codes.last, 6);
       expect(repo.codes.toSet().difference({1, 6}), isEmpty);
-      expect(find.text('1 / 1'), findsNWidgets(2));
+      expect(find.text('1 / 1'), findsNothing);
+      expect(find.text('現在1銘柄'), findsOneWidget);
       final homeBookSize = tester.getSize(
         find.byKey(const ValueKey('sake-stamp-book')),
       );
@@ -780,7 +1033,8 @@ void main() {
       expect(find.text('新しい酒印を獲得！'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
       await tester.pumpAndSettle();
-      expect(find.text('1 / 1'), findsNWidgets(2));
+      expect(find.text('1 / 1'), findsNothing);
+      expect(find.text('現在1銘柄'), findsOneWidget);
       expect(repo.codes.last, 6);
       await tester.tapAt(
         tester.getCenter(find.byKey(const ValueKey('sake-stamp-book'))),
@@ -856,7 +1110,11 @@ void main() {
       await tester.pumpAndSettle();
       repo.failMore = true;
       await tester.tap(find.byKey(const ValueKey('stamp-next')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);
       expect(
         tester.widget<SakeStampBook>(find.byType(SakeStampBook)).brands.length,

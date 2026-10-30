@@ -101,10 +101,6 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
                 style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
               ),
               const SizedBox(height: 8),
-              _NationwideStampCount(
-                progress.brandIdsByPrefecture,
-                ready: ready,
-              ),
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -177,6 +173,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
   bool _bookOpened = false;
+  int _openingRevision = 0;
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -187,8 +184,13 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
     return JapanSakeMapData.load();
   }
 
-  void _select(int code) {
-    setState(() => _selectedCode = code);
+  void _reopenBook() => setState(() => _openingRevision++);
+
+  void _select(int code, {bool animate = true}) {
+    setState(() {
+      if (animate && _selectedCode != code) _openingRevision++;
+      _selectedCode = code;
+    });
     _persistedCode = code;
     SakeStampPreferences.rememberPrefecture(code);
   }
@@ -218,8 +220,18 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 _previewPrefecture(prefectures, progress.brandIdsByPrefecture),
           );
           final index = ordered.indexWhere((p) => p.code == selected.code);
-          final previous = index > 0 ? ordered[index - 1] : null;
-          final next = index + 1 < ordered.length ? ordered[index + 1] : null;
+          // Nationwide sits between the last and first prefecture in the loop.
+          final previous = nationwide
+              ? ordered.last
+              : index > 0
+              ? ordered[index - 1]
+              : null;
+          final next = nationwide
+              ? ordered.first
+              : index + 1 < ordered.length
+              ? ordered[index + 1]
+              : null;
+          final nationwideLabel = _english(context) ? 'Nationwide' : '全国';
           final earned =
               progress.brandIdsByPrefecture[selected.code] ?? const {};
           final selectedCode = nationwide ? 0 : selected.code;
@@ -229,7 +241,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               .length;
           if (_selectedCode != selectedCode) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && ready) _select(selectedCode);
+              if (mounted && ready) _select(selectedCode, animate: false);
             });
           } else if (_persistedCode != selectedCode) {
             _persistedCode = selectedCode;
@@ -251,6 +263,11 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 key: const ValueKey('stamp-prefecture-picker'),
+                menuMaxHeight: (MediaQuery.sizeOf(context).height * .4)
+                    .clamp(0.0, 300.0)
+                    .toDouble(),
+                dropdownColor: Colors.white,
+                borderRadius: BorderRadius.circular(16),
                 initialValue: selectedCode,
                 isExpanded: true,
                 decoration: InputDecoration(
@@ -316,12 +333,14 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
                 initiallyOpen: _bookOpened,
+                replayToken: _openingRevision,
                 onOpened: () => _bookOpened = true,
                 child: nationwide
                     ? NationwideStampCatalog(
                         recordedBrands: progress.brandIdsByPrefecture,
                         recordsReady: ready,
                         onBrandTap: (brand) => _openBrand(context, brand),
+                        onPageTurn: _reopenBook,
                       )
                     : PrefectureStampCatalog(
                         prefecture: selected,
@@ -329,37 +348,29 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                         recordedBrandIds: earned,
                         recordsReady: ready,
                         onBrandTap: (brand) => _openBrand(context, brand),
+                        onPageTurn: _reopenBook,
                       ),
               ),
-              if (!nationwide)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _PrefectureStepButton(
-                        key: const ValueKey('stamp-previous-prefecture'),
-                        label:
-                            previous?.label(context) ??
-                            (_english(context) ? 'Previous' : '前の県'),
-                        onPressed: previous == null
-                            ? null
-                            : () => _select(previous.code),
-                      ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-previous-prefecture'),
+                      label: previous?.label(context) ?? nationwideLabel,
+                      onPressed: () => _select(previous?.code ?? 0),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _PrefectureStepButton(
-                        key: const ValueKey('stamp-next-prefecture'),
-                        label:
-                            next?.label(context) ??
-                            (_english(context) ? 'Next' : '次の県'),
-                        forward: true,
-                        onPressed: next == null
-                            ? null
-                            : () => _select(next.code),
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _PrefectureStepButton(
+                      key: const ValueKey('stamp-next-prefecture'),
+                      label: next?.label(context) ?? nationwideLabel,
+                      forward: true,
+                      onPressed: () => _select(next?.code ?? 0),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
               if (!ready) legend,
             ],
           );
@@ -367,33 +378,6 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
       ),
     ),
   );
-}
-
-class _NationwideStampCount extends StatelessWidget {
-  const _NationwideStampCount(this.brandIdsByPrefecture, {required this.ready});
-  final Map<int, Set<int>> brandIdsByPrefecture;
-  final bool ready;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = brandIdsByPrefecture.values
-        .expand((ids) => ids)
-        .toSet()
-        .length;
-    return Text(
-      ready
-          ? (_english(context)
-                ? '$total brands collected nationwide'
-                : '全国で集めた酒印 $total銘柄')
-          : (_english(context) ? 'Checking collected stamps…' : '全国の酒印を確認中…'),
-      key: const ValueKey('nationwide-stamp-count'),
-      style: const TextStyle(
-        color: Color(0xFFB73927),
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
 }
 
 class _PrefectureStepButton extends StatelessWidget {

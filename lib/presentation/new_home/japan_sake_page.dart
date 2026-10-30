@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../common/analytics/app_analytics.dart';
 import '../../common/sake/personal_sake_record.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/eintities/sake_catalog_browse.dart';
 import 'widgets/japan_catalog_list.dart';
@@ -544,6 +545,26 @@ class JapanSakeBrandProductsPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             JapanCatalogList<SakeMapSearchResult>(
+              leadingItems: [
+                if (ready)
+                  for (final record
+                      in progress.productsByBrand[brand.brandId] ??
+                          const <Sake>[])
+                    SakeMapSearchResult(
+                      sakeId: record.sakeId,
+                      name: record.name?.trim().isNotEmpty == true
+                          ? record.name!
+                          : (_english(context)
+                                ? '${brand.name} (recorded sake)'
+                                : '${brand.name}（記録したお酒）'),
+                      brewery: record.brewery,
+                      type: record.type,
+                      primaryImageUrl: record.primaryImageUrl,
+                      thumbnailImageUrl: record.thumbnailImageUrl,
+                      isMaster: true,
+                    ),
+              ],
+              isPreferred: (sake) => recordedIds.contains(sake.sakeId),
               loadPage: (cursor) => context
                   .read<PlaceMapRepository>()
                   .fetchBrandProducts(brand.brandId, beforeId: cursor),
