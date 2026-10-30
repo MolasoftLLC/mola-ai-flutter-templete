@@ -1110,7 +1110,7 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanBackLabelReason.lowConfidence =>
         context.l10n.scanBackPromptLowConfidence,
     };
-    final retakeFront = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -1122,12 +1122,17 @@ class _SakeScanPageState extends State<SakeScanPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
+                onPressed: () => Navigator.of(dialogContext).pop('back'),
                 child: Text(context.l10n.scanBackPromptAction),
               ),
               const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.of(dialogContext).pop('retry'),
+                child: const Text('この写真でもう一度探す'),
+              ),
+              const SizedBox(height: 8),
               TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
+                onPressed: () => Navigator.of(dialogContext).pop('retake'),
                 child: Text(context.l10n.scanRetakeFrontAction),
               ),
             ],
@@ -1135,7 +1140,15 @@ class _SakeScanPageState extends State<SakeScanPage>
         ],
       ),
     );
-    if (retakeFront == true && mounted) {
+    if (!mounted) return;
+    if (action == 'retry') {
+      final notifier = context.read<SakeScanNotifier>();
+      final image = notifier.currentState.frontImage;
+      if (image != null) {
+        _promptedBackLabelSessionId = null;
+        await notifier.submitFront(image);
+      }
+    } else if (action == 'retake') {
       _promptedBackLabelSessionId = null;
       context.read<SakeScanNotifier>().retakeFrontLabel();
     }

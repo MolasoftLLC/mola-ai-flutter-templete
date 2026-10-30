@@ -14,6 +14,25 @@ void main() {
   final image = File('/tmp/sake_scan_test.jpg');
 
   group('SakeScanNotifier', () {
+    test('裏ラベル案内から同じ表写真を再照合できる', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.needBackLabel,
+          scanSessionId: 'retry_front',
+        ),
+      );
+      final notifier = _buildNotifier(repository);
+      await notifier.submitFront(image);
+      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      await notifier.submitFront(notifier.currentState.frontImage!);
+      expect(repository.frontCalls, 2);
+      expect(notifier.currentState.frontImage, image);
+      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(notifier.currentState.isSubmitting, isFalse);
+      expect(repository.confirmCalls, 0);
+      expect(notifier.currentState.savedSake, isNull);
+    });
+
     test('焼酎は候補確定・保存せず、閉じた後に表ラベルへ戻せる', () async {
       final repository = _FakeScanRepository(
         frontResult: const SakeScanResult(
