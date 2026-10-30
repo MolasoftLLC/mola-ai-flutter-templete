@@ -6,6 +6,7 @@ import 'japan_sake_page.dart';
 import 'widgets/japan_sake_map.dart';
 import 'widgets/prefecture_stamp_catalog.dart';
 import 'widgets/sake_journey_progress.dart';
+import 'widgets/sake_stamp_acquisition_demo.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -68,13 +69,21 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                _english(context) ? 'My sake stamp book' : '日本酒ご酒印帳',
-                style: const TextStyle(
-                  color: japanMapNavy,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _english(context) ? 'My sake stamp book' : '日本酒ご酒印帳',
+                      style: const TextStyle(
+                        color: japanMapNavy,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const SakeStampDemoButton(),
+                ],
               ),
               const SizedBox(height: 8),
               Text(
