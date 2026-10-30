@@ -177,6 +177,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   bool _earnedOnly = false;
   bool _bookOpened = false;
   final _catalogTurn = SakeStampPageTurnController();
+  final _opening = SakeStampBookOpeningController();
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -343,8 +344,10 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 ),
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
+                controller: _opening,
+                onClosed: () => setState(() => _bookOpened = false),
                 initiallyOpen: _bookOpened,
-                onOpened: () => _bookOpened = true,
+                onOpened: () => setState(() => _bookOpened = true),
                 child: SakeStampPageTurn(
                   controller: _catalogTurn,
                   child: nationwide
@@ -352,6 +355,9 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           recordedBrands: progress.brandIdsByPrefecture,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
+                          onNextSection: () =>
+                              _select(next?.code ?? 0, backwards: false),
+                          onReturnToCover: _opening.close,
                         )
                       : PrefectureStampCatalog(
                           prefecture: selected,
@@ -359,9 +365,24 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           recordedBrandIds: earned,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
+                          onNextSection: () =>
+                              _select(next?.code ?? 0, backwards: false),
+                          onReturnToCover: _opening.close,
                         ),
                 ),
               ),
+              if (_bookOpened)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    key: const ValueKey('stamp-return-cover'),
+                    onPressed: _opening.close,
+                    icon: const Icon(Icons.menu_book_outlined, size: 18),
+                    label: Text(
+                      _english(context) ? 'Return to cover' : '表紙に戻る',
+                    ),
+                  ),
+                ),
               Row(
                 children: [
                   Expanded(
