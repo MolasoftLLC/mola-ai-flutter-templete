@@ -798,7 +798,14 @@ void main() {
       );
     }
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(milliseconds: 30));
     await preview(tester, 'stamp-paper-next');
     await preview(tester, 'page-turn-forward-04', paperOnly: true);
@@ -824,7 +831,14 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 40));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
     expect(find.text('1 / 2'), findsOneWidget);
@@ -838,7 +852,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
+    );
     final transform = tester
         .widget<Transform>(find.byKey(const ValueKey('stamp-page-turn-sheet')))
         .transform;
@@ -1028,18 +1049,32 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
-    final sheet = tester.widget<Transform>(
-      find.byKey(const ValueKey('stamp-page-turn-sheet')),
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsOneWidget,
     );
-    expect(sheet.alignment, Alignment.centerRight);
-    expect(sheet.transform.entry(2, 0), greaterThan(0));
+    final sheet = tester.widget<Transform>(
+      find.byKey(const ValueKey('stamp-returning-sheet')).first,
+    );
+    expect(sheet.alignment, Alignment.centerLeft);
+    expect(sheet.transform.entry(2, 0), lessThan(0));
     await preview(tester, 'prefecture-paper-previous');
     await tester.pumpAndSettle();
     expect(find.text('秋田県 酒印帳'), findsOneWidget);
     expect(repo.codes, [6, 5]);
     expect(await SakeStampPreferences.lastPrefecture(), 5);
-    expect(find.byKey(const ValueKey('stamp-turning-paper')), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w.key == const ValueKey('stamp-turning-paper') ||
+            w.key == const ValueKey('stamp-previous-paper-background'),
+      ),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -1065,7 +1100,14 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w.key == const ValueKey('stamp-turning-paper') ||
+              w.key == const ValueKey('stamp-previous-paper-background'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       tester
@@ -1312,7 +1354,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
-      expect(find.byKey(const ValueKey('stamp-turning-paper')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w.key == const ValueKey('stamp-turning-paper') ||
+              w.key == const ValueKey('stamp-previous-paper-background'),
+        ),
+        findsOneWidget,
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
       expect(find.byKey(const ValueKey('stamp-retry')), findsOneWidget);

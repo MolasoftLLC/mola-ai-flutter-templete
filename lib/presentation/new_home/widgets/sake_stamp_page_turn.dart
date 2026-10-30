@@ -194,11 +194,44 @@ class _SakeStampPageTurnState extends State<SakeStampPageTurn>
     child: Stack(
       clipBehavior: Clip.none,
       children: [
+        if (_paper != null && _backwards)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RawImage(
+                key: const ValueKey('stamp-previous-paper-background'),
+                image: _paper,
+                fit: BoxFit.fill,
+              ),
+            ),
+          ),
         ExcludeSemantics(
           excluding: _busy,
-          child: IgnorePointer(ignoring: _busy, child: widget.child),
+          child: IgnorePointer(
+            ignoring: _busy,
+            child: LayoutBuilder(
+              builder: (context, constraints) => AnimatedBuilder(
+                animation: _turn,
+                child: widget.child,
+                builder: (context, child) {
+                  final returning = _paper != null && _backwards;
+                  // Return the preceding page around the same left binding.
+                  // The current page stays underneath until it is covered.
+                  return Transform(
+                    key: const ValueKey('stamp-returning-sheet'),
+                    alignment: Alignment.centerLeft,
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, .08 / constraints.maxWidth)
+                      ..rotateY(
+                        returning ? math.pi / 2 * (1 - _turn.value) : 0,
+                      ),
+                    child: child,
+                  );
+                },
+              ),
+            ),
+          ),
         ),
-        if (_paper != null)
+        if (_paper != null && !_backwards)
           Positioned.fill(
             child: IgnorePointer(
               child: ExcludeSemantics(
