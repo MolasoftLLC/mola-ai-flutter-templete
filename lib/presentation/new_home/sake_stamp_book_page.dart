@@ -165,9 +165,11 @@ class SakeStampBookPage extends StatefulWidget {
   const SakeStampBookPage({
     super.key,
     this.initialPrefectureCode,
+    this.initiallyOpen = false,
     this.isTab = false,
   });
   final bool isTab;
+  final bool initiallyOpen;
   final int? initialPrefectureCode;
 
   @override
@@ -177,7 +179,7 @@ class SakeStampBookPage extends StatefulWidget {
 class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
-  bool _bookOpened = false;
+  late bool _bookOpened = widget.initiallyOpen;
   int _pageResetVersion = 0;
   final _catalogTurn = SakeStampPageTurnController();
   final _opening = SakeStampBookOpeningController();
