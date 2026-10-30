@@ -8,6 +8,7 @@ import 'widgets/prefecture_stamp_catalog.dart';
 import 'widgets/sake_journey_progress.dart';
 import 'widgets/sake_stamp_acquisition_demo.dart';
 import 'widgets/sake_stamp_preferences.dart';
+import 'widgets/sake_stamp_collection_label.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -264,13 +265,10 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 },
               ),
               const SizedBox(height: 16),
-              Text(
-                ready
-                    ? (_english(context)
-                          ? '${earned.length} brands recorded in ${selected.label(context)}'
-                          : '${selected.name}で集めた酒印 ${earned.length}銘柄')
-                    : (_english(context) ? 'Records unconfirmed' : '記録未確認'),
-                style: const TextStyle(color: Color(0xFFB73927)),
+              SakeStampCollectionLabel(
+                prefecture: selected.label(context),
+                count: earned.length,
+                ready: ready,
               ),
               const SizedBox(height: 8),
               Align(

@@ -327,6 +327,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.codes.last, 5);
     expect(find.text('秋田県 酒印帳'), findsOneWidget);
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(0);
+    await tester.pumpAndSettle();
     expect(
       tester
           .state<FormFieldState<int>>(
@@ -335,6 +340,12 @@ void main() {
           .value,
       5,
     );
+    await tester.scrollUntilVisible(
+      next,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(next);
     await tester.pumpAndSettle();
     await tester.tap(next);
