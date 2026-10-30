@@ -10,6 +10,7 @@ import 'widgets/sake_journey_progress.dart';
 import 'widgets/sake_stamp_acquisition_demo.dart';
 import 'widgets/sake_stamp_preferences.dart';
 import 'widgets/sake_stamp_collection_label.dart';
+import 'widgets/sake_stamp_book_opening.dart';
 
 bool _english(BuildContext context) =>
     Localizations.localeOf(context).languageCode == 'en';
@@ -18,7 +19,10 @@ JapanSakePrefecture _previewPrefecture(
   List<JapanSakePrefecture> prefectures,
   Map<int, Set<int>> recordedBrands,
 ) {
-  var selected = prefectures.first;
+  var selected = prefectures.firstWhere(
+    (p) => p.code == 35,
+    orElse: () => prefectures.first,
+  );
   for (final prefecture in prefectures) {
     if ((recordedBrands[prefecture.code]?.length ?? 0) >
         (recordedBrands[selected.code]?.length ?? 0)) {
@@ -43,13 +47,7 @@ class SakeStampBookSection extends StatefulWidget {
 }
 
 class _SakeStampBookSectionState extends State<SakeStampBookSection> {
-  int? _rememberedCode;
-  late final _map = _loadMap();
-
-  Future<List<JapanSakePrefecture>> _loadMap() async {
-    _rememberedCode = await SakeStampPreferences.lastPrefecture();
-    return JapanSakeMapData.load();
-  }
+  late final _map = JapanSakeMapData.load();
 
   Future<void> _open(int initialCode) async {
     AppAnalytics.instance.event('home', 'sake_stamp_book');
@@ -58,8 +56,6 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
         builder: (_) => SakeStampBookPage(initialPrefectureCode: initialCode),
       ),
     );
-    final code = await SakeStampPreferences.lastPrefecture();
-    if (mounted) setState(() => _rememberedCode = code);
   }
 
   @override
@@ -69,12 +65,11 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
       builder: (context, snapshot) {
         final prefectures = snapshot.data;
         if (prefectures == null) return const SizedBox.shrink();
-        final nationwide = _rememberedCode == 0;
-        final prefecture = prefectures.firstWhere(
-          (p) => p.code == _rememberedCode,
-          orElse: () =>
-              _previewPrefecture(prefectures, progress.brandIdsByPrefecture),
-        );
+        final nationwide =
+            !ready ||
+            progress.unresolvedRecords > 0 ||
+            progress.brandIdsByPrefecture.values.any((ids) => ids.isNotEmpty);
+        final prefecture = prefectures.firstWhere((p) => p.code == 35);
         return Padding(
           key: const ValueKey('home-sake-stamp-section'),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
@@ -180,6 +175,7 @@ class SakeStampBookPage extends StatefulWidget {
 class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
+  bool _bookOpened = false;
   int? _persistedCode;
   late final _map = _loadMap();
 
@@ -315,20 +311,24 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                     ),
                   ),
                 ),
-              if (nationwide)
-                NationwideStampCatalog(
-                  recordedBrands: progress.brandIdsByPrefecture,
-                  recordsReady: ready,
-                  onBrandTap: (brand) => _openBrand(context, brand),
-                )
-              else
-                PrefectureStampCatalog(
-                  prefecture: selected,
-                  earnedOnly: _earnedOnly,
-                  recordedBrandIds: earned,
-                  recordsReady: ready,
-                  onBrandTap: (brand) => _openBrand(context, brand),
-                ),
+              SakeStampBookOpening(
+                key: const ValueKey('stamp-book-opening'),
+                initiallyOpen: _bookOpened,
+                onOpened: () => _bookOpened = true,
+                child: nationwide
+                    ? NationwideStampCatalog(
+                        recordedBrands: progress.brandIdsByPrefecture,
+                        recordsReady: ready,
+                        onBrandTap: (brand) => _openBrand(context, brand),
+                      )
+                    : PrefectureStampCatalog(
+                        prefecture: selected,
+                        earnedOnly: _earnedOnly,
+                        recordedBrandIds: earned,
+                        recordsReady: ready,
+                        onBrandTap: (brand) => _openBrand(context, brand),
+                      ),
+              ),
               if (!nationwide)
                 Row(
                   children: [

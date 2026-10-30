@@ -160,6 +160,7 @@ void main() {
     Size size = const Size(390, 844),
     double scale = 1,
     bool settle = true,
+    bool openCover = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -199,6 +200,23 @@ void main() {
     );
     if (settle) {
       await tester.pumpAndSettle();
+      if (openCover &&
+          find
+              .byKey(const ValueKey('stamp-book-cover'))
+              .evaluate()
+              .isNotEmpty) {
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('stamp-book-cover')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+        await tester.pumpAndSettle();
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .jumpTo(0);
+        await tester.pumpAndSettle();
+      }
     } else {
       await tester.pump();
     }
@@ -218,6 +236,53 @@ void main() {
       image.dispose();
     });
   }
+
+  testWidgets('ホームは記録ゼロ・保存だけなら山口、記録追加で全国、削除で山口に戻る', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      SakeStampPreferences.prefectureKey: 6,
+    });
+    final repo = _Catalog();
+    final saved = ValueNotifier(
+      const SavedSakeState(savedSakeList: [Sake(sakeId: 1)]),
+    );
+    addTearDown(saved.dispose);
+    await open(
+      tester,
+      const Scaffold(body: SakeStampBookSection()),
+      repo: repo,
+      saved: saved,
+    );
+    expect(find.text('山口県 酒印帳'), findsOneWidget);
+    expect(repo.codes, [35]);
+    await preview(tester, 'home-yamaguchi');
+    saved.value = const SavedSakeState(
+      savedSakeList: [Sake(sakeId: 1, impression: '飲んだ')],
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('全国 酒印帳'), findsOneWidget);
+    expect(
+      tester
+          .widget<SakeStampBook>(find.byType(SakeStampBook))
+          .brands
+          .map((b) => b.brandId),
+      [1],
+    );
+    await preview(tester, 'home-nationwide');
+    saved.value = const SavedSakeState();
+    await tester.pumpAndSettle();
+    expect(find.text('山口県 酒印帳'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open-sake-stamp-book')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .state<FormFieldState<int>>(
+            find.byKey(const ValueKey('stamp-prefecture-picker')),
+          )
+          .value,
+      35,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('全国を選ぶと押印済みのみを県順に集め、再試行・記録変更・ホーム復元に対応する', (tester) async {
     final repo = _PartialNationalCatalog();
@@ -327,7 +392,7 @@ void main() {
             find.byKey(const ValueKey('stamp-prefecture-picker')),
           )
           .value,
-      0,
+      35,
     );
     expect(tester.takeException(), isNull);
   });
@@ -405,7 +470,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('全国数は県をまたいで銘柄を重複除外し、最後の県を再起動後とホームで復元する', (tester) async {
+  testWidgets('全国数は銘柄を重複除外し、専用ページは最後の県を復元・ホームは常に全国にする', (tester) async {
     SharedPreferences.setMockInitialValues({
       SakeStampPreferences.prefectureKey: 3,
     });
@@ -442,7 +507,7 @@ void main() {
       repo: repo,
       saved: saved,
     );
-    expect(find.text('山形県 酒印帳'), findsOneWidget);
+    expect(find.text('全国 酒印帳'), findsOneWidget);
     expect(find.text('全国で集めた酒印 3銘柄'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('open-sake-stamp-book')));
     await tester.pumpAndSettle();
@@ -458,7 +523,7 @@ void main() {
     await tester.pumpAndSettle();
     tester.state<NavigatorState>(find.byType(Navigator).first).pop();
     await tester.pumpAndSettle();
-    expect(find.text('岩手県 酒印帳'), findsOneWidget);
+    expect(find.text('全国 酒印帳'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -646,7 +711,7 @@ void main() {
       );
       expect(repo.codes.last, 6);
       expect(repo.codes.toSet().difference({1, 6}), isEmpty);
-      expect(find.text('1 / 9'), findsOneWidget);
+      expect(find.text('1 / 1'), findsNWidgets(2));
       final homeBookSize = tester.getSize(
         find.byKey(const ValueKey('sake-stamp-book')),
       );
@@ -656,14 +721,28 @@ void main() {
       expect(find.text('新しい酒印を獲得！'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
       await tester.pumpAndSettle();
-      expect(find.text('1 / 9'), findsOneWidget);
+      expect(find.text('1 / 1'), findsNWidgets(2));
       expect(repo.codes.last, 6);
       await tester.tapAt(
         tester.getCenter(find.byKey(const ValueKey('sake-stamp-book'))),
       );
       await tester.pumpAndSettle();
       expect(find.byType(SakeStampBookPage), findsOneWidget);
-      expect(find.text('山形県で集めた酒印 1銘柄'), findsOneWidget);
+      expect(find.text('全国で集めた酒印 1銘柄'), findsOneWidget);
+      expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+      await preview(tester, 'stamp-book-cover');
+      await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+      await tester.pump();
+      if (const String.fromEnvironment('JAPAN_UI_OUTPUT').isNotEmpty) {
+        for (var frame = 1; frame <= 10; frame++) {
+          await tester.pump(const Duration(milliseconds: 30));
+          await preview(
+            tester,
+            'stamp-open-${frame.toString().padLeft(2, '0')}',
+          );
+        }
+      }
+      await tester.pumpAndSettle();
       expect(find.byType(JapanSakeMap), findsNothing);
       expect(
         tester.getSize(find.byKey(const ValueKey('sake-stamp-book'))),
@@ -673,7 +752,7 @@ void main() {
       expect(find.textContaining('保存だけでは押印'), findsNothing);
       expect(find.text('記録した商品数'), findsNothing);
       await preview(tester, 'dedicated-stamp-book');
-      await tester.tap(find.byKey(const ValueKey('brand-stamp-2')));
+      await tester.tap(find.byKey(const ValueKey('brand-stamp-1')));
       await tester.pumpAndSettle();
       expect(
         tester
@@ -682,7 +761,7 @@ void main() {
             )
             .brand
             .brandId,
-        2,
+        1,
       );
       expect(tester.takeException(), isNull);
     },
