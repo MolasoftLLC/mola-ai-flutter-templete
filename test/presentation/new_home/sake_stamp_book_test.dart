@@ -289,6 +289,24 @@ void main() {
     });
   }
 
+  testWidgets('詳細から指定県の酒印帳を表紙なしで開き、閉じ直すこともできる', (tester) async {
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6, initiallyOpen: true),
+      repo: _Catalog(),
+      openCover: false,
+    );
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsNothing);
+    expect(find.text('山形県 酒印帳'), findsOneWidget);
+    expect(find.text('1 / …'), findsOneWidget);
+    final close = find.byKey(const ValueKey('stamp-return-cover'));
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   for (final usePicker in [false, true]) {
     testWidgets('閉じた表紙から${usePicker ? "県選択" : "矢印"}で移動すると選択県を開く', (
       tester,
@@ -352,7 +370,9 @@ void main() {
     expect(find.byKey(const ValueKey('stamp-book-cover')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.text('福島県 酒印帳'), findsOneWidget);
+    expect(repo.codes, [6, 6, 7, 7]);
     expect(tester.takeException(), isNull);
   });
 
@@ -869,6 +889,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 / 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('stamp-next')));
+    await tester.pumpAndSettle();
+    final close = find.byKey(const ValueKey('stamp-return-cover'));
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('stamp-book-cover')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('brand-stamp-1')), findsOneWidget);
+    expect(repo.codes, [6, 6]);
     expect(tester.takeException(), isNull);
   });
 

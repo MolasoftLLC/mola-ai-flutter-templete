@@ -14,6 +14,101 @@ void main() {
   final image = File('/tmp/sake_scan_test.jpg');
 
   group('SakeScanNotifier', () {
+    test('裏ラベル案内から同じ表写真を再照合できる', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.needBackLabel,
+          scanSessionId: 'retry_front',
+        ),
+      );
+      final notifier = _buildNotifier(repository);
+      await notifier.submitFront(image);
+      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      await notifier.submitFront(notifier.currentState.frontImage!);
+      expect(repository.frontCalls, 2);
+      expect(notifier.currentState.frontImage, image);
+      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(notifier.currentState.isSubmitting, isFalse);
+      expect(repository.confirmCalls, 0);
+      expect(notifier.currentState.savedSake, isNull);
+    });
+
+    test('焼酎は候補確定・保存せず、閉じた後に表ラベルへ戻せる', () async {
+      final repository = _FakeScanRepository(
+        frontResult: const SakeScanResult(
+          status: SakeScanApiStatus.candidates,
+          scanSessionId: 'shochu',
+          candidates: [
+            SakeScanCandidate(
+              sakeId: 0,
+              name: '健土 蜜滴 the Sun 芋焼酎',
+              type: '芋焼酎',
+              candidateSource: 'lens_discovery',
+              candidateKey: 'sun',
+            ),
+          ],
+        ),
+      );
+      final notifier = _buildNotifier(repository);
+      await notifier.submitFront(image);
+      expect(notifier.currentState.status, SakeScanViewStatus.nonSake);
+      expect(notifier.currentState.candidates, isEmpty);
+      expect(await notifier.confirmCandidate(), isNull);
+      expect(repository.selectedDiscoveryKey, isNull);
+      expect(notifier.currentState.savedSake, isNull);
+      notifier.retry();
+      expect(notifier.currentState.status, SakeScanViewStatus.frontScanning);
+      expect(notifier.currentState.frontImage, isNull);
+      expect(notifier.currentState.scanSessionId, isNull);
+    });
+
+    test('日本酒候補は残し、焼酎候補だけを除外する', () async {
+      final notifier = _buildNotifier(
+        _FakeScanRepository(
+          frontResult: const SakeScanResult(
+            status: SakeScanApiStatus.candidates,
+            scanSessionId: 'mixed',
+            candidates: [
+              SakeScanCandidate(sakeId: 1, name: '芋焼酎', type: '焼酎'),
+              SakeScanCandidate(sakeId: 2, name: '日本酒', type: '純米酒'),
+            ],
+          ),
+        ),
+      );
+      await notifier.submitFront(image);
+      expect(
+        notifier.currentState.status,
+        SakeScanViewStatus.confirmingCandidate,
+      );
+      expect(notifier.currentState.selectedCandidate?.sakeId, 2);
+      expect(notifier.currentState.candidates, hasLength(1));
+    });
+
+    test('蔵元名や参考情報で日本酒を誤除外しない', () {
+      expect(
+        const SakeScanCandidate(
+          sakeId: 1,
+          name: 'ウイスキー 樽熟成',
+          type: '純米酒',
+          brewery: '焼酎酒造',
+          labelHint: 'ワインのような香り',
+        ).isExplicitlyNonSake,
+        isFalse,
+      );
+      expect(
+        const SakeScanCandidate(sakeId: 1, name: '不明なお酒').isExplicitlyNonSake,
+        isFalse,
+      );
+      expect(
+        const SakeScanCandidate(
+          sakeId: 1,
+          name: '商品',
+          type: 'ジン',
+        ).isExplicitlyNonSake,
+        isTrue,
+      );
+    });
+
     test('マスターを先に安定整列し、選んだ行のIDと追加候補キーを確定する', () async {
       const discovery = SakeScanCandidate(
         sakeId: 0,
@@ -538,7 +633,7 @@ void main() {
       );
     });
 
-    test('表ラベル解析のサーバーエラーは裏ラベル撮影へ切り替える', () async {
+    test('表ラベル解析のサーバーエラーを読み取り失敗と混同しない', () async {
       final repository = _FakeScanRepository(
         frontError: const SakeScanException(
           kind: SakeScanErrorKind.server,
@@ -550,20 +645,21 @@ void main() {
 
       await notifier.submitFront(image);
 
-      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(notifier.currentState.status, SakeScanViewStatus.error);
       expect(notifier.currentState.scanSessionId, isNull);
       expect(repository.fallbackCalls, 0);
       expect(notifier.currentState.frontImage, image);
     });
 
-    test('表解析の全エラーは通信を待たず裏撮影へ進む', () async {
+    test('表解析の全エラーは原因と画像を保持して再送可能にする', () async {
       for (final kind in SakeScanErrorKind.values) {
         final repository = _FakeScanRepository(
           frontError: SakeScanException(kind: kind, message: 'front failed'),
         );
         final notifier = _buildNotifier(repository);
         await notifier.submitFront(image);
-        expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+        expect(notifier.currentState.status, SakeScanViewStatus.error);
+        expect(notifier.currentState.error?.kind, kind);
         expect(notifier.currentState.frontImage, image);
         expect(repository.fallbackCalls, 0);
         notifier.dispose();

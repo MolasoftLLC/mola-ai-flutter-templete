@@ -14,6 +14,7 @@ enum SakeScanViewStatus {
   frontScanning,
   searchingFront,
   confirmingCandidate,
+  nonSake,
   backScanning,
   searchingBack,
   loadingOverview,
@@ -320,7 +321,11 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     AppAnalytics.instance.event('scan', 'confirm', flowId: _usageFlow);
     final candidate = state.selectedCandidate;
     final sessionId = state.scanSessionId;
-    if (candidate == null || sessionId == null || !_beginSubmission()) {
+    if (state.status == SakeScanViewStatus.nonSake ||
+        candidate?.isExplicitlyNonSake == true ||
+        candidate == null ||
+        sessionId == null ||
+        !_beginSubmission()) {
       return null;
     }
     final operation = ++_operation;
@@ -675,14 +680,9 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     StackTrace stackTrace,
     int operation,
   ) async {
-    logger.warning('日本酒表ラベルスキャンに失敗したため裏ラベルへ切り替えます: $error');
-    logger.info(stackTrace.toString());
-    if (!_isCurrent(operation)) return;
-    if (state.frontImage == null) {
-      _fail(SakeScanException.fromError(error));
-      return;
-    }
-    await _openBackLabelFallback(operation);
+    // Transport/validation failures are not evidence that the label is unreadable.
+    // Preserve the cause and photo, and let the user retry the front label.
+    _handleError(error, stackTrace, operation);
   }
 
   Future<void> _openBackLabelFallback(int operation) async {
@@ -724,6 +724,21 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   void _emit(SakeScanState next) {
     if (!_disposed) {
+      if (next.status == SakeScanViewStatus.confirmingCandidate) {
+        final allowed = next.candidates
+            .where((candidate) => !candidate.isExplicitlyNonSake)
+            .toList(growable: false);
+        if (allowed.length != next.candidates.length) {
+          next = next.copyWith(
+            status: allowed.isEmpty
+                ? SakeScanViewStatus.nonSake
+                : SakeScanViewStatus.confirmingCandidate,
+            candidates: allowed,
+            selectedCandidateIndex: 0,
+            isSubmitting: false,
+          );
+        }
+      }
       if (next.status == SakeScanViewStatus.completed && !_usageComplete) {
         _usageComplete = true;
         AppAnalytics.instance.event(

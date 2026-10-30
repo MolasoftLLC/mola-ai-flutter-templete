@@ -90,6 +90,29 @@ class RecentSakeHistory extends ChangeNotifier {
     }
 
     rows.sort((a, b) => timestamp(b).compareTo(timestamp(a)));
-    return rows;
+    // This is a product browsing history, not the list of drinking occasions.
+    // Keep the original records intact and prefer one with personal context.
+    int contextScore(Sake sake) =>
+        (sake.drinkingPlace != null || sake.place?.trim().isNotEmpty == true
+            ? 2
+            : 0) +
+        (sake.impression?.trim().isNotEmpty == true ? 1 : 0);
+    final result = <Sake>[];
+    final positions = <int, int>{};
+    for (final sake in rows) {
+      final id = sake.sakeId;
+      if (id == null || id <= 0) {
+        result.add(sake);
+        continue;
+      }
+      final position = positions[id];
+      if (position == null) {
+        positions[id] = result.length;
+        result.add(sake);
+      } else if (contextScore(sake) > contextScore(result[position])) {
+        result[position] = sake;
+      }
+    }
+    return result;
   }
 }

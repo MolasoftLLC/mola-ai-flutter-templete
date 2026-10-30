@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Answers remain a draft until the user confirms the record form.
 class ScanRecordAnswers {
+  int step = 0;
   bool? drank;
   bool? liked;
   bool? here;
@@ -26,18 +27,20 @@ class ScanRecordQuestions extends StatefulWidget {
     required this.onChanged,
     required this.onChoosePlace,
     required this.onDone,
+    this.doneLabel = '記録フォームへ',
   });
   final ScanRecordAnswers answers;
   final VoidCallback onChanged;
   final Future<void> Function() onChoosePlace;
   final VoidCallback onDone;
+  final String doneLabel;
 
   @override
   State<ScanRecordQuestions> createState() => _ScanRecordQuestionsState();
 }
 
 class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
-  int _step = 0;
+  int get _step => widget.answers.step;
   double _drag = 0;
   bool _choosingPlace = false;
   static const _questions = [
@@ -82,7 +85,7 @@ class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
       widget.onDone();
     } else {
       setState(() {
-        _step++;
+        widget.answers.step++;
         _drag = 0;
       });
     }
@@ -211,7 +214,7 @@ class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
           ),
         ),
         const SizedBox(height: 12),
-        TextButton(onPressed: widget.onDone, child: const Text('記録フォームへ')),
+        TextButton(onPressed: widget.onDone, child: Text(widget.doneLabel)),
       ],
     );
   }

@@ -121,11 +121,15 @@ class SakeScanApiRepository
         request.files.add(await _jpegPart(compressed));
         final response = await client.send(request);
         if (response.statusCode != 200) {
-          throw SakeScanException(
-            kind: _errorKindForStatus(response.statusCode),
-            statusCode: response.statusCode,
-            message: await response.stream.bytesToString(),
-          );
+          final body = await response.stream.bytesToString();
+          if (response.statusCode == 422) {
+            throw SakeScanException(
+              kind: SakeScanErrorKind.faceDetected,
+              statusCode: response.statusCode,
+              message: _extractMessage(body),
+            );
+          }
+          throw SakeScanException.fromResponse(response.statusCode, body);
         }
         await for (final line
             in response.stream
@@ -376,11 +380,7 @@ class SakeScanApiRepository
     }
     final statusCode = response.statusCode as int?;
     final body = response.error ?? response.body;
-    throw SakeScanException(
-      kind: _errorKindForStatus(statusCode),
-      statusCode: statusCode,
-      message: _extractMessage(body),
-    );
+    throw SakeScanException.fromResponse(statusCode, body);
   }
 
   Future<void> _deleteTemporaryFile(File file) async {
@@ -393,6 +393,9 @@ class SakeScanApiRepository
 }
 
 enum SakeScanErrorKind {
+  dailyLimit,
+  analysisBusy,
+  faceDetected,
   savedLimit,
   cameraPermission,
   compression,
@@ -412,6 +415,28 @@ class SakeScanException implements Exception {
     required this.message,
     this.statusCode,
   });
+
+  factory SakeScanException.fromResponse(int? statusCode, dynamic body) {
+    dynamic decoded = body;
+    if (body is String) {
+      try {
+        decoded = jsonDecode(body);
+      } catch (_) {
+        /* Non-JSON error. */
+      }
+    }
+    final code = decoded is Map ? decoded['code'] : null;
+    final kind = statusCode == 429 && code == 'daily_analysis_limit'
+        ? SakeScanErrorKind.dailyLimit
+        : statusCode == 429 && code == 'analysis_busy'
+        ? SakeScanErrorKind.analysisBusy
+        : _errorKindForStatus(statusCode);
+    return SakeScanException(
+      kind: kind,
+      statusCode: statusCode,
+      message: _extractMessage(decoded),
+    );
+  }
 
   factory SakeScanException.fromError(Object error) {
     if (error is SakeScanException) return error;

@@ -94,7 +94,10 @@ class _PrefectureStampLinkState extends State<PrefectureStampLink> {
             AppAnalytics.instance.event('sake_detail', 'sake_stamp_book');
             Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => SakeStampBookPage(initialPrefectureCode: code),
+                builder: (_) => SakeStampBookPage(
+                  initialPrefectureCode: code,
+                  initiallyOpen: true,
+                ),
               ),
             );
           },

@@ -111,6 +111,9 @@ class _SakeScanPageState extends State<SakeScanPage>
   Set<String> _recordTags = <String>{};
   ScanRecordAnswers _scanAnswers = ScanRecordAnswers();
   bool _questionsDone = false;
+  bool _nonSakeDialogOpen = false;
+  bool _limitDialogOpen = false;
+  bool _faceDialogOpen = false;
   String _recordBaseMemo = '';
   bool _recordMemoEdited = false;
   bool _recordTagsEdited = false;
@@ -305,6 +308,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (_initialReanalysisStarted || widget.initialFrontImage == null) return;
     _initialReanalysisStarted = true;
     final notifier = context.read<SakeScanNotifier>();
+    _resetAnalysisRecordDraft();
     await notifier.submitFront(widget.initialFrontImage!);
     if (!mounted) return;
     if (notifier.currentState.status == SakeScanViewStatus.backScanning) {
@@ -646,7 +650,6 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _startCandidateAnalysis() async {
-    _resetAnalysisRecordDraft();
     final notifier = context.read<SakeScanNotifier>();
     // 候補確定後も記録画面に留まり、感想と公開設定を確認してから進む。
     await notifier.confirmCandidate();
@@ -940,6 +943,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (shouldSubmitBack) {
       await notifier.submitBack(file);
     } else {
+      _resetAnalysisRecordDraft();
       await notifier.submitFront(file);
     }
   }
@@ -947,6 +951,89 @@ class _SakeScanPageState extends State<SakeScanPage>
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SakeScanState>();
+    if (state.status == SakeScanViewStatus.nonSake && !_nonSakeDialogOpen) {
+      _nonSakeDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('日本酒じゃないじゃーん！'),
+            content: const Text('日本酒のラベルを撮影してね。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        _resetAnalysisRecordDraft();
+        context.read<SakeScanNotifier>().retry();
+        _nonSakeDialogOpen = false;
+      });
+    }
+    if (state.status == SakeScanViewStatus.error &&
+        state.error?.statusCode == 429 &&
+        !_limitDialogOpen) {
+      _limitDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final daily = state.error?.kind == SakeScanErrorKind.dailyLimit;
+        final busy = state.error?.kind == SakeScanErrorKind.analysisBusy;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(
+              daily
+                  ? '1日の解析上限に達しました'
+                  : busy
+                  ? '解析中です'
+                  : 'しばらくお待ちください',
+            ),
+            content: Text(_errorText(state.error)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        context.read<SakeScanNotifier>().retry();
+        _limitDialogOpen = false;
+      });
+    }
+    if (state.status == SakeScanViewStatus.error &&
+        state.error?.kind == SakeScanErrorKind.faceDetected &&
+        !_faceDialogOpen) {
+      _faceDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('人の顔が検出されました'),
+            content: const Text('顔が写らないように撮影してください。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        _resetAnalysisRecordDraft();
+        context.read<SakeScanNotifier>().retry();
+        _faceDialogOpen = false;
+        unawaited(_initializeCamera());
+      });
+    }
     final bottomPanelKey = switch (state.status) {
       SakeScanViewStatus.loadingOverview ||
       SakeScanViewStatus.loadingDetails ||
@@ -1084,7 +1171,7 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanBackLabelReason.lowConfidence =>
         context.l10n.scanBackPromptLowConfidence,
     };
-    final retakeFront = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -1096,12 +1183,17 @@ class _SakeScanPageState extends State<SakeScanPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
+                onPressed: () => Navigator.of(dialogContext).pop('back'),
                 child: Text(context.l10n.scanBackPromptAction),
               ),
               const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.of(dialogContext).pop('retry'),
+                child: const Text('この写真でもう一度探す'),
+              ),
+              const SizedBox(height: 8),
               TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
+                onPressed: () => Navigator.of(dialogContext).pop('retake'),
                 child: Text(context.l10n.scanRetakeFrontAction),
               ),
             ],
@@ -1109,7 +1201,15 @@ class _SakeScanPageState extends State<SakeScanPage>
         ],
       ),
     );
-    if (retakeFront == true && mounted) {
+    if (!mounted) return;
+    if (action == 'retry') {
+      final notifier = context.read<SakeScanNotifier>();
+      final image = notifier.currentState.frontImage;
+      if (image != null) {
+        _promptedBackLabelSessionId = null;
+        await notifier.submitFront(image);
+      }
+    } else if (action == 'retake') {
       _promptedBackLabelSessionId = null;
       context.read<SakeScanNotifier>().retakeFrontLabel();
     }
@@ -1120,10 +1220,11 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.frontScanning ||
       SakeScanViewStatus.backScanning => _buildCaptureControls(state),
       SakeScanViewStatus.searchingFront || SakeScanViewStatus.searchingBack =>
-        _buildStatusPanel(context.l10n.searchingLabel),
+        _buildMatchingQuestions(context.l10n.searchingLabel),
+      SakeScanViewStatus.nonSake => const SizedBox.shrink(),
       SakeScanViewStatus.confirmingCandidate => _buildCandidates(state),
       SakeScanViewStatus.loadingOverview => _buildAnalysisRecordPanel(state),
-      SakeScanViewStatus.identifyingFallback => _buildStatusPanel(
+      SakeScanViewStatus.identifyingFallback => _buildMatchingQuestions(
         '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
       ),
       SakeScanViewStatus.loadingDetails => _buildAnalysisRecordPanel(state),
@@ -1621,6 +1722,43 @@ class _SakeScanPageState extends State<SakeScanPage>
     );
   }
 
+  Widget _buildMatchingQuestions(String message) {
+    if (_questionsDone) return _buildStatusPanel(message);
+    return FractionallySizedBox(
+      widthFactor: 1,
+      heightFactor: 0.72,
+      child: _BottomCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFF1D3567),
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: ScanRecordQuestions(
+                  answers: _scanAnswers,
+                  onChanged: _updateQuestionDraft,
+                  onChoosePlace: _openRecordPlacePicker,
+                  onDone: () => setState(() => _questionsDone = true),
+                  doneLabel: '質問を閉じて待つ',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAnalysisRecordPanel(SakeScanState state) {
     final analysisCompleted = state.status == SakeScanViewStatus.completed;
     final recordReady = state.savedSake != null;
@@ -1942,6 +2080,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Widget _buildError(SakeScanState state) {
     final atSavedLimit = state.error?.kind == SakeScanErrorKind.savedLimit;
     final canContinueWithBackLabel = state.frontImage != null;
+    final faceDetected = state.error?.kind == SakeScanErrorKind.faceDetected;
     return _BottomCard(
       child: SingleChildScrollView(
         child: Column(
@@ -1964,18 +2103,39 @@ class _SakeScanPageState extends State<SakeScanPage>
               FilledButton.icon(
                 onPressed: state.isSubmitting
                     ? null
-                    : () => unawaited(
-                        context
-                            .read<SakeScanNotifier>()
-                            .continueWithBackLabelAfterError(),
-                      ),
-                icon: const Icon(Icons.flip_camera_ios_outlined),
-                label: Text(
-                  state.backImage != null
-                      ? context.l10n.reanalyze
-                      : context.l10n.scanBackPromptAction,
+                    : () {
+                        if (faceDetected) {
+                          context.read<SakeScanNotifier>().retry();
+                          unawaited(_initializeCamera());
+                        } else {
+                          unawaited(
+                            context.read<SakeScanNotifier>().submitFront(
+                              state.frontImage!,
+                            ),
+                          );
+                        }
+                      },
+                icon: Icon(
+                  faceDetected ? Icons.camera_alt_outlined : Icons.refresh,
                 ),
+                label: Text(faceDetected ? '表ラベルを撮り直す' : 'この写真でもう一度探す'),
               ),
+              if (!faceDetected)
+                TextButton.icon(
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => unawaited(
+                          context
+                              .read<SakeScanNotifier>()
+                              .continueWithBackLabelAfterError(),
+                        ),
+                  icon: const Icon(Icons.flip_camera_ios_outlined),
+                  label: Text(
+                    state.backImage != null
+                        ? context.l10n.reanalyze
+                        : context.l10n.scanBackPromptAction,
+                  ),
+                ),
             ] else
               FilledButton.icon(
                 onPressed: state.isSubmitting
@@ -1995,6 +2155,9 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   String _errorText(SakeScanException? error) {
     return switch (error?.kind) {
+      SakeScanErrorKind.dailyLimit => error!.message,
+      SakeScanErrorKind.analysisBusy => '前の解析が処理中です。完了してからもう一度お試しください。',
+      SakeScanErrorKind.faceDetected => '人の顔が検出されました。顔が写らないように撮影してください。',
       SakeScanErrorKind.savedLimit =>
         '保存酒が上限に達しています。マイページで保存を解除してから、もう一度お試しください。',
       SakeScanErrorKind.cameraPermission =>

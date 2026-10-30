@@ -165,9 +165,11 @@ class SakeStampBookPage extends StatefulWidget {
   const SakeStampBookPage({
     super.key,
     this.initialPrefectureCode,
+    this.initiallyOpen = false,
     this.isTab = false,
   });
   final bool isTab;
+  final bool initiallyOpen;
   final int? initialPrefectureCode;
 
   @override
@@ -177,7 +179,8 @@ class SakeStampBookPage extends StatefulWidget {
 class _SakeStampBookPageState extends State<SakeStampBookPage> {
   int? _selectedCode;
   bool _earnedOnly = false;
-  bool _bookOpened = false;
+  late bool _bookOpened = widget.initiallyOpen;
+  int _pageResetVersion = 0;
   final _catalogTurn = SakeStampPageTurnController();
   final _opening = SakeStampBookOpeningController();
   int? _persistedCode;
@@ -352,13 +355,17 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
               SakeStampBookOpening(
                 key: const ValueKey('stamp-book-opening'),
                 controller: _opening,
-                onClosed: () => setState(() => _bookOpened = false),
+                onClosed: () => setState(() {
+                  _bookOpened = false;
+                  _pageResetVersion++;
+                }),
                 initiallyOpen: _bookOpened,
                 onOpened: () => setState(() => _bookOpened = true),
                 child: SakeStampPageTurn(
                   controller: _catalogTurn,
                   child: nationwide
                       ? NationwideStampCatalog(
+                          pageResetVersion: _pageResetVersion,
                           recordedBrands: progress.brandIdsByPrefecture,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
@@ -367,6 +374,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           onReturnToCover: _opening.close,
                         )
                       : PrefectureStampCatalog(
+                          pageResetVersion: _pageResetVersion,
                           prefecture: selected,
                           earnedOnly: _earnedOnly,
                           recordedBrandIds: earned,

@@ -87,6 +87,26 @@ class SakeScanCandidate {
       !isTemporary &&
       (candidateSource == null || candidateSource == 'master');
 
+  /// Reject explicit beverage classifications, not brewery names or search hints.
+  bool get isExplicitlyNonSake {
+    final otherAlcohol = RegExp(
+      r'焼酎|しょうちゅう|泡盛|ウイスキー|ウィスキー|ブランデー|リキュール|ビール|ワイン|ウォッカ|テキーラ|(?:^|\s)(?:shochu|awamori|whisk(?:e)?y|brandy|liqueur|beer|wine|vodka|tequila|gin|rum)(?:$|\s)',
+      caseSensitive: false,
+    );
+    final classification = type?.trim() ?? '';
+    if (otherAlcohol.hasMatch(classification) ||
+        classification == 'ジン' ||
+        classification == 'ラム')
+      return true;
+    // Sake aged in whisky barrels is still sake. Prefer an explicit sake type.
+    if (RegExp(r'日本酒|清酒|純米|吟醸|本醸造|普通酒').hasMatch(classification)) {
+      return false;
+    }
+    return RegExp(
+      r'(?:焼酎|泡盛|ウイスキー|ウィスキー|ブランデー|リキュール|ビール|ワイン|ウォッカ|テキーラ)(?:\s|$)',
+    ).hasMatch(name);
+  }
+
   String get canonicalProductName {
     final productType = type?.trim();
     final compactName = name.replaceAll(RegExp(r'\s+'), '');
