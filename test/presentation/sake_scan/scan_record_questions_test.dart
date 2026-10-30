@@ -135,6 +135,24 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'matching answers resume after candidate selection or back label',
+    (tester) async {
+      final answers = ScanRecordAnswers();
+      await show(tester, answers);
+      await tap(tester, 'YES →');
+      await tap(tester, '← NO');
+      await tester.pumpWidget(const MaterialApp(home: Text('候補を選ぶ')));
+      await show(tester, answers);
+      expect(find.text('今いるお店で飲んだ？'), findsOneWidget);
+      expect(answers.drank, isTrue);
+      expect(answers.liked, isFalse);
+      expect(answers.memo, contains('好みの味ではなかった'));
+      await tap(tester, 'あとで');
+      expect(find.text('また飲みたい？'), findsOneWidget);
+    },
+  );
+
   testWidgets('small screen supports large text without overflow', (
     tester,
   ) async {

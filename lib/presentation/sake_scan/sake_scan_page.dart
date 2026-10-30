@@ -305,6 +305,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (_initialReanalysisStarted || widget.initialFrontImage == null) return;
     _initialReanalysisStarted = true;
     final notifier = context.read<SakeScanNotifier>();
+    _resetAnalysisRecordDraft();
     await notifier.submitFront(widget.initialFrontImage!);
     if (!mounted) return;
     if (notifier.currentState.status == SakeScanViewStatus.backScanning) {
@@ -646,7 +647,6 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Future<void> _startCandidateAnalysis() async {
-    _resetAnalysisRecordDraft();
     final notifier = context.read<SakeScanNotifier>();
     // 候補確定後も記録画面に留まり、感想と公開設定を確認してから進む。
     await notifier.confirmCandidate();
@@ -940,6 +940,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (shouldSubmitBack) {
       await notifier.submitBack(file);
     } else {
+      _resetAnalysisRecordDraft();
       await notifier.submitFront(file);
     }
   }
@@ -1120,10 +1121,10 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.frontScanning ||
       SakeScanViewStatus.backScanning => _buildCaptureControls(state),
       SakeScanViewStatus.searchingFront || SakeScanViewStatus.searchingBack =>
-        _buildStatusPanel(context.l10n.searchingLabel),
+        _buildMatchingQuestions(context.l10n.searchingLabel),
       SakeScanViewStatus.confirmingCandidate => _buildCandidates(state),
       SakeScanViewStatus.loadingOverview => _buildAnalysisRecordPanel(state),
-      SakeScanViewStatus.identifyingFallback => _buildStatusPanel(
+      SakeScanViewStatus.identifyingFallback => _buildMatchingQuestions(
         '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
       ),
       SakeScanViewStatus.loadingDetails => _buildAnalysisRecordPanel(state),
@@ -1613,6 +1614,43 @@ class _SakeScanPageState extends State<SakeScanPage>
               label: const Text('名前から検索する'),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF1D3567),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchingQuestions(String message) {
+    if (_questionsDone) return _buildStatusPanel(message);
+    return FractionallySizedBox(
+      widthFactor: 1,
+      heightFactor: 0.72,
+      child: _BottomCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              message,
+              style: const TextStyle(
+                color: Color(0xFF1D3567),
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: ScanRecordQuestions(
+                  answers: _scanAnswers,
+                  onChanged: _updateQuestionDraft,
+                  onChoosePlace: _openRecordPlacePicker,
+                  onDone: () => setState(() => _questionsDone = true),
+                  doneLabel: '質問を閉じて待つ',
+                ),
               ),
             ),
           ],
