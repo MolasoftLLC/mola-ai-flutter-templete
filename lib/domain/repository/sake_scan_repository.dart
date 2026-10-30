@@ -122,7 +122,9 @@ class SakeScanApiRepository
         final response = await client.send(request);
         if (response.statusCode != 200) {
           throw SakeScanException(
-            kind: _errorKindForStatus(response.statusCode),
+            kind: response.statusCode == 422
+                ? SakeScanErrorKind.faceDetected
+                : _errorKindForStatus(response.statusCode),
             statusCode: response.statusCode,
             message: await response.stream.bytesToString(),
           );
@@ -393,6 +395,7 @@ class SakeScanApiRepository
 }
 
 enum SakeScanErrorKind {
+  faceDetected,
   savedLimit,
   cameraPermission,
   compression,

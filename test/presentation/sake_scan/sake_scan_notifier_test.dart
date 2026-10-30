@@ -633,7 +633,7 @@ void main() {
       );
     });
 
-    test('表ラベル解析のサーバーエラーは裏ラベル撮影へ切り替える', () async {
+    test('表ラベル解析のサーバーエラーを読み取り失敗と混同しない', () async {
       final repository = _FakeScanRepository(
         frontError: const SakeScanException(
           kind: SakeScanErrorKind.server,
@@ -645,20 +645,21 @@ void main() {
 
       await notifier.submitFront(image);
 
-      expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+      expect(notifier.currentState.status, SakeScanViewStatus.error);
       expect(notifier.currentState.scanSessionId, isNull);
       expect(repository.fallbackCalls, 0);
       expect(notifier.currentState.frontImage, image);
     });
 
-    test('表解析の全エラーは通信を待たず裏撮影へ進む', () async {
+    test('表解析の全エラーは原因と画像を保持して再送可能にする', () async {
       for (final kind in SakeScanErrorKind.values) {
         final repository = _FakeScanRepository(
           frontError: SakeScanException(kind: kind, message: 'front failed'),
         );
         final notifier = _buildNotifier(repository);
         await notifier.submitFront(image);
-        expect(notifier.currentState.status, SakeScanViewStatus.backScanning);
+        expect(notifier.currentState.status, SakeScanViewStatus.error);
+        expect(notifier.currentState.error?.kind, kind);
         expect(notifier.currentState.frontImage, image);
         expect(repository.fallbackCalls, 0);
         notifier.dispose();

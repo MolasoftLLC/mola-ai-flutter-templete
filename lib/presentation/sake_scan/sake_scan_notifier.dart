@@ -680,14 +680,9 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     StackTrace stackTrace,
     int operation,
   ) async {
-    logger.warning('日本酒表ラベルスキャンに失敗したため裏ラベルへ切り替えます: $error');
-    logger.info(stackTrace.toString());
-    if (!_isCurrent(operation)) return;
-    if (state.frontImage == null) {
-      _fail(SakeScanException.fromError(error));
-      return;
-    }
-    await _openBackLabelFallback(operation);
+    // Transport/validation failures are not evidence that the label is unreadable.
+    // Preserve the cause and photo, and let the user retry the front label.
+    _handleError(error, stackTrace, operation);
   }
 
   Future<void> _openBackLabelFallback(int operation) async {

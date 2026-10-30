@@ -2019,6 +2019,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Widget _buildError(SakeScanState state) {
     final atSavedLimit = state.error?.kind == SakeScanErrorKind.savedLimit;
     final canContinueWithBackLabel = state.frontImage != null;
+    final faceDetected = state.error?.kind == SakeScanErrorKind.faceDetected;
     return _BottomCard(
       child: SingleChildScrollView(
         child: Column(
@@ -2041,18 +2042,39 @@ class _SakeScanPageState extends State<SakeScanPage>
               FilledButton.icon(
                 onPressed: state.isSubmitting
                     ? null
-                    : () => unawaited(
-                        context
-                            .read<SakeScanNotifier>()
-                            .continueWithBackLabelAfterError(),
-                      ),
-                icon: const Icon(Icons.flip_camera_ios_outlined),
-                label: Text(
-                  state.backImage != null
-                      ? context.l10n.reanalyze
-                      : context.l10n.scanBackPromptAction,
+                    : () {
+                        if (faceDetected) {
+                          context.read<SakeScanNotifier>().retry();
+                          unawaited(_initializeCamera());
+                        } else {
+                          unawaited(
+                            context.read<SakeScanNotifier>().submitFront(
+                              state.frontImage!,
+                            ),
+                          );
+                        }
+                      },
+                icon: Icon(
+                  faceDetected ? Icons.camera_alt_outlined : Icons.refresh,
                 ),
+                label: Text(faceDetected ? '表ラベルを撮り直す' : 'この写真でもう一度探す'),
               ),
+              if (!faceDetected)
+                TextButton.icon(
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => unawaited(
+                          context
+                              .read<SakeScanNotifier>()
+                              .continueWithBackLabelAfterError(),
+                        ),
+                  icon: const Icon(Icons.flip_camera_ios_outlined),
+                  label: Text(
+                    state.backImage != null
+                        ? context.l10n.reanalyze
+                        : context.l10n.scanBackPromptAction,
+                  ),
+                ),
             ] else
               FilledButton.icon(
                 onPressed: state.isSubmitting
@@ -2072,6 +2094,8 @@ class _SakeScanPageState extends State<SakeScanPage>
 
   String _errorText(SakeScanException? error) {
     return switch (error?.kind) {
+      SakeScanErrorKind.faceDetected =>
+        '背景などに顔が写っている可能性があるため、解析を開始できませんでした。瓶のラベルだけが写るように撮り直してください。',
       SakeScanErrorKind.savedLimit =>
         '保存酒が上限に達しています。マイページで保存を解除してから、もう一度お試しください。',
       SakeScanErrorKind.cameraPermission =>
