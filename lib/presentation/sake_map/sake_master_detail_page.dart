@@ -54,9 +54,14 @@ class SakeMasterDetailPage extends StatefulWidget {
     required this.venueSake,
     this.recordRecentView = false,
     this.offerScanQuestions = false,
+    this.stampScanSakeId,
   });
   final bool recordRecentView;
   final bool offerScanQuestions;
+
+  /// Only the product confirmed in this label scan can earn a detail stamp.
+  /// Ordinary detail routes (timeline, search, history, catalog) leave it null.
+  final int? stampScanSakeId;
   final VenueSake venueSake;
 
   @override
@@ -118,13 +123,23 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
           sakeId;
 
   void _scheduleStampAward(SakeOverview overview) {
+    if (widget.stampScanSakeId == null ||
+        widget.stampScanSakeId != overview.sake.sakeId) {
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted ||
           !identical(_headerOverview, overview) ||
           ModalRoute.of(context)?.isCurrent != true) {
         return;
       }
-      unawaited(SakeStampAwardSession.detail(context, overview));
+      unawaited(
+        SakeStampAwardSession.detail(
+          context,
+          overview,
+          scannedSakeId: widget.stampScanSakeId,
+        ),
+      );
     });
   }
 

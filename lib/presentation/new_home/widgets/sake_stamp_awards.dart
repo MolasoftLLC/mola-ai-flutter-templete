@@ -56,9 +56,15 @@ class SakeStampAwardSession {
 
   static Future<void> detail(
     BuildContext context,
-    SakeOverview overview,
-  ) async {
-    if (!isStampEligibleOverview(overview)) return;
+    SakeOverview overview, {
+    int? scannedSakeId,
+  }) async {
+    if (scannedSakeId == null ||
+        scannedSakeId <= 0 ||
+        scannedSakeId != overview.sake.sakeId ||
+        !isStampEligibleOverview(overview)) {
+      return;
+    }
     final name = overview.brand.name?.trim() ?? '';
     final id = overview.brand.id ?? overview.sake.brandId ?? 0;
     final prefecture = int.tryParse(

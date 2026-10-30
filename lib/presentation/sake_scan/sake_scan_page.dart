@@ -878,6 +878,7 @@ class _SakeScanPageState extends State<SakeScanPage>
     if (!mounted) return;
     final detailPage = (sake.sakeId ?? 0) > 0
         ? SakeMasterDetailPage(
+            stampScanSakeId: sake.sakeId,
             offerScanQuestions: !_questionsDone && _scanAnswers.drank == null,
             venueSake: VenueSake(
               sakeId: sake.sakeId,
