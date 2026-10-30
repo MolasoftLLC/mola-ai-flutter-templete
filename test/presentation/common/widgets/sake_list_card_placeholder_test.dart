@@ -19,6 +19,12 @@ void main() {
           ),
         ),
       );
+      await tester.runAsync(
+        () => precacheImage(
+          const AssetImage('assets/images/sake_placeholder.png'),
+          tester.element(find.byType(SakeListCard)),
+        ),
+      );
       await tester.pumpAndSettle();
       final images = tester.widgetList<Image>(find.byType(Image)).toList();
       expect(images, hasLength(1));
