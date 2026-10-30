@@ -24,6 +24,7 @@ import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'widgets/place_picker_sheet.dart';
 import 'unlinked_saved_sake_page.dart';
+import '../new_home/widgets/sake_stamp_awards.dart';
 
 const double _blockSpacing = 16;
 const double _blockVerticalPadding = 20;
@@ -1370,6 +1371,8 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     AppAnalytics.instance.event('detail', 'impression');
     FocusScope.of(context).unfocus();
     final isLoggedIn = context.read<AuthState>().user != null;
+    final stampSession = await SakeStampAwardSession.prepare(context);
+    if (!mounted) return;
     final enteredPlace = _placeController.text.trim();
     final currentPlace = _currentSake.drinkingPlace;
     final editedPlace = !_placeDirty
@@ -1395,12 +1398,21 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
           : _currentSake.syncStatus,
     );
 
+    try {
+      await context.read<SavedSakeNotifier>().updateSavedSake(updatedSake);
+    } catch (_) {
+      if (mounted) _showSnack(context.l10n.errorSaveToServer);
+      return;
+    }
+    if (!mounted) return;
     _applySakeUpdate(
       updatedSake,
+      updateNotifier: false,
       toastMessage: isLoggedIn ? null : context.l10n.memoSaved,
     );
 
     if (!isLoggedIn) {
+      await stampSession?.record(context, updatedSake);
       return;
     }
 
@@ -1445,6 +1457,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     if (_placeDirty) {
       await _syncDirtyPlace(savedId);
     }
+    if (mounted && !_placeDirty) await stampSession?.record(context, synced);
   }
 
   Future<void> _syncDirtyPlace(String savedId) async {

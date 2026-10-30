@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mola_gemini_flutter_template/domain/notifier/sake_stamp_store.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -156,6 +157,7 @@ void main() {
     WidgetTester tester,
     Widget child, {
     _Catalog? repo,
+    SakeStampStore? stamps,
     ValueNotifier<SavedSakeState>? saved,
     Size size = const Size(390, 844),
     double scale = 1,
@@ -167,8 +169,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      Provider<PlaceMapRepository>.value(
-        value: repo ?? _Catalog(),
+      MultiProvider(
+        providers: [
+          Provider<PlaceMapRepository>.value(value: repo ?? _Catalog()),
+          if (stamps != null) ChangeNotifierProvider.value(value: stamps),
+        ],
         child: ValueListenableBuilder<SavedSakeState>(
           valueListenable: saved ?? ValueNotifier(const SavedSakeState()),
           builder: (_, value, child) =>
@@ -236,6 +241,60 @@ void main() {
       image.dispose();
     });
   }
+
+  testWidgets('詳細閲覧で取得した酒印はホーム・専用帳・旅するの帳に反映し飲酒件数は増やさない', (tester) async {
+    final store = SakeStampStore();
+    await store.ready;
+    addTearDown(store.dispose);
+    await store.acquire(
+      CollectedSakeStamp(
+        brandId: 1,
+        prefectureCode: 6,
+        sakeId: 1,
+        source: 'analyzed_detail',
+        observedAt: DateTime.now(),
+      ),
+      isCurrent: () => true,
+    );
+    await open(
+      tester,
+      const Scaffold(body: SakeStampBookSection()),
+      stamps: store,
+    );
+    expect(find.text('全国 酒印帳'), findsOneWidget);
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).recordedBrandIds,
+      {1},
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(
+      tester,
+      const SakeStampBookPage(initialPrefectureCode: 6),
+      stamps: store,
+    );
+    expect(find.text('山形県で集めた酒印 1銘柄'), findsOneWidget);
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).recordedBrandIds,
+      {1},
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await open(
+      tester,
+      const JapanSakePage(initialPrefectureCode: 6),
+      stamps: store,
+    );
+    await tester.scrollUntilVisible(
+      find.byType(SakeStampBook),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<SakeStampBook>(find.byType(SakeStampBook)).recordedBrandIds,
+      {1},
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('ホームは記録ゼロ・保存だけなら山口、記録追加で全国、削除で山口に戻る', (tester) async {
     SharedPreferences.setMockInitialValues({

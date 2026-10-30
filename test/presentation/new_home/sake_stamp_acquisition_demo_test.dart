@@ -43,6 +43,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     bool reduced = false,
+    bool actual = false,
     Size size = const Size(390, 844),
     double textScale = 1,
   }) async {
@@ -70,11 +71,37 @@ void main() {
             ),
             child: child!,
           ),
-          home: const Scaffold(body: Center(child: SakeStampDemoButton())),
+          home: Scaffold(
+            body: Center(
+              child: actual
+                  ? Builder(
+                      builder: (context) => TextButton(
+                        key: const ValueKey('actual-award'),
+                        onPressed: () => showGeneralDialog<void>(
+                          context: context,
+                          barrierColor: const Color(
+                            0xFF071C35,
+                          ).withValues(alpha: .88),
+                          pageBuilder: (_, __, ___) =>
+                              const SakeStampAcquisitionDemo(
+                                demo: false,
+                                brandName: '栄光冨士',
+                                prefectureName: '山形県',
+                                brandId: 309,
+                              ),
+                        ),
+                        child: const Text('award'),
+                      ),
+                    )
+                  : const SakeStampDemoButton(),
+            ),
+          ),
         ),
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('sake-stamp-demo-button')));
+    await tester.tap(
+      find.byKey(ValueKey(actual ? 'actual-award' : 'sake-stamp-demo-button')),
+    );
     await tester.pump();
   }
 
@@ -120,6 +147,33 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 3));
     expect(haptics, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('実取得は対象銘柄を押印し、デモの説明とリプレイは表示しない', (tester) async {
+    await open(tester, actual: true);
+    await tester.pumpAndSettle();
+    expect(find.text('栄光冨士  ·  山形県'), findsOneWidget);
+    expect(find.text('一杯の出会いを、日々の思い出に'), findsOneWidget);
+    expect(find.textContaining('デモ'), findsNothing);
+    expect(find.byKey(const ValueKey('replay-stamp-demo')), findsNothing);
+    const output = String.fromEnvironment('STAMP_REAL_OUTPUT');
+    if (output.isNotEmpty) {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('demo-preview')),
+      );
+      await tester.runAsync(() async {
+        final img = await boundary.toImage(pixelRatio: 2);
+        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+        await Directory(output).create(recursive: true);
+        await File(
+          '$output/real-acquisition.png',
+        ).writeAsBytes(bytes!.buffer.asUint8List());
+        img.dispose();
+      });
+    }
+    await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 

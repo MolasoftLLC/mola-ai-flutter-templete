@@ -5,6 +5,7 @@ import '../../../common/sake/sake_journey_progress.dart';
 import '../../../domain/eintities/sake_catalog_browse.dart';
 import '../../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../../domain/notifier/saved_sake/saved_sake_notifier.dart';
+import '../../../domain/notifier/sake_stamp_store.dart';
 import '../../../domain/repository/place_map_repository.dart';
 import 'japan_sake_map.dart';
 
@@ -13,8 +14,10 @@ class SakeJourneyProgressBuilder extends StatefulWidget {
     super.key,
     required this.builder,
     this.compactStatus = false,
+    this.includeEncounterStamps = false,
   });
   final bool compactStatus;
+  final bool includeEncounterStamps;
   final Widget Function(
     BuildContext context,
     SakeJourneyProgress progress,
@@ -63,10 +66,25 @@ class _SakeJourneyProgressBuilderState
   Widget build(BuildContext context) => FutureBuilder<List<SakeProductOrigin>>(
     future: _future,
     builder: (context, snapshot) {
-      final progress = aggregateSakeJourney(
-        _records,
-        snapshot.data ?? const [],
-      );
+      var progress = aggregateSakeJourney(_records, snapshot.data ?? const []);
+      final stamps = widget.includeEncounterStamps
+          ? Provider.of<SakeStampStore?>(context)
+          : null;
+      if (stamps != null) {
+        final brands = {
+          for (final entry in progress.brandIdsByPrefecture.entries)
+            entry.key: {...entry.value},
+        };
+        for (final entry in stamps.brandIdsByPrefecture.entries) {
+          brands.putIfAbsent(entry.key, () => {}).addAll(entry.value);
+        }
+        progress = SakeJourneyProgress(
+          counts: progress.counts,
+          productsByPrefecture: progress.productsByPrefecture,
+          brandIdsByPrefecture: brands,
+          unresolvedRecords: progress.unresolvedRecords,
+        );
+      }
       final english = Localizations.localeOf(context).languageCode == 'en';
       final loading =
           snapshot.connectionState != ConnectionState.done && _ids.isNotEmpty;
@@ -163,7 +181,7 @@ class _SakeJourneyProgressBuilderState
                     )
                   : const SizedBox.shrink())
             : legend,
-        !loading && !snapshot.hasError,
+        !loading && !snapshot.hasError && (stamps?.loaded ?? true),
       );
     },
   );

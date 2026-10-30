@@ -35,6 +35,7 @@ import 'sake_scan_notifier.dart';
 import '../common/dialogs/share_opt_out_dialog.dart';
 import 'widgets/lens_progress_toasts.dart';
 import 'widgets/label_capture_guide.dart';
+import '../new_home/widgets/sake_stamp_awards.dart';
 
 class SakeScanPage extends StatefulWidget {
   const SakeScanPage._({
@@ -666,6 +667,8 @@ class _SakeScanPageState extends State<SakeScanPage>
       _recordSaveError = null;
     });
     try {
+      final stampSession = await SakeStampAwardSession.prepare(context);
+      if (!mounted) return false;
       final placeName = _recordPlace?.displayName.trim();
       final updated = saved.copyWith(
         impression: _recordImpressionController.text.trim().isEmpty
@@ -698,6 +701,7 @@ class _SakeScanPageState extends State<SakeScanPage>
         _recordDirty = false;
         _recordSaved = true;
       });
+      await stampSession?.record(context, stored);
       return true;
     } catch (_) {
       if (mounted) setState(() => _recordSaveError = '記録を保存できませんでした。');

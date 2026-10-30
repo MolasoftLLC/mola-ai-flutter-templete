@@ -5,6 +5,7 @@ import 'package:provider/single_child_widget.dart';
 
 import '../common/access_url.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
+import '../domain/notifier/sake_stamp_store.dart';
 import '../domain/notifier/favorite/favorite_notifier.dart';
 import '../domain/notifier/my_page/my_page_notifier.dart';
 import '../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -129,6 +130,12 @@ Future<List<SingleChildWidget>> get _notifierProviders async {
     ),
     StateNotifierProvider<AuthNotifier, AuthState>(
       create: (_) => AuthNotifier(),
+    ),
+    ChangeNotifierProxyProvider<AuthState, SakeStampStore>(
+      create: (_) => SakeStampStore(),
+      update: (_, auth, previous) => previous?.accountId == auth.user?.uid
+          ? previous!
+          : SakeStampStore(accountId: auth.user?.uid),
     ),
   ];
 }

@@ -60,6 +60,7 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    includeEncounterStamps: true,
     builder: (context, progress, legend, ready) => FutureBuilder(
       future: _map,
       builder: (context, snapshot) {
@@ -95,8 +96,8 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
               const SizedBox(height: 8),
               Text(
                 _english(context)
-                    ? 'Collect a stamp for each brand you record.'
-                    : '飲んだお酒の記録を、銘柄の酒印に。',
+                    ? 'Turn each sake encounter into an everyday memory.'
+                    : '一杯の出会いを、日々の思い出に',
                 style: const TextStyle(color: Color(0xFF687880), fontSize: 13),
               ),
               const SizedBox(height: 8),
@@ -194,6 +195,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
+    includeEncounterStamps: true,
     compactStatus: true,
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
@@ -238,8 +240,8 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
             children: [
               Text(
                 _english(context)
-                    ? 'A collection of the sake you have enjoyed.'
-                    : '飲んだ一杯を、旅のしるしに。',
+                    ? 'Turn each sake encounter into an everyday memory.'
+                    : '一杯の出会いを、日々の思い出に',
                 style: const TextStyle(
                   color: japanMapNavy,
                   fontSize: 20,

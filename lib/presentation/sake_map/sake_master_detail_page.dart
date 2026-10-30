@@ -41,6 +41,7 @@ import '../sake_scan/sake_scan_page.dart';
 import '../timeline/timeline_page_notifier.dart';
 import 'sake_map_page.dart';
 import 'same_brand_sake_section.dart';
+import '../new_home/widgets/sake_stamp_awards.dart';
 
 const _navy = Color(0xFF143861);
 const _orange = Color(0xFFFF7A1A);
@@ -85,6 +86,17 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
               _headerOverview?.sake.sakeId ??
               widget.venueSake.sakeId) ==
           sakeId;
+
+  void _scheduleStampAward(SakeOverview overview) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          !identical(_headerOverview, overview) ||
+          ModalRoute.of(context)?.isCurrent != true) {
+        return;
+      }
+      unawaited(SakeStampAwardSession.detail(context, overview));
+    });
+  }
 
   void _scheduleLensAnalysis(SakeOverview overview) {
     final status = overview.lensDetailAnalysisStatus;
@@ -142,6 +154,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         _future = Future.value(updated);
         _isLensAnalyzing = false;
       });
+      _scheduleStampAward(updated);
       // Merge only product information into the current record, preserving edits
       // made to photos, ratings and notes while the analysis was running.
       final notifier = _savedSakeNotifier;
@@ -291,6 +304,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         unawaited(_syncOverviewToSavedRecord(overview));
         _scheduleMasterEnrichmentPolling(overview);
         _scheduleLensAnalysis(overview);
+        _scheduleStampAward(overview);
       }
       AppAnalytics.instance.event('detail', 'detail', kind: 'success');
       return overview;
@@ -911,6 +925,8 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
       );
       return;
     }
+    final stampSession = await SakeStampAwardSession.prepare(context);
+    if (!mounted) return;
     final place = await PlacePickerSheet.show(
       context,
       initialPlace: record.drinkingPlace?.displayName ?? record.place,
@@ -951,6 +967,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
         SnackBarUtils.showInfoSnackBar(context, message: '場所を地図へ登録しました。');
       }
     }
+    if (mounted) await stampSession?.record(context, updated);
   }
 
   Future<void> _openTimelineShare(Sake sake) async {
@@ -2574,6 +2591,8 @@ Future<void> showSakeRecordEditorSheet(
   required SavedSakeNotifier notifier,
   required Sake sake,
 }) async {
+  final stampSession = await SakeStampAwardSession.prepare(context);
+  if (!context.mounted) return;
   if (sake.syncStatus == SavedSakeSyncStatus.serverSynced &&
       (sake.imagePaths ?? const <String>[]).any(
         (path) => !path.startsWith('https://') && !path.startsWith('http://'),
@@ -2663,6 +2682,10 @@ Future<void> showSakeRecordEditorSheet(
   );
   if (saved == true && context.mounted) {
     SnackBarUtils.showInfoSnackBar(context, message: '記録を保存しました。');
+    final updated = notifier.savedSakes
+        .where((record) => record.savedId == sake.savedId)
+        .firstOrNull;
+    if (updated != null) await stampSession?.record(context, updated);
   }
 }
 

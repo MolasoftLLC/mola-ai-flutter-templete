@@ -40,9 +40,18 @@ class SakeStampDemoButton extends StatelessWidget {
   );
 }
 
-/// A self-contained, replayable stamp animation. The sample brand is fixed.
+/// Shared stamp animation: the default demo is replayable; real awards supply their brand.
 class SakeStampAcquisitionDemo extends StatefulWidget {
-  const SakeStampAcquisitionDemo({super.key});
+  const SakeStampAcquisitionDemo({
+    super.key,
+    this.brandName = '出羽桜',
+    this.prefectureName = '山形県',
+    this.brandId = 1,
+    this.demo = true,
+  });
+  final String brandName, prefectureName;
+  final int brandId;
+  final bool demo;
 
   @override
   State<SakeStampAcquisitionDemo> createState() =>
@@ -113,14 +122,15 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      english ? 'STAMP ANIMATION · DEMO' : '酒印獲得アニメーション · デモ',
-                      style: const TextStyle(
-                        color: Color(0xFFE6D6B6),
-                        fontSize: 12,
-                        letterSpacing: 1.2,
+                    if (widget.demo)
+                      Text(
+                        english ? 'STAMP ANIMATION · DEMO' : '酒印獲得アニメーション · デモ',
+                        style: const TextStyle(
+                          color: Color(0xFFE6D6B6),
+                          fontSize: 12,
+                          letterSpacing: 1.2,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 24),
                     AnimatedBuilder(
                       animation: _controller,
@@ -193,8 +203,8 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
                                         const SizedBox(height: 4),
                                         Text(
                                           english
-                                              ? 'A new sake encounter'
-                                              : '一杯の出会いを、旅のしるしに。',
+                                              ? 'A sake encounter, an everyday memory'
+                                              : '一杯の出会いを、日々の思い出に',
                                           style: const TextStyle(
                                             color: Color(0xFF83765F),
                                             fontSize: 11,
@@ -246,8 +256,15 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
                                                                     .44,
                                                                     .65,
                                                                   ),
-                                                          child:
-                                                              const _DemoSeal(),
+                                                          child: _AcquisitionSeal(
+                                                            brandName: widget
+                                                                .brandName,
+                                                            prefectureName: widget
+                                                                .prefectureName,
+                                                            brandId:
+                                                                widget.brandId,
+                                                            demo: widget.demo,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
@@ -280,9 +297,9 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
-                                                  english
+                                                  widget.demo && english
                                                       ? 'Dewazakura · Yamagata'
-                                                      : '出羽桜  ·  山形県',
+                                                      : '${widget.brandName}  ·  ${widget.prefectureName}',
                                                   textAlign: TextAlign.center,
                                                   style: const TextStyle(
                                                     color: _navy,
@@ -304,33 +321,37 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
                       },
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      english
-                          ? 'Preview only. No stamp or record is saved.'
-                          : 'デモのため、酒印・飲んだ記録は追加されません',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFFCCD5DF),
-                        fontSize: 12,
+                    if (widget.demo)
+                      Text(
+                        english
+                            ? 'Preview only. No stamp or record is saved.'
+                            : 'デモのため、酒印・飲んだ記録は追加されません',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFCCD5DF),
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            key: const ValueKey('replay-stamp-demo'),
-                            onPressed: _replay,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFFDF90),
-                              side: const BorderSide(color: Color(0xFF8D8166)),
-                              minimumSize: const Size(0, 48),
+                        if (widget.demo)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              key: const ValueKey('replay-stamp-demo'),
+                              onPressed: _replay,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFFFDF90),
+                                side: const BorderSide(
+                                  color: Color(0xFF8D8166),
+                                ),
+                                minimumSize: const Size(0, 48),
+                              ),
+                              icon: const Icon(Icons.replay, size: 19),
+                              label: Text(english ? 'Replay' : 'もう一度'),
                             ),
-                            icon: const Icon(Icons.replay, size: 19),
-                            label: Text(english ? 'Replay' : 'もう一度'),
                           ),
-                        ),
-                        const SizedBox(width: 12),
+                        if (widget.demo) const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton(
                             key: const ValueKey('close-stamp-demo'),
@@ -356,21 +377,29 @@ class _SakeStampAcquisitionDemoState extends State<SakeStampAcquisitionDemo>
   }
 }
 
-class _DemoSeal extends StatelessWidget {
-  const _DemoSeal();
+class _AcquisitionSeal extends StatelessWidget {
+  const _AcquisitionSeal({
+    required this.brandName,
+    required this.prefectureName,
+    required this.brandId,
+    required this.demo,
+  });
+  final String brandName, prefectureName;
+  final int brandId;
+  final bool demo;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '出羽桜・山形県、デモの酒印',
-    child: const ExcludeSemantics(
+    label: '$brandName・$prefectureName${demo ? '、デモの酒印' : '、取得した酒印'}',
+    child: ExcludeSemantics(
       child: CustomPaint(
-        painter: SakeStampSealPainter(1, _ink),
+        painter: SakeStampSealPainter(brandId, _ink),
         child: Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 '酒\n之\n縁',
                 textScaler: TextScaler.noScaling,
                 style: TextStyle(
@@ -380,23 +409,31 @@ class _DemoSeal extends StatelessWidget {
                   color: _ink,
                 ),
               ),
-              SizedBox(width: 12),
-              Text(
-                '出\n羽\n桜',
-                textScaler: TextScaler.noScaling,
-                style: TextStyle(
-                  fontFamily: 'SakeSeal',
-                  fontSize: 46,
-                  height: 1.03,
-                  fontWeight: FontWeight.w600,
-                  color: _ink,
+              const SizedBox(width: 12),
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      brandName.characters.join('\n'),
+                      textScaler: TextScaler.noScaling,
+                      style: const TextStyle(
+                        fontFamily: 'SakeSeal',
+                        fontSize: 46,
+                        height: 1.03,
+                        fontWeight: FontWeight.w600,
+                        color: _ink,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
-                '山\n形\n県',
+                prefectureName.characters.join('\n'),
                 textScaler: TextScaler.noScaling,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: 'SakeSeal',
                   fontSize: 18,
                   height: 1.4,
