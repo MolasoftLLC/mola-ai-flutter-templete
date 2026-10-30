@@ -14,6 +14,7 @@ enum SakeScanViewStatus {
   frontScanning,
   searchingFront,
   confirmingCandidate,
+  nonSake,
   backScanning,
   searchingBack,
   loadingOverview,
@@ -320,7 +321,11 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     AppAnalytics.instance.event('scan', 'confirm', flowId: _usageFlow);
     final candidate = state.selectedCandidate;
     final sessionId = state.scanSessionId;
-    if (candidate == null || sessionId == null || !_beginSubmission()) {
+    if (state.status == SakeScanViewStatus.nonSake ||
+        candidate?.isExplicitlyNonSake == true ||
+        candidate == null ||
+        sessionId == null ||
+        !_beginSubmission()) {
       return null;
     }
     final operation = ++_operation;
@@ -724,6 +729,21 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
 
   void _emit(SakeScanState next) {
     if (!_disposed) {
+      if (next.status == SakeScanViewStatus.confirmingCandidate) {
+        final allowed = next.candidates
+            .where((candidate) => !candidate.isExplicitlyNonSake)
+            .toList(growable: false);
+        if (allowed.length != next.candidates.length) {
+          next = next.copyWith(
+            status: allowed.isEmpty
+                ? SakeScanViewStatus.nonSake
+                : SakeScanViewStatus.confirmingCandidate,
+            candidates: allowed,
+            selectedCandidateIndex: 0,
+            isSubmitting: false,
+          );
+        }
+      }
       if (next.status == SakeScanViewStatus.completed && !_usageComplete) {
         _usageComplete = true;
         AppAnalytics.instance.event(

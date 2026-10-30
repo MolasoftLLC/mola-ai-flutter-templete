@@ -111,6 +111,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Set<String> _recordTags = <String>{};
   ScanRecordAnswers _scanAnswers = ScanRecordAnswers();
   bool _questionsDone = false;
+  bool _nonSakeDialogOpen = false;
   String _recordBaseMemo = '';
   bool _recordMemoEdited = false;
   bool _recordTagsEdited = false;
@@ -948,6 +949,30 @@ class _SakeScanPageState extends State<SakeScanPage>
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SakeScanState>();
+    if (state.status == SakeScanViewStatus.nonSake && !_nonSakeDialogOpen) {
+      _nonSakeDialogOpen = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('日本酒じゃないじゃーん！'),
+            content: const Text('日本酒のラベルを撮影してね。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('閉じる'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        _resetAnalysisRecordDraft();
+        context.read<SakeScanNotifier>().retry();
+        _nonSakeDialogOpen = false;
+      });
+    }
     final bottomPanelKey = switch (state.status) {
       SakeScanViewStatus.loadingOverview ||
       SakeScanViewStatus.loadingDetails ||
@@ -1122,6 +1147,7 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.backScanning => _buildCaptureControls(state),
       SakeScanViewStatus.searchingFront || SakeScanViewStatus.searchingBack =>
         _buildMatchingQuestions(context.l10n.searchingLabel),
+      SakeScanViewStatus.nonSake => const SizedBox.shrink(),
       SakeScanViewStatus.confirmingCandidate => _buildCandidates(state),
       SakeScanViewStatus.loadingOverview => _buildAnalysisRecordPanel(state),
       SakeScanViewStatus.identifyingFallback => _buildMatchingQuestions(
