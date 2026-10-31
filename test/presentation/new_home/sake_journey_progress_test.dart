@@ -271,14 +271,12 @@ void main() {
   );
 
   testWidgets(
-    'the full screen map has the same record colors and errors can retry without changing records',
+    'the journey map has record colors and errors can retry without changing records',
     (tester) async {
       final repo = _Origins();
       final saved = ValueNotifier(SavedSakeState(savedSakeList: records(10)));
       addTearDown(saved.dispose);
       await open(tester, repo, saved, home: const JapanSakePage());
-      await tester.tap(find.byKey(const ValueKey('japan-map-expand')));
-      await tester.pumpAndSettle();
       expect(
         tester
             .widget<JapanSakeMap>(find.byType(JapanSakeMap).last)
@@ -286,8 +284,6 @@ void main() {
         {15: 10},
       );
       await preview(tester, 'journey-fullscreen');
-      Navigator.of(tester.element(find.byType(JapanSakeMap).last)).pop();
-      await tester.pumpAndSettle();
       repo.loader = (_) async => throw StateError('offline');
       saved.value = SavedSakeState(savedSakeList: records(9));
       await tester.pumpAndSettle();

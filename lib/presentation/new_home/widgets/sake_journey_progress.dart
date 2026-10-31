@@ -14,9 +14,11 @@ class SakeJourneyProgressBuilder extends StatefulWidget {
     super.key,
     required this.builder,
     this.compactStatus = false,
+    this.showLegendDetails = true,
     this.includeEncounterStamps = false,
   });
   final bool compactStatus;
+  final bool showLegendDetails;
   final bool includeEncounterStamps;
   final Widget Function(
     BuildContext context,
@@ -133,13 +135,15 @@ class _SakeJourneyProgressBuilderState
                 ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            english
-                ? 'Unique products · not repeat records or where you drank'
-                : '同じ商品は1つ。銘柄の産地で集計します。',
-            style: const TextStyle(color: Color(0xFF687880), fontSize: 10),
-          ),
+          if (widget.showLegendDetails) ...[
+            const SizedBox(height: 6),
+            Text(
+              english
+                  ? 'Unique products · not repeat records or where you drank'
+                  : '同じ商品は1つ。銘柄の産地で集計します。',
+              style: const TextStyle(color: Color(0xFF687880), fontSize: 10),
+            ),
+          ],
           if (loading)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -158,7 +162,7 @@ class _SakeJourneyProgressBuilderState
                     : '産地を確認できませんでした。再試行',
               ),
             )
-          else if (progress.unresolvedRecords > 0)
+          else if (widget.showLegendDetails && progress.unresolvedRecords > 0)
             Text(
               english
                   ? '${progress.unresolvedRecords} records with unconfirmed origins'

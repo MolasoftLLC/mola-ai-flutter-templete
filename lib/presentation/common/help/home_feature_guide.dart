@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../../new_home/widgets/capture_radial_menu.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +25,14 @@ class HomeFeatureGuide {
 
   Future<Rect?> _scrollToSection(GlobalKey targetKey) async {
     if (!homeScrollController.hasClients) return null;
+    // Rebuild earlier sections as well when the user goes back through the guide.
+    if (targetKey.currentContext == null && homeScrollController.offset > 0) {
+      homeScrollController.jumpTo(
+        homeScrollController.position.minScrollExtent,
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!homeScrollController.hasClients) return null;
+    }
     // ListView の画面外の子が構築されるまで少しずつ進める。
     for (var i = 0; targetKey.currentContext == null && i < 12; i++) {
       final position = homeScrollController.position;
@@ -104,7 +114,7 @@ class HomeFeatureGuide {
       }
 
       final targetKeys = [
-        [headerScanKey, bottomScanKey],
+        [bottomScanKey],
         [searchKey],
         [menuAnalysisKey],
         [mapKey],
@@ -126,29 +136,47 @@ class HomeFeatureGuide {
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => FeatureGuideOverlay(
           bottomMessageSteps: const {5, 6, 7},
+          capturePreviewAnchor: () => bounds(bottomScanKey)?.center,
           titles: const [
-            '高速ラベル検索',
-            'いろいろな条件で検索',
-            '朱印帳',
+            'まずは「解析」から',
+            '名前や条件で探す',
+            '出会った銘柄を酒印に',
             'みんなのマップ',
             'マイページ',
-            'あなたが好きそうな日本酒',
+            '好みに合う一本を見つける',
             'タイムライン',
             '日本酒を旅する',
           ],
           messages: const [
-            '解析からラベル撮影、写真の選択、メニュー撮影を開けます。',
-            '名前やメニューからなど検索可能！',
-            '集めた酒印をここから開けます。県を切り替えて、次に出会いたい銘柄を探してみましょう。',
-            'みんなが登録したお店と日本酒をマップで探せます。',
-            '保存したお酒やメニュー解析履歴はここから。好みの設定、ポイントやバッジもマイページで確認できます。',
-            'マイページで好きなお酒の傾向を登録すると、あなたに合いそうな日本酒がここに表示されます！',
-            'みんなが飲んだ日本酒を見られます。左右にスライドして気になるお酒を探してみましょう。「もっと見る」をタップすると、さらに多くの投稿を見られます！',
-            '県をタップすると、その県の銘柄や商品を探せます。「地図からお酒を探す」では地図を拡大できます。記録した商品数で県の色が変わり、10商品以上でオレンジに！県別の記録一覧も見られます。',
+            '「ラベルを撮る」はボトル、「メニューを撮る」はお店のメニューへ。保存済みの写真は「写真から選ぶ」を使います。今は案内用の表示です。',
+            'ホームの検索欄から、お酒の名前や条件で探せます。気になる一本の詳細を見てみましょう。',
+            '自分で解析したお酒の詳細や、飲んだ記録から酒印を集められます。全国・県別で見返せます。酒印の取得だけでは、飲んだ記録にはなりません。',
+            'お酒が登録されたお店を地図で探せます。「すべての店舗」と「自分の登録」を切り替え、お酒の名前でも絞り込めます。',
+            '保存したお酒・お気に入り・メニュー解析履歴をまとめて確認。飲んだ感想や場所を残したり、好みの設定を変更したりできます。',
+            'マイページで好きなお酒の傾向を設定すると、おすすめや好みマッチ度の参考になります。新しい一本を探すきっかけに。',
+            'みんなのお酒との出会いを見てみましょう。気になる投稿はタップして詳細へ。「もっと見る」で一覧を開けます。',
+            '地図をピンチで拡大して県をタップ。銘柄・商品や県別の記録一覧を見られます。記録した商品数で県の色が変わり、10商品以上でオレンジになります。',
+          ],
+          stepIcons: const [
+            Icons.camera_alt_outlined,
+            Icons.search,
+            Icons.menu_book_outlined,
+            Icons.public,
+            Icons.person_outline,
+            Icons.favorite_border,
+            Icons.forum_outlined,
+            Icons.explore_outlined,
           ],
           circleSteps: const {0},
           outlineSteps: const {2, 3, 4, 7},
           prepareStep: (step) async {
+            if (step < 5 && homeScrollController.hasClients) {
+              await homeScrollController.animateTo(
+                homeScrollController.position.minScrollExtent,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeInOutCubic,
+              );
+            }
             if (step == 5) await _scrollToSection(recommendationsKey);
             if (step == 6) await _scrollToSection(timelineKey);
             if (step == 7) await _scrollToSection(japanSakeKey);
@@ -175,11 +203,15 @@ class FeatureGuideOverlay extends StatefulWidget {
     required this.messages,
     this.circleSteps = const {},
     this.outlineSteps = const {},
-    this.welcomeTitle = '新SAKEPEDIAへようこそ！',
-    this.welcomeMessage = '新機能の説明を簡単にさせていただきます！',
+    this.welcomeTitle = '一杯の出会いを、日々の思い出に',
+    this.welcomeMessage = '撮って調べる。記録する。次の一本に出会う。\nSAKEPEDIAの使い方を、画面に沿ってご案内します。',
+    this.stepIcons = const [],
+    this.capturePreviewAnchor,
     this.bottomMessageSteps = const {},
   });
   final Future<void> Function(int step) prepareStep;
+  final Offset? Function()? capturePreviewAnchor;
+  final List<IconData> stepIcons;
   final List<String> titles;
   final List<String> messages;
   final Set<int> circleSteps;
@@ -242,14 +274,19 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
       Navigator.of(context).pop(true);
       return;
     }
-    final nextStep = _step + 1;
+    await _goTo(_step + 1);
+  }
+
+  Future<void> _goTo(int step) async {
+    if (_scrolling) return;
     setState(() => _scrolling = true);
-    await widget.prepareStep(nextStep);
-    if (!mounted) return;
-    setState(() {
-      _scrolling = false;
-      _step = nextStep;
-    });
+    try {
+      if (step >= 0) await widget.prepareStep(step);
+      if (!mounted) return;
+      setState(() => _step = step);
+    } finally {
+      if (mounted) setState(() => _scrolling = false);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFocus());
   }
 
@@ -271,106 +308,173 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
             ),
           ),
         ),
+        if (!_scrolling && _step == 0 && widget.capturePreviewAnchor != null)
+          IgnorePointer(
+            child: ExcludeSemantics(
+              child: TweenAnimationBuilder<double>(
+                key: const ValueKey('guide-expanded-capture-menu'),
+                tween: Tween(begin: 0, end: 1),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                builder: (context, progress, _) => CaptureRadialMenu(
+                  anchor:
+                      widget.capturePreviewAnchor!() ??
+                      Offset(
+                        MediaQuery.sizeOf(context).width / 2,
+                        MediaQuery.sizeOf(context).height -
+                            MediaQuery.paddingOf(context).bottom -
+                            48,
+                      ),
+                  progress: progress,
+                  english: false,
+                  onSelected: (_) {},
+                  onClose: () {},
+                ),
+              ),
+            ),
+          ),
         if (!_scrolling)
-          Align(
-            alignment: widget.bottomMessageSteps.contains(_step)
-                ? Alignment.bottomCenter
-                : Alignment.center,
-            child: Padding(
-              padding: widget.bottomMessageSteps.contains(_step)
-                  ? EdgeInsets.fromLTRB(
-                      24,
-                      24,
-                      24,
-                      MediaQuery.paddingOf(context).bottom + 100,
-                    )
-                  : const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 320),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 12,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: _step == -1
-                        ? CrossAxisAlignment.stretch
-                        : CrossAxisAlignment.start,
-                    children: [
-                      if (_step >= 0)
-                        Text(
-                          '${_step + 1} / ${widget.titles.length}',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
+          SafeArea(
+            child: Align(
+              alignment: _step == 0 && widget.capturePreviewAnchor != null
+                  ? Alignment.topCenter
+                  : widget.bottomMessageSteps.contains(_step)
+                  ? Alignment.bottomCenter
+                  : Alignment.center,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  56,
+                  20,
+                  _step == 0 && widget.capturePreviewAnchor != null
+                      ? 310
+                      : widget.bottomMessageSteps.contains(_step)
+                      ? 88
+                      : 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFCF5),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 24,
+                          offset: Offset(0, 8),
                         ),
-                      if (_step == -1) ...[
-                        Center(
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF143861),
-                              borderRadius: BorderRadius.circular(20),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF143861),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  _step >= 0 && _step < widget.stepIcons.length
+                                      ? widget.stepIcons[_step]
+                                      : Icons.menu_book_outlined,
+                                  color: const Color(0xFFFFD166),
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _step < 0
+                                      ? 'SAKEPEDIA GUIDE'
+                                      : '${_step + 1} / ${widget.titles.length}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF687880),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_step >= 0) ...[
+                            const SizedBox(height: 16),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: (_step + 1) / widget.titles.length,
+                                minHeight: 4,
+                                color: const Color(0xFF143861),
+                                backgroundColor: const Color(0xFFE4E9ED),
+                              ),
                             ),
-                            child: Image.asset(
-                              'assets/images/sake_logo.png',
-                              fit: BoxFit.contain,
+                          ],
+                          const SizedBox(height: 20),
+                          Text(
+                            _step < 0
+                                ? widget.welcomeTitle
+                                : widget.titles[_step],
+                            style: const TextStyle(
+                              color: Color(0xFF143861),
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
+                              height: 1.4,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                      ] else
-                        const SizedBox(height: 8),
-                      Text(
-                        _step == -1
-                            ? widget.welcomeTitle
-                            : widget.titles[_step],
-                        textAlign: _step == -1
-                            ? TextAlign.center
-                            : TextAlign.start,
-                        style: const TextStyle(
-                          color: Color(0xFF1D3567),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _step == -1
-                            ? widget.welcomeMessage
-                            : widget.messages[_step],
-                        textAlign: _step == -1
-                            ? TextAlign.center
-                            : TextAlign.start,
-                        style: const TextStyle(
-                          color: Color(0xFF1D3567),
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton(
-                          onPressed: _next,
-                          child: Text(
-                            _step == widget.titles.length - 1 ? 'わかった' : '次へ',
+                          const SizedBox(height: 12),
+                          Text(
+                            _step < 0
+                                ? widget.welcomeMessage
+                                : widget.messages[_step],
+                            style: const TextStyle(
+                              color: Color(0xFF42566A),
+                              fontSize: 14,
+                              height: 1.7,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              if (_step >= 0)
+                                TextButton(
+                                  onPressed: () => _goTo(_step - 1),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFF143861),
+                                  ),
+                                  child: const Text('戻る'),
+                                ),
+                              const Spacer(),
+                              FilledButton(
+                                onPressed: _next,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF143861),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(112, 48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  _step == widget.titles.length - 1
+                                      ? 'はじめる'
+                                      : _step < 0
+                                      ? '使い方を見る'
+                                      : '次へ',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -407,7 +511,7 @@ class _HomeGuideFocusPainter extends CustomPainter {
     canvas.saveLayer(Offset.zero & size, Paint());
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = Colors.black.withValues(alpha: .85),
+      Paint()..color = Colors.black.withValues(alpha: .68),
     );
     final clearPaint = Paint()..blendMode = BlendMode.clear;
     for (final target in targets) {

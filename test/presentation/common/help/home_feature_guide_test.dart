@@ -124,9 +124,48 @@ void main() {
       await tester.tap(find.text('案内'));
       await tester.pumpAndSettle();
       for (var step = 0; step < 8; step++) {
-        await tester.tap(find.text('次へ'));
+        await tester.tap(find.text(step == 0 ? '使い方を見る' : '次へ'));
         await tester.pumpAndSettle();
         expect(find.text('${step + 1} / 8'), findsOneWidget);
+        if (step == 0) {
+          expect(
+            find.byKey(const ValueKey('guide-expanded-capture-menu')),
+            findsOneWidget,
+          );
+          expect(find.text('ラベルを撮る'), findsOneWidget);
+          expect(find.text('メニューを撮る'), findsOneWidget);
+          expect(find.text('写真から選ぶ'), findsOneWidget);
+          expect(
+            tester.getRect(find.text('次へ')).bottom,
+            lessThan(
+              tester
+                  .getRect(find.byKey(const ValueKey('capture-action-label')))
+                  .top,
+            ),
+          );
+          const output = String.fromEnvironment('JAPAN_UI_OUTPUT');
+          if (output.isNotEmpty) {
+            final boundary = tester.renderObject<RenderRepaintBoundary>(
+              find.byKey(const ValueKey('guide-preview')),
+            );
+            await tester.runAsync(() async {
+              final image = await boundary.toImage();
+              final bytes = await image.toByteData(
+                format: ui.ImageByteFormat.png,
+              );
+              await Directory(output).create(recursive: true);
+              await File(
+                '$output/capture-guide.png',
+              ).writeAsBytes(bytes!.buffer.asUint8List());
+              image.dispose();
+            });
+          }
+        } else {
+          expect(
+            find.byKey(const ValueKey('guide-expanded-capture-menu')),
+            findsNothing,
+          );
+        }
       }
       final overlay = find.byType(FeatureGuideOverlay);
       expect(
@@ -157,7 +196,19 @@ void main() {
           image.dispose();
         });
       }
-      await tester.tap(find.text('わかった'));
+      // Back also restores a previous section that was scrolled offscreen.
+      for (var step = 6; step >= 0; step--) {
+        await tester.tap(find.text('戻る'));
+        await tester.pumpAndSettle();
+        expect(find.text('${step + 1} / 8'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+      expect(guide.homeScrollController.offset, 0);
+      for (var step = 1; step < 8; step++) {
+        await tester.tap(find.text('次へ'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('はじめる'));
       await tester.pumpAndSettle();
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('home_feature_guide_shown_v5'), isTrue);
@@ -192,4 +243,39 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('guide remains scrollable on a small screen with large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 568),
+            textScaler: TextScaler.linear(1.8),
+          ),
+          child: FeatureGuideOverlay(
+            capturePreviewAnchor: () => const Offset(160, 520),
+            titles: const ['場所を残して、次の一本へ'],
+            messages: const ['解析を待つ間に場所を選べます。操作を始めたら、候補へ進むタイミングは自分で選べます。'],
+            readTargets: (_) => [],
+            prepareStep: (_) async {},
+          ),
+        ),
+      ),
+    );
+    await tester.ensureVisible(find.text('使い方を見る'));
+    await tester.tap(find.text('使い方を見る'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 1'), findsOneWidget);
+    await tester.ensureVisible(find.text('戻る'));
+    await tester.tap(find.text('戻る'));
+    await tester.pumpAndSettle();
+    expect(find.text('SAKEPEDIA GUIDE'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

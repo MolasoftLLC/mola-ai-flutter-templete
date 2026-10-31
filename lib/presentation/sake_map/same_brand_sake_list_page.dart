@@ -104,158 +104,164 @@ class _SameBrandSakeListPageState extends State<SameBrandSakeListPage> {
     final preference = Provider.of<MyPageState?>(context)?.tasteProfile;
     return AnalyticsScreen(
       name: 'same_brand_products',
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        appBar: PrimaryAppBar(
-          title: '同じ銘柄の商品',
-          actions: [
-            PopupMenuButton<_ProductOrder>(
-              tooltip: '並び替え：${_order.label}',
-              initialValue: _order,
-              icon: const Icon(Icons.sort, color: Colors.white),
-              onSelected: (order) {
-                if (_order == order) return;
-                AppAnalytics.instance.event(
-                  'same_brand_products',
-                  'sort_${order.name}',
-                );
-                setState(() {
-                  _order = order;
-                  _visibleCount = 20;
-                });
-                if (_controller.hasClients) _controller.jumpTo(0);
-              },
-              itemBuilder: (_) => [
-                for (final order in _ProductOrder.values)
-                  CheckedPopupMenuItem(
-                    value: order,
-                    checked: order == _order,
-                    child: Text(order.label),
-                  ),
-              ],
-            ),
-          ],
-        ),
-        body: FutureBuilder<List<Sake>>(
-          future: _future,
-          builder: (context, catalog) {
-            if (catalog.connectionState != ConnectionState.done) {
-              return const Center(
-                child: CircularProgressIndicator(color: _navy),
-              );
-            }
-            if (catalog.hasError) {
-              return Center(
-                child: TextButton(
-                  onPressed: _refresh,
-                  child: const Text('商品を取得できませんでした。再試行'),
-                ),
-              );
-            }
-            final all = catalog.data ?? const <Sake>[];
-            _total = all.length;
-            return FutureBuilder<Map<int, SakeTasteProfileDetails>>(
-              future: _order == _ProductOrder.match ? _profilesFor(all) : null,
-              builder: (context, snapshot) {
-                if (_order == _ProductOrder.match && all.isNotEmpty) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: _navy),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: TextButton(
-                        onPressed: () => setState(_profiles.clear),
-                        child: const Text('マッチ度を取得できませんでした。再試行'),
-                      ),
-                    );
-                  }
-                }
-                final profiles =
-                    snapshot.data ?? const <int, SakeTasteProfileDetails>{};
-                final sorted = all.toList()
-                  ..sort((a, b) => (b.sakeId ?? 0).compareTo(a.sakeId ?? 0));
-                if (_order == _ProductOrder.oldest) {
-                  sorted.setAll(0, sorted.reversed.toList());
-                } else if (_order == _ProductOrder.match) {
-                  int score(Sake sake) {
-                    final profile = profiles[sake.sakeId];
-                    return profile == null || preference == null
-                        ? -1
-                        : calculateSharedSakeTasteMatchPercent(
-                            profile: profile,
-                            preference: preference,
-                          );
-                  }
-
-                  final scores = {
-                    for (final sake in all) sake.sakeId: score(sake),
-                  };
-                  sorted.sort((a, b) {
-                    final comparison = scores[b.sakeId]!.compareTo(
-                      scores[a.sakeId]!,
-                    );
-                    return comparison != 0
-                        ? comparison
-                        : (b.sakeId ?? 0).compareTo(a.sakeId ?? 0);
+      child: PrimaryScrollController(
+        automaticallyInheritForPlatforms: const <TargetPlatform>{},
+        controller: _controller,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F7FA),
+          appBar: PrimaryAppBar(
+            title: '同じ銘柄の商品',
+            actions: [
+              PopupMenuButton<_ProductOrder>(
+                tooltip: '並び替え：${_order.label}',
+                initialValue: _order,
+                icon: const Icon(Icons.sort, color: Colors.white),
+                onSelected: (order) {
+                  if (_order == order) return;
+                  AppAnalytics.instance.event(
+                    'same_brand_products',
+                    'sort_${order.name}',
+                  );
+                  setState(() {
+                    _order = order;
+                    _visibleCount = 20;
                   });
-                }
-                final visible = sorted
-                    .take(_visibleCount)
-                    .toList(growable: false);
-                final profilesFuture = _profilesFor(
-                  _order == _ProductOrder.match ? all : visible,
-                );
-                return RefreshIndicator(
-                  color: _navy,
-                  onRefresh: _refresh,
-                  child: ListView.separated(
-                    controller: _controller,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
+                  if (_controller.hasClients) _controller.jumpTo(0);
+                },
+                itemBuilder: (_) => [
+                  for (final order in _ProductOrder.values)
+                    CheckedPopupMenuItem(
+                      value: order,
+                      checked: order == _order,
+                      child: Text(order.label),
                     ),
-                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
-                    itemCount: visible.isEmpty ? 1 : visible.length + 1,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      if (visible.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.only(top: 120),
-                          child: Center(child: Text('同じ銘柄のほかの商品はまだありません')),
-                        );
-                      }
-                      if (index == 0) {
-                        return Text(
-                          widget.brandName ?? '同じ銘柄の商品',
-                          style: const TextStyle(
-                            color: _navy,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        );
-                      }
-                      final sake = visible[index - 1];
-                      return SakeListCard(
-                        key: ValueKey(sake.sakeId),
-                        sake: sake,
-                        profileFuture: profilesFuture.then(
-                          (profiles) => profiles[sake.sakeId],
-                        ),
-                        preference: preference,
-                        onOpen: () {
-                          AppAnalytics.instance.event(
-                            'same_brand_products',
-                            'detail',
-                          );
-                          widget.onOpen(sake);
-                        },
-                      );
-                    },
+                ],
+              ),
+            ],
+          ),
+          body: FutureBuilder<List<Sake>>(
+            future: _future,
+            builder: (context, catalog) {
+              if (catalog.connectionState != ConnectionState.done) {
+                return const Center(
+                  child: CircularProgressIndicator(color: _navy),
+                );
+              }
+              if (catalog.hasError) {
+                return Center(
+                  child: TextButton(
+                    onPressed: _refresh,
+                    child: const Text('商品を取得できませんでした。再試行'),
                   ),
                 );
-              },
-            );
-          },
+              }
+              final all = catalog.data ?? const <Sake>[];
+              _total = all.length;
+              return FutureBuilder<Map<int, SakeTasteProfileDetails>>(
+                future: _order == _ProductOrder.match
+                    ? _profilesFor(all)
+                    : null,
+                builder: (context, snapshot) {
+                  if (_order == _ProductOrder.match && all.isNotEmpty) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: _navy),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: TextButton(
+                          onPressed: () => setState(_profiles.clear),
+                          child: const Text('マッチ度を取得できませんでした。再試行'),
+                        ),
+                      );
+                    }
+                  }
+                  final profiles =
+                      snapshot.data ?? const <int, SakeTasteProfileDetails>{};
+                  final sorted = all.toList()
+                    ..sort((a, b) => (b.sakeId ?? 0).compareTo(a.sakeId ?? 0));
+                  if (_order == _ProductOrder.oldest) {
+                    sorted.setAll(0, sorted.reversed.toList());
+                  } else if (_order == _ProductOrder.match) {
+                    int score(Sake sake) {
+                      final profile = profiles[sake.sakeId];
+                      return profile == null || preference == null
+                          ? -1
+                          : calculateSharedSakeTasteMatchPercent(
+                              profile: profile,
+                              preference: preference,
+                            );
+                    }
+
+                    final scores = {
+                      for (final sake in all) sake.sakeId: score(sake),
+                    };
+                    sorted.sort((a, b) {
+                      final comparison = scores[b.sakeId]!.compareTo(
+                        scores[a.sakeId]!,
+                      );
+                      return comparison != 0
+                          ? comparison
+                          : (b.sakeId ?? 0).compareTo(a.sakeId ?? 0);
+                    });
+                  }
+                  final visible = sorted
+                      .take(_visibleCount)
+                      .toList(growable: false);
+                  final profilesFuture = _profilesFor(
+                    _order == _ProductOrder.match ? all : visible,
+                  );
+                  return RefreshIndicator(
+                    color: _navy,
+                    onRefresh: _refresh,
+                    child: ListView.separated(
+                      controller: _controller,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+                      itemCount: visible.isEmpty ? 1 : visible.length + 1,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        if (visible.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 120),
+                            child: Center(child: Text('同じ銘柄のほかの商品はまだありません')),
+                          );
+                        }
+                        if (index == 0) {
+                          return Text(
+                            widget.brandName ?? '同じ銘柄の商品',
+                            style: const TextStyle(
+                              color: _navy,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          );
+                        }
+                        final sake = visible[index - 1];
+                        return SakeListCard(
+                          key: ValueKey(sake.sakeId),
+                          sake: sake,
+                          profileFuture: profilesFuture.then(
+                            (profiles) => profiles[sake.sakeId],
+                          ),
+                          preference: preference,
+                          onOpen: () {
+                            AppAnalytics.instance.event(
+                              'same_brand_products',
+                              'detail',
+                            );
+                            widget.onOpen(sake);
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

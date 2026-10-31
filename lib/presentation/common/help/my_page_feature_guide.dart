@@ -63,7 +63,14 @@ class MyPageFeatureGuide {
         transitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (_, __, ___) => FeatureGuideOverlay(
           welcomeTitle: 'マイページの使い方',
-          welcomeMessage: 'お酒の記録や、あなたの好みをまとめて管理できます。主な機能をご案内します。',
+          welcomeMessage: '保存した一本も、好きな味も。\nあなたのお酒の記録を、ここにまとめます。',
+          stepIcons: const [
+            Icons.person_outline,
+            Icons.bookmark_border,
+            Icons.receipt_long_outlined,
+            Icons.favorite_border,
+            Icons.tune,
+          ],
           titles: const [
             'プロフィール・ポイント',
             '保存したお酒',
@@ -74,7 +81,7 @@ class MyPageFeatureGuide {
           messages: const [
             'プロフィールの設定やログインはこちらから。うらやま・マップ貢献ポイントやバッジは、タップすると詳しく確認できます。',
             'スキャンして保存したお酒を振り返れます。お酒をタップして、写真や飲んだ場所などの記録を確認しましょう。',
-            '解析したメニューの履歴を確認できます。履歴をタップすると、お酒の詳細や好みマッチ度を見返せます。「もっと見る」で過去の履歴を開けます。',
+            '撮影・解析したメニューを見返せます。履歴を開くと、お酒の詳細や好みマッチ度を確認できます。',
             '気になるお酒はハートでお気に入りに。好きなお酒を２つ以上登録すると、好み診断も利用できます。',
             '好きな味やお酒の傾向を入力して保存しましょう。好みの設定は、メニュー解析のマッチ度やホームのおすすめに使われます。',
           ],

@@ -343,7 +343,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
                     ),
                   ),
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: SegmentedButton<bool>(
                       segments: const [
                         ButtonSegment(
@@ -651,9 +651,13 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
 
   Future<void> _openVenueInMaps(MapVenue venue) async {
     AppAnalytics.instance.event('map', 'map');
+    final placeId = venue.providerPlaceId?.trim();
+    final name = venue.displayName.trim();
+    final coordinates = '${venue.latitude},${venue.longitude}';
     final uri = Uri.https('www.google.com', '/maps/search/', {
       'api': '1',
-      'query': '${venue.latitude},${venue.longitude}',
+      'query': name.isEmpty ? coordinates : '$name $coordinates',
+      if (placeId != null && placeId.isNotEmpty) 'query_place_id': placeId,
     });
     try {
       if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
