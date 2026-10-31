@@ -181,6 +181,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
   bool _earnedOnly = false;
   late bool _bookOpened = widget.initiallyOpen;
   int _pageResetVersion = 0;
+  bool _startAtEnd = false;
   final _catalogTurn = SakeStampPageTurnController();
   final _opening = SakeStampBookOpeningController();
   int? _persistedCode;
@@ -193,10 +194,18 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
     return JapanSakeMapData.load();
   }
 
-  void _select(int code, {bool animate = true, bool? backwards}) {
+  void _select(
+    int code, {
+    bool animate = true,
+    bool? backwards,
+    bool startAtEnd = false,
+  }) {
     void change() {
       if (!mounted) return;
-      setState(() => _selectedCode = code);
+      setState(() {
+        _selectedCode = code;
+        _startAtEnd = startAtEnd;
+      });
       _persistedCode = code;
       SakeStampPreferences.rememberPrefecture(code);
     }
@@ -357,6 +366,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                 controller: _opening,
                 onClosed: () => setState(() {
                   _bookOpened = false;
+                  _startAtEnd = false;
                   _pageResetVersion++;
                 }),
                 initiallyOpen: _bookOpened,
@@ -366,6 +376,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                   child: nationwide
                       ? NationwideStampCatalog(
                           pageResetVersion: _pageResetVersion,
+                          startAtEnd: _startAtEnd,
                           recordedBrands: progress.brandIdsByPrefecture,
                           recordsReady: ready,
                           onBrandTap: (brand) => _openBrand(context, brand),
@@ -375,6 +386,7 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                         )
                       : PrefectureStampCatalog(
                           pageResetVersion: _pageResetVersion,
+                          startAtEnd: _startAtEnd,
                           prefecture: selected,
                           earnedOnly: _earnedOnly,
                           recordedBrandIds: earned,
@@ -382,30 +394,25 @@ class _SakeStampBookPageState extends State<SakeStampBookPage> {
                           onBrandTap: (brand) => _openBrand(context, brand),
                           onNextSection: () =>
                               _select(next?.code ?? 0, backwards: false),
-                          onReturnToCover: _opening.close,
+                          onPreviousSection: () => _select(
+                            previous?.code ?? 0,
+                            backwards: true,
+                            startAtEnd: true,
+                          ),
                         ),
                 ),
               ),
-              if (_bookOpened)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    key: const ValueKey('stamp-return-cover'),
-                    onPressed: _opening.close,
-                    icon: const Icon(Icons.menu_book_outlined, size: 18),
-                    label: Text(
-                      _english(context) ? 'Return to cover' : '表紙に戻る',
-                    ),
-                  ),
-                ),
               Row(
                 children: [
                   Expanded(
                     child: _PrefectureStepButton(
                       key: const ValueKey('stamp-previous-prefecture'),
                       label: previous?.label(context) ?? nationwideLabel,
-                      onPressed: () =>
-                          _select(previous?.code ?? 0, backwards: true),
+                      onPressed: () => _select(
+                        previous?.code ?? 0,
+                        backwards: true,
+                        startAtEnd: true,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),

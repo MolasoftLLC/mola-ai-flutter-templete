@@ -17,6 +17,8 @@ class PrefectureStampCatalog extends StatefulWidget {
     this.pageResetVersion = 0,
     this.onNextSection,
     this.onReturnToCover,
+    this.onPreviousSection,
+    this.startAtEnd = false,
     this.earnedOnly = false,
   });
   final JapanSakePrefecture prefecture;
@@ -29,6 +31,8 @@ class PrefectureStampCatalog extends StatefulWidget {
   final int pageResetVersion;
   final VoidCallback? onNextSection;
   final VoidCallback? onReturnToCover;
+  final VoidCallback? onPreviousSection;
+  final bool startAtEnd;
   final bool earnedOnly;
 
   @override
@@ -102,7 +106,8 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
           }
           _cursor = page.nextCursor;
         });
-      } while (widget.earnedOnly && _needsFilteredPage);
+      } while ((widget.startAtEnd && _cursor != null) ||
+          (widget.earnedOnly && _needsFilteredPage));
     } catch (_) {
       if (mounted && generation == _generation) {
         setState(() => _failed = true);
@@ -125,7 +130,8 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
                   widget.recordedBrandIds.contains(brand.brandId)),
         )
         .toList(growable: false);
-    if (visible.isNotEmpty) {
+    if (visible.isNotEmpty &&
+        !(widget.startAtEnd && (_loading || _cursor != null))) {
       return IgnorePointer(
         ignoring: widget.preview,
         child: ExcludeSemantics(
@@ -142,6 +148,8 @@ class _PrefectureStampCatalogState extends State<PrefectureStampCatalog> {
             onBrandTap: widget.onBrandTap,
             onNextSection: widget.onNextSection,
             onReturnToCover: widget.onReturnToCover,
+            onPreviousSection: widget.onPreviousSection,
+            startAtEnd: widget.startAtEnd,
             hasMore:
                 !widget.preview &&
                 (widget.earnedOnly ? _needsFilteredPage : _cursor != null),
