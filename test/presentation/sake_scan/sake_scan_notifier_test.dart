@@ -14,6 +14,25 @@ void main() {
   final image = File('/tmp/sake_scan_test.jpg');
 
   group('SakeScanNotifier', () {
+    test('候補なしのnon_sake応答でも裏ラベルへ進まず撮影へ戻せる', () async {
+      final repository = _FakeScanRepository(
+        frontResult: SakeScanResult.fromJson({
+          'status': 'non_sake',
+          'scanSessionId': 'rejected',
+          'candidates': [],
+        }),
+      );
+      final notifier = _buildNotifier(repository);
+      await notifier.submitFront(image);
+      expect(notifier.currentState.status, SakeScanViewStatus.nonSake);
+      expect(notifier.currentState.scanSessionId, isNull);
+      expect(await notifier.confirmCandidate(), isNull);
+      expect(repository.confirmCalls, 0);
+      notifier.retry();
+      expect(notifier.currentState.status, SakeScanViewStatus.frontScanning);
+      expect(notifier.currentState.frontImage, isNull);
+    });
+
     test('裏ラベル案内から同じ表写真を再照合できる', () async {
       final repository = _FakeScanRepository(
         frontResult: const SakeScanResult(

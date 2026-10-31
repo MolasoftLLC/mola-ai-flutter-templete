@@ -496,6 +496,18 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
   }
 
   void _applyScanResult(SakeScanResult result) {
+    if (result.status == SakeScanApiStatus.nonSake) {
+      _emit(
+        state.copyWith(
+          status: SakeScanViewStatus.nonSake,
+          clearScanSession: true,
+          candidates: const [],
+          isSubmitting: false,
+          clearError: true,
+        ),
+      );
+      return;
+    }
     if (result.status == SakeScanApiStatus.needBackLabel) {
       _emit(
         state.copyWith(

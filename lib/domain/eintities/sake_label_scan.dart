@@ -1,6 +1,7 @@
 import 'response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
 enum SakeScanApiStatus {
+  nonSake,
   candidates,
   needBackLabel,
   aiRequired,
@@ -824,6 +825,7 @@ class RelatedSakeProduct {
 
 SakeScanApiStatus parseSakeScanApiStatus(dynamic value) {
   return switch (value?.toString()) {
+    'non_sake' => SakeScanApiStatus.nonSake,
     'candidates' => SakeScanApiStatus.candidates,
     'need_back_label' => SakeScanApiStatus.needBackLabel,
     'ai_required' => SakeScanApiStatus.aiRequired,
