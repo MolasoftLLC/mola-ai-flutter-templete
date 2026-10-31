@@ -26,7 +26,7 @@ def simplify(points, tolerance=.018):
 def project(point, inset):
     lon, lat = point
     if inset:
-        return [round(470 + (lon - 122) * 25, 2), round(610 + (28 - lat) * 25, 2)]
+        return [round(400 + (lon - 122) * 32, 2), round(610 + (28 - lat) * 32, 2)]
     return [round((lon - 128) * 38, 2), round((46 - lat) * 40, 2)]
 
 

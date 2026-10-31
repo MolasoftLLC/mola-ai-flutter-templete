@@ -104,6 +104,33 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('ラベル確定後は記録なしでも酒印を取得し、再取得しない', (tester) async {
+    final store = SakeStampStore();
+    addTearDown(store.dispose);
+    await open(tester, store);
+    final session = await SakeStampAwardSession.prepare(screen);
+    await session!.confirmedLabel(screen, 0);
+    expect(store.contains(11), false);
+    final award = session.confirmedLabel(screen, 123);
+    await tester.pumpAndSettle();
+    expect(store.contains(11), true);
+    expect(
+      Provider.of<SavedSakeState>(screen, listen: false).savedSakeList,
+      isEmpty,
+    );
+    expect(find.byType(SakeStampAcquisitionDemo), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('close-stamp-demo')));
+    await tester.pumpAndSettle();
+    await award;
+    await session.confirmedLabel(screen, 123);
+    await tester.pumpAndSettle();
+    expect(find.byType(SakeStampAcquisitionDemo), findsNothing);
+    final restored = SakeStampStore();
+    addTearDown(restored.dispose);
+    await restored.ready;
+    expect(restored.contains(11), true);
+  });
+
   for (final scanId in <int?>[null, 0, 999]) {
     testWidgets('閲覧のみ・別商品では解析済みでも付与しない: $scanId', (tester) async {
       final store = SakeStampStore();

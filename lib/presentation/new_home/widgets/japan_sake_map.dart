@@ -27,9 +27,18 @@ class JapanSakePrefecture {
   final String englishName;
   final Path path;
   late final Rect bounds = path.getBounds();
+  double get dotSpacing => code == 47 ? 3 : 8;
   late final List<Offset> dots = [
-    for (double y = (bounds.top / 8).floor() * 8; y <= bounds.bottom; y += 8)
-      for (double x = (bounds.left / 8).floor() * 8; x <= bounds.right; x += 8)
+    for (
+      double y = (bounds.top / dotSpacing).floor() * dotSpacing;
+      y <= bounds.bottom;
+      y += dotSpacing
+    )
+      for (
+        double x = (bounds.left / dotSpacing).floor() * dotSpacing;
+        x <= bounds.right;
+        x += dotSpacing
+      )
         if (path.contains(Offset(x, y))) Offset(x, y),
   ];
 
@@ -154,21 +163,25 @@ class _JapanMapPainter extends CustomPainter {
       if ((productCounts[prefecture.code] ?? 0) == 0) {
         final dot = Paint()..color = japanMapNavy.withValues(alpha: .58);
         for (final point in prefecture.dots) {
-          canvas.drawCircle(point, 2.15, dot);
+          canvas.drawCircle(point, prefecture.code == 47 ? 1.25 : 2.15, dot);
         }
       }
       canvas.drawPath(
         prefecture.path,
         Paint()
-          ..color = selected ? japanMapNavy : Colors.white
+          ..color = selected
+              ? japanMapNavy
+              : prefecture.code == 47
+              ? japanMapNavy.withValues(alpha: .5)
+              : Colors.white
           ..style = PaintingStyle.stroke
-          ..strokeWidth = selected ? 4 : 2,
+          ..strokeWidth = selected ? 4 : (prefecture.code == 47 ? 1 : 2),
       );
     }
     // Separate the southwest-islands inset without moving the main islands.
     canvas.drawLine(
-      const Offset(470, 590),
-      const Offset(680, 590),
+      const Offset(400, 590),
+      const Offset(705, 590),
       Paint()
         ..color = japanMapNavy.withValues(alpha: .18)
         ..strokeWidth = 2,

@@ -96,10 +96,25 @@ class SakeStampAwardSession {
         (sake.sakeId ?? 0) <= 0) {
       return;
     }
+    await _catalogAward(context, sake.sakeId!, source: 'personal_record');
+  }
+
+  /// Only call after the user's own label scan has confirmed a product.
+  /// Encounter stamps do not create a drinking record.
+  Future<void> confirmedLabel(BuildContext context, int sakeId) async {
+    if (!_current(context) || sakeId <= 0) return;
+    await _catalogAward(context, sakeId, source: 'analyzed_detail');
+  }
+
+  Future<void> _catalogAward(
+    BuildContext context,
+    int sakeId, {
+    required String source,
+  }) async {
     try {
-      final origins = await repository.fetchSakeOrigins([sake.sakeId!]);
+      final origins = await repository.fetchSakeOrigins([sakeId]);
       if (!context.mounted || !_current(context)) return;
-      final origin = origins.where((o) => o.sakeId == sake.sakeId).firstOrNull;
+      final origin = origins.where((o) => o.sakeId == sakeId).firstOrNull;
       if (origin == null || store.contains(origin.brandId)) return;
       int? cursor;
       final seen = <int>{};
@@ -119,7 +134,7 @@ class SakeStampAwardSession {
             prefecture: origin.prefectureCode,
             sakeId: origin.canonicalSakeId,
             name: brand.name,
-            source: 'personal_record',
+            source: source,
           );
           return;
         }

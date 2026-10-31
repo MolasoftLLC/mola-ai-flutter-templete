@@ -77,6 +77,7 @@ class ScanLocationPanel extends StatelessWidget {
                     onChoosePlace: onChoosePlace,
                     onDone: onDone,
                     doneLabel: ready ? '候補を見る' : 'あとで',
+                    emphasizeDone: ready,
                     onPhoto: true,
                     placeName: placeName,
                   ),

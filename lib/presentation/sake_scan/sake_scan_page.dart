@@ -120,6 +120,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   bool _nonSakeDialogOpen = false;
   bool _limitDialogOpen = false;
   bool _faceDialogOpen = false;
+  String? _stampAttemptKey;
   String _recordBaseMemo = '';
   bool _recordMemoEdited = false;
   bool _recordTagsEdited = false;
@@ -964,6 +965,31 @@ class _SakeScanPageState extends State<SakeScanPage>
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SakeScanState>();
+    final confirmedId = (state.savedSake ?? state.sake)?.sakeId;
+    final stampKey =
+        '${state.scanSessionId ?? state.frontImage?.path}:$confirmedId';
+    if (state.status == SakeScanViewStatus.completed &&
+        state.frontImage != null &&
+        confirmedId != null &&
+        confirmedId > 0 &&
+        _stampAttemptKey != stampKey) {
+      _stampAttemptKey = stampKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final current = context.read<SakeScanNotifier>().currentState;
+        if (current.status != SakeScanViewStatus.completed ||
+            (current.savedSake ?? current.sake)?.sakeId != confirmedId ||
+            current.frontImage?.path != state.frontImage?.path ||
+            current.scanSessionId != state.scanSessionId) {
+          return;
+        }
+        final session = await SakeStampAwardSession.prepare(context);
+        if (session != null && context.mounted) {
+          await session.confirmedLabel(context, confirmedId);
+        }
+      });
+    }
+
     if (state.status == SakeScanViewStatus.nonSake && !_nonSakeDialogOpen) {
       _nonSakeDialogOpen = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {

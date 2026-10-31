@@ -29,6 +29,7 @@ class ScanRecordQuestions extends StatefulWidget {
     required this.onDone,
     this.doneLabel = 'あとで',
     this.onPhoto = false,
+    this.emphasizeDone = false,
     this.placeName,
   });
   final ScanRecordAnswers answers;
@@ -37,6 +38,7 @@ class ScanRecordQuestions extends StatefulWidget {
   final VoidCallback onDone;
   final String doneLabel;
   final bool onPhoto;
+  final bool emphasizeDone;
   final String? placeName;
 
   @override
@@ -105,18 +107,39 @@ class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
             textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: 4),
-        TextButton(
-          onPressed: _choosingPlace ? null : widget.onDone,
-          style: TextButton.styleFrom(
-            foregroundColor: ink.withValues(alpha: .8),
+        SizedBox(height: widget.emphasizeDone ? 14 : 4),
+        if (widget.emphasizeDone)
+          FilledButton.icon(
+            onPressed: _choosingPlace ? null : widget.onDone,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFD86B),
+              foregroundColor: const Color(0xFF143861),
+              minimumSize: const Size.fromHeight(52),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow_rounded, size: 22),
+            iconAlignment: IconAlignment.end,
+            label: Text(widget.doneLabel),
+          )
+        else
+          TextButton(
+            onPressed: _choosingPlace ? null : widget.onDone,
+            style: TextButton.styleFrom(
+              foregroundColor: ink.withValues(alpha: .8),
+            ),
+            child: Text(
+              selected && widget.doneLabel == 'あとで'
+                  ? 'この場所で続ける'
+                  : widget.doneLabel,
+            ),
           ),
-          child: Text(
-            selected && widget.doneLabel == 'あとで'
-                ? 'この場所で続ける'
-                : widget.doneLabel,
-          ),
-        ),
       ],
     );
   }
