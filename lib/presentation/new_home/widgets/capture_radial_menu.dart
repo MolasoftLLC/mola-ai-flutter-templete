@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'capture_sketch_icon.dart';
 
 enum CaptureAction { gallery, label, menu }
 
@@ -126,13 +127,11 @@ class CaptureRadialMenu extends StatelessWidget {
                                 shape: const CircleBorder(),
                                 child: SizedBox.square(
                                   dimension: 64,
-                                  child: Icon(
-                                    icon,
-                                    size: 30,
-                                    color: action == CaptureAction.label
-                                        ? Colors.white
-                                        : navy,
-                                  ),
+                                  child: action == CaptureAction.gallery
+                                      ? Icon(icon, size: 30, color: navy)
+                                      : CaptureSketchIcon(
+                                          isMenu: action == CaptureAction.menu,
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 9),
