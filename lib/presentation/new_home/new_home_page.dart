@@ -645,8 +645,14 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
 }
 
 /// ヘッダーと下部ナビから共通利用する高速ラベルスキャン導線。
-Future<void> openNewHomeScanner(BuildContext context) async {
-  final result = await openSakeLabelScanner(context);
+Future<void> openNewHomeScanner(
+  BuildContext context, {
+  bool startWithGallery = false,
+}) async {
+  final result = await openSakeLabelScanner(
+    context,
+    startWithGallery: startWithGallery,
+  );
   if (result == null || !context.mounted) return;
   if (result is String && result.trim().isNotEmpty) {
     final appPageNotifier = context.read<AppPageNotifier>();

@@ -41,16 +41,19 @@ import '../new_home/widgets/sake_stamp_awards.dart';
 
 class SakeScanPage extends StatefulWidget {
   const SakeScanPage._({
+    this.startWithGallery = false,
     this.initialFrontImage,
     this.initialBackImage,
     this.reassignTarget,
   });
 
+  final bool startWithGallery;
   final File? initialFrontImage;
   final File? initialBackImage;
   final Sake? reassignTarget;
 
   static Widget wrapped({
+    bool startWithGallery = false,
     File? initialFrontImage,
     File? initialBackImage,
     Sake? reassignTarget,
@@ -71,6 +74,7 @@ class SakeScanPage extends StatefulWidget {
             ),
           ),
           child: SakeScanPage._(
+            startWithGallery: startWithGallery,
             initialFrontImage: initialFrontImage,
             initialBackImage: initialBackImage,
             reassignTarget: reassignTarget,
@@ -138,7 +142,13 @@ class _SakeScanPageState extends State<SakeScanPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_loadSharingSettings());
     });
-    if (widget.initialFrontImage == null) {
+    if (widget.initialFrontImage == null && widget.startWithGallery) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await _pickFromGallery();
+        if (mounted) unawaited(_initializeCamera());
+      });
+    } else if (widget.initialFrontImage == null) {
       unawaited(_initializeCamera());
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {

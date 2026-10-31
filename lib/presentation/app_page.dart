@@ -19,6 +19,7 @@ import 'my_page/my_page.dart';
 import 'main_search/main_search_page.dart';
 import 'new_home/explore_page.dart';
 import 'new_home/widgets/sake_bottom_navigation.dart';
+import 'new_home/widgets/capture_radial_menu.dart';
 import 'new_home/japan_sake_page.dart';
 import 'new_home/sake_stamp_book_page.dart';
 
@@ -179,34 +180,18 @@ Future<void> _openCapture(
   BuildContext context,
   AppPageNotifier notifier,
 ) async {
-  final en = Localizations.localeOf(context).languageCode == 'en';
-  final menu = await showModalBottomSheet<bool>(
-    context: context,
-    showDragHandle: true,
-    builder: (sheetContext) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt_outlined),
-            title: Text(en ? 'Scan a label' : 'ラベルを撮る'),
-            onTap: () => Navigator.pop(sheetContext, false),
-          ),
-          ListTile(
-            leading: const Icon(Icons.menu_book_outlined),
-            title: Text(en ? 'Photograph a menu' : 'メニューを撮る'),
-            onTap: () => Navigator.pop(sheetContext, true),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    ),
+  final action = await showCaptureRadialMenu(
+    context,
+    anchorKey: notifier.homeFeatureGuide.bottomScanKey,
   );
-  if (menu == null || !context.mounted) return;
-  if (menu) {
+  if (action == null || !context.mounted) return;
+  if (action == CaptureAction.menu) {
     notifier.onTabTapped(1);
   } else {
-    await openNewHomeScanner(context);
+    await openNewHomeScanner(
+      context,
+      startWithGallery: action == CaptureAction.gallery,
+    );
   }
 }
 
