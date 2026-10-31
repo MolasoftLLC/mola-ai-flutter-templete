@@ -1462,34 +1462,6 @@ class _SakeScanPageState extends State<SakeScanPage>
     );
   }
 
-  Widget _buildStatusPanel(String message) {
-    return _BottomCard(
-      child: Row(
-        children: [
-          SizedBox.square(
-            dimension: 24,
-            child: Lottie.asset(
-              'assets/lottie/ai_loading.json',
-              fit: BoxFit.contain,
-              repeat: true,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFF1D3567),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCandidates(SakeScanState state) {
     final candidate = state.selectedCandidate;
     if (candidate == null) return _buildError(state);
@@ -1733,37 +1705,59 @@ class _SakeScanPageState extends State<SakeScanPage>
   }
 
   Widget _buildMatchingQuestions(String message) {
-    if (_questionsDone) return _buildStatusPanel(message);
-    return FractionallySizedBox(
-      widthFactor: 1,
-      heightFactor: 0.72,
-      child: _BottomCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFF1D3567),
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * .48,
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B2034).withValues(alpha: .68),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: .2)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const SizedBox.square(
+                    dimension: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFFD86B),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                child: ScanRecordQuestions(
+              if (!_questionsDone) ...[
+                const SizedBox(height: 20),
+                ScanRecordQuestions(
                   answers: _scanAnswers,
                   onChanged: _updateQuestionDraft,
                   onChoosePlace: _openRecordPlacePicker,
                   onDone: () => setState(() => _questionsDone = true),
-                  doneLabel: '質問を閉じて待つ',
+                  onPhoto: true,
+                  placeName: _recordPlace?.displayName,
                 ),
-              ),
-            ),
-          ],
+              ] else
+                const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );
@@ -1813,6 +1807,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   padding: const EdgeInsets.only(right: 4, bottom: 12),
                   child: showQuestions
                       ? ScanRecordQuestions(
+                          placeName: _recordPlace?.displayName,
                           answers: _scanAnswers,
                           onChanged: _updateQuestionDraft,
                           onChoosePlace: _openRecordPlacePicker,

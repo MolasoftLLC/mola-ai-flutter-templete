@@ -27,194 +27,92 @@ class ScanRecordQuestions extends StatefulWidget {
     required this.onChanged,
     required this.onChoosePlace,
     required this.onDone,
-    this.doneLabel = '記録フォームへ',
+    this.doneLabel = 'あとで',
+    this.onPhoto = false,
+    this.placeName,
   });
   final ScanRecordAnswers answers;
   final VoidCallback onChanged;
   final Future<void> Function() onChoosePlace;
   final VoidCallback onDone;
   final String doneLabel;
+  final bool onPhoto;
+  final String? placeName;
 
   @override
   State<ScanRecordQuestions> createState() => _ScanRecordQuestionsState();
 }
 
 class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
-  int get _step => widget.answers.step;
-  double _drag = 0;
   bool _choosingPlace = false;
-  static const _questions = [
-    'このお酒、飲んだ？',
-    '好きな味だった？',
-    '今いるお店で飲んだ？',
-    'また飲みたい？',
-    '星で評価するなら？',
-  ];
 
-  Future<void> _answer(bool? answer) async {
+  Future<void> _choosePlace() async {
     if (_choosingPlace) return;
-    final answers = widget.answers;
-    switch (_step) {
-      case 0:
-        answers.drank = answer;
-        if (answer != true) {
-          answers.liked = answers.here = answers.again = null;
-          answers.stars = null;
-          widget.onChanged();
-          widget.onDone();
-          return;
-        }
-      case 1:
-        answers.liked = answer;
-      case 2:
-        answers.here = answer;
-      case 3:
-        answers.again = answer;
-    }
-    widget.onChanged();
-    if (_step == 2 && answer == true) {
-      setState(() => _choosingPlace = true);
-      try {
-        await widget.onChoosePlace();
-      } finally {
-        if (mounted) setState(() => _choosingPlace = false);
-      }
-    }
-    if (!mounted) return;
-    if (_step == 4) {
-      widget.onDone();
-    } else {
-      setState(() {
-        widget.answers.step++;
-        _drag = 0;
-      });
+    setState(() => _choosingPlace = true);
+    try {
+      // Choosing a location does not imply drinking, liking, or rating the sake.
+      await widget.onChoosePlace();
+    } finally {
+      if (mounted) setState(() => _choosingPlace = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF1D3567);
+    final ink = widget.onPhoto ? Colors.white : const Color(0xFF143861);
+    final selected = widget.placeName?.trim().isNotEmpty == true;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          '答えられるものだけでOK。あとで編集できます。',
-          style: TextStyle(color: Color(0xFF697386), fontSize: 12),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onHorizontalDragStart: _step == 4 ? null : (_) => _drag = 0,
-          onHorizontalDragUpdate: _step == 4
-              ? null
-              : (event) {
-                  setState(
-                    () => _drag = (_drag + event.delta.dx).clamp(-80, 80),
-                  );
-                },
-          onHorizontalDragCancel: () => setState(() => _drag = 0),
-          onHorizontalDragEnd: _step == 4
-              ? null
-              : (event) {
-                  final answer =
-                      _drag.abs() >= 48 || event.primaryVelocity!.abs() >= 450
-                      ? (_drag.abs() >= 48
-                            ? _drag > 0
-                            : event.primaryVelocity! > 0)
-                      : null;
-                  setState(() => _drag = 0);
-                  if (answer != null) _answer(answer);
-                },
-          child: Transform.translate(
-            offset: Offset(_drag * .35, 0),
-            child: Container(
-              key: ValueKey('scan-question-$_step'),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E9),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFEAD9BA)),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    _step == 2
-                        ? Icons.place_outlined
-                        : Icons.local_bar_outlined,
-                    color: const Color(0xFFFF914D),
-                    size: 36,
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _questions[_step],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: navy,
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  if (_step == 4)
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      children: [
-                        for (var star = 1; star <= 5; star++)
-                          IconButton(
-                            tooltip: '$starつ星',
-                            onPressed: () {
-                              widget.answers.stars = star;
-                              widget.onChanged();
-                              widget.onDone();
-                            },
-                            icon: const Icon(
-                              Icons.star_outline,
-                              color: Color(0xFFD49A20),
-                            ),
-                          ),
-                      ],
-                    )
-                  else ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _choosingPlace
-                                ? null
-                                : () => _answer(false),
-                            child: const Text('← NO'),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: navy,
-                            ),
-                            onPressed: _choosingPlace
-                                ? null
-                                : () => _answer(true),
-                            child: const Text('YES →'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '左右にフリックでも回答',
-                      style: TextStyle(color: Color(0xFF697386), fontSize: 12),
-                    ),
-                  ],
-                  TextButton(
-                    onPressed: _choosingPlace ? null : () => _answer(null),
-                    child: const Text('あとで'),
-                  ),
-                ],
-              ),
-            ),
+        Text(
+          selected ? '場所を選びました' : 'どこで出会ったお酒？',
+          style: TextStyle(
+            color: ink,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
-        TextButton(onPressed: widget.onDone, child: Text(widget.doneLabel)),
+        const SizedBox(height: 6),
+        Text(
+          '場所だけ、先にメモできます。',
+          style: TextStyle(color: ink.withValues(alpha: .8), fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _choosingPlace ? null : _choosePlace,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: ink,
+            disabledForegroundColor: ink.withValues(alpha: .65),
+            backgroundColor: widget.onPhoto
+                ? Colors.white.withValues(alpha: .10)
+                : const Color(0xFFF4F6F7),
+            side: BorderSide(color: ink.withValues(alpha: .4)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          icon: Icon(
+            selected ? Icons.check_circle_outline : Icons.place_outlined,
+          ),
+          label: Text(
+            _choosingPlace
+                ? '場所を選択中…'
+                : selected
+                ? widget.placeName!
+                : 'お店・場所を選ぶ',
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextButton(
+          onPressed: _choosingPlace ? null : widget.onDone,
+          style: TextButton.styleFrom(
+            foregroundColor: ink.withValues(alpha: .8),
+          ),
+          child: Text(selected ? 'この場所で続ける' : widget.doneLabel),
+        ),
       ],
     );
   }

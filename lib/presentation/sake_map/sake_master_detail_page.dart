@@ -1223,6 +1223,7 @@ class _SakeMasterDetailPageState extends State<SakeMasterDetailPage> {
                                     (_isLensAnalyzing ||
                                         isProfileEnrichmentPending)
                                 ? ScanRecordQuestions(
+                                    placeName: _questionPlace?.displayName,
                                     answers: _detailAnswers,
                                     onChanged: () => setState(() {}),
                                     onChoosePlace: () async {
