@@ -132,7 +132,6 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
     final earned = _targets.values.expand((ids) => ids).toSet();
-    final missing = earned.length - _brands.length;
     return Column(
       children: [
         if (_brands.isNotEmpty && !(widget.startAtEnd && _loading))
@@ -193,17 +192,6 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
             key: const ValueKey('national-stamp-retry'),
             onPressed: _load,
             child: Text(english ? 'Retry loading stamps' : '酒印を再読み込み'),
-          )
-        else if (!_loading &&
-            !_previewFull &&
-            widget.recordsReady &&
-            missing > 0 &&
-            _brands.isNotEmpty)
-          Text(
-            english
-                ? '$missing brands could not be found.'
-                : '$missing銘柄の情報を取得できませんでした。',
-            style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
           ),
       ],
     );
