@@ -5,7 +5,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
-import 'package:mola_gemini_flutter_template/presentation/new_home/explore_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/new_home/widgets/sake_bottom_navigation.dart';
 
 void main() {
@@ -23,7 +22,7 @@ void main() {
   });
 
   for (final width in [320.0, 390.0]) {
-    testWidgets('navigation and explore entries stay usable at width $width', (
+    testWidgets('requested navigation order stays usable at width $width', (
       tester,
     ) async {
       tester.view.physicalSize = Size(width, 844);
@@ -32,7 +31,6 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       var selected = -1;
       var scans = 0;
-      final destinations = <String>[];
       final scanKey = GlobalKey();
       final previewKey = GlobalKey();
       await tester.pumpWidget(
@@ -55,14 +53,9 @@ void main() {
             child: RepaintBoundary(
               key: previewKey,
               child: Scaffold(
-                body: ExplorePage(
-                  onSearch: () => destinations.add('search'),
-                  onMenu: () => destinations.add('menu'),
-                  onJapan: () => destinations.add('japan'),
-                  onMap: () => destinations.add('map'),
-                ),
+                body: const SizedBox.expand(),
                 bottomNavigationBar: SakeBottomNavigation(
-                  currentPageIndex: 5,
+                  currentPageIndex: 2,
                   onPageSelected: (index) => selected = index,
                   onScanTap: () => scans++,
                   scanKey: scanKey,
@@ -76,11 +69,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      for (final label in ['銘柄・お酒を探す', 'メニュー解析', '日本酒を旅する', 'お店をマップで探す']) {
-        await tester.tap(find.text(label));
+      expect(find.text('探す'), findsNothing);
+      final labels = ['ホーム', '朱印帳', '解析', 'マップ', 'マイページ'];
+      for (var i = 1; i < labels.length; i++) {
+        expect(
+          tester.getCenter(find.text(labels[i])).dx,
+          greaterThan(tester.getCenter(find.text(labels[i - 1])).dx),
+        );
       }
-      expect(destinations, ['search', 'menu', 'japan', 'map']);
-      for (final entry in {'ホーム': 0, '探す': 5, '酒印帳': 6, 'マイページ': 4}.entries) {
+      for (final entry in {'ホーム': 0, '朱印帳': 6, 'マップ': 2, 'マイページ': 4}.entries) {
         await tester.tap(
           find.descendant(
             of: find.byType(SakeBottomNavigation),

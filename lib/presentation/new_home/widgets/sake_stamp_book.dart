@@ -24,6 +24,8 @@ class SakeStampBook extends StatefulWidget {
     this.preview = false,
     this.onNextSection,
     this.onReturnToCover,
+    this.onPreviousSection,
+    this.startAtEnd = false,
   });
   final String prefectureName;
   final List<SakeBrandSummary> brands;
@@ -40,6 +42,8 @@ class SakeStampBook extends StatefulWidget {
   final bool preview;
   final VoidCallback? onNextSection;
   final VoidCallback? onReturnToCover;
+  final VoidCallback? onPreviousSection;
+  final bool startAtEnd;
   @override
   State<SakeStampBook> createState() => _SakeStampBookState();
 }
@@ -51,6 +55,15 @@ class _SakeStampBookState extends State<SakeStampBook> {
   double _dragDistance = 0;
   bool _allowDrag = false;
   int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startAtEnd) _page = _pages - 1;
+  }
+
+  bool get _canGoBack =>
+      widget.onPreviousSection != null || widget.onReturnToCover != null;
   bool get _canLeaveSection =>
       !widget.hasMore &&
       !widget.loading &&
@@ -97,7 +110,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
   void _goTo(int page) {
     if (_pageTurn.isBusy || page == _page) return;
     if (page < 0) {
-      widget.onReturnToCover?.call();
+      (widget.onPreviousSection ?? widget.onReturnToCover)?.call();
       return;
     }
     if (page >= _pages) {
@@ -120,7 +133,7 @@ class _SakeStampBookState extends State<SakeStampBook> {
     if (_dragTarget == null) {
       if (_dragDistance == 0) return;
       final target = _dragStartPage + (_dragDistance < 0 ? 1 : -1);
-      if (target < 0 && widget.onReturnToCover == null) return;
+      if (target < 0 && !_canGoBack) return;
       if (target >= _pages && !_canLeaveSection) return;
       _dragTarget = target;
       if (target < 0 || target >= _pages) return;
@@ -287,10 +300,13 @@ class _SakeStampBookState extends State<SakeStampBook> {
                       _PageArrow(
                         key: const ValueKey('stamp-previous'),
                         icon: Icons.chevron_left,
-                        label: _page == 0 && widget.onReturnToCover != null
+                        label:
+                            _page == 0 &&
+                                widget.onPreviousSection == null &&
+                                widget.onReturnToCover != null
                             ? (english ? 'Return to cover' : '表紙に戻る')
                             : (english ? 'Previous stamp page' : '前の酒印帳'),
-                        onTap: _page > 0 || widget.onReturnToCover != null
+                        onTap: _page > 0 || _canGoBack
                             ? () => _goTo(_page - 1)
                             : null,
                       ),

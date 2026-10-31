@@ -15,10 +15,18 @@ import 'sake_scan_page.dart';
 
 final _scannerEntryGate = AsyncActionGate();
 
-Future<Object?> openSakeLabelScanner(BuildContext context) =>
-    _scannerEntryGate.run('open', () => _openSakeLabelScanner(context));
+Future<Object?> openSakeLabelScanner(
+  BuildContext context, {
+  bool startWithGallery = false,
+}) => _scannerEntryGate.run(
+  'open',
+  () => _openSakeLabelScanner(context, startWithGallery: startWithGallery),
+);
 
-Future<Object?> _openSakeLabelScanner(BuildContext context) async {
+Future<Object?> _openSakeLabelScanner(
+  BuildContext context, {
+  bool startWithGallery = false,
+}) async {
   AppAnalytics.instance.event('app', 'scan');
   final authRepository = context.read<AuthRepository>();
   if (authRepository.currentUser == null) {
@@ -145,7 +153,8 @@ Future<Object?> _openSakeLabelScanner(BuildContext context) async {
   }
   return Navigator.of(context).push<Object>(
     PageRouteBuilder<Object>(
-      pageBuilder: (_, __, ___) => SakeScanPage.wrapped(),
+      pageBuilder: (_, __, ___) =>
+          SakeScanPage.wrapped(startWithGallery: startWithGallery),
       transitionsBuilder: (_, animation, __, child) => SlideTransition(
         position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
             .animate(

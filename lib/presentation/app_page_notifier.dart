@@ -48,8 +48,16 @@ class AppPageNotifier extends StateNotifier<AppPageState>
   final BuildContext context;
   final homeFeatureGuide = HomeFeatureGuide();
   final myMapRequests = ValueNotifier<int>(0);
+  final communityMapRequests = ValueNotifier<int>(0);
+
+  void openCommunityMap() {
+    myMapRequests.value = 0;
+    onTabTapped(2);
+    communityMapRequests.value++;
+  }
 
   void openMyMap() {
+    communityMapRequests.value = 0;
     onTabTapped(2);
     myMapRequests.value++;
   }
@@ -135,6 +143,7 @@ class AppPageNotifier extends StateNotifier<AppPageState>
     _homeNoticeRefreshTimer?.cancel();
     homeFeatureGuide.dispose();
     myMapRequests.dispose();
+    communityMapRequests.dispose();
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();

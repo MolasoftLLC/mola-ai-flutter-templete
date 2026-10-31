@@ -37,20 +37,24 @@ import 'widgets/lens_progress_toasts.dart';
 import 'widgets/label_capture_guide.dart';
 import 'widgets/sake_scan_candidate_origin.dart';
 import 'widgets/scan_record_questions.dart';
+import 'widgets/scan_location_panel.dart';
 import '../new_home/widgets/sake_stamp_awards.dart';
 
 class SakeScanPage extends StatefulWidget {
   const SakeScanPage._({
+    this.startWithGallery = false,
     this.initialFrontImage,
     this.initialBackImage,
     this.reassignTarget,
   });
 
+  final bool startWithGallery;
   final File? initialFrontImage;
   final File? initialBackImage;
   final Sake? reassignTarget;
 
   static Widget wrapped({
+    bool startWithGallery = false,
     File? initialFrontImage,
     File? initialBackImage,
     Sake? reassignTarget,
@@ -71,6 +75,7 @@ class SakeScanPage extends StatefulWidget {
             ),
           ),
           child: SakeScanPage._(
+            startWithGallery: startWithGallery,
             initialFrontImage: initialFrontImage,
             initialBackImage: initialBackImage,
             reassignTarget: reassignTarget,
@@ -111,6 +116,7 @@ class _SakeScanPageState extends State<SakeScanPage>
   Set<String> _recordTags = <String>{};
   ScanRecordAnswers _scanAnswers = ScanRecordAnswers();
   bool _questionsDone = false;
+  bool _locationInteracted = false;
   bool _nonSakeDialogOpen = false;
   bool _limitDialogOpen = false;
   bool _faceDialogOpen = false;
@@ -138,7 +144,13 @@ class _SakeScanPageState extends State<SakeScanPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_loadSharingSettings());
     });
-    if (widget.initialFrontImage == null) {
+    if (widget.initialFrontImage == null && widget.startWithGallery) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await _pickFromGallery();
+        if (mounted) unawaited(_initializeCamera());
+      });
+    } else if (widget.initialFrontImage == null) {
       unawaited(_initializeCamera());
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -631,6 +643,7 @@ class _SakeScanPageState extends State<SakeScanPage>
       _recordTagsEdited = false;
       _scanAnswers = ScanRecordAnswers();
       _questionsDone = false;
+      _locationInteracted = false;
       _recordPlace = existing?.drinkingPlace;
       _recordTags = {...?existing?.userTags};
       _recordDirty = false;
@@ -1034,7 +1047,18 @@ class _SakeScanPageState extends State<SakeScanPage>
         unawaited(_initializeCamera());
       });
     }
+    final holdCandidates =
+        state.status == SakeScanViewStatus.confirmingCandidate &&
+        _locationInteracted &&
+        !_questionsDone;
     final bottomPanelKey = switch (state.status) {
+      SakeScanViewStatus.searchingFront ||
+      SakeScanViewStatus.searchingBack ||
+      SakeScanViewStatus.identifyingFallback => const ValueKey<String>(
+        'matching-location',
+      ),
+      SakeScanViewStatus.confirmingCandidate when holdCandidates =>
+        const ValueKey<String>('matching-location'),
       SakeScanViewStatus.loadingOverview ||
       SakeScanViewStatus.loadingDetails ||
       SakeScanViewStatus.completed => const ValueKey<String>('analysis-record'),
@@ -1222,7 +1246,10 @@ class _SakeScanPageState extends State<SakeScanPage>
       SakeScanViewStatus.searchingFront || SakeScanViewStatus.searchingBack =>
         _buildMatchingQuestions(context.l10n.searchingLabel),
       SakeScanViewStatus.nonSake => const SizedBox.shrink(),
-      SakeScanViewStatus.confirmingCandidate => _buildCandidates(state),
+      SakeScanViewStatus.confirmingCandidate =>
+        _locationInteracted && !_questionsDone
+            ? _buildMatchingQuestions('照合できました。準備ができたら次へ', ready: true)
+            : _buildCandidates(state),
       SakeScanViewStatus.loadingOverview => _buildAnalysisRecordPanel(state),
       SakeScanViewStatus.identifyingFallback => _buildMatchingQuestions(
         '候補を絞りきれなかったため、表・裏ラベルを詳しく解析しています…',
@@ -1445,34 +1472,6 @@ class _SakeScanPageState extends State<SakeScanPage>
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusPanel(String message) {
-    return _BottomCard(
-      child: Row(
-        children: [
-          SizedBox.square(
-            dimension: 24,
-            child: Lottie.asset(
-              'assets/lottie/ai_loading.json',
-              fit: BoxFit.contain,
-              repeat: true,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFF1D3567),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
             ),
           ),
         ],
@@ -1722,40 +1721,24 @@ class _SakeScanPageState extends State<SakeScanPage>
     );
   }
 
-  Widget _buildMatchingQuestions(String message) {
-    if (_questionsDone) return _buildStatusPanel(message);
-    return FractionallySizedBox(
-      widthFactor: 1,
-      heightFactor: 0.72,
-      child: _BottomCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              message,
-              style: const TextStyle(
-                color: Color(0xFF1D3567),
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const LinearProgressIndicator(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                child: ScanRecordQuestions(
-                  answers: _scanAnswers,
-                  onChanged: _updateQuestionDraft,
-                  onChoosePlace: _openRecordPlacePicker,
-                  onDone: () => setState(() => _questionsDone = true),
-                  doneLabel: '質問を閉じて待つ',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildMatchingQuestions(String message, {bool ready = false}) {
+    return ScanLocationPanel(
+      message: message,
+      answers: _scanAnswers,
+      questionsDone: _questionsDone,
+      ready: ready,
+      placeName: _recordPlace?.displayName,
+      onChanged: _updateQuestionDraft,
+      onChoosePlace: () async {
+        if (!_locationInteracted) setState(() => _locationInteracted = true);
+        await _openRecordPlacePicker();
+      },
+      onInteraction: () {
+        if (!_questionsDone && !_locationInteracted) {
+          setState(() => _locationInteracted = true);
+        }
+      },
+      onDone: () => setState(() => _questionsDone = true),
     );
   }
 
@@ -1803,6 +1786,7 @@ class _SakeScanPageState extends State<SakeScanPage>
                   padding: const EdgeInsets.only(right: 4, bottom: 12),
                   child: showQuestions
                       ? ScanRecordQuestions(
+                          placeName: _recordPlace?.displayName,
                           answers: _scanAnswers,
                           onChanged: _updateQuestionDraft,
                           onChoosePlace: _openRecordPlacePicker,

@@ -7,8 +7,9 @@ void main() {
   Future<void> show(
     WidgetTester tester,
     ScanRecordAnswers answers, {
-    VoidCallback? done,
     Future<void> Function()? place,
+    VoidCallback? done,
+    String? placeName,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -19,6 +20,7 @@ void main() {
               onChanged: () {},
               onChoosePlace: place ?? () async {},
               onDone: done ?? () {},
+              placeName: placeName,
             ),
           ),
         ),
@@ -26,134 +28,66 @@ void main() {
     );
   }
 
-  Future<void> tap(WidgetTester tester, String text) async {
-    await tester.tap(find.text(text));
-    await tester.pump();
-  }
-
-  for (final button in ['← NO', 'あとで']) {
-    testWidgets('$button skips drinking questions without making a record', (
-      tester,
-    ) async {
-      final answers = ScanRecordAnswers();
-      var done = false;
-      await show(tester, answers, done: () => done = true);
-      await tap(tester, button);
-      expect(done, isTrue);
-      expect(answers.memo, isEmpty);
-      expect(answers.liked, isNull);
-      expect(answers.stars, isNull);
-    });
-  }
-  testWidgets(
-    'answers and optional stars become editable memo, place is explicitly selected',
-    (tester) async {
-      final answers = ScanRecordAnswers();
-      var placeRequests = 0;
-      var done = false;
-      await show(
-        tester,
-        answers,
-        done: () => done = true,
-        place: () async {
-          placeRequests++;
-        },
-      );
-      await tap(tester, 'YES →');
-      expect(find.text('好きな味だった？'), findsOneWidget);
-      await tap(tester, '← NO');
-      await tap(tester, 'YES →');
-      expect(placeRequests, 1);
-      await tap(tester, 'YES →');
-      await tester.tap(find.byTooltip('4つ星'));
-      await tester.pump();
-      expect(done, isTrue);
-      expect(answers.memo, contains('好みの味ではなかった'));
-      expect(answers.memo, contains('また飲みたい'));
-      expect(answers.memo, contains('★★★★（4/5）'));
-    },
-  );
-  testWidgets('left/right flicks answer; short drag does not answer', (
+  testWidgets('place selection never creates drinking or taste answers', (
     tester,
   ) async {
     final answers = ScanRecordAnswers();
-    await show(tester, answers);
-    await tester.timedDrag(
-      find.byKey(const ValueKey('scan-question-0')),
-      const Offset(15, 0),
-      const Duration(seconds: 1),
+    var requests = 0;
+    await show(
+      tester,
+      answers,
+      place: () async {
+        requests++;
+      },
     );
+    expect(find.text('このお酒、飲んだ？'), findsNothing);
+    expect(find.text('好きな味だった？'), findsNothing);
+    await tester.tap(find.text('お店・場所を選ぶ'));
     await tester.pump();
+    expect(requests, 1);
+    expect(answers.memo, isEmpty);
     expect(answers.drank, isNull);
-    await tester.drag(
-      find.byKey(const ValueKey('scan-question-0')),
-      const Offset(110, 0),
-    );
-    await tester.pump();
-    expect(answers.drank, isTrue);
-    await tester.drag(
-      find.byKey(const ValueKey('scan-question-1')),
-      const Offset(-110, 0),
-    );
-    await tester.pump();
-    expect(answers.liked, isFalse);
+    expect(answers.stars, isNull);
+    await show(tester, answers, placeName: 'テストのお店');
+    expect(find.text('テストのお店'), findsOneWidget);
+    expect(find.text('この場所で続ける'), findsOneWidget);
   });
-  testWidgets(
-    'skip retains earlier answers and never invents stars or location',
-    (tester) async {
-      final answers = ScanRecordAnswers();
-      var places = 0;
-      await show(
-        tester,
-        answers,
-        place: () async {
-          places++;
-        },
-      );
-      await tap(tester, 'YES →');
-      for (var i = 0; i < 4; i++) {
-        await tap(tester, 'あとで');
-      }
-      expect(answers.memo, '飲んだ');
-      expect(answers.stars, isNull);
-      expect(places, 0);
-    },
-  );
-  testWidgets(
-    'analysis finishing while choosing a place safely removes the cards',
-    (tester) async {
-      final answers = ScanRecordAnswers();
-      final place = Completer<void>();
-      await show(tester, answers, place: () => place.future);
-      await tap(tester, 'YES →');
-      await tap(tester, 'YES →');
-      await tap(tester, 'YES →');
-      await tester.pumpWidget(const MaterialApp(home: Text('解析完了')));
-      place.complete();
-      await tester.pump();
-      expect(answers.memo, contains('好きな味だった'));
-      expect(tester.takeException(), isNull);
-    },
-  );
-  testWidgets(
-    'matching answers resume after candidate selection or back label',
-    (tester) async {
-      final answers = ScanRecordAnswers();
-      await show(tester, answers);
-      await tap(tester, 'YES →');
-      await tap(tester, '← NO');
-      await tester.pumpWidget(const MaterialApp(home: Text('候補を選ぶ')));
-      await show(tester, answers);
-      expect(find.text('今いるお店で飲んだ？'), findsOneWidget);
-      expect(answers.drank, isTrue);
-      expect(answers.liked, isFalse);
-      expect(answers.memo, contains('好みの味ではなかった'));
-      await tap(tester, 'あとで');
-      expect(find.text('また飲みたい？'), findsOneWidget);
-    },
-  );
-
-  testWidgets('small screen supports large text without overflow', (
+  testWidgets('skip does not open location or create a record', (tester) async {
+    var done = false;
+    final answers = ScanRecordAnswers();
+    await show(
+      tester,
+      answers,
+      done: () => done = true,
+      place: () async => fail('must not request location'),
+    );
+    await tester.tap(find.text('あとで'));
+    expect(done, isTrue);
+    expect(answers.memo, isEmpty);
+  });
+  testWidgets('picker is single flight and safe when analysis completes', (
+    tester,
+  ) async {
+    final pending = Completer<void>();
+    var calls = 0;
+    await show(
+      tester,
+      ScanRecordAnswers(),
+      place: () {
+        calls++;
+        return pending.future;
+      },
+    );
+    await tester.tap(find.text('お店・場所を選ぶ'));
+    await tester.pump();
+    await tester.tap(find.text('場所を選択中…'));
+    expect(calls, 1);
+    await tester.pumpWidget(const SizedBox());
+    pending.complete();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('compact location question fits narrow screen with larger text', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -166,11 +100,15 @@ void main() {
           data: const MediaQueryData(textScaler: TextScaler.linear(1.5)),
           child: Scaffold(
             body: SingleChildScrollView(
-              child: ScanRecordQuestions(
-                answers: ScanRecordAnswers(),
-                onChanged: () {},
-                onChoosePlace: () async {},
-                onDone: () {},
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: ScanRecordQuestions(
+                  answers: ScanRecordAnswers(),
+                  onChanged: () {},
+                  onChoosePlace: () async {},
+                  onDone: () {},
+                  onPhoto: true,
+                ),
               ),
             ),
           ),

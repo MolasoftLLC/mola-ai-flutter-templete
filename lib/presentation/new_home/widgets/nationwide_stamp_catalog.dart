@@ -16,6 +16,8 @@ class NationwideStampCatalog extends StatefulWidget {
     this.pageResetVersion = 0,
     this.onNextSection,
     this.onReturnToCover,
+    this.onPreviousSection,
+    this.startAtEnd = false,
   });
   final Map<int, Set<int>> recordedBrands;
   final bool recordsReady;
@@ -26,6 +28,8 @@ class NationwideStampCatalog extends StatefulWidget {
   final int pageResetVersion;
   final VoidCallback? onNextSection;
   final VoidCallback? onReturnToCover;
+  final VoidCallback? onPreviousSection;
+  final bool startAtEnd;
 
   @override
   State<NationwideStampCatalog> createState() => _NationwideStampCatalogState();
@@ -128,10 +132,9 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
   Widget build(BuildContext context) {
     final english = Localizations.localeOf(context).languageCode == 'en';
     final earned = _targets.values.expand((ids) => ids).toSet();
-    final missing = earned.length - _brands.length;
     return Column(
       children: [
-        if (_brands.isNotEmpty)
+        if (_brands.isNotEmpty && !(widget.startAtEnd && _loading))
           IgnorePointer(
             ignoring: widget.preview,
             child: ExcludeSemantics(
@@ -148,6 +151,8 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
                 onBrandTap: widget.onBrandTap,
                 onNextSection: widget.onNextSection,
                 onReturnToCover: widget.onReturnToCover,
+                onPreviousSection: widget.onPreviousSection,
+                startAtEnd: widget.startAtEnd,
                 hasMore: false,
                 loading: _loading,
                 failed: _failed,
@@ -187,17 +192,6 @@ class _NationwideStampCatalogState extends State<NationwideStampCatalog> {
             key: const ValueKey('national-stamp-retry'),
             onPressed: _load,
             child: Text(english ? 'Retry loading stamps' : '酒印を再読み込み'),
-          )
-        else if (!_loading &&
-            !_previewFull &&
-            widget.recordsReady &&
-            missing > 0 &&
-            _brands.isNotEmpty)
-          Text(
-            english
-                ? '$missing brands could not be found.'
-                : '$missing銘柄の情報を取得できませんでした。',
-            style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
           ),
       ],
     );

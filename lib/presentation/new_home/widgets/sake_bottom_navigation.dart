@@ -50,24 +50,24 @@ class SakeBottomNavigation extends StatelessWidget {
                     ),
                     _NavigationItem(
                       focusKey: menuAnalysisKey,
-                      icon: Icons.search,
-                      label:
-                          Localizations.localeOf(context).languageCode == 'en'
-                          ? 'Explore'
-                          : '探す',
-                      selected: const [1, 2, 5].contains(currentPageIndex),
-                      onTap: () => onPageSelected(5),
-                    ),
-                    const Expanded(child: SizedBox()),
-                    _NavigationItem(
-                      focusKey: mapKey,
                       icon: Icons.menu_book_outlined,
                       label:
                           Localizations.localeOf(context).languageCode == 'en'
                           ? 'Stamps'
-                          : '酒印帳',
+                          : '朱印帳',
                       selected: currentPageIndex == 6,
                       onTap: () => onPageSelected(6),
+                    ),
+                    const Expanded(child: SizedBox()),
+                    _NavigationItem(
+                      focusKey: mapKey,
+                      icon: Icons.public,
+                      label:
+                          Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Map'
+                          : 'マップ',
+                      selected: currentPageIndex == 2,
+                      onTap: () => onPageSelected(2),
                     ),
                     _NavigationItem(
                       focusKey: myPageKey,
@@ -108,8 +108,8 @@ class SakeBottomNavigation extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   Localizations.localeOf(context).languageCode == 'en'
-                      ? 'Capture'
-                      : '撮る',
+                      ? 'Analyze'
+                      : '解析',
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ],
