@@ -471,7 +471,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginToViewChart => 'Sign in to view chart';
 
   @override
-  String get sakeDiagnosisTitle => 'Your sake preference analysis';
+  String get sakeDiagnosisTitle => 'Sake analysis from your favorites';
 
   @override
   String get tasteChartUpdated =>
@@ -1295,7 +1295,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get favoriteDiagnosis => 'Your sake taste analysis';
+  String get favoriteDiagnosis => 'Sake analysis from your favorites';
 
   @override
   String get diagnosisDailyLimit =>

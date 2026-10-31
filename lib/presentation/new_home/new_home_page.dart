@@ -152,7 +152,7 @@ class _NewHomePageState extends State<NewHomePage> {
                   physics: const AlwaysScrollableScrollPhysics(
                     parent: BouncingScrollPhysics(),
                   ),
-                  padding: const EdgeInsets.only(top: 8, bottom: 34),
+                  padding: const EdgeInsets.only(top: 24, bottom: 32),
                   children: [
                     HomeSectionTitle(
                       title: context.l10n.newHomeRecentSakes,
@@ -246,7 +246,6 @@ class _NewHomePageState extends State<NewHomePage> {
                           }
                         },
                       ),
-                    const SizedBox(height: 28),
                     const _ObiDivider(),
                     const SakeStampBookSection(),
                     JapanSakeSection(
@@ -255,7 +254,6 @@ class _NewHomePageState extends State<NewHomePage> {
                           .homeFeatureGuide
                           .japanSakeKey,
                     ),
-                    const SizedBox(height: 16),
                     _HomeRecommendations(
                       key: context
                           .read<AppPageNotifier>()
@@ -263,7 +261,6 @@ class _NewHomePageState extends State<NewHomePage> {
                           .recommendationsKey,
                       profilesFor: _profilesFor,
                     ),
-                    const SizedBox(height: 28),
                     const _ObiDivider(),
                     Column(
                       key: context
@@ -823,10 +820,10 @@ class _ObiDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     child: SizedBox(
       key: const Key('home-obi-divider'),
-      height: 42,
+      height: 32,
       width: double.infinity,
       child: Image.asset(
         'assets/images/obi.png',

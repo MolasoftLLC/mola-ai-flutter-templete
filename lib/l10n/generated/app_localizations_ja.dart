@@ -455,7 +455,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get loginToViewChart => 'ログインしてチャートを見る';
 
   @override
-  String get sakeDiagnosisTitle => 'あなたにぴったりのお酒診断';
+  String get sakeDiagnosisTitle => 'お気に入りからお酒診断';
 
   @override
   String get tasteChartUpdated => '味覚チャートを更新しました！\nお気に入りを増やすとさらに精度が上がります。';
@@ -1249,7 +1249,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get favoriteDiagnosis => 'あなたにぴったりのお酒診断';
+  String get favoriteDiagnosis => 'お気に入りからお酒診断';
 
   @override
   String get diagnosisDailyLimit => '診断は1日に3回までです。時間をおいてお試しください。';

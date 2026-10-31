@@ -9,10 +9,11 @@ class MyPageFeatureGuide {
   final savedKey = GlobalKey();
   final historyKey = GlobalKey();
   final favoritesKey = GlobalKey();
+  final myMapKey = GlobalKey();
   final preferencesKey = GlobalKey();
   final scrollController = ScrollController();
   bool _showing = false;
-  static const _preferenceKey = 'my_page_feature_guide_shown_v1';
+  static const _preferenceKey = 'my_page_feature_guide_shown_v2';
 
   List<GlobalKey> get _keys => [
     accountKey,
@@ -24,8 +25,8 @@ class MyPageFeatureGuide {
 
   void dispose() => scrollController.dispose();
 
-  Rect? _bounds(int step) {
-    final targetContext = _keys[step].currentContext;
+  Rect? _bounds(int step, List<GlobalKey> keys) {
+    final targetContext = keys[step].currentContext;
     final box = targetContext?.findRenderObject();
     if (box is! RenderBox || !box.attached || !box.hasSize) return null;
     // 長い一覧全体ではなく、機能を示す見出しをフォーカスする。
@@ -55,6 +56,9 @@ class MyPageFeatureGuide {
       await WidgetsBinding.instance.endOfFrame;
       if (!context.mounted || ModalRoute.of(context)?.isCurrent != true) return;
       if (_keys.any((key) => key.currentContext == null)) return;
+      final includeMap = myMapKey.currentContext != null;
+      final keys = [..._keys];
+      if (includeMap) keys.insert(3, myMapKey);
       FocusScope.of(context).unfocus();
       final completed = await showGeneralDialog<bool>(
         context: context,
@@ -64,31 +68,37 @@ class MyPageFeatureGuide {
         pageBuilder: (_, __, ___) => FeatureGuideOverlay(
           welcomeTitle: 'マイページの使い方',
           welcomeMessage: '保存した一本も、好きな味も。\nあなたのお酒の記録を、ここにまとめます。',
-          stepIcons: const [
+          stepIcons: [
             Icons.person_outline,
             Icons.bookmark_border,
             Icons.receipt_long_outlined,
+            if (includeMap) Icons.map_outlined,
             Icons.favorite_border,
             Icons.tune,
           ],
-          titles: const [
+          titles: [
             'プロフィール・ポイント',
             '保存したお酒',
             'メニュー解析履歴',
+            if (includeMap) 'あなたの地図',
             'お気に入りのお酒',
             '好きなお酒の傾向',
           ],
-          messages: const [
+          messages: [
             'プロフィールの設定やログインはこちらから。うらやま・マップ貢献ポイントやバッジは、タップすると詳しく確認できます。',
             'スキャンして保存したお酒を振り返れます。お酒をタップして、写真や飲んだ場所などの記録を確認しましょう。',
             '撮影・解析したメニューを見返せます。履歴を開くと、お酒の詳細や好みマッチ度を確認できます。',
-            '気になるお酒はハートでお気に入りに。好きなお酒を２つ以上登録すると、好み診断も利用できます。',
-            '好きな味やお酒の傾向を入力して保存しましょう。好みの設定は、メニュー解析のマッチ度やホームのおすすめに使われます。',
+            if (includeMap)
+              '場所を登録したお酒を、自分の地図で振り返れます。地図をタップすると「自分の登録」に絞った大きなマップが開きます。',
+            '気になるお酒はハートでお気に入りに。好きな一本をまとめて見返せます。',
+            'お気に入りを２つ以上登録すると「お気に入りからお酒診断」を使えます。好きな味を自分で入力することもでき、マッチ度やおすすめに反映されます。',
           ],
-          outlineSteps: const {0, 1, 2, 3, 4},
-          readTargets: (step) => [if (_bounds(step) case final Rect rect) rect],
+          outlineSteps: {for (var i = 0; i < keys.length; i++) i},
+          readTargets: (step) => [
+            if (_bounds(step, keys) case final Rect rect) rect,
+          ],
           prepareStep: (step) async {
-            final target = _keys[step].currentContext;
+            final target = keys[step].currentContext;
             if (target == null || !target.mounted) return;
             await Scrollable.ensureVisible(
               target,

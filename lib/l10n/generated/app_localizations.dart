@@ -947,7 +947,7 @@ abstract class AppLocalizations {
   /// No description provided for @sakeDiagnosisTitle.
   ///
   /// In ja, this message translates to:
-  /// **'あなたにぴったりのお酒診断'**
+  /// **'お気に入りからお酒診断'**
   String get sakeDiagnosisTitle;
 
   /// No description provided for @tasteChartUpdated.
@@ -2459,7 +2459,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteDiagnosis.
   ///
   /// In ja, this message translates to:
-  /// **'あなたにぴったりのお酒診断'**
+  /// **'お気に入りからお酒診断'**
   String get favoriteDiagnosis;
 
   /// No description provided for @diagnosisDailyLimit.

@@ -9,6 +9,7 @@ import '../../domain/eintities/sake_catalog_browse.dart';
 import 'widgets/japan_catalog_list.dart';
 import 'widgets/sake_catalog_thumbnail.dart';
 import '../sake_map/sake_master_detail_page.dart';
+import '../sake_map/prefecture_stamp_link.dart';
 import 'widgets/japan_sake_map.dart';
 import 'widgets/sake_journey_progress.dart';
 import '../my_page/saved_sake_detail_page.dart';
@@ -41,7 +42,7 @@ class _JapanSakeSectionState extends State<JapanSakeSection> {
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
     builder: (context, progress, legend, ready) => Padding(
       key: const ValueKey('home-japan-sake-section'),
-      padding: const EdgeInsets.only(top: 12, bottom: 40),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -422,20 +423,7 @@ class JapanSakeRecordsPage extends StatelessWidget {
             if (!ready)
               legend
             else ...[
-              Text(
-                _english(context)
-                    ? '${records.length} products · based on brewery origin'
-                    : '${records.length}商品・蔵元の所在地で集計',
-                style: const TextStyle(color: japanMapNavy),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _english(context)
-                    ? 'The same product is shown once, even with multiple records.'
-                    : '同じ商品は、複数の記録があっても1つにまとめています。',
-                style: const TextStyle(color: Color(0xFF687880), fontSize: 12),
-              ),
-              const SizedBox(height: 16),
+              PrefectureStampLink(prefectureCode: prefecture.code),
               if (records.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),

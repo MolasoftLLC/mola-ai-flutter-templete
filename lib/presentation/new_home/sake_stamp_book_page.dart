@@ -74,7 +74,7 @@ class _SakeStampBookSectionState extends State<SakeStampBookSection> {
         final prefecture = prefectures.firstWhere((p) => p.code == 35);
         return Padding(
           key: const ValueKey('home-sake-stamp-section'),
-          padding: const EdgeInsets.only(top: 12, bottom: 28),
+          padding: const EdgeInsets.only(bottom: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

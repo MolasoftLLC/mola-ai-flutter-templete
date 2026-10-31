@@ -150,7 +150,7 @@ class HomeFeatureGuide {
           messages: const [
             '「ラベルを撮る」はボトル、「メニューを撮る」はお店のメニューへ。保存済みの写真は「写真から選ぶ」を使います。今は案内用の表示です。',
             'ホームの検索欄から、お酒の名前や条件で探せます。気になる一本の詳細を見てみましょう。',
-            '自分で解析したお酒の詳細や、飲んだ記録から酒印を集められます。全国・県別で見返せます。酒印の取得だけでは、飲んだ記録にはなりません。',
+            '自分で解析したお酒の詳細や、飲んだ記録から酒印を集められます。全国・県別で見返せます。',
             'お酒が登録されたお店を地図で探せます。「すべての店舗」と「自分の登録」を切り替え、お酒の名前でも絞り込めます。',
             '保存したお酒・お気に入り・メニュー解析履歴をまとめて確認。飲んだ感想や場所を残したり、好みの設定を変更したりできます。',
             'マイページで好きなお酒の傾向を設定すると、おすすめや好みマッチ度の参考になります。新しい一本を探すきっかけに。',
@@ -225,7 +225,12 @@ class FeatureGuideOverlay extends StatefulWidget {
   State<FeatureGuideOverlay> createState() => FeatureGuideOverlayState();
 }
 
-class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
+class FeatureGuideOverlayState extends State<FeatureGuideOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _focusPulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
   int _step = -1;
   bool _scrolling = false;
   final GlobalKey _overlayKey = GlobalKey();
@@ -246,7 +251,17 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
   @override
   void dispose() {
     _focusTimer?.cancel();
+    _focusPulse.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _focusPulse.stop();
+      _focusPulse.value = 0;
+    }
   }
 
   void _refreshFocus() {
@@ -284,6 +299,11 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
       if (step >= 0) await widget.prepareStep(step);
       if (!mounted) return;
       setState(() => _step = step);
+      _focusPulse.stop();
+      _focusPulse.value = 0;
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _focusPulse.repeat(reverse: true, count: 4);
+      }
     } finally {
       if (mounted) setState(() => _scrolling = false);
     }
@@ -302,6 +322,7 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
           onTap: _next,
           child: CustomPaint(
             painter: _HomeGuideFocusPainter(
+              pulse: _focusPulse,
               targets: _scrolling ? const [] : _focusRects,
               circles: widget.circleSteps.contains(_step),
               outline: widget.outlineSteps.contains(_step),
@@ -494,11 +515,13 @@ class FeatureGuideOverlayState extends State<FeatureGuideOverlay> {
 }
 
 class _HomeGuideFocusPainter extends CustomPainter {
-  const _HomeGuideFocusPainter({
+  _HomeGuideFocusPainter({
+    required this.pulse,
     required this.targets,
     required this.circles,
     this.outline = false,
-  });
+  }) : super(repaint: pulse);
+  final Animation<double> pulse;
   final List<Rect> targets;
   final bool circles;
   final bool outline;
@@ -513,9 +536,10 @@ class _HomeGuideFocusPainter extends CustomPainter {
       Offset.zero & size,
       Paint()..color = Colors.black.withValues(alpha: .68),
     );
+    final expansion = 8 + 6 * Curves.easeInOut.transform(pulse.value);
     final clearPaint = Paint()..blendMode = BlendMode.clear;
     for (final target in targets) {
-      final rect = target.inflate(8);
+      final rect = target.inflate(expansion);
       if (circles) {
         canvas.drawOval(rect, clearPaint);
       } else {
@@ -529,11 +553,14 @@ class _HomeGuideFocusPainter extends CustomPainter {
     if (outline) {
       for (final target in targets) {
         canvas.drawRRect(
-          RRect.fromRectAndRadius(target.inflate(8), const Radius.circular(14)),
+          RRect.fromRectAndRadius(
+            target.inflate(expansion),
+            const Radius.circular(14),
+          ),
           Paint()
             ..color = const Color(0xFFFFD166)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
+            ..strokeWidth = 2 + pulse.value,
         );
       }
     }

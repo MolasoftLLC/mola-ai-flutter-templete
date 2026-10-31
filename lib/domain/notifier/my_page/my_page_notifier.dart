@@ -33,6 +33,7 @@ abstract class MyPageState with _$MyPageState {
     String? userIconUrl,
     String? preferences,
     String? sakePreferenceAnalysis,
+    String? sakePreferenceAnalysisError,
     TastePreferenceProfile? tasteProfile,
     @Default(<String, int>{}) Map<String, int> achievementCounts,
     // TextEditingControllerはfreezedで管理できないため、別途保持
@@ -234,7 +235,11 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return;
     }
 
-    state = state.copyWith(isLoading: true, sakePreferenceAnalysis: null);
+    state = state.copyWith(
+      isLoading: true,
+      sakePreferenceAnalysis: null,
+      sakePreferenceAnalysisError: null,
+    );
     try {
       TastePreferenceProfile? profile;
       final user = _authRepository.currentUser;
@@ -294,19 +299,27 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     } on MonthlyTasteAnalysisLimitException {
       state = state.copyWith(
         isLoading: false,
-        sakePreferenceAnalysis: '今月の好み再解析は済んでいます。次回は来月お試しください。',
+        sakePreferenceAnalysis: null,
+        sakePreferenceAnalysisError: '今月の好み再解析は済んでいます。次回は来月お試しください。',
       );
     } catch (error, stackTrace) {
       logger.warning('味覚プロファイル解析で例外が発生しました: $error');
       logger.info(stackTrace.toString());
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        sakePreferenceAnalysis: null,
+        sakePreferenceAnalysisError: '好みの解析に失敗しました。時間をおいてもう一度お試しください。',
+      );
     }
   }
 
   // お酒診断の結果を好みの設定として保存する
   Future<bool> saveSakePreferenceAsPreferences() async {
-    if (state.isSavingPreferences) return false;
-    if (state.sakePreferenceAnalysis != null) {
+    if (state.isSavingPreferences ||
+        state.isLoading ||
+        state.sakePreferenceAnalysisError != null)
+      return false;
+    if (state.sakePreferenceAnalysis?.trim().isNotEmpty == true) {
       setPreferences(state.sakePreferenceAnalysis!);
       return savePreferences();
     }

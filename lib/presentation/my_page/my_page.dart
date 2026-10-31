@@ -697,9 +697,12 @@ class _MyPageState extends State<MyPage> {
                       ),
                       const SizedBox(height: 16),
                       if (isLoggedIn) ...[
-                        MyMapPreview(
-                          key: ValueKey('my-map-${authUser.uid}'),
-                          isActive: widget.isActive,
+                        KeyedSubtree(
+                          key: _guide.myMapKey,
+                          child: MyMapPreview(
+                            key: ValueKey('my-map-${authUser.uid}'),
+                            isActive: widget.isActive,
+                          ),
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -839,71 +842,6 @@ class _MyPageState extends State<MyPage> {
                         ),
                       ),
 
-                      // お酒診断ボタン
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.9,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ElevatedButton.icon(
-                          onPressed: isLoading || isSavingPreferences
-                              ? null
-                              : () async {
-                                  if (_preferenceAnalysisOpen) return;
-                                  // お気に入りの日本酒が2つ以上あるか確認
-                                  if (myFavoriteSakeList.length >= 2) {
-                                    if (!notifier.hasAnalysisQuota) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            context.l10n.diagnosisDailyLimit,
-                                          ),
-                                          duration: const Duration(seconds: 2),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    // 2つ以上ある場合は診断を実行
-                                    _showSakePreferenceAnalysisDialog(
-                                      context,
-                                      notifier,
-                                    );
-                                    notifier.analyzeSakePreference(
-                                      myFavoriteSakeList,
-                                    );
-                                  } else {
-                                    // 2つ未満の場合はトーストメッセージのみ表示
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          context.l10n.needMoreFavorites,
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                },
-                          icon: const Icon(Icons.psychology),
-                          label: Text(
-                            context.l10n.favoriteDiagnosis,
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber.shade700,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-
                       // 好きなお酒の傾向入力フォーム
                       Container(
                         width: MediaQuery.of(context).size.width,
@@ -944,6 +882,81 @@ class _MyPageState extends State<MyPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
+                            // お酒診断ボタン
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: ElevatedButton.icon(
+                                onPressed: isLoading || isSavingPreferences
+                                    ? null
+                                    : () async {
+                                        if (_preferenceAnalysisOpen) return;
+                                        // お気に入りの日本酒が2つ以上あるか確認
+                                        if (myFavoriteSakeList.length >= 2) {
+                                          if (!notifier.hasAnalysisQuota) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  context
+                                                      .l10n
+                                                      .diagnosisDailyLimit,
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          // 2つ以上ある場合は診断を実行
+                                          _showSakePreferenceAnalysisDialog(
+                                            context,
+                                            notifier,
+                                          );
+                                          notifier.analyzeSakePreference(
+                                            myFavoriteSakeList,
+                                          );
+                                        } else {
+                                          // 2つ未満の場合はトーストメッセージのみ表示
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                context.l10n.needMoreFavorites,
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                icon: const Icon(Icons.psychology),
+                                label: Text(
+                                  context.l10n.favoriteDiagnosis,
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber.shade700,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+
                             if (isLoggedIn)
                               _buildPreferenceChartPreview(
                                 context,
@@ -1691,6 +1704,9 @@ class _MyPageState extends State<MyPage> {
             final sakePreferenceAnalysis = context.select(
               (MyPageState state) => state.sakePreferenceAnalysis,
             );
+            final analysisError = context.select(
+              (MyPageState state) => state.sakePreferenceAnalysisError,
+            );
             final tasteProfile = context.select(
               (MyPageState state) => state.tasteProfile,
             );
@@ -1709,6 +1725,14 @@ class _MyPageState extends State<MyPage> {
                 child: SingleChildScrollView(
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
+                      : analysisError != null
+                      ? Text(
+                          analysisError,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        )
                       : sakePreferenceAnalysis != null
                       ? Text(
                           sakePreferenceAnalysis,
@@ -1746,7 +1770,9 @@ class _MyPageState extends State<MyPage> {
                     style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ),
-                if (sakePreferenceAnalysis != null && !isLoading)
+                if (analysisError == null &&
+                    sakePreferenceAnalysis?.trim().isNotEmpty == true &&
+                    !isLoading)
                   ElevatedButton(
                     onPressed: isSavingPreferences
                         ? null
