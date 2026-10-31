@@ -13,6 +13,6 @@
 
 PR95をmainへマージ。ビルド対象e840ea8とマージ416c44cの内容一致を確認。CLI exportの既知の署名エラー後、同じアーカイブをOrganizerからアップロード。初回認証エラーは配信画面の開き直しで解消。Internal Onlyは未使用。
 
-[サーバー修正PR62](https://github.com/MolasoftLLC/molasoft-ai-central/pull/62)は最新mainの画像優先判定を保持して統合。サーバー配信結果は別途追記。
+[サーバー修正PR62](https://github.com/MolasoftLLC/molasoft-ai-central/pull/62)は最新mainの画像優先判定を保持して統合。2026-10-31 14:34 JST、コミット023802dの本番反映・マイグレーション・公開ヘルスチェック成功を確認。14:35 JSTの追加ヘルス確認もproduction / ok。実行: https://github.com/MolasoftLLC/molasoft-ai-central/actions/runs/41172827404 。ローカルのsake-integrity 227件とresolver 2件成功。
 
 ![Appleアップロード完了](images/release_178_20261031/ios_upload.png)
