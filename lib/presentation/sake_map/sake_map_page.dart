@@ -27,15 +27,21 @@ import 'sake_master_detail_page.dart';
 import 'venue_menu_carousel.dart';
 
 class SakeMapPage extends StatefulWidget {
-  const SakeMapPage._({this.initialSake, this.myMapRequests});
+  const SakeMapPage._({
+    this.initialSake,
+    this.myMapRequests,
+    this.communityMapRequests,
+  });
 
   final ValueNotifier<int>? myMapRequests;
+  final ValueNotifier<int>? communityMapRequests;
 
   final SakeMapSearchResult? initialSake;
 
   static Widget wrapped({
     SakeMapSearchResult? initialSake,
     ValueNotifier<int>? myMapRequests,
+    ValueNotifier<int>? communityMapRequests,
   }) => StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
     create: (context) => SakeMapPageNotifier(
       context.read<PlaceMapRepository>(),
@@ -45,6 +51,7 @@ class SakeMapPage extends StatefulWidget {
     child: SakeMapPage._(
       initialSake: initialSake,
       myMapRequests: myMapRequests,
+      communityMapRequests: communityMapRequests,
     ),
   );
 
@@ -79,8 +86,22 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    widget.myMapRequests?.addListener(_openMyMap);
+    widget.myMapRequests?.addListener(_handleMyMapRequest);
+    widget.communityMapRequests?.addListener(_openCommunityMap);
     unawaited(_refreshLocationAccess());
+  }
+
+  void _handleMyMapRequest() {
+    if ((widget.myMapRequests?.value ?? 0) > 0) unawaited(_openMyMap());
+  }
+
+  Future<void> _openCommunityMap() async {
+    if (!mounted || (widget.communityMapRequests?.value ?? 0) == 0) return;
+    _searchController.clear();
+    await context.read<SakeMapPageNotifier>().setOwnOnly(
+      false,
+      clearSake: true,
+    );
   }
 
   Future<void> _openMyMap() async {
@@ -100,7 +121,8 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    widget.myMapRequests?.removeListener(_openMyMap);
+    widget.myMapRequests?.removeListener(_handleMyMapRequest);
+    widget.communityMapRequests?.removeListener(_openCommunityMap);
     _searchController.dispose();
     _mapController?.dispose();
     super.dispose();
@@ -259,7 +281,9 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
             zoomControlsEnabled: false,
             onMapCreated: (controller) async {
               _mapController = controller;
-              if ((widget.myMapRequests?.value ?? 0) > 0) {
+              if ((widget.communityMapRequests?.value ?? 0) > 0) {
+                await _openCommunityMap();
+              } else if ((widget.myMapRequests?.value ?? 0) > 0) {
                 await _openMyMap();
                 return;
               }

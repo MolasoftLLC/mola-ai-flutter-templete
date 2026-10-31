@@ -16,11 +16,8 @@ import '../domain/eintities/app_content.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
 import 'my_page/my_page.dart';
-import 'main_search/main_search_page.dart';
-import 'new_home/explore_page.dart';
 import 'new_home/widgets/sake_bottom_navigation.dart';
 import 'new_home/widgets/capture_radial_menu.dart';
-import 'new_home/japan_sake_page.dart';
 import 'new_home/sake_stamp_book_page.dart';
 
 class AppPage extends StatelessWidget {
@@ -70,7 +67,7 @@ class AppPage extends StatelessWidget {
       canPop: currentIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          notifier.onTabTapped(currentIndex == 1 || currentIndex == 2 ? 5 : 0);
+          notifier.onTabTapped(0);
         }
       },
       child: Scaffold(
@@ -100,6 +97,7 @@ class AppPage extends StatelessWidget {
                   active: currentIndex == 2,
                   child: SakeMapPage.wrapped(
                     myMapRequests: notifier.myMapRequests,
+                    communityMapRequests: notifier.communityMapRequests,
                   ),
                 ),
               ),
@@ -114,22 +112,8 @@ class AppPage extends StatelessWidget {
                 active: currentIndex == 4,
                 child: MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
               ),
-              ExplorePage(
-                onSearch: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => MainSearchPage.wrapped(
-                      onPreferenceSearchTap: notifier.openPreferenceSearch,
-                    ),
-                  ),
-                ),
-                onMenu: () => notifier.onTabTapped(1),
-                onJapan: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const JapanSakePage(),
-                  ),
-                ),
-                onMap: () => notifier.onTabTapped(2),
-              ),
+              // Retired Explore index retained for stable existing tab IDs.
+              const SizedBox.shrink(),
               _DeferredTab(
                 key: ValueKey('stamp-tab-${historyOwner ?? 'guest'}'),
                 active: currentIndex == 6,
@@ -149,7 +133,6 @@ class AppPage extends StatelessWidget {
               4: 'my_page',
             }[index];
             if (target != null) AppAnalytics.instance.event('app', target);
-            if (index == 5) AppAnalytics.instance.event('home', 'search');
             if (index == 6) {
               AppAnalytics.instance.event('home', 'sake_stamp_book');
             }
@@ -163,7 +146,11 @@ class AppPage extends StatelessWidget {
                 );
               }
             }
-            notifier.onTabTapped(index);
+            if (index == 2) {
+              notifier.openCommunityMap();
+            } else {
+              notifier.onTabTapped(index);
+            }
           },
           onScanTap: () => _openCapture(context, notifier),
           scanKey: notifier.homeFeatureGuide.bottomScanKey,
