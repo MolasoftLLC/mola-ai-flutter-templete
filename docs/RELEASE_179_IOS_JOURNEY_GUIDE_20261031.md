@@ -12,7 +12,13 @@
 商品詳細テストは32成功・7失敗。変更前のHEADに当該ファイルを戻して同じ32成功・7失敗を再現したため、既存の残件として保持。実機・実写の受け入れ確認は未実施。
 
 ## 配信
-ビルド・アップロード進行中。Appleへの送信完了、処理完了、TestFlight利用可能は別々に記録する。本番審査提出は今回の操作に含めない。
+2026-10-31 15:02 JST、Xcode Organizerの「App upload complete」「5.0.45 (179) uploaded」を確認。通常App Store Connect経路。Apple処理完了・TestFlight利用可能は未確認。本番審査は未提出。
+
+アーカイブの版番号・Mapsキー解決済み・production指定・署名・地図と画像の同梱を確認。CLI exportは既知の署名エラーのため、同じアーカイブをOrganizerから送信。アーカイブ: `build/ios/archive/SAKEPEDIA-5.0.45-179.xcarchive`。
+
+PR96をmainへマージ（7957977）。ビルド元0396068とmainのアプリ・テスト・pubspec内容一致を確認。
+
+![Appleアップロード完了](images/release_179_20261031/ios_upload.png)
 
 ## プレビュー
 テスト用ホーム配置上での案内。下部ボタンの位置は実アプリの中央配置と異なる。
