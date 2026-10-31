@@ -295,425 +295,629 @@ class _MyPageState extends State<MyPage> {
       onTap: () {
         FocusScope.of(context).unfocus();
       },
-      child: Scaffold(
-        appBar: PrimaryAppBar(
-          title: context.l10n.navigationMyPage,
-          automaticallyImplyLeading: !widget.isTab,
-          leadingWidth: widget.isTab ? 104 : 152,
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!widget.isTab) const BackButton(),
-              Tooltip(
-                message: Localizations.localeOf(context).languageCode == 'en'
-                    ? 'Rate the app / Feedback'
-                    : 'アプリを評価・フィードバック',
-                child: TextButton.icon(
-                  onPressed: _showAppReview,
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFFFD54F),
-                    minimumSize: const Size(0, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+      child: PrimaryScrollController(
+        automaticallyInheritForPlatforms: const <TargetPlatform>{},
+        controller: _guide.scrollController,
+        child: Scaffold(
+          appBar: PrimaryAppBar(
+            title: context.l10n.navigationMyPage,
+            automaticallyImplyLeading: !widget.isTab,
+            leadingWidth: widget.isTab ? 104 : 152,
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!widget.isTab) const BackButton(),
+                Tooltip(
+                  message: Localizations.localeOf(context).languageCode == 'en'
+                      ? 'Rate the app / Feedback'
+                      : 'アプリを評価・フィードバック',
+                  child: TextButton.icon(
+                    onPressed: _showAppReview,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFFFD54F),
+                      minimumSize: const Size(0, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      textStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    icon: const Icon(Icons.star_outline_rounded, size: 24),
+                    label: Text(
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Review'
+                          : 'レビュー',
                     ),
                   ),
-                  icon: const Icon(Icons.star_outline_rounded, size: 24),
-                  label: Text(
-                    Localizations.localeOf(context).languageCode == 'en'
-                        ? 'Review'
-                        : 'レビュー',
-                  ),
                 ),
+              ],
+            ),
+            actions: [
+              PopupMenuButton<String>(
+                tooltip: context.l10n.helpGuide,
+                icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
+                onSelected: (value) {
+                  if (value == 'tutorial') {
+                    _guide.showIfNeeded(context, force: true);
+                  }
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'tutorial',
+                    child: Text('もう一度チュートリアルを見る'),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                onPressed: () {
+                  _showSettingsMenu(context);
+                },
               ),
             ],
           ),
-          actions: [
-            PopupMenuButton<String>(
-              tooltip: context.l10n.helpGuide,
-              icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
-              onSelected: (value) {
-                if (value == 'tutorial') {
-                  _guide.showIfNeeded(context, force: true);
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'tutorial', child: Text('もう一度チュートリアルを見る')),
-              ],
+          body: Container(
+            height: MediaQuery.of(context).size.height,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF1D3567), Color(0xFF0A1428)],
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
-              onPressed: () {
-                _showSettingsMenu(context);
-              },
-            ),
-          ],
-        ),
-        body: Container(
-          height: MediaQuery.of(context).size.height,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1D3567), Color(0xFF0A1428)],
-            ),
-          ),
-          child: RefreshIndicator(
-            color: Colors.white,
-            backgroundColor: const Color(0xFF1D3567),
-            onRefresh: handleRefresh,
-            child: SingleChildScrollView(
-              controller: _guide.scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              // キーボードが表示されたときにスクロール可能にする
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Padding(
-                      key: _guide.accountKey,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      child: _AuthCard(
-                        user: authUser,
-                        userName: userName,
-                        userIconUrl: userIconUrl,
-                        envyPointCount: envyPointCount,
-                        mapContributionPointCount: mapContributionPointCount,
-                        badges: isLoggedIn
-                            ? _AchievementsCard(
-                                loginCount: loginCount,
-                                analyzedBottleCount: analyzedBottleCount,
-                                menuAnalysisCount: menuAnalysisCount,
-                                envyPointCount: envyPointCount,
-                              )
-                            : null,
-                        onAuthenticate: openLogin,
-                        onOpenAccountSettings: () {
-                          AppAnalytics.instance.event('my_page', 'profile');
-                          authNotifier.clearMessages();
-                          final navigator = Navigator.of(context);
-                          FocusScope.of(context).unfocus();
-                          navigator
-                              .push<AccountSettingsResult?>(
-                                MaterialPageRoute(
-                                  builder: (_) => const AccountSettingsPage(),
-                                ),
-                              )
-                              .then((result) {
-                                FocusScope.of(navigator.context).unfocus();
-                                if (!navigator.mounted || result == null) {
-                                  return;
-                                }
-                                if (result == AccountSettingsResult.loggedOut) {
-                                  _showToast(
-                                    navigator.context,
-                                    message: context.l10n.logoutCompleted,
-                                    icon: Icons.logout,
-                                  );
-                                } else if (result ==
-                                    AccountSettingsResult.accountDeleted) {
-                                  _showToast(
-                                    navigator.context,
-                                    message: context.l10n.accountDeleted,
-                                    icon: Icons.delete_forever,
-                                  );
-                                } else if (result ==
-                                    AccountSettingsResult.usernameUpdated) {
-                                  _showToast(
-                                    navigator.context,
-                                    message: context.l10n.nicknameUpdated,
-                                    icon: Icons.person,
-                                  );
-                                  notifier.fetchUserProfile();
-                                }
-                              });
-                        },
-                      ),
-                    ),
-                    // 保存したお酒セクション
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            key: _guide.savedKey,
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.bookmark,
-                                  color: Colors.amber,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  context.l10n.savedSake,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+            child: RefreshIndicator(
+              color: Colors.white,
+              backgroundColor: const Color(0xFF1D3567),
+              onRefresh: handleRefresh,
+              child: SingleChildScrollView(
+                controller: _guide.scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                // キーボードが表示されたときにスクロール可能にする
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Padding(
+                        key: _guide.accountKey,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: _AuthCard(
+                          user: authUser,
+                          userName: userName,
+                          userIconUrl: userIconUrl,
+                          envyPointCount: envyPointCount,
+                          mapContributionPointCount: mapContributionPointCount,
+                          badges: isLoggedIn
+                              ? _AchievementsCard(
+                                  loginCount: loginCount,
+                                  analyzedBottleCount: analyzedBottleCount,
+                                  menuAnalysisCount: menuAnalysisCount,
+                                  envyPointCount: envyPointCount,
+                                )
+                              : null,
+                          onAuthenticate: openLogin,
+                          onOpenAccountSettings: () {
+                            AppAnalytics.instance.event('my_page', 'profile');
+                            authNotifier.clearMessages();
+                            final navigator = Navigator.of(context);
+                            FocusScope.of(context).unfocus();
+                            navigator
+                                .push<AccountSettingsResult?>(
+                                  MaterialPageRoute(
+                                    builder: (_) => const AccountSettingsPage(),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                TextButton.icon(
-                                  onPressed: savedSakeList.isEmpty || _isSorting
-                                      ? null
-                                      : () {
-                                          _showSavedSortSheet(
-                                            context,
-                                            notifier: savedNotifier,
-                                            sakes: savedSakeList,
-                                            allTags: allFilterTags,
-                                            selectedTags: activeFilterTags,
-                                          );
-                                        },
-                                  icon: _isSorting
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.sort,
-                                          color: isFiltering
-                                              ? Colors.amber
-                                              : (savedSakeList.isEmpty
-                                                    ? Colors.white30
-                                                    : Colors.white),
-                                        ),
-                                  label: Text(
-                                    context.l10n.sort,
+                                )
+                                .then((result) {
+                                  FocusScope.of(navigator.context).unfocus();
+                                  if (!navigator.mounted || result == null) {
+                                    return;
+                                  }
+                                  if (result ==
+                                      AccountSettingsResult.loggedOut) {
+                                    _showToast(
+                                      navigator.context,
+                                      message: context.l10n.logoutCompleted,
+                                      icon: Icons.logout,
+                                    );
+                                  } else if (result ==
+                                      AccountSettingsResult.accountDeleted) {
+                                    _showToast(
+                                      navigator.context,
+                                      message: context.l10n.accountDeleted,
+                                      icon: Icons.delete_forever,
+                                    );
+                                  } else if (result ==
+                                      AccountSettingsResult.usernameUpdated) {
+                                    _showToast(
+                                      navigator.context,
+                                      message: context.l10n.nicknameUpdated,
+                                      icon: Icons.person,
+                                    );
+                                    notifier.fetchUserProfile();
+                                  }
+                                });
+                          },
+                        ),
+                      ),
+                      // 保存したお酒セクション
+                      Container(
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              key: _guide.savedKey,
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.bookmark,
+                                    color: Colors.amber,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    context.l10n.savedSake,
                                     style: TextStyle(
-                                      fontSize: 10,
-                                      color: isFiltering
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TextButton.icon(
+                                    onPressed:
+                                        savedSakeList.isEmpty || _isSorting
+                                        ? null
+                                        : () {
+                                            _showSavedSortSheet(
+                                              context,
+                                              notifier: savedNotifier,
+                                              sakes: savedSakeList,
+                                              allTags: allFilterTags,
+                                              selectedTags: activeFilterTags,
+                                            );
+                                          },
+                                    icon: _isSorting
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.sort,
+                                            color: isFiltering
+                                                ? Colors.amber
+                                                : (savedSakeList.isEmpty
+                                                      ? Colors.white30
+                                                      : Colors.white),
+                                          ),
+                                    label: Text(
+                                      context.l10n.sort,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isFiltering
+                                            ? Colors.amber
+                                            : (savedSakeList.isEmpty
+                                                  ? Colors.white30
+                                                  : Colors.white),
+                                        fontWeight: isFiltering
+                                            ? FontWeight.bold
+                                            : FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      foregroundColor: isFiltering
                                           ? Colors.amber
-                                          : (savedSakeList.isEmpty
-                                                ? Colors.white30
-                                                : Colors.white),
-                                      fontWeight: isFiltering
-                                          ? FontWeight.bold
-                                          : FontWeight.w600,
+                                          : Colors.white,
+                                      disabledForegroundColor: Colors.white30,
                                     ),
                                   ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
+                                  const Spacer(),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(20),
                                     ),
-                                    foregroundColor: isFiltering
-                                        ? Colors.amber
-                                        : Colors.white,
-                                    disabledForegroundColor: Colors.white30,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      IconButton(
-                                        tooltip: context.l10n.gridView,
-                                        splashRadius: 18,
-                                        icon: Icon(
-                                          Icons.grid_view,
-                                          color: isGridView
-                                              ? Colors.white
-                                              : Colors.white54,
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          tooltip: context.l10n.gridView,
+                                          splashRadius: 18,
+                                          icon: Icon(
+                                            Icons.grid_view,
+                                            color: isGridView
+                                                ? Colors.white
+                                                : Colors.white54,
+                                          ),
+                                          onPressed: () {
+                                            savedNotifier.setGridView(true);
+                                          },
                                         ),
-                                        onPressed: () {
-                                          savedNotifier.setGridView(true);
-                                        },
-                                      ),
-                                      IconButton(
-                                        tooltip: context.l10n.listView,
-                                        splashRadius: 18,
-                                        icon: Icon(
-                                          Icons.view_list,
-                                          color: isGridView
-                                              ? Colors.white54
-                                              : Colors.white,
+                                        IconButton(
+                                          tooltip: context.l10n.listView,
+                                          splashRadius: 18,
+                                          icon: Icon(
+                                            Icons.view_list,
+                                            color: isGridView
+                                                ? Colors.white54
+                                                : Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            savedNotifier.setGridView(false);
+                                          },
                                         ),
-                                        onPressed: () {
-                                          savedNotifier.setGridView(false);
-                                        },
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          if (savedSakeList.isEmpty)
-                            Container(
-                              width: MediaQuery.of(context).size.width,
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: Center(
-                                child: Text(
-                                  context.l10n.savedSakeEmptyHint,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
+                            if (savedSakeList.isEmpty)
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: Center(
+                                  child: Text(
+                                    context.l10n.savedSakeEmptyHint,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          if (savedSakeList.isNotEmpty)
-                            Container(
-                              constraints: const BoxConstraints(maxHeight: 300),
-                              child: filteredSakeList.isEmpty
-                                  ? _SavedSakeFilterEmptyView(
-                                      onClear: savedNotifier.clearFilterTags,
-                                    )
-                                  : isGridView
-                                  ? _SavedSakeGrid(
-                                      savedSakeList: filteredSakeList,
-                                      onTap: (sake) {
-                                        AppAnalytics.instance.event(
-                                          'my_page',
-                                          'detail',
-                                        );
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                SavedSakeDetailPage.forSake(
-                                                  sake,
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                      onRemove: (sake) async {
-                                        final changed = await savedNotifier
-                                            .toggleSavedSake(sake);
-                                        if (!context.mounted) return;
-                                        if (!changed) {
-                                          ScaffoldMessenger.of(
+                            if (savedSakeList.isNotEmpty)
+                              Container(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 300,
+                                ),
+                                child: filteredSakeList.isEmpty
+                                    ? _SavedSakeFilterEmptyView(
+                                        onClear: savedNotifier.clearFilterTags,
+                                      )
+                                    : isGridView
+                                    ? _SavedSakeGrid(
+                                        savedSakeList: filteredSakeList,
+                                        onTap: (sake) {
+                                          AppAnalytics.instance.event(
+                                            'my_page',
+                                            'detail',
+                                          );
+                                          Navigator.push(
                                             context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                '保存解除できませんでした。もう一度お試しください。',
-                                              ),
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SavedSakeDetailPage.forSake(
+                                                    sake,
+                                                  ),
                                             ),
                                           );
-                                          return;
-                                        }
-                                        _showToast(
-                                          context,
-                                          message: context.l10n
-                                              .removedFromSaved(
-                                                sake.name ??
-                                                    context.l10n.unknownName,
-                                              ),
-                                          icon: Icons.bookmark_remove,
-                                        );
-                                      },
-                                    )
-                                  : _SavedSakeList(
-                                      savedSakeList: filteredSakeList,
-                                      onTap: (sake) {
-                                        AppAnalytics.instance.event(
-                                          'my_page',
-                                          'detail',
-                                        );
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                SavedSakeDetailPage.forSake(
-                                                  sake,
+                                        },
+                                        onRemove: (sake) async {
+                                          final changed = await savedNotifier
+                                              .toggleSavedSake(sake);
+                                          if (!context.mounted) return;
+                                          if (!changed) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  '保存解除できませんでした。もう一度お試しください。',
                                                 ),
-                                          ),
-                                        );
-                                      },
-                                      onRemove: (sake) async {
-                                        final changed = await savedNotifier
-                                            .toggleSavedSake(sake);
-                                        if (!context.mounted) return;
-                                        if (!changed) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                '保存解除できませんでした。もう一度お試しください。',
                                               ),
+                                            );
+                                            return;
+                                          }
+                                          _showToast(
+                                            context,
+                                            message: context.l10n
+                                                .removedFromSaved(
+                                                  sake.name ??
+                                                      context.l10n.unknownName,
+                                                ),
+                                            icon: Icons.bookmark_remove,
+                                          );
+                                        },
+                                      )
+                                    : _SavedSakeList(
+                                        savedSakeList: filteredSakeList,
+                                        onTap: (sake) {
+                                          AppAnalytics.instance.event(
+                                            'my_page',
+                                            'detail',
+                                          );
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SavedSakeDetailPage.forSake(
+                                                    sake,
+                                                  ),
                                             ),
                                           );
-                                          return;
-                                        }
-                                        _showToast(
-                                          context,
-                                          message: context.l10n
-                                              .removedFromSaved(
-                                                sake.name ??
-                                                    context.l10n.unknownName,
+                                        },
+                                        onRemove: (sake) async {
+                                          final changed = await savedNotifier
+                                              .toggleSavedSake(sake);
+                                          if (!context.mounted) return;
+                                          if (!changed) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  '保存解除できませんでした。もう一度お試しください。',
+                                                ),
                                               ),
-                                          icon: Icons.bookmark_remove,
-                                        );
-                                      },
-                                    ),
-                            ),
-                          const SizedBox(height: 24),
-                        ],
+                                            );
+                                            return;
+                                          }
+                                          _showToast(
+                                            context,
+                                            message: context.l10n
+                                                .removedFromSaved(
+                                                  sake.name ??
+                                                      context.l10n.unknownName,
+                                                ),
+                                            icon: Icons.bookmark_remove,
+                                          );
+                                        },
+                                      ),
+                              ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    KeyedSubtree(
-                      key: _guide.historyKey,
-                      child: MenuHistoryPreview.wrapped(
-                        ownerKey: authUser?.uid,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (isLoggedIn) ...[
-                      MyMapPreview(
-                        key: ValueKey('my-map-${authUser.uid}'),
-                        isActive: widget.isActive,
+                      KeyedSubtree(
+                        key: _guide.historyKey,
+                        child: MenuHistoryPreview.wrapped(
+                          ownerKey: authUser?.uid,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                    ],
-                    _MyTimelineEntryTile(
-                      isLoggedIn: isLoggedIn,
-                      onLoginRequested: openLogin,
-                    ),
-                    const SizedBox(height: 12),
-                    const _MyRecordsEntryTile(),
-                    const SizedBox(height: 8),
-
-                    // お気に入りのお酒セクション
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                      if (isLoggedIn) ...[
+                        MyMapPreview(
+                          key: ValueKey('my-map-${authUser.uid}'),
+                          isActive: widget.isActive,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      _MyTimelineEntryTile(
+                        isLoggedIn: isLoggedIn,
+                        onLoginRequested: openLogin,
                       ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            key: _guide.favoritesKey,
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
+                      const SizedBox(height: 12),
+                      const _MyRecordsEntryTile(),
+                      const SizedBox(height: 8),
+
+                      // お気に入りのお酒セクション
+                      Container(
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              key: _guide.favoritesKey,
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.wine_bar,
+                                    color: Colors.amber,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    context.l10n.favoriteSake,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                ],
+                              ),
+                            ),
+                            if (myFavoriteSakeList.isEmpty)
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                padding: const EdgeInsets.only(bottom: 24),
+                                child: Center(
+                                  child: Text(
+                                    context.l10n.favoriteEmpty,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (myFavoriteSakeList.isNotEmpty)
+                              Container(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 300,
+                                ),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const ClampingScrollPhysics(),
+                                  itemCount: myFavoriteSakeList.length,
+                                  itemBuilder: (context, index) {
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: ListTile(
+                                        onTap:
+                                            (myFavoriteSakeList[index].sakeId ??
+                                                    0) <=
+                                                0
+                                            ? null
+                                            : () {
+                                                final favorite =
+                                                    myFavoriteSakeList[index];
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute<void>(
+                                                    builder: (_) =>
+                                                        SakeMasterDetailPage(
+                                                          venueSake: VenueSake(
+                                                            sakeId:
+                                                                favorite.sakeId,
+                                                            name: favorite.name,
+                                                            type: favorite.type,
+                                                            recordCount: 0,
+                                                          ),
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                        title: Text(
+                                          myFavoriteSakeList[index].name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        trailing: IconButton(
+                                          icon: const Icon(
+                                            Icons.favorite,
+                                            color: Colors.redAccent,
+                                          ),
+                                          onPressed: () async {
+                                            final target =
+                                                myFavoriteSakeList[index];
+                                            await favNotifier
+                                                .addOrRemoveFavorite(target);
+                                            _showToast(
+                                              context,
+                                              message: context.l10n
+                                                  .removedFromFavorites(
+                                                    target.name,
+                                                  ),
+                                              icon: Icons.favorite_border,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+
+                      // お酒診断ボタン
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ElevatedButton.icon(
+                          onPressed: isLoading || isSavingPreferences
+                              ? null
+                              : () async {
+                                  if (_preferenceAnalysisOpen) return;
+                                  // お気に入りの日本酒が2つ以上あるか確認
+                                  if (myFavoriteSakeList.length >= 2) {
+                                    if (!notifier.hasAnalysisQuota) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            context.l10n.diagnosisDailyLimit,
+                                          ),
+                                          duration: const Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    // 2つ以上ある場合は診断を実行
+                                    _showSakePreferenceAnalysisDialog(
+                                      context,
+                                      notifier,
+                                    );
+                                    notifier.analyzeSakePreference(
+                                      myFavoriteSakeList,
+                                    );
+                                  } else {
+                                    // 2つ未満の場合はトーストメッセージのみ表示
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.needMoreFavorites,
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                          icon: const Icon(Icons.psychology),
+                          label: Text(
+                            context.l10n.favoriteDiagnosis,
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // 好きなお酒の傾向入力フォーム
+                      Container(
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              key: _guide.preferencesKey,
                               children: [
                                 const Icon(
                                   Icons.wine_bar,
@@ -722,352 +926,163 @@ class _MyPageState extends State<MyPage> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  context.l10n.favoriteSake,
+                                  context.l10n.tastePreferences,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const Spacer(),
                               ],
                             ),
-                          ),
-                          if (myFavoriteSakeList.isEmpty)
-                            Container(
-                              width: MediaQuery.of(context).size.width,
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: Center(
-                                child: Text(
-                                  context.l10n.favoriteEmpty,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
+                            const SizedBox(height: 16),
+                            Text(
+                              context.l10n.tastePreferencesDescription,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            if (isLoggedIn)
+                              _buildPreferenceChartPreview(
+                                context,
+                                context.select(
+                                  (MyPageState state) => state.tasteProfile,
+                                ),
+                              )
+                            else
+                              _buildPreferenceChartLoginPrompt(
+                                context,
+                                openLogin,
+                              ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: preferencesController,
+                              readOnly: isSavingPreferences,
+                              maxLength: 200,
+                              maxLines: 3,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: context.l10n.tastePreferencesHint,
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white.withOpacity(0.1),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                counterStyle: const TextStyle(
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              // onChangedは不要になりました（コントローラーのリスナーで処理）
+                            ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: ElevatedButton(
+                                onPressed: isSavingPreferences
+                                    ? null
+                                    : () => _savePreferences(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1D3567),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
+                                child: isSavingPreferences
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(context.l10n.saveAction),
                               ),
                             ),
-                          if (myFavoriteSakeList.isNotEmpty)
-                            Container(
-                              constraints: const BoxConstraints(maxHeight: 300),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const ClampingScrollPhysics(),
-                                itemCount: myFavoriteSakeList.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: ListTile(
-                                      onTap:
-                                          (myFavoriteSakeList[index].sakeId ??
-                                                  0) <=
-                                              0
-                                          ? null
-                                          : () {
-                                              final favorite =
-                                                  myFavoriteSakeList[index];
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute<void>(
-                                                  builder: (_) =>
-                                                      SakeMasterDetailPage(
-                                                        venueSake: VenueSake(
-                                                          sakeId:
-                                                              favorite.sakeId,
-                                                          name: favorite.name,
-                                                          type: favorite.type,
-                                                          recordCount: 0,
-                                                        ),
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                      title: Text(
-                                        myFavoriteSakeList[index].name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(
-                                          Icons.favorite,
-                                          color: Colors.redAccent,
-                                        ),
-                                        onPressed: () async {
-                                          final target =
-                                              myFavoriteSakeList[index];
-                                          await favNotifier.addOrRemoveFavorite(
-                                            target,
-                                          );
-                                          _showToast(
-                                            context,
-                                            message: context.l10n
-                                                .removedFromFavorites(
-                                                  target.name,
-                                                ),
-                                            icon: Icons.favorite_border,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-
-                    // お酒診断ボタン
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading || isSavingPreferences
-                            ? null
-                            : () async {
-                                if (_preferenceAnalysisOpen) return;
-                                // お気に入りの日本酒が2つ以上あるか確認
-                                if (myFavoriteSakeList.length >= 2) {
-                                  if (!notifier.hasAnalysisQuota) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          context.l10n.diagnosisDailyLimit,
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  // 2つ以上ある場合は診断を実行
-                                  _showSakePreferenceAnalysisDialog(
-                                    context,
-                                    notifier,
-                                  );
-                                  notifier.analyzeSakePreference(
-                                    myFavoriteSakeList,
-                                  );
-                                } else {
-                                  // 2つ未満の場合はトーストメッセージのみ表示
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        context.l10n.needMoreFavorites,
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                }
-                              },
-                        icon: const Icon(Icons.psychology),
-                        label: Text(
-                          context.l10n.favoriteDiagnosis,
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          ],
                         ),
                       ),
-                    ),
 
-                    // 好きなお酒の傾向入力フォーム
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: const EdgeInsets.all(16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            key: _guide.preferencesKey,
-                            children: [
-                              const Icon(
-                                Icons.wine_bar,
-                                color: Colors.amber,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                context.l10n.tastePreferences,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            context.l10n.tastePreferencesDescription,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          if (isLoggedIn)
-                            _buildPreferenceChartPreview(
-                              context,
-                              context.select(
-                                (MyPageState state) => state.tasteProfile,
-                              ),
-                            )
-                          else
-                            _buildPreferenceChartLoginPrompt(
-                              context,
-                              openLogin,
-                            ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: preferencesController,
-                            readOnly: isSavingPreferences,
-                            maxLength: 200,
-                            maxLines: 3,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: context.l10n.tastePreferencesHint,
-                              hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.1),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              counterStyle: const TextStyle(
-                                color: Colors.white70,
-                              ),
-                            ),
-                            // onChangedは不要になりました（コントローラーのリスナーで処理）
-                          ),
-                          const SizedBox(height: 12),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: isSavingPreferences
-                                  ? null
-                                  : () => _savePreferences(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1D3567),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: isSavingPreferences
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(context.l10n.saveAction),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // レビュー誘導セクション（ページ末尾）
-                    // Container(
-                    //   width: MediaQuery.of(context).size.width,
-                    //   margin:
-                    //       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    //   padding: const EdgeInsets.all(16),
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.white.withOpacity(0.12),
-                    //     borderRadius: BorderRadius.circular(16),
-                    //   ),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       Row(
-                    //         children: const [
-                    //           Icon(
-                    //             Icons.star_rounded,
-                    //             color: Colors.amber,
-                    //             size: 26,
-                    //           ),
-                    //           SizedBox(width: 12),
-                    //           Expanded(
-                    //             child: Text(
-                    //               'レビューで応援してね',
-                    //               style: TextStyle(
-                    //                 color: Colors.white,
-                    //                 fontSize: 18,
-                    //                 fontWeight: FontWeight.bold,
-                    //               ),
-                    //             ),
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       const SizedBox(height: 8),
-                    //       const Text(
-                    //         'SakePediaの使い心地はいかがですか？App Storeでレビューをいただけると、今後の改善の励みになります。',
-                    //         style: TextStyle(
-                    //           color: Colors.white70,
-                    //           fontSize: 14,
-                    //           height: 1.4,
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 12),
-                    //       Align(
-                    //         alignment: Alignment.centerRight,
-                    //         child: FilledButton.icon(
-                    //           style: FilledButton.styleFrom(
-                    //             backgroundColor: const Color(0xFFFFD54F),
-                    //             foregroundColor: const Color(0xFF1D3567),
-                    //             padding: const EdgeInsets.symmetric(
-                    //               horizontal: 20,
-                    //               vertical: 12,
-                    //             ),
-                    //             shape: RoundedRectangleBorder(
-                    //               borderRadius: BorderRadius.circular(24),
-                    //             ),
-                    //           ),
-                    //           onPressed: () => _promptAppReview(context),
-                    //           icon: const Icon(Icons.open_in_new, size: 18),
-                    //           label: const Text(
-                    //             'レビューを書く',
-                    //             style: TextStyle(fontWeight: FontWeight.bold),
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    const SizedBox(height: 40),
-                  ],
+                      // レビュー誘導セクション（ページ末尾）
+                      // Container(
+                      //   width: MediaQuery.of(context).size.width,
+                      //   margin:
+                      //       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      //   padding: const EdgeInsets.all(16),
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.white.withOpacity(0.12),
+                      //     borderRadius: BorderRadius.circular(16),
+                      //   ),
+                      //   child: Column(
+                      //     crossAxisAlignment: CrossAxisAlignment.start,
+                      //     children: [
+                      //       Row(
+                      //         children: const [
+                      //           Icon(
+                      //             Icons.star_rounded,
+                      //             color: Colors.amber,
+                      //             size: 26,
+                      //           ),
+                      //           SizedBox(width: 12),
+                      //           Expanded(
+                      //             child: Text(
+                      //               'レビューで応援してね',
+                      //               style: TextStyle(
+                      //                 color: Colors.white,
+                      //                 fontSize: 18,
+                      //                 fontWeight: FontWeight.bold,
+                      //               ),
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       ),
+                      //       const SizedBox(height: 8),
+                      //       const Text(
+                      //         'SakePediaの使い心地はいかがですか？App Storeでレビューをいただけると、今後の改善の励みになります。',
+                      //         style: TextStyle(
+                      //           color: Colors.white70,
+                      //           fontSize: 14,
+                      //           height: 1.4,
+                      //         ),
+                      //       ),
+                      //       const SizedBox(height: 12),
+                      //       Align(
+                      //         alignment: Alignment.centerRight,
+                      //         child: FilledButton.icon(
+                      //           style: FilledButton.styleFrom(
+                      //             backgroundColor: const Color(0xFFFFD54F),
+                      //             foregroundColor: const Color(0xFF1D3567),
+                      //             padding: const EdgeInsets.symmetric(
+                      //               horizontal: 20,
+                      //               vertical: 12,
+                      //             ),
+                      //             shape: RoundedRectangleBorder(
+                      //               borderRadius: BorderRadius.circular(24),
+                      //             ),
+                      //           ),
+                      //           onPressed: () => _promptAppReview(context),
+                      //           icon: const Icon(Icons.open_in_new, size: 18),
+                      //           label: const Text(
+                      //             'レビューを書く',
+                      //             style: TextStyle(fontWeight: FontWeight.bold),
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -192,12 +192,14 @@ class ZoomableJapanSakeMap extends StatefulWidget {
     this.selectedCode,
     this.productCounts = const {},
     this.onExpand,
+    this.showControls = true,
   });
   final List<JapanSakePrefecture> prefectures;
   final ValueChanged<JapanSakePrefecture> onSelected;
   final int? selectedCode;
   final Map<int, int> productCounts;
   final VoidCallback? onExpand;
+  final bool showControls;
   @override
   State<ZoomableJapanSakeMap> createState() => _ZoomableJapanSakeMapState();
 }
@@ -242,13 +244,13 @@ class _ZoomableJapanSakeMapState extends State<ZoomableJapanSakeMap> {
     builder: (context, constraints) {
       final center = Size(
         constraints.maxWidth,
-        constraints.maxHeight - 56,
+        constraints.maxHeight - (widget.showControls ? 56 : 0),
       ).center(Offset.zero);
       final english = Localizations.localeOf(context).languageCode == 'en';
       return Stack(
         children: [
           Positioned.fill(
-            bottom: 56,
+            bottom: widget.showControls ? 56 : 0,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: GestureDetector(
@@ -271,53 +273,54 @@ class _ZoomableJapanSakeMapState extends State<ZoomableJapanSakeMap> {
               ),
             ),
           ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Material(
-              color: Colors.white.withValues(alpha: .95),
-              borderRadius: BorderRadius.circular(14),
-              elevation: 1,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: const ValueKey('japan-map-zoom-in'),
-                    tooltip: english ? 'Zoom in' : '拡大',
-                    color: japanMapNavy,
-                    onPressed: _scale >= 5.99
-                        ? null
-                        : () => _zoom(_scale * 1.6, center),
-                    icon: const Icon(Icons.add),
-                  ),
-                  IconButton(
-                    key: const ValueKey('japan-map-zoom-out'),
-                    tooltip: english ? 'Zoom out' : '縮小',
-                    color: japanMapNavy,
-                    onPressed: _scale <= 1.01
-                        ? null
-                        : () => _zoom(_scale / 1.6, center),
-                    icon: const Icon(Icons.remove),
-                  ),
-                  IconButton(
-                    key: const ValueKey('japan-map-reset'),
-                    tooltip: english ? 'Show all Japan' : '全体を表示',
-                    color: japanMapNavy,
-                    onPressed: () => _transform.value = Matrix4.identity(),
-                    icon: const Icon(Icons.fit_screen),
-                  ),
-                  if (widget.onExpand != null)
+          if (widget.showControls)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Material(
+                color: Colors.white.withValues(alpha: .95),
+                borderRadius: BorderRadius.circular(14),
+                elevation: 1,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     IconButton(
-                      key: const ValueKey('japan-map-expand'),
-                      tooltip: english ? 'Full screen map' : '大きな地図で選ぶ',
+                      key: const ValueKey('japan-map-zoom-in'),
+                      tooltip: english ? 'Zoom in' : '拡大',
                       color: japanMapNavy,
-                      onPressed: widget.onExpand,
-                      icon: const Icon(Icons.fullscreen),
+                      onPressed: _scale >= 5.99
+                          ? null
+                          : () => _zoom(_scale * 1.6, center),
+                      icon: const Icon(Icons.add),
                     ),
-                ],
+                    IconButton(
+                      key: const ValueKey('japan-map-zoom-out'),
+                      tooltip: english ? 'Zoom out' : '縮小',
+                      color: japanMapNavy,
+                      onPressed: _scale <= 1.01
+                          ? null
+                          : () => _zoom(_scale / 1.6, center),
+                      icon: const Icon(Icons.remove),
+                    ),
+                    IconButton(
+                      key: const ValueKey('japan-map-reset'),
+                      tooltip: english ? 'Show all Japan' : '全体を表示',
+                      color: japanMapNavy,
+                      onPressed: () => _transform.value = Matrix4.identity(),
+                      icon: const Icon(Icons.fit_screen),
+                    ),
+                    if (widget.onExpand != null)
+                      IconButton(
+                        key: const ValueKey('japan-map-expand'),
+                        tooltip: english ? 'Full screen map' : '大きな地図で選ぶ',
+                        color: japanMapNavy,
+                        onPressed: widget.onExpand,
+                        icon: const Icon(Icons.fullscreen),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
           Positioned(
             left: 8,
             top: 8,

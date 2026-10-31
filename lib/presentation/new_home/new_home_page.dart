@@ -104,123 +104,236 @@ class _NewHomePageState extends State<NewHomePage> {
       (TimelinePageState state) => state.pendingEnvyIds,
     );
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          _HomeHeader(
-            scanKey: context
-                .read<AppPageNotifier>()
-                .homeFeatureGuide
-                .headerScanKey,
-            searchKey: context
-                .read<AppPageNotifier>()
-                .homeFeatureGuide
-                .searchKey,
-            onTutorialTap: () =>
-                context.read<AppPageNotifier>().homeFeatureGuide.showIfNeeded(
-                  context,
-                  () =>
-                      context.mounted &&
-                      context.read<AppPageState>().currentIndex == 0,
-                  force: true,
-                ),
-            onSearchTap: () => _openSearch(context),
-            onScanTap: () => openNewHomeScanner(context),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              color: _brandColor,
-              onRefresh: () async {
-                _profileCache.clear();
-                await Future.wait([
-                  notifier.refresh(),
-                  savedNotifier.reloadLocal(),
-                ]);
-              },
-              child: ListView(
-                controller: context
-                    .read<AppPageNotifier>()
-                    .homeFeatureGuide
-                    .homeScrollController,
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                padding: const EdgeInsets.only(top: 8, bottom: 34),
-                children: [
-                  HomeSectionTitle(
-                    title: context.l10n.newHomeRecentSakes,
-                    onMoreTap: () {
-                      AppAnalytics.instance.event(
-                        'home',
-                        'home_recent',
-                        source: 'more',
-                      );
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const RecentSakeListPage(),
-                        ),
-                      );
-                    },
+    return PrimaryScrollController(
+      automaticallyInheritForPlatforms: const <TargetPlatform>{},
+      controller: context
+          .read<AppPageNotifier>()
+          .homeFeatureGuide
+          .homeScrollController,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Column(
+          children: [
+            _HomeHeader(
+              scanKey: context
+                  .read<AppPageNotifier>()
+                  .homeFeatureGuide
+                  .headerScanKey,
+              searchKey: context
+                  .read<AppPageNotifier>()
+                  .homeFeatureGuide
+                  .searchKey,
+              onTutorialTap: () =>
+                  context.read<AppPageNotifier>().homeFeatureGuide.showIfNeeded(
+                    context,
+                    () =>
+                        context.mounted &&
+                        context.read<AppPageState>().currentIndex == 0,
+                    force: true,
                   ),
-                  const SizedBox(height: 10),
-                  if (savedSakes.isEmpty)
-                    _EmptySection(message: context.l10n.savedSakeEmpty)
-                  else
-                    SakeCardRail(
-                      analyticsTarget: 'home_recent',
-                      compact: true,
-                      sakes: savedSakes.take(10).toList(),
-                      profilesFuture: _profilesFor(
-                        savedSakes.take(10).toList(),
-                      ),
-                      actionBuilder: (sake) {
-                        final name = _displayName(context, sake);
-                        final isFavorite = favorites.any(
-                          (favorite) =>
-                              favorite.name == name &&
-                              favorite.type == sake.type,
+              onSearchTap: () => _openSearch(context),
+              onScanTap: () => openNewHomeScanner(context),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                color: _brandColor,
+                onRefresh: () async {
+                  _profileCache.clear();
+                  await Future.wait([
+                    notifier.refresh(),
+                    savedNotifier.reloadLocal(),
+                  ]);
+                },
+                child: ListView(
+                  controller: context
+                      .read<AppPageNotifier>()
+                      .homeFeatureGuide
+                      .homeScrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.only(top: 8, bottom: 34),
+                  children: [
+                    HomeSectionTitle(
+                      title: context.l10n.newHomeRecentSakes,
+                      onMoreTap: () {
+                        AppAnalytics.instance.event(
+                          'home',
+                          'home_recent',
+                          source: 'more',
                         );
-                        return _RoundCardAction(
-                          icon: isFavorite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: isFavorite
-                              ? const Color(0xFFFF5F87)
-                              : const Color(0xFFAAAAAA),
-                          onTap: () async {
-                            try {
-                              await favoriteNotifier.addOrRemoveFavorite(
-                                FavoriteSake(
-                                  name: name,
-                                  type: sake.type,
-                                  sakeId: sake.sakeId,
-                                ),
-                              );
-                            } on FavoriteGuestLimitReachedException {
-                              if (!context.mounted) return;
-                              await GuestLimitDialog.showFavoriteLimit(
-                                context,
-                                maxCount: FavoriteNotifier.guestFavoriteLimit,
-                              );
-                            }
-                          },
-                        );
-                      },
-                      subtitleBuilder: (sake) {
-                        final place =
-                            (sake.drinkingPlace?.displayName ?? sake.place)
-                                ?.trim();
-                        return place?.isNotEmpty == true ? place : null;
-                      },
-                      footerBuilder: (sake) => _formatSavedDate(context, sake),
-                      onTap: (sake) async {
-                        await Navigator.of(context).push(
+                        Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => sake.savedId != null
-                                ? SavedSakeDetailPage.forSake(sake)
-                                : SakeMasterDetailPage(
-                                    recordRecentView: true,
+                            builder: (_) => const RecentSakeListPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    if (savedSakes.isEmpty)
+                      _EmptySection(message: context.l10n.savedSakeEmpty)
+                    else
+                      SakeCardRail(
+                        analyticsTarget: 'home_recent',
+                        compact: true,
+                        sakes: savedSakes.take(10).toList(),
+                        profilesFuture: _profilesFor(
+                          savedSakes.take(10).toList(),
+                        ),
+                        actionBuilder: (sake) {
+                          final name = _displayName(context, sake);
+                          final isFavorite = favorites.any(
+                            (favorite) =>
+                                favorite.name == name &&
+                                favorite.type == sake.type,
+                          );
+                          return _RoundCardAction(
+                            icon: isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: isFavorite
+                                ? const Color(0xFFFF5F87)
+                                : const Color(0xFFAAAAAA),
+                            onTap: () async {
+                              try {
+                                await favoriteNotifier.addOrRemoveFavorite(
+                                  FavoriteSake(
+                                    name: name,
+                                    type: sake.type,
+                                    sakeId: sake.sakeId,
+                                  ),
+                                );
+                              } on FavoriteGuestLimitReachedException {
+                                if (!context.mounted) return;
+                                await GuestLimitDialog.showFavoriteLimit(
+                                  context,
+                                  maxCount: FavoriteNotifier.guestFavoriteLimit,
+                                );
+                              }
+                            },
+                          );
+                        },
+                        subtitleBuilder: (sake) {
+                          final place =
+                              (sake.drinkingPlace?.displayName ?? sake.place)
+                                  ?.trim();
+                          return place?.isNotEmpty == true ? place : null;
+                        },
+                        footerBuilder: (sake) =>
+                            _formatSavedDate(context, sake),
+                        onTap: (sake) async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => sake.savedId != null
+                                  ? SavedSakeDetailPage.forSake(sake)
+                                  : SakeMasterDetailPage(
+                                      recordRecentView: true,
+                                      venueSake: VenueSake(
+                                        sakeId: sake.sakeId,
+                                        name: sake.name ?? '',
+                                        brewery: sake.brewery,
+                                        type: sake.type,
+                                        recordCount: 0,
+                                        primaryImageUrl: sake.primaryImageUrl,
+                                        thumbnailImageUrl:
+                                            sake.thumbnailImageUrl,
+                                      ),
+                                    ),
+                            ),
+                          );
+                          if (context.mounted) {
+                            await savedNotifier.refreshFromServer();
+                          }
+                        },
+                      ),
+                    const SizedBox(height: 28),
+                    const _ObiDivider(),
+                    const SakeStampBookSection(),
+                    JapanSakeSection(
+                      key: context
+                          .read<AppPageNotifier>()
+                          .homeFeatureGuide
+                          .japanSakeKey,
+                    ),
+                    const SizedBox(height: 16),
+                    _HomeRecommendations(
+                      key: context
+                          .read<AppPageNotifier>()
+                          .homeFeatureGuide
+                          .recommendationsKey,
+                      profilesFor: _profilesFor,
+                    ),
+                    const SizedBox(height: 28),
+                    const _ObiDivider(),
+                    Column(
+                      key: context
+                          .read<AppPageNotifier>()
+                          .homeFeatureGuide
+                          .timelineKey,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HomeSectionTitle(
+                          title: context.l10n.newHomeTimeline,
+                          onMoreTap: () {
+                            AppAnalytics.instance.event(
+                              'home',
+                              'home_timeline',
+                              source: 'more',
+                            );
+                            context.read<AppPageNotifier>().onTabTapped(3);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        if (isTimelineLoading && timelineSakes.isEmpty)
+                          const SizedBox(
+                            height: 228,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: _brandColor,
+                              ),
+                            ),
+                          )
+                        else if (timelineError != null && timelineSakes.isEmpty)
+                          _TimelineError(
+                            message: context.l10n.dataFetchFailed,
+                            onRetry: notifier.refresh,
+                          )
+                        else if (timelineSakes.isEmpty)
+                          _EmptySection(
+                            message: context.l10n.publicTimelineEmpty,
+                          )
+                        else
+                          SakeCardRail(
+                            analyticsTarget: 'home_timeline',
+                            sakes: timelineSakes.take(10).toList(),
+                            profilesFuture: _profilesFor(
+                              timelineSakes.take(10).toList(),
+                            ),
+                            actionBuilder: (sake) {
+                              final key = TimelinePageNotifier.envyKey(sake);
+                              final isEnvied = enviedIds.contains(key);
+                              final isPending = pendingEnvyIds.contains(key);
+                              return _RoundCardAction(
+                                icon: Icons.thumb_up_alt_outlined,
+                                color: isEnvied
+                                    ? _scanColor
+                                    : const Color(0xFFAAAAAA),
+                                showProgress: isPending,
+                                onTap: isPending
+                                    ? null
+                                    : () => _sendEnvy(context, notifier, sake),
+                              );
+                            },
+                            subtitleBuilder: (sake) =>
+                                _displayUserName(context, sake),
+                            onTap: (sake) {
+                              if ((sake.sakeId ?? 0) <= 0) {
+                                context.read<AppPageNotifier>().onTabTapped(3);
+                                return;
+                              }
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => SakeMasterDetailPage(
                                     venueSake: VenueSake(
                                       sakeId: sake.sakeId,
                                       name: sake.name ?? '',
@@ -231,122 +344,20 @@ class _NewHomePageState extends State<NewHomePage> {
                                       thumbnailImageUrl: sake.thumbnailImageUrl,
                                     ),
                                   ),
-                          ),
-                        );
-                        if (context.mounted) {
-                          await savedNotifier.refreshFromServer();
-                        }
-                      },
-                    ),
-                  const SizedBox(height: 28),
-                  const _ObiDivider(),
-                  const SakeStampBookSection(),
-                  JapanSakeSection(
-                    key: context
-                        .read<AppPageNotifier>()
-                        .homeFeatureGuide
-                        .japanSakeKey,
-                  ),
-                  const SizedBox(height: 16),
-                  _HomeRecommendations(
-                    key: context
-                        .read<AppPageNotifier>()
-                        .homeFeatureGuide
-                        .recommendationsKey,
-                    profilesFor: _profilesFor,
-                  ),
-                  const SizedBox(height: 28),
-                  const _ObiDivider(),
-                  Column(
-                    key: context
-                        .read<AppPageNotifier>()
-                        .homeFeatureGuide
-                        .timelineKey,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      HomeSectionTitle(
-                        title: context.l10n.newHomeTimeline,
-                        onMoreTap: () {
-                          AppAnalytics.instance.event(
-                            'home',
-                            'home_timeline',
-                            source: 'more',
-                          );
-                          context.read<AppPageNotifier>().onTabTapped(3);
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      if (isTimelineLoading && timelineSakes.isEmpty)
-                        const SizedBox(
-                          height: 228,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: _brandColor,
-                            ),
-                          ),
-                        )
-                      else if (timelineError != null && timelineSakes.isEmpty)
-                        _TimelineError(
-                          message: context.l10n.dataFetchFailed,
-                          onRetry: notifier.refresh,
-                        )
-                      else if (timelineSakes.isEmpty)
-                        _EmptySection(message: context.l10n.publicTimelineEmpty)
-                      else
-                        SakeCardRail(
-                          analyticsTarget: 'home_timeline',
-                          sakes: timelineSakes.take(10).toList(),
-                          profilesFuture: _profilesFor(
-                            timelineSakes.take(10).toList(),
-                          ),
-                          actionBuilder: (sake) {
-                            final key = TimelinePageNotifier.envyKey(sake);
-                            final isEnvied = enviedIds.contains(key);
-                            final isPending = pendingEnvyIds.contains(key);
-                            return _RoundCardAction(
-                              icon: Icons.thumb_up_alt_outlined,
-                              color: isEnvied
-                                  ? _scanColor
-                                  : const Color(0xFFAAAAAA),
-                              showProgress: isPending,
-                              onTap: isPending
-                                  ? null
-                                  : () => _sendEnvy(context, notifier, sake),
-                            );
-                          },
-                          subtitleBuilder: (sake) =>
-                              _displayUserName(context, sake),
-                          onTap: (sake) {
-                            if ((sake.sakeId ?? 0) <= 0) {
-                              context.read<AppPageNotifier>().onTabTapped(3);
-                              return;
-                            }
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => SakeMasterDetailPage(
-                                  venueSake: VenueSake(
-                                    sakeId: sake.sakeId,
-                                    name: sake.name ?? '',
-                                    brewery: sake.brewery,
-                                    type: sake.type,
-                                    recordCount: 0,
-                                    primaryImageUrl: sake.primaryImageUrl,
-                                    thumbnailImageUrl: sake.thumbnailImageUrl,
-                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  const _HomePromotionBanners(),
-                ],
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    const _HomePromotionBanners(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

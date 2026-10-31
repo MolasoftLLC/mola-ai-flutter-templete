@@ -22,9 +22,12 @@ import 'widgets/menu_sake_detail_rows.dart';
 import 'widgets/menu_result_place_field.dart';
 
 class MenuSearchPage extends StatefulWidget {
-  const MenuSearchPage._({Key? key}) : super(key: key);
+  const MenuSearchPage._({Key? key, this.startWithCamera = false})
+    : super(key: key);
 
-  static Widget wrapped({File? initialImage}) {
+  final bool startWithCamera;
+
+  static Widget wrapped({File? initialImage, bool startWithCamera = false}) {
     return MultiProvider(
       providers: [
         StateNotifierProvider<MenuSearchPageNotifier, MenuSearchPageState>(
@@ -34,7 +37,7 @@ class MenuSearchPage extends StatefulWidget {
           ),
         ),
       ],
-      child: const MenuSearchPage._(),
+      child: MenuSearchPage._(startWithCamera: startWithCamera),
     );
   }
 
@@ -57,6 +60,8 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
       if (initial != null) {
         await notifier.selectPhoto(initial);
         if (mounted) await _showPhotoFlow();
+      } else if (widget.startWithCamera) {
+        await _pickPhoto(notifier.pickImageFromCamera);
       }
     });
   }
@@ -183,314 +188,322 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      child: Scaffold(
-        backgroundColor: MenuPhotoStyle.blue,
-        appBar: MenuPhotoStyle.appBar(
-          context.l10n.navigationMenuAnalysis,
-          onBack: Navigator.of(context).canPop()
-              ? () => Navigator.of(context).pop()
-              : null,
-        ),
-        body: SingleChildScrollView(
-          controller: _scrollController,
-          // Clear the scan button's 43pt overlap plus a little breathing room.
-          padding: const EdgeInsets.only(bottom: 64),
-          child: Center(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MenuCaptureEntry(
-                  history: history,
-                  onCamera: () => _pickPhoto(notifier.pickImageFromCamera),
-                  onGallery: () => _pickPhoto(notifier.pickImageFromGallery),
-                  onHistory: (id) => _showHistory(id),
-                  onMore: () => _showHistory(null),
-                ),
-                if (errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        Text(
-                          localizeLegacyMessage(context.l10n, errorMessage),
-                          style: MenuPhotoStyle.text(13),
-                        ),
-                        if (notifier.hasPendingHistorySave)
-                          TextButton(
-                            onPressed: notifier.retrySaveMenuAnalysisHistory,
-                            child: Text(context.l10n.retryHistorySave),
-                          ),
-                      ],
-                    ),
+      child: PrimaryScrollController(
+        automaticallyInheritForPlatforms: const <TargetPlatform>{},
+        controller: _scrollController,
+        child: Scaffold(
+          backgroundColor: MenuPhotoStyle.blue,
+          appBar: MenuPhotoStyle.appBar(
+            context.l10n.navigationMenuAnalysis,
+            onBack: Navigator.of(context).canPop()
+                ? () => Navigator.of(context).pop()
+                : null,
+          ),
+          body: SingleChildScrollView(
+            controller: _scrollController,
+            // Clear the scan button's 43pt overlap plus a little breathing room.
+            padding: const EdgeInsets.only(bottom: 64),
+            child: Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MenuCaptureEntry(
+                    history: history,
+                    onCamera: () => _pickPhoto(notifier.pickImageFromCamera),
+                    onGallery: () => _pickPhoto(notifier.pickImageFromGallery),
+                    onHistory: (id) => _showHistory(id),
+                    onMore: () => _showHistory(null),
                   ),
-                if (extractedSakes.isNotEmpty)
-                  Container(
-                    key: notifier.resultsSectionKey,
-                    padding: const EdgeInsets.only(
-                      top: 24,
-                      left: 24,
-                      right: 24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: MenuResultPlaceField(
-                            key: ValueKey(currentHistoryId),
-                            history: currentHistory,
-                            onSave: (place) => notifier.setHistoryPlace(
-                              currentHistory!.id,
-                              place,
-                            ),
+                  if (errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          Text(
+                            localizeLegacyMessage(context.l10n, errorMessage),
+                            style: MenuPhotoStyle.text(13),
                           ),
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                context.l10n.sakeCount(extractedSakes.length),
-                                style: MenuPhotoStyle.text(16, bold: true),
+                          if (notifier.hasPendingHistorySave)
+                            TextButton(
+                              onPressed: notifier.retrySaveMenuAnalysisHistory,
+                              child: Text(context.l10n.retryHistorySave),
+                            ),
+                        ],
+                      ),
+                    ),
+                  if (extractedSakes.isNotEmpty)
+                    Container(
+                      key: notifier.resultsSectionKey,
+                      padding: const EdgeInsets.only(
+                        top: 24,
+                        left: 24,
+                        right: 24,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: MenuResultPlaceField(
+                              key: ValueKey(currentHistoryId),
+                              history: currentHistory,
+                              onSave: (place) => notifier.setHistoryPlace(
+                                currentHistory!.id,
+                                place,
                               ),
                             ),
-                            if (currentHistory?.analysisStatus == 'partial' ||
-                                currentHistory?.analysisStatus == 'pending')
-                              Text(
-                                currentHistory!.analysisStatus == 'partial'
-                                    ? context.l10n.menuHistoryPartial
-                                    : context.l10n.menuHistoryPending,
-                                style: MenuPhotoStyle.text(
-                                  12,
-                                  color: MenuPhotoStyle.yellow,
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  context.l10n.sakeCount(extractedSakes.length),
+                                  style: MenuPhotoStyle.text(16, bold: true),
                                 ),
                               ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        if (!isMasterLookupComplete)
-                          const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFFFFD54F),
+                              if (currentHistory?.analysisStatus == 'partial' ||
+                                  currentHistory?.analysisStatus == 'pending')
+                                Text(
+                                  currentHistory!.analysisStatus == 'partial'
+                                      ? context.l10n.menuHistoryPartial
+                                      : context.l10n.menuHistoryPending,
+                                  style: MenuPhotoStyle.text(
+                                    12,
+                                    color: MenuPhotoStyle.yellow,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          if (!isMasterLookupComplete)
+                            const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFFFFD54F),
+                                ),
                               ),
                             ),
-                          ),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: isMasterLookupComplete
-                              ? extractedSakes.length
-                              : 0,
-                          itemBuilder: (context, index) {
-                            final sake = extractedSakes[index];
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: isMasterLookupComplete
+                                ? extractedSakes.length
+                                : 0,
+                            itemBuilder: (context, index) {
+                              final sake = extractedSakes[index];
 
-                            // 元の名前から取得した詳細情報の名前を取得
-                            final mappedName =
-                                nameMapping[sake.name] ?? sake.name;
+                              // 元の名前から取得した詳細情報の名前を取得
+                              final mappedName =
+                                  nameMapping[sake.name] ?? sake.name;
 
-                            // 詳細情報が取得された日本酒を探す
-                            final detailedSake = sakes?.firstWhere(
-                              (s) => s.name == mappedName,
-                              orElse: () =>
-                                  Sake(name: sake.name, type: sake.type),
-                            );
+                              // 詳細情報が取得された日本酒を探す
+                              final detailedSake = sakes?.firstWhere(
+                                (s) => s.name == mappedName,
+                                orElse: () =>
+                                    Sake(name: sake.name, type: sake.type),
+                              );
 
-                            // この日本酒が現在読み込み中かどうか
-                            final isItemLoading =
-                                sakeLoadingStatus[sake.name] ?? false;
+                              // この日本酒が現在読み込み中かどうか
+                              final isItemLoading =
+                                  sakeLoadingStatus[sake.name] ?? false;
 
-                            // 詳細情報があるかどうか
-                            final hasDetails =
-                                sakes != null &&
-                                sakes.any((s) => s.name == mappedName);
+                              // 詳細情報があるかどうか
+                              final hasDetails =
+                                  sakes != null &&
+                                  sakes.any((s) => s.name == mappedName);
 
-                            final matchPercent = matchPercents[sake.name];
-                            final candidates =
-                                resolutionCandidates[sake.name] ??
-                                const <MenuSakeCandidate>[];
-                            final hasFailed =
-                                !isItemLoading &&
-                                !hasDetails &&
-                                candidates.isEmpty &&
-                                sakeLoadingStatus.containsKey(sake.name);
+                              final matchPercent = matchPercents[sake.name];
+                              final candidates =
+                                  resolutionCandidates[sake.name] ??
+                                  const <MenuSakeCandidate>[];
+                              final hasFailed =
+                                  !isItemLoading &&
+                                  !hasDetails &&
+                                  candidates.isEmpty &&
+                                  sakeLoadingStatus.containsKey(sake.name);
 
-                            final isFavorited = myFavoriteList.any(
-                              (favorite) =>
-                                  favorite.name ==
-                                      (hasDetails
-                                          ? detailedSake!.name
-                                          : sake.name) &&
-                                  favorite.type ==
-                                      (hasDetails
-                                          ? detailedSake!.type
-                                          : sake.type),
-                            );
+                              final isFavorited = myFavoriteList.any(
+                                (favorite) =>
+                                    favorite.name ==
+                                        (hasDetails
+                                            ? detailedSake!.name
+                                            : sake.name) &&
+                                    favorite.type ==
+                                        (hasDetails
+                                            ? detailedSake!.type
+                                            : sake.type),
+                              );
 
-                            final isSaved = mySavedList.any(
-                              (saved) =>
-                                  saved.name ==
-                                      (hasDetails
-                                          ? detailedSake!.name
-                                          : sake.name) &&
-                                  saved.type ==
-                                      (hasDetails
-                                          ? detailedSake!.type
-                                          : sake.type),
-                            );
+                              final isSaved = mySavedList.any(
+                                (saved) =>
+                                    saved.name ==
+                                        (hasDetails
+                                            ? detailedSake!.name
+                                            : sake.name) &&
+                                    saved.type ==
+                                        (hasDetails
+                                            ? detailedSake!.type
+                                            : sake.type),
+                              );
 
-                            return SakeResultTile(
-                              key: ValueKey('${sake.name}\u0000${sake.type}'),
-                              dark: true,
-                              sake: sake,
-                              detailedSake: detailedSake,
-                              hasDetails: hasDetails,
-                              isItemLoading: isItemLoading,
-                              hasFailed: hasFailed,
-                              isFavorited: isFavorited,
-                              isLoading: isLoading,
-                              matchPercent: matchPercent,
-                              tasteProfile: tasteProfiles[sake.name],
-                              isUnverified: unverifiedNames.contains(sake.name),
-                              candidates: candidates,
-                              onCandidateSelected: (candidate) =>
-                                  notifier.selectMenuCandidate(
-                                    sake.name ?? '',
-                                    candidate,
-                                  ),
-                              onOpenDetails: (detailedSake?.sakeId ?? 0) > 0
-                                  ? () => Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => SakeMasterDetailPage(
-                                          venueSake: VenueSake(
-                                            sakeId: detailedSake!.sakeId,
-                                            name:
-                                                detailedSake.name ??
-                                                sake.name ??
-                                                '名称不明',
-                                            brewery: detailedSake.brewery,
-                                            type: detailedSake.type,
-                                            recordCount: 0,
-                                            primaryImageUrl:
-                                                detailedSake.primaryImageUrl,
-                                            thumbnailImageUrl:
-                                                detailedSake.thumbnailImageUrl,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : null,
-                              onToggleFavorite: () async {
-                                final favoriteSake = FavoriteSake(
-                                  sakeId: detailedSake!.sakeId,
-                                  name: detailedSake.name ?? 'Unknown',
-                                  type: detailedSake.type,
-                                );
-                                if (!isFavorited &&
-                                    favNotifier.hasReachedGuestLimit) {
-                                  await GuestLimitDialog.showFavoriteLimit(
-                                    context,
-                                    maxCount:
-                                        FavoriteNotifier.guestFavoriteLimit,
-                                  );
-                                  return;
-                                }
-                                try {
-                                  await favNotifier.addOrRemoveFavorite(
-                                    favoriteSake,
-                                  );
-                                } on FavoriteGuestLimitReachedException {
-                                  await GuestLimitDialog.showFavoriteLimit(
-                                    context,
-                                    maxCount:
-                                        FavoriteNotifier.guestFavoriteLimit,
-                                  );
-                                }
-                              },
-                              isSaved: isSaved,
-                              onSave: () async {
-                                if (detailedSake == null) {
-                                  logger.warning('詳細情報がない日本酒の保存操作が呼び出されました');
-                                  return false;
-                                }
-                                if (!isSaved &&
-                                    savedNotifier.hasReachedGuestLimit) {
-                                  await GuestLimitDialog.showSavedSakeLimit(
-                                    context,
-                                    maxCount: SavedSakeNotifier.guestSavedLimit,
-                                  );
-                                  return false;
-                                }
-                                if (!isSaved &&
-                                    savedNotifier.hasReachedMemberLimit) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        context.l10n.savedSakeLimit(
-                                          SavedSakeNotifier.memberSavedLimit,
-                                        ),
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return false;
-                                }
-                                try {
-                                  final changed = await savedNotifier
-                                      .toggleSavedSake(detailedSake);
-                                  if (!changed) {
-                                    if (context.mounted)
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            '保存状態を変更できませんでした。もう一度お試しください。',
-                                          ),
-                                        ),
-                                      );
-                                    return isSaved;
-                                  }
-                                } on SavedSakeGuestLimitReachedException {
-                                  await GuestLimitDialog.showSavedSakeLimit(
-                                    context,
-                                    maxCount: SavedSakeNotifier.guestSavedLimit,
-                                  );
-                                  return false;
-                                } on SavedSakeMemberLimitReachedException {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        context.l10n.savedSakeLimit(
-                                          SavedSakeNotifier.memberSavedLimit,
-                                        ),
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return false;
-                                }
-                                return !isSaved;
-                              },
-                              buildInfoRow: (key, value, icon) =>
-                                  buildMenuSakeInfoRow(
-                                    key,
-                                    value,
-                                    icon,
-                                    dark: true,
-                                  ),
-                              buildTypesRow: (types) => buildMenuSakeTypesRow(
-                                context,
-                                types,
+                              return SakeResultTile(
+                                key: ValueKey('${sake.name}\u0000${sake.type}'),
                                 dark: true,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                                sake: sake,
+                                detailedSake: detailedSake,
+                                hasDetails: hasDetails,
+                                isItemLoading: isItemLoading,
+                                hasFailed: hasFailed,
+                                isFavorited: isFavorited,
+                                isLoading: isLoading,
+                                matchPercent: matchPercent,
+                                tasteProfile: tasteProfiles[sake.name],
+                                isUnverified: unverifiedNames.contains(
+                                  sake.name,
+                                ),
+                                candidates: candidates,
+                                onCandidateSelected: (candidate) =>
+                                    notifier.selectMenuCandidate(
+                                      sake.name ?? '',
+                                      candidate,
+                                    ),
+                                onOpenDetails: (detailedSake?.sakeId ?? 0) > 0
+                                    ? () => Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => SakeMasterDetailPage(
+                                            venueSake: VenueSake(
+                                              sakeId: detailedSake!.sakeId,
+                                              name:
+                                                  detailedSake.name ??
+                                                  sake.name ??
+                                                  '名称不明',
+                                              brewery: detailedSake.brewery,
+                                              type: detailedSake.type,
+                                              recordCount: 0,
+                                              primaryImageUrl:
+                                                  detailedSake.primaryImageUrl,
+                                              thumbnailImageUrl: detailedSake
+                                                  .thumbnailImageUrl,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : null,
+                                onToggleFavorite: () async {
+                                  final favoriteSake = FavoriteSake(
+                                    sakeId: detailedSake!.sakeId,
+                                    name: detailedSake.name ?? 'Unknown',
+                                    type: detailedSake.type,
+                                  );
+                                  if (!isFavorited &&
+                                      favNotifier.hasReachedGuestLimit) {
+                                    await GuestLimitDialog.showFavoriteLimit(
+                                      context,
+                                      maxCount:
+                                          FavoriteNotifier.guestFavoriteLimit,
+                                    );
+                                    return;
+                                  }
+                                  try {
+                                    await favNotifier.addOrRemoveFavorite(
+                                      favoriteSake,
+                                    );
+                                  } on FavoriteGuestLimitReachedException {
+                                    await GuestLimitDialog.showFavoriteLimit(
+                                      context,
+                                      maxCount:
+                                          FavoriteNotifier.guestFavoriteLimit,
+                                    );
+                                  }
+                                },
+                                isSaved: isSaved,
+                                onSave: () async {
+                                  if (detailedSake == null) {
+                                    logger.warning('詳細情報がない日本酒の保存操作が呼び出されました');
+                                    return false;
+                                  }
+                                  if (!isSaved &&
+                                      savedNotifier.hasReachedGuestLimit) {
+                                    await GuestLimitDialog.showSavedSakeLimit(
+                                      context,
+                                      maxCount:
+                                          SavedSakeNotifier.guestSavedLimit,
+                                    );
+                                    return false;
+                                  }
+                                  if (!isSaved &&
+                                      savedNotifier.hasReachedMemberLimit) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.savedSakeLimit(
+                                            SavedSakeNotifier.memberSavedLimit,
+                                          ),
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return false;
+                                  }
+                                  try {
+                                    final changed = await savedNotifier
+                                        .toggleSavedSake(detailedSake);
+                                    if (!changed) {
+                                      if (context.mounted)
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              '保存状態を変更できませんでした。もう一度お試しください。',
+                                            ),
+                                          ),
+                                        );
+                                      return isSaved;
+                                    }
+                                  } on SavedSakeGuestLimitReachedException {
+                                    await GuestLimitDialog.showSavedSakeLimit(
+                                      context,
+                                      maxCount:
+                                          SavedSakeNotifier.guestSavedLimit,
+                                    );
+                                    return false;
+                                  } on SavedSakeMemberLimitReachedException {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.savedSakeLimit(
+                                            SavedSakeNotifier.memberSavedLimit,
+                                          ),
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return false;
+                                  }
+                                  return !isSaved;
+                                },
+                                buildInfoRow: (key, value, icon) =>
+                                    buildMenuSakeInfoRow(
+                                      key,
+                                      value,
+                                      icon,
+                                      dark: true,
+                                    ),
+                                buildTypesRow: (types) => buildMenuSakeTypesRow(
+                                  context,
+                                  types,
+                                  dark: true,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

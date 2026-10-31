@@ -326,8 +326,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('japan-brand-11')), findsOneWidget);
       expect(find.byKey(const ValueKey('japan-brand-12')), findsOneWidget);
-      expect(find.byKey(const ValueKey('brand-stamp-11')), findsOneWidget);
-      expect(find.byKey(const ValueKey('brand-stamp-12')), findsOneWidget);
+      expect(find.byKey(const ValueKey('brand-stamp-11')), findsNothing);
+      expect(find.byKey(const ValueKey('brand-stamp-12')), findsNothing);
       expect(find.byType(SakeCatalogThumbnail), findsNWidgets(2));
       await tester.ensureVisible(find.byKey(const ValueKey('japan-brand-11')));
       await tester.pumpAndSettle();
@@ -397,13 +397,19 @@ void main() {
     },
   );
 
-  testWidgets('full screen map returns its chosen prefecture', (tester) async {
+  testWidgets('larger map selects a prefecture without a toolbar', (
+    tester,
+  ) async {
     final repository = _Repository();
     await open(tester, repository, const JapanSakePage());
-    await tester.tap(find.byKey(const ValueKey('japan-map-expand')));
-    await tester.pumpAndSettle();
-    expect(find.text('産地を選ぶ'), findsOneWidget);
-    await preview(tester, 'fullscreen-map');
+    expect(find.byKey(const ValueKey('japan-map-expand')), findsNothing);
+    expect(find.byKey(const ValueKey('japan-map-zoom-in')), findsNothing);
+    expect(find.text('同じ商品は1つ。銘柄の産地で集計します。'), findsNothing);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('japan-map-viewer'))).height,
+      greaterThan(330),
+    );
+    await preview(tester, 'larger-map');
     await tapPrefecture(tester, 1);
     await tester.pumpAndSettle();
     expect(repository.requests, ['北海道']);

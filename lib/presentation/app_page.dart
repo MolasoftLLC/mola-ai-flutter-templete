@@ -173,7 +173,14 @@ Future<void> _openCapture(
   );
   if (action == null || !context.mounted) return;
   if (action == CaptureAction.menu) {
-    notifier.onTabTapped(1);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => AnalyticsScreen(
+          name: 'menu',
+          child: MenuSearchPage.wrapped(startWithCamera: true),
+        ),
+      ),
+    );
   } else {
     await openNewHomeScanner(
       context,

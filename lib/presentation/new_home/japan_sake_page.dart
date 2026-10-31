@@ -14,7 +14,6 @@ import 'widgets/sake_journey_progress.dart';
 import '../my_page/saved_sake_detail_page.dart';
 import '../common/widgets/primary_app_bar.dart';
 import 'widgets/japan_sake_feedback_button.dart';
-import 'widgets/sake_stamp_book.dart';
 import 'widgets/recorded_sake_seal.dart';
 import 'widgets/home_section_title.dart';
 
@@ -193,41 +192,6 @@ class _JapanSakePageState extends State<JapanSakePage> {
     );
   }
 
-  Future<void> _expandMap() async {
-    final prefecture = await Navigator.of(context).push<JapanSakePrefecture>(
-      MaterialPageRoute(
-        builder: (context) => SakeJourneyProgressBuilder(
-          builder: (context, progress, legend, ready) => Scaffold(
-            backgroundColor: const Color(0xFFF4F7F6),
-            appBar: PrimaryAppBar(
-              title: _english(context) ? 'Choose a prefecture' : '産地を選ぶ',
-            ),
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ZoomableJapanSakeMap(
-                        prefectures: _prefectures,
-                        selectedCode: _selected?.code,
-                        productCounts: progress.counts,
-                        onSelected: (value) => Navigator.pop(context, value),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    legend,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    if (mounted && prefecture != null) _select(prefecture);
-  }
-
   void _openBrand(SakeBrandSummary brand) => Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => JapanSakeBrandProductsPage(brand: brand),
@@ -263,7 +227,7 @@ class _JapanSakePageState extends State<JapanSakePage> {
 
   @override
   Widget build(BuildContext context) => SakeJourneyProgressBuilder(
-    includeEncounterStamps: true,
+    showLegendDetails: false,
     builder: (context, progress, legend, ready) => Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: PrimaryAppBar(
@@ -286,11 +250,14 @@ class _JapanSakePageState extends State<JapanSakePage> {
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 330,
+            height: ((MediaQuery.sizeOf(context).width - 48) * 1.12).clamp(
+              340.0,
+              480.0,
+            ),
             child: _prefectures.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : ZoomableJapanSakeMap(
-                    onExpand: _expandMap,
+                    showControls: false,
                     productCounts: progress.counts,
                     prefectures: _prefectures,
                     selectedCode: _selected?.code,
@@ -398,23 +365,7 @@ class _JapanSakePageState extends State<JapanSakePage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (brands.isNotEmpty)
-                        SakeStampBook(
-                          key: ValueKey('prefecture-stamps-${_selected!.code}'),
-                          prefectureName: _selected!.label(context),
-                          brands: brands,
-                          recordedBrandIds:
-                              progress.brandIdsByPrefecture[_selected!.code] ??
-                              const {},
-                          recordsReady: ready,
-                          onBrandTap: _openBrand,
-                          hasMore: hasMore,
-                          loading: loading,
-                          failed: failed,
-                          loadMore: loadMore,
-                        )
-                      else
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         _english(context)
                             ? 'Choose a brand to see its sake.'

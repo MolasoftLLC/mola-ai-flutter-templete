@@ -125,130 +125,140 @@ class MainSearchPage extends StatelessWidget {
 
     return AnalyticsScreen(
       name: 'search',
-      child: Scaffold(
-        appBar: PrimaryAppBar(
-          title: context.l10n.searchPageTitle,
-          automaticallyImplyLeading: true,
-          actions: [
-            IconButton(
-              tooltip: context.l10n.helpGuide,
-              icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
-              onPressed: () {
-                HelpGuideDialog.showForType(
-                  context,
-                  type: HelpGuideType.mainSearch,
-                );
-              },
-            ),
-          ],
-        ),
-        body: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: Container(
-            height: MediaQuery.of(context).size.height,
-            decoration: const BoxDecoration(color: Color(0xFF1D3567)),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: showLoadingIndicator
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              child: showLoadingIndicator
-                  ? loadingContent
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 16),
+      child: PrimaryScrollController(
+        automaticallyInheritForPlatforms: const <TargetPlatform>{},
+        controller: _scrollController,
+        child: Scaffold(
+          appBar: PrimaryAppBar(
+            title: context.l10n.searchPageTitle,
+            automaticallyImplyLeading: true,
+            actions: [
+              IconButton(
+                tooltip: context.l10n.helpGuide,
+                icon: const Icon(Icons.help_outline, color: Color(0xFFFFD54F)),
+                onPressed: () {
+                  HelpGuideDialog.showForType(
+                    context,
+                    type: HelpGuideType.mainSearch,
+                  );
+                },
+              ),
+            ],
+          ),
+          body: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              decoration: const BoxDecoration(color: Color(0xFF1D3567)),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: showLoadingIndicator
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                child: showLoadingIndicator
+                    ? loadingContent
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 16),
 
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: MasterSakeSearchPanel(
-                              key: _masterSakeSearchPanelKey,
-                              initialQuery: initialQuery,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: _SearchShortcuts(
-                              onMapTap: () => _openMap(context),
-                              onMenuSearchTap: () => _openMenuSearch(context),
-                              onFastSearchTap: () =>
-                                  _openFastSearch(context, notifier),
-                              onPreferenceSearchTap: () =>
-                                  _openPreferenceSearch(context),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: _buildBottleSearchUI(
-                              context,
-                              notifier,
-                              sakeImage,
-                              isAnalyzingInBackground,
-                              isLoggedIn,
-                              autoTweetEnabled,
-                              isAutoTweetUpdating,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-
-                          if (manualSearchSuggested &&
-                              manualSearchQuery != null &&
-                              manualSearchQuery.trim().isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                               ),
-                              child: _ManualSakeSearchSuggestion(
-                                query: manualSearchQuery,
-                                onTap: () => _openManualNameSearch(
-                                  notifier,
-                                  manualSearchQuery,
-                                ),
+                              child: MasterSakeSearchPanel(
+                                key: _masterSakeSearchPanelKey,
+                                initialQuery: initialQuery,
                               ),
                             ),
-                          if (manualSearchSuggested &&
-                              manualSearchQuery != null &&
-                              manualSearchQuery.trim().isNotEmpty)
+                            const SizedBox(height: 16),
+
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: _SearchShortcuts(
+                                onMapTap: () => _openMap(context),
+                                onMenuSearchTap: () => _openMenuSearch(context),
+                                onFastSearchTap: () =>
+                                    _openFastSearch(context, notifier),
+                                onPreferenceSearchTap: () =>
+                                    _openPreferenceSearch(context),
+                              ),
+                            ),
                             const SizedBox(height: 18),
 
-                          // 検索結果表示
-                          if (sakeInfo != null)
-                            Container(
-                              key: _resultSectionKey,
-                              child: _buildSakeInfoCard(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: _buildBottleSearchUI(
                                 context,
                                 notifier,
-                                favNotifier,
-                                savedNotifier,
-                                sakeInfo,
-                                myFavoriteList,
-                                savedSakeList,
+                                sakeImage,
+                                isAnalyzingInBackground,
+                                isLoggedIn,
+                                autoTweetEnabled,
+                                isAutoTweetUpdating,
                               ),
                             ),
+                            const SizedBox(height: 18),
 
-                          if (errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(
-                                localizeLegacyMessage(
-                                  context.l10n,
-                                  errorMessage,
+                            if (manualSearchSuggested &&
+                                manualSearchQuery != null &&
+                                manualSearchQuery.trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
                                 ),
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
+                                child: _ManualSakeSearchSuggestion(
+                                  query: manualSearchQuery,
+                                  onTap: () => _openManualNameSearch(
+                                    notifier,
+                                    manualSearchQuery,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
+                            if (manualSearchSuggested &&
+                                manualSearchQuery != null &&
+                                manualSearchQuery.trim().isNotEmpty)
+                              const SizedBox(height: 18),
+
+                            // 検索結果表示
+                            if (sakeInfo != null)
+                              Container(
+                                key: _resultSectionKey,
+                                child: _buildSakeInfoCard(
+                                  context,
+                                  notifier,
+                                  favNotifier,
+                                  savedNotifier,
+                                  sakeInfo,
+                                  myFavoriteList,
+                                  savedSakeList,
+                                ),
+                              ),
+
+                            if (errorMessage != null)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  localizeLegacyMessage(
+                                    context.l10n,
+                                    errorMessage,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),
