@@ -111,7 +111,11 @@ class _ScanRecordQuestionsState extends State<ScanRecordQuestions> {
           style: TextButton.styleFrom(
             foregroundColor: ink.withValues(alpha: .8),
           ),
-          child: Text(selected ? 'この場所で続ける' : widget.doneLabel),
+          child: Text(
+            selected && widget.doneLabel == 'あとで'
+                ? 'この場所で続ける'
+                : widget.doneLabel,
+          ),
         ),
       ],
     );
