@@ -25,3 +25,9 @@ Xcode Organizerの通常App Store Connect経路で「App upload complete」「5.
 APIレシート: /tmp/sakepedia-182-play-receipt.json
 
 ![Android審査受付](images/release_182_20261102/android_review.png)
+
+## ユーザー指示による本番審査取り下げ
+2026-11-02、ユーザーから本番配信停止の指示。「配信」を本番審査まで含めた解釈は誤りだった。Android 182を審査から取り下げ、Play Consoleの「審査にまだ送信されていない変更」とAPI NOT_SENT_FOR_REVIEWを確認。182は未公開、公開中は181。iOSはアップロードのみで本番審査未提出。サーバーの新APIは反映済み。
+今後、このチャットの「配信」はテスト配信として扱う。本番審査・一般公開は明示指示がある場合のみ行う。
+
+![Android本番審査取り下げ](images/release_182_20261102/android_withdrawn.png)
