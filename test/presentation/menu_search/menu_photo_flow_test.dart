@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:mola_gemini_flutter_template/domain/repository/menu_extraction_stream.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -760,6 +761,7 @@ void main() {
   });
 
   testWidgets('確認→任意の切り抜きキャンセル→解析中止→再解析→結果へ進む', (tester) async {
+    await size(tester);
     final (notifier, repo, history) = await setupNotifier(tester);
     unawaited(
       Navigator.of(notifier.context).push<void>(
@@ -783,6 +785,14 @@ void main() {
     expect(notifier.isPhotoCropped, isFalse);
     await tester.tap(find.text('この写真で解析する'));
     await settleUntil(tester, () => repo.requests.length == 1);
+    repo.progressCallbacks.last(
+      const MenuReadingProgress(started: true, names: ['仙禽', '花邑']),
+    );
+    await tester.pump();
+    expect(find.text('2件読み取れました'), findsOneWidget);
+    expect(find.text('仙禽'), findsOneWidget);
+    expect(history.items, isEmpty);
+    await preview(tester, 'progressive-reading');
     await tester.ensureVisible(find.text('解析を中止'));
     await tester.tap(find.text('解析を中止'));
     await tester.pumpAndSettle();
@@ -816,6 +826,10 @@ void main() {
       notifier.extractAndFetchSakeInfo(photo).then((_) => newFinished = true),
     );
     await settleUntil(tester, () => repo.requests.length == 2);
+    repo.progressCallbacks.first(
+      const MenuReadingProgress(started: true, names: ['古い途中結果']),
+    );
+    expect(notifier.menuReadingProgress.value.names, isEmpty);
     repo.requests.first.complete([const Sake(name: '古い結果')]);
     await settleUntil(tester, () => oldFinished);
     expect(state!.extractedSakes, isEmpty);
@@ -881,6 +895,18 @@ class _Preferences implements MyPageNotifier {
 
 class _Repository implements SakeMenuRecognitionRepository {
   final requests = <Completer<List<Sake>?>>[];
+  final progressCallbacks = <void Function(MenuReadingProgress)>[];
+  @override
+  void cancelMenuExtraction() {}
+  @override
+  Future<List<Sake>?> extractSakeInfoProgressively(
+    File image, {
+    required void Function(MenuReadingProgress) onProgress,
+  }) {
+    progressCallbacks.add(onProgress);
+    return extractSakeInfo(image);
+  }
+
   @override
   SakeMenuRecognitionRepository forkSession() => this;
   @override

@@ -32,6 +32,7 @@ Future<bool> showSakePreferencesSelectionDialog({
       <String>[];
   final List<String> selectedPreferences = List<String>.from(existing);
 
+  var saving = false;
   final bool? result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -83,19 +84,23 @@ Future<bool> showSakePreferencesSelectionDialog({
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
-                            onSelected: (bool selected) {
-                              setState(() {
-                                if (selected) {
-                                  if (!selectedPreferences.contains(
-                                    option.value,
-                                  )) {
-                                    selectedPreferences.add(option.value);
-                                  }
-                                } else {
-                                  selectedPreferences.remove(option.value);
-                                }
-                              });
-                            },
+                            onSelected: saving
+                                ? null
+                                : (bool selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        if (!selectedPreferences.contains(
+                                          option.value,
+                                        )) {
+                                          selectedPreferences.add(option.value);
+                                        }
+                                      } else {
+                                        selectedPreferences.remove(
+                                          option.value,
+                                        );
+                                      }
+                                    });
+                                  },
                           );
                         }).toList(),
                       ),
@@ -104,40 +109,50 @@ Future<bool> showSakePreferencesSelectionDialog({
                 ),
                 actions: <Widget>[
                   TextButton(
-                    onPressed: () async {
-                      if (selectedPreferences.isEmpty) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(context.l10n.selectAtLeastOne),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                        return;
-                      }
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (selectedPreferences.isEmpty) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      context.l10n.selectAtLeastOne,
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
 
-                      final String preferences = selectedPreferences.join('、');
-                      final SharedPreferences prefs =
-                          await SharedPreferences.getInstance();
-                      await prefs.setString('sake_preferences', preferences);
+                            setState(() => saving = true);
+                            final saved = await myPageNotifier
+                                .saveSelectedPreferences(selectedPreferences);
+                            if (!dialogContext.mounted) return;
+                            setState(() => saving = false);
+                            if (!saved) {
+                              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text('好みを保存できませんでした。もう一度お試しください。'),
+                                ),
+                              );
+                              return;
+                            }
 
-                      myPageNotifier.setPreferences(preferences);
-                      await myPageNotifier.savePreferences();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    context.l10n.preferencesChangeAnytime,
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
 
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              context.l10n.preferencesChangeAnytime,
-                            ),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-
-                      Navigator.of(dialogContext).pop(true);
-                    },
+                            Navigator.of(dialogContext).pop(true);
+                          },
                     style: TextButton.styleFrom(
                       foregroundColor: const Color(0xFF1D3567),
                     ),

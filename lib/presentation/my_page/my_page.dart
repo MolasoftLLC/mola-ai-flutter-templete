@@ -21,6 +21,7 @@ import '../../common/localization/app_locale_controller.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../common/help/my_page_feature_guide.dart';
+import '../common/dialogs/sake_preferences_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../auth/email_link_auth_page.dart';
 import '../timeline/timeline_page.dart';
@@ -1109,7 +1110,33 @@ class _MyPageState extends State<MyPage> {
     BuildContext context,
     TastePreferenceProfile? profile,
   ) {
-    final effectiveProfile = profile ?? TastePreferenceProfile.sample();
+    if (profile == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('好みはまだ設定されていません', style: TextStyle(color: Colors.white)),
+            const SizedBox(height: 8),
+            const Text(
+              '甘口・辛口などを選ぶと、あなたの好みマッチ度を表示できます。',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.tune),
+              label: const Text('好みを選ぶ'),
+              onPressed: () => showSakePreferencesSelectionDialog(
+                context: context,
+                myPageNotifier: context.read<MyPageNotifier>(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final effectiveProfile = profile;
     final axes = <_PreferenceAxisData>[
       _PreferenceAxisData(
         title: context.l10n.axisFruity,
@@ -1161,9 +1188,7 @@ class _MyPageState extends State<MyPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            profile == null
-                ? context.l10n.tasteTrendSample
-                : context.l10n.tasteTrend,
+            context.l10n.tasteTrend,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -1172,9 +1197,7 @@ class _MyPageState extends State<MyPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            profile == null
-                ? context.l10n.tasteTrendSampleDescription
-                : context.l10n.tasteTrendDescription,
+            context.l10n.tasteTrendDescription,
             style: TextStyle(
               color: Colors.white.withOpacity(0.65),
               fontSize: 12,

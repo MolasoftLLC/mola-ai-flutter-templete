@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'menu_extraction_stream.dart';
 import 'dart:io';
 
 import '../../common/localization/app_locale_resolver.dart';
@@ -62,6 +67,79 @@ class SakeMenuRecognitionRepository {
 
   /// メニュー画像から日本酒名と種類のみを抽出する
   String? _menuAnalysisId;
+
+  http.Client? _menuStreamClient;
+  int _menuStreamGeneration = 0;
+
+  void cancelMenuExtraction() {
+    _menuStreamGeneration++;
+    _menuStreamClient?.close();
+    _menuStreamClient = null;
+  }
+
+  Future<List<Sake>?> extractSakeInfoProgressively(
+    File file, {
+    required void Function(MenuReadingProgress) onProgress,
+  }) async {
+    cancelMenuExtraction();
+    final generation = _menuStreamGeneration;
+    final client = http.Client();
+    _menuStreamClient = client;
+    _menuAnalysisId = null;
+    try {
+      return await (() async {
+        onProgress(const MenuReadingProgress());
+        // Compress once. No automatic retry or fallback that starts another AI call.
+        final image = await ImageUtils.compressAndEncodeImage(file);
+        final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (generation != _menuStreamGeneration) {
+          throw const MenuExtractionException('解析を中止しました。');
+        }
+        final request = http.Request(
+          'POST',
+          _apiClient.client.baseUrl.resolve(
+            '/api/menu-recognition/extract-progressive',
+          ),
+        );
+        request.headers.addAll({
+          'Content-Type': 'application/json',
+          'Accept': 'application/x-ndjson',
+          if (token != null) 'Authorization': 'Bearer $token',
+        });
+        // Compression can fall back to the original bytes; detect the actual format.
+        final bytes = base64Decode(image);
+        final mime =
+            bytes.length > 12 &&
+                ascii.decode(bytes.sublist(0, 4), allowInvalid: true) == 'RIFF'
+            ? 'image/webp'
+            : bytes.length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50
+            ? 'image/png'
+            : 'image/jpeg';
+        request.body = jsonEncode({'file': image, 'mimeType': mime});
+        final result = await readMenuExtractionStream(
+          await client.send(request),
+          (progress) {
+            if (generation == _menuStreamGeneration) onProgress(progress);
+          },
+        );
+        if (generation != _menuStreamGeneration) {
+          throw const MenuExtractionException('解析を中止しました。');
+        }
+        _menuAnalysisId = result['analysisId'] as String;
+        return (result['sakes'] as List)
+            .map((row) => Sake.fromJson(Map<String, dynamic>.from(row as Map)))
+            .toList();
+      })().timeout(const Duration(seconds: 110));
+    } on MenuExtractionException catch (error) {
+      throw SakeCandidateResolutionException(
+        error.message,
+        statusCode: error.statusCode,
+      );
+    } finally {
+      client.close();
+      if (identical(_menuStreamClient, client)) _menuStreamClient = null;
+    }
+  }
 
   Future<List<Sake>?> extractSakeInfo(File file) async {
     // リトライ回数

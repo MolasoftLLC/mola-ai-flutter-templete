@@ -66,7 +66,10 @@ class UserPreferenceRepository {
     }
   }
 
-  Future<TastePreferenceProfile?> fetchTasteProfile(String userId) async {
+  Future<TastePreferenceProfile?> fetchTasteProfile(
+    String userId, {
+    TastePreferenceProfile? initialProfile,
+  }) async {
     try {
       final response = await _apiClient.fetchTasteProfile(userId);
       if (!response.isSuccessful) {
@@ -78,7 +81,10 @@ class UserPreferenceRepository {
 
       final body = response.body;
       if (body is Map<String, dynamic>) {
-        return TastePreferenceProfile.fromJson(body);
+        if (body.isEmpty && initialProfile != null) {
+          return updateTasteProfile(userId: userId, profile: initialProfile);
+        }
+        return TastePreferenceProfile.tryFromJson(body);
       }
       logger.warning('味覚プロファイルのレスポンス形式が想定と異なります');
       return null;
@@ -99,7 +105,7 @@ class UserPreferenceRepository {
         'profile': profile.toJson(),
       });
       if (response.isSuccessful && response.body is Map<String, dynamic>) {
-        return TastePreferenceProfile.fromJson(
+        return TastePreferenceProfile.tryFromJson(
           response.body as Map<String, dynamic>,
         );
       }
@@ -139,7 +145,7 @@ class UserPreferenceRepository {
             ? body['profile'] as Map<String, dynamic>
             : body;
         if (profileJson is Map<String, dynamic>) {
-          return TastePreferenceProfile.fromJson(profileJson);
+          return TastePreferenceProfile.tryFromJson(profileJson);
         }
       }
 

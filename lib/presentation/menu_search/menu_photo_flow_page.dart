@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
 import '../../common/localization/localization_extensions.dart';
 import 'menu_photo_crop_page.dart';
+import '../../domain/repository/menu_extraction_stream.dart';
 import 'menu_search_page_notifier.dart';
 import 'widgets/menu_photo_style.dart';
 
@@ -77,7 +78,14 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
               if (!didPop && active) _cancel();
             },
             child: active
-                ? MenuAnalysisProgress(photo: photo, onCancel: _cancel)
+                ? ValueListenableBuilder<MenuReadingProgress>(
+                    valueListenable: widget.notifier.menuReadingProgress,
+                    builder: (context, progress, _) => MenuAnalysisProgress(
+                      photo: photo,
+                      onCancel: _cancel,
+                      progress: progress,
+                    ),
+                  )
                 : MenuPhotoConfirmation(
                     photo: photo,
                     cropped: widget.notifier.isPhotoCropped,
@@ -315,7 +323,9 @@ class MenuAnalysisProgress extends StatelessWidget {
     super.key,
     required this.photo,
     required this.onCancel,
+    this.progress = const MenuReadingProgress(),
   });
+  final MenuReadingProgress progress;
   final File photo;
   final VoidCallback onCancel;
   @override
@@ -355,17 +365,49 @@ class MenuAnalysisProgress extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    context.l10n.menuAnalyzingHeading,
+                    progress.names.isNotEmpty
+                        ? (Localizations.localeOf(context).languageCode == 'ja'
+                              ? '${progress.names.length}件読み取れました'
+                              : '${progress.names.length} entries read')
+                        : progress.started
+                        ? context.l10n.menuAnalyzingHeading
+                        : (Localizations.localeOf(context).languageCode == 'ja'
+                              ? '写真を準備・送信しています'
+                              : 'Preparing and sending your photo'),
                     style: MenuPhotoStyle.text(20, bold: true),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    context.l10n.menuAnalyzingDescription,
+                    Localizations.localeOf(context).languageCode == 'ja'
+                        ? 'メニューの文字を読み取っています'
+                        : 'Reading the text on your menu',
                     style: MenuPhotoStyle.text(13),
                   ),
                   const SizedBox(height: 20),
                   const _MenuIndeterminateProgress(),
-                  const SizedBox(height: 86),
+                  if (progress.names.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        Localizations.localeOf(context).languageCode == 'ja'
+                            ? '読み取り中・候補は完了後に表示します'
+                            : 'Still reading. Candidates will appear when complete.',
+                        style: MenuPhotoStyle.text(13),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final name
+                        in progress.names.reversed.take(4).toList().reversed)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          name,
+                          style: MenuPhotoStyle.text(16, bold: true),
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: 24),
                   MenuPhotoButton(
                     label: context.l10n.menuStopAnalysis,
                     onPressed: onCancel,

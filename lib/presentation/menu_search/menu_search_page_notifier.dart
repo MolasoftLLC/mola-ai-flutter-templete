@@ -36,6 +36,7 @@ import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 
 import 'menu_camera_page.dart';
+import '../../domain/repository/menu_extraction_stream.dart';
 
 part 'menu_search_page_notifier.freezed.dart';
 
@@ -180,6 +181,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
   @override
   void dispose() {
+    _analysisRepository?.cancelMenuExtraction();
+    menuReadingProgress.dispose();
     if (_usageFlow != null && !_usageExtractionDone)
       AppAnalytics.instance.event(
         'menu',
@@ -217,6 +220,16 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   int _analysisGeneration = 0;
   bool _startingAnalysis = false;
   SakeMenuRecognitionRepository? _analysisRepository;
+  final menuReadingProgress = ValueNotifier<MenuReadingProgress>(
+    const MenuReadingProgress(),
+  );
+
+  void _onMenuReadingProgress(MenuReadingProgress progress, String? flow) {
+    if (mounted && flow != null && flow == _usageFlow) {
+      menuReadingProgress.value = progress;
+    }
+  }
+
   File? get originalImage => _originalImage;
   bool get isPhotoCropped =>
       _originalImage != null && state.sakeImage?.path != _originalImage!.path;
@@ -281,7 +294,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     _analysisGeneration++;
     _startingAnalysis = false;
     _originalImage = null;
+    _analysisRepository?.cancelMenuExtraction();
     _analysisRepository = null;
+    menuReadingProgress.value = const MenuReadingProgress();
     if (_usageFlow != null && !_usageExtractionDone) {
       AppAnalytics.instance.event(
         'menu',
@@ -903,7 +918,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     final repository = sakeMenuRecognitionRepository;
     try {
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes = await repository.extractSakeInfo(imageFile);
+      final extractedSakes = await repository.extractSakeInfoProgressively(
+        imageFile,
+        onProgress: (progress) => _onMenuReadingProgress(progress, usageFlow),
+      );
       if (!isCurrent()) return;
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
@@ -991,7 +1009,10 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       logger.info('バックグラウンドでメニュー解析を開始します');
 
       // 画像から日本酒情報を抽出（直接List<Sake>を取得）
-      final extractedSakes = await repository.extractSakeInfo(imageFile);
+      final extractedSakes = await repository.extractSakeInfoProgressively(
+        imageFile,
+        onProgress: (progress) => _onMenuReadingProgress(progress, usageFlow),
+      );
       if (!isCurrent()) return;
 
       if (extractedSakes == null || extractedSakes.isEmpty) {

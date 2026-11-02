@@ -35,6 +35,23 @@ class _Notifier extends MyPageNotifier {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loggerConfigure);
+  test('初回選択はゲストでも即反映し、再起動で復元する', () async {
+    SharedPreferences.setMockInitialValues({});
+    final notifier = _Notifier(StateError('unused'))
+      ..read = (<T>() => _Guest() as T);
+    await Future<void>.delayed(Duration.zero);
+    expect(notifier.state.tasteProfile, isNull);
+    expect(await notifier.saveSelectedPreferences(['甘口', 'フルーティ']), isTrue);
+    expect(notifier.state.tasteProfile!.sweetness, .8);
+    expect(notifier.state.tasteProfile!.fruity, .8);
+    expect(notifier.state.tasteProfile!.acidity, .5);
+    notifier.dispose();
+    final restored = _Notifier(StateError('unused'))
+      ..read = (<T>() => _Guest() as T);
+    await Future<void>.delayed(Duration.zero);
+    expect(restored.state.tasteProfile!.sweetness, .8);
+    restored.dispose();
+  });
   for (final error in [
     const MonthlyTasteAnalysisLimitException(),
     StateError('offline'),

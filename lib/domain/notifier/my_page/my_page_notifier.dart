@@ -169,7 +169,29 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       state = state.copyWith(preferences: savedPreferences);
       // コントローラーのテキストも更新
       _preferencesController.text = savedPreferences;
+      if (_isGuest && state.tasteProfile == null) {
+        state = state.copyWith(
+          tasteProfile: TastePreferenceProfile.fromSelections(
+            savedPreferences.split('、').map((s) => s.trim()),
+          ),
+        );
+      }
     }
+  }
+
+  Future<bool> saveSelectedPreferences(List<String> selections) async {
+    final initial = TastePreferenceProfile.fromSelections(selections);
+    if (initial == null || state.isSavingPreferences) return false;
+    setPreferences(selections.join('、'));
+    if (!await savePreferences() || !mounted) return false;
+    // Preserve a profile already edited or analyzed by the user.
+    if (state.tasteProfile != null) return true;
+    if (_isGuest) {
+      state = state.copyWith(tasteProfile: initial);
+      return true;
+    }
+    await refreshTasteProfile();
+    return mounted && state.tasteProfile != null;
   }
 
   // 好みの設定を保存する
@@ -450,12 +472,21 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   Future<void> refreshTasteProfile() async {
     final user = _authRepository.currentUser;
     if (user == null) {
-      state = state.copyWith(tasteProfile: null);
+      state = state.copyWith(
+        tasteProfile: TastePreferenceProfile.fromSelections(
+          (state.preferences ?? '').split('、').map((s) => s.trim()),
+        ),
+      );
       return;
     }
 
     final revision = _tasteProfileRevision;
-    final profile = await _userPreferenceRepository.fetchTasteProfile(user.uid);
+    final profile = await _userPreferenceRepository.fetchTasteProfile(
+      user.uid,
+      initialProfile: TastePreferenceProfile.fromSelections(
+        (state.preferences ?? '').split('、').map((s) => s.trim()),
+      ),
+    );
     if (!mounted ||
         _authRepository.currentUser?.uid != user.uid ||
         revision != _tasteProfileRevision) {
@@ -463,6 +494,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
     }
     if (profile == null) {
       logger.info('味覚プロファイルはまだ算出されていませんでした');
+      state = state.copyWith(tasteProfile: null);
       return;
     }
 
