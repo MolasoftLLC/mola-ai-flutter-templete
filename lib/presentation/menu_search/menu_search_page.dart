@@ -1,3 +1,4 @@
+import '../sake_scan/sake_scan_page.dart';
 import '../../domain/eintities/menu_analysis_history.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -342,6 +343,15 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 key: ValueKey('${sake.name}\u0000${sake.type}'),
                                 dark: true,
                                 allowAlternativeSelection: true,
+                                onDiscover:
+                                    notifier.discoverableRows.contains(rowKey)
+                                    ? () => notifier.confirmMenuDiscovery(sake)
+                                    : null,
+                                onScanLabel: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => SakeScanPage.wrapped(),
+                                  ),
+                                ),
                                 sake: sake,
                                 detailedSake: detailedSake,
                                 hasDetails: hasDetails,
@@ -351,9 +361,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 isLoading: isLoading,
                                 matchPercent: matchPercent,
                                 tasteProfile: tasteProfiles[rowKey],
-                                isUnverified: unverifiedNames.contains(
-                                  sake.name,
-                                ),
+                                isUnverified: unverifiedNames.contains(rowKey),
                                 candidates: candidates,
                                 onCandidateSelected: (candidate) => notifier
                                     .selectMenuCandidate(rowKey, candidate),

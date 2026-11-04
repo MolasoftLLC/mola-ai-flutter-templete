@@ -26,6 +26,7 @@ class MenuSakeResolution {
     required this.status,
     required this.candidates,
     this.inputType,
+    this.canDiscover = false,
     this.fallback,
     this.fallbackTasteProfile,
   });
@@ -35,6 +36,7 @@ class MenuSakeResolution {
     return MenuSakeResolution(
       inputName: json['inputName']?.toString() ?? '',
       inputType: json['inputType']?.toString(),
+      canDiscover: json['canDiscover'] == true,
       status: MenuSakeResolutionStatus.values.firstWhere(
         (value) => value.name == statusName,
         orElse: () => MenuSakeResolutionStatus.unresolved,
@@ -63,6 +65,7 @@ class MenuSakeResolution {
 
   final String inputName;
   final String? inputType;
+  final bool canDiscover;
   final MenuSakeResolutionStatus status;
   final List<MenuSakeCandidate> candidates;
   final Sake? fallback;
