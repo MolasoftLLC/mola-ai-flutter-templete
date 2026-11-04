@@ -102,6 +102,11 @@ void main() {
   });
   tearDownAll(() => directory.delete(recursive: true));
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('image_gallery_saver_plus'),
+          (_) async => {'isSuccess': true},
+        );
     SharedPreferences.setMockInitialValues({
       'ai_data_sharing_consent_v1_test-user': true,
       'sake_preferences': '辛口',
@@ -758,6 +763,64 @@ void main() {
     expect(state!.sakeImage!.path.endsWith('cropped.png'), isTrue);
     notifier.restoreOriginalPhoto();
     expect(state!.sakeImage, original);
+  });
+
+  testWidgets('解析中に選んだ場所を履歴へ引き継ぎ、選択中の完了では自動遷移しない', (tester) async {
+    await size(tester);
+    final (notifier, repo, history) = await setupNotifier(tester);
+    final choice = Completer<DrinkingPlace?>();
+    unawaited(
+      Navigator.of(notifier.context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => MenuPhotoFlowPage(
+            notifier: notifier,
+            pickPlace: (_, _) => choice.future,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('この写真で解析する'));
+    await settleUntil(tester, () => repo.requests.length == 1);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('menu-analysis-place')),
+    );
+    await tester.tap(find.byKey(const ValueKey('menu-analysis-place')));
+    repo.requests.single.complete([const Sake(name: '仙禽')]);
+    await settleUntil(tester, () => history.items.isNotEmpty);
+    expect(find.byType(MenuPhotoFlowPage), findsOneWidget);
+    const place = DrinkingPlace(
+      displayName: '比較テストのお店',
+      latitude: 35,
+      longitude: 135,
+    );
+    choice.complete(place);
+    await settleUntil(
+      tester,
+      () => history.items.single.drinkingPlace == place,
+    );
+    await tester.pump();
+    expect(find.text('比較テストのお店'), findsOneWidget);
+    expect(find.byType(MenuPhotoFlowPage), findsOneWidget);
+    await tester.ensureVisible(find.text('候補を見る ▶'));
+    await tester.tap(find.text('候補を見る ▶'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MenuPhotoFlowPage), findsNothing);
+    expect(history.items.single.storeName, place.displayName);
+    await tester.runAsync(() => notifier.selectPhoto(photo));
+    expect(notifier.analysisPlace, isNull);
+    notifier.dispose();
+  });
+
+  testWidgets('結果前に選んだ場所は中止・再試行で維持し、新規写真には持ち越さない', (tester) async {
+    final (notifier, _, _) = await setupNotifier(tester);
+    const place = DrinkingPlace(displayName: '下書きのお店');
+    await notifier.setAnalysisPlace(place);
+    notifier.cancelAnalysis();
+    expect(notifier.analysisPlace, place);
+    await tester.runAsync(() => notifier.selectPhoto(photo));
+    expect(notifier.analysisPlace, isNull);
+    notifier.dispose();
   });
 
   testWidgets('確認→任意の切り抜きキャンセル→解析中止→再解析→結果へ進む', (tester) async {

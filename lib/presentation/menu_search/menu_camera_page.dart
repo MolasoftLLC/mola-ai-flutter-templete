@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import '../../common/utils/custom_image_picker.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/logger.dart';
 import 'widgets/menu_photo_style.dart';
@@ -20,6 +23,8 @@ class _MenuCameraPageState extends State<MenuCameraPage>
   Future<void> _cameraWork = Future<void>.value();
   int _generation = 0;
   bool _capturing = false;
+  bool _pickingGallery = false;
+  bool get _busy => _capturing || _pickingGallery;
   bool _opening = true;
   bool _flashOn = false;
   String? _error;
@@ -122,6 +127,7 @@ class _MenuCameraPageState extends State<MenuCameraPage>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_pickingGallery) return;
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
       _configure(active: false);
@@ -148,7 +154,7 @@ class _MenuCameraPageState extends State<MenuCameraPage>
   Future<void> _capture() async {
     final controller = _controller;
     final generation = _generation;
-    if (_capturing ||
+    if (_busy ||
         _opening ||
         controller == null ||
         !controller.value.isInitialized ||
@@ -158,7 +164,9 @@ class _MenuCameraPageState extends State<MenuCameraPage>
     setState(() => _capturing = true);
     try {
       final photo = await controller.takePicture();
-      if (mounted && generation == _generation) {
+      if (!mounted || generation != _generation) return;
+      await _saveToGallery(File(photo.path));
+      if (mounted) {
         Navigator.of(context).pop(File(photo.path));
       }
     } catch (error) {
@@ -171,9 +179,58 @@ class _MenuCameraPageState extends State<MenuCameraPage>
     }
   }
 
+  Future<void> _saveToGallery(File photo) async {
+    try {
+      final result = await ImageGallerySaverPlus.saveFile(photo.path);
+      if (result is Map && result['isSuccess'] == true) return;
+    } catch (error) {
+      logger.warning('メニュー写真の端末保存に失敗しました: $error');
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Localizations.localeOf(context).languageCode == 'ja'
+                ? '写真を端末に保存できませんでした。写真への追加を許可してください。解析は続けられます。'
+                : 'Could not save the photo. Allow adding photos in Settings. You can still analyze it.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    if (_busy) return;
+    setState(() => _pickingGallery = true);
+    _configure(active: false);
+    var selected = false;
+    try {
+      await _cameraWork;
+      if (!mounted) return;
+      final photo = await CustomImagePicker.pickImage(
+        source: ImageSource.gallery,
+      );
+      if (!mounted || photo == null) return;
+      selected = true;
+      Navigator.of(context).pop(photo);
+    } catch (error) {
+      logger.warning('メニュー画像を選択できませんでした: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.errorSelectImage)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _pickingGallery = false);
+        if (!selected) _configure(active: true);
+      }
+    }
+  }
+
   Future<void> _flash() async {
     final controller = _controller;
-    if (controller == null || _capturing) return;
+    if (controller == null || _busy) return;
     try {
       final on = !_flashOn;
       await controller.setFlashMode(on ? FlashMode.torch : FlashMode.off);
@@ -185,7 +242,7 @@ class _MenuCameraPageState extends State<MenuCameraPage>
 
   Future<void> _focus(Offset point) async {
     final controller = _controller;
-    if (controller == null || _capturing) return;
+    if (controller == null || _busy) return;
     try {
       await controller.setFocusPoint(point);
       await controller.setExposurePoint(point);
@@ -196,7 +253,7 @@ class _MenuCameraPageState extends State<MenuCameraPage>
 
   Future<void> _setZoom(double scale) async {
     final controller = _controller;
-    if (controller == null || _capturing) return;
+    if (controller == null || _busy) return;
     final zoom = (_startZoom * scale).clamp(_minZoom, _maxZoom);
     try {
       await controller.setZoomLevel(zoom);
@@ -211,12 +268,12 @@ class _MenuCameraPageState extends State<MenuCameraPage>
     final controller = _controller;
     final ready = !_opening && controller?.value.isInitialized == true;
     return PopScope(
-      canPop: !_capturing,
+      canPop: !_busy,
       child: Scaffold(
         backgroundColor: MenuPhotoStyle.blue,
         appBar: MenuPhotoStyle.appBar(
           context.l10n.menuCapturePhoto,
-          onBack: _capturing ? null : () => Navigator.of(context).pop(),
+          onBack: _busy ? null : () => Navigator.of(context).pop(),
         ),
         body: SafeArea(
           top: false,
@@ -281,13 +338,29 @@ class _MenuCameraPageState extends State<MenuCameraPage>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 64),
+                    SizedBox(
+                      width: 64,
+                      child: IconButton(
+                        key: const ValueKey('menu-camera-gallery'),
+                        tooltip: context.l10n.menuChoosePhoto,
+                        onPressed: _busy ? null : _pickFromGallery,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                          minimumSize: const Size(52, 52),
+                        ),
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
                     const Spacer(),
                     SizedBox.square(
                       dimension: 76,
                       child: FilledButton(
                         key: const ValueKey('menu-camera-shutter'),
-                        onPressed: ready && !_capturing ? _capture : null,
+                        onPressed: ready && !_busy ? _capture : null,
                         style: FilledButton.styleFrom(
                           padding: EdgeInsets.zero,
                           shape: const CircleBorder(
@@ -312,7 +385,7 @@ class _MenuCameraPageState extends State<MenuCameraPage>
                       width: 64,
                       child: IconButton(
                         tooltip: context.l10n.menuCameraFlash,
-                        onPressed: ready && !_capturing ? _flash : null,
+                        onPressed: ready && !_busy ? _flash : null,
                         icon: Icon(
                           _flashOn ? Icons.flash_on : Icons.flash_off,
                           color: Colors.white,

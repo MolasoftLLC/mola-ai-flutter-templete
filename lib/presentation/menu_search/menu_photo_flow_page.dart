@@ -6,9 +6,12 @@ import 'menu_photo_crop_page.dart';
 import '../../domain/repository/menu_extraction_stream.dart';
 import 'menu_search_page_notifier.dart';
 import 'widgets/menu_photo_style.dart';
+import '../my_page/widgets/place_picker_sheet.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
 class MenuPhotoFlowPage extends StatefulWidget {
-  const MenuPhotoFlowPage({super.key, required this.notifier});
+  const MenuPhotoFlowPage({super.key, required this.notifier, this.pickPlace});
+  final Future<DrinkingPlace?> Function(BuildContext, String?)? pickPlace;
   final MenuSearchPageNotifier notifier;
   @override
   State<MenuPhotoFlowPage> createState() => _MenuPhotoFlowPageState();
@@ -18,6 +21,34 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
   bool _submitting = false;
   bool _editing = false;
   bool _closing = false;
+  bool _placeInteracted = false;
+  bool _pickingPlace = false;
+
+  Future<void> _choosePlace() async {
+    if (_pickingPlace) return;
+    setState(() {
+      _placeInteracted = true;
+      _pickingPlace = true;
+    });
+    try {
+      final initial = widget.notifier.analysisPlace?.displayName;
+      final place = widget.pickPlace == null
+          ? await PlacePickerSheet.show(context, initialPlace: initial)
+          : await widget.pickPlace!(context, initial);
+      if (mounted && place != null) {
+        await widget.notifier.setAnalysisPlace(place);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.errorSaveToServer)));
+      }
+    } finally {
+      if (mounted) setState(() => _pickingPlace = false);
+    }
+  }
+
   int _submission = 0;
 
   Future<void> _analyze(File photo) async {
@@ -62,12 +93,14 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
               state.isLoading ||
               state.isExtractingInfo ||
               (state.isGettingDetails && !state.isMasterLookupComplete);
-          if (state.extractedSakes.isNotEmpty &&
-              state.isMasterLookupComplete &&
-              !_closing) {
+          final complete =
+              state.extractedSakes.isNotEmpty && state.isMasterLookupComplete;
+          if (complete && !_placeInteracted && !_pickingPlace && !_closing) {
             _closing = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) Navigator.of(context).pop();
+              if (mounted && !_placeInteracted && !_pickingPlace) {
+                Navigator.of(context).pop();
+              }
             });
           }
           final photo = state.sakeImage;
@@ -77,13 +110,21 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
             onPopInvokedWithResult: (didPop, _) {
               if (!didPop && active) _cancel();
             },
-            child: active
+            child: active || (complete && _placeInteracted)
                 ? ValueListenableBuilder<MenuReadingProgress>(
                     valueListenable: widget.notifier.menuReadingProgress,
                     builder: (context, progress, _) => MenuAnalysisProgress(
                       photo: photo,
-                      onCancel: _cancel,
+                      onCancel: complete
+                          ? () => Navigator.of(context).pop()
+                          : _cancel,
                       progress: progress,
+                      placeName: widget.notifier.analysisPlace?.displayName,
+                      onChoosePlace: _pickingPlace ? null : _choosePlace,
+                      complete: complete,
+                      onContinue: complete && !_pickingPlace
+                          ? () => Navigator.of(context).pop()
+                          : null,
                     ),
                   )
                 : MenuPhotoConfirmation(
@@ -324,7 +365,15 @@ class MenuAnalysisProgress extends StatelessWidget {
     required this.photo,
     required this.onCancel,
     this.progress = const MenuReadingProgress(),
+    this.placeName,
+    this.onChoosePlace,
+    this.complete = false,
+    this.onContinue,
   });
+  final String? placeName;
+  final VoidCallback? onChoosePlace;
+  final bool complete;
+  final VoidCallback? onContinue;
   final MenuReadingProgress progress;
   final File photo;
   final VoidCallback onCancel;
@@ -365,7 +414,11 @@ class MenuAnalysisProgress extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    progress.names.isNotEmpty
+                    complete
+                        ? (Localizations.localeOf(context).languageCode == 'ja'
+                              ? '解析できました'
+                              : 'Analysis complete')
+                        : progress.names.isNotEmpty
                         ? (Localizations.localeOf(context).languageCode == 'ja'
                               ? '${progress.names.length}件読み取れました'
                               : '${progress.names.length} entries read')
@@ -377,15 +430,32 @@ class MenuAnalysisProgress extends StatelessWidget {
                     style: MenuPhotoStyle.text(20, bold: true),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    Localizations.localeOf(context).languageCode == 'ja'
-                        ? 'メニューの文字を読み取っています'
-                        : 'Reading the text on your menu',
-                    style: MenuPhotoStyle.text(13),
-                  ),
+                  if (!complete)
+                    Text(
+                      Localizations.localeOf(context).languageCode == 'ja'
+                          ? 'メニューの文字を読み取っています'
+                          : 'Reading the text on your menu',
+                      style: MenuPhotoStyle.text(13),
+                    ),
                   const SizedBox(height: 20),
-                  const _MenuIndeterminateProgress(),
-                  if (progress.names.isNotEmpty) ...[
+                  if (!complete) const _MenuIndeterminateProgress(),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    key: const ValueKey('menu-analysis-place'),
+                    onPressed: onChoosePlace,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor: Colors.white70,
+                      padding: const EdgeInsets.all(16),
+                      side: const BorderSide(color: Colors.white54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.location_on_outlined),
+                    label: Text(placeName ?? context.l10n.addConsumedPlace),
+                  ),
+                  if (!complete && progress.names.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Semantics(
                       liveRegion: true,
@@ -409,8 +479,12 @@ class MenuAnalysisProgress extends StatelessWidget {
                   ],
                   const SizedBox(height: 24),
                   MenuPhotoButton(
-                    label: context.l10n.menuStopAnalysis,
-                    onPressed: onCancel,
+                    label: complete
+                        ? (Localizations.localeOf(context).languageCode == 'ja'
+                              ? '候補を見る ▶'
+                              : 'View candidates ▶')
+                        : context.l10n.menuStopAnalysis,
+                    onPressed: complete ? onContinue : onCancel,
                     height: 52,
                   ),
                 ],

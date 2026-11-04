@@ -101,6 +101,22 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   final GlobalKey resultsSectionKey = GlobalKey();
   final File? initialImage;
   final MenuAnalysisHistoryRepository _historyRepository;
+  DrinkingPlace? _analysisPlace;
+  DrinkingPlace? get analysisPlace => _analysisPlace;
+
+  Future<void> setAnalysisPlace(DrinkingPlace place) async {
+    _analysisPlace = place;
+    final generation = _detailsGeneration;
+    await _writeHistory(() async {
+      if (!mounted || generation != _detailsGeneration) return;
+      final id = _activeAnalysisId;
+      if (id != null &&
+          state.menuAnalysisHistory.any((item) => item.id == id)) {
+        await _setHistoryPlace(id, place);
+      }
+    });
+  }
+
   String? _activeAnalysisId;
   DateTime? _activeAnalysisDate;
   MenuAnalysisHistoryItem? _pendingHistoryItem;
@@ -285,12 +301,15 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   void cancelAnalysis() {
     final image = state.sakeImage;
     final original = _originalImage;
+    final place = _analysisPlace;
     clearImage();
+    _analysisPlace = place;
     _originalImage = original;
     state = state.copyWith(sakeImage: image);
   }
 
   void clearImage() {
+    _analysisPlace = null;
     _analysisGeneration++;
     _startingAnalysis = false;
     _originalImage = null;
@@ -1229,8 +1248,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       final newHistoryItem = MenuAnalysisHistoryItem(
         id: analysisId,
         date: analysisDate,
-        storeName: existing?.storeName,
-        drinkingPlace: existing?.drinkingPlace,
+        storeName: _analysisPlace?.displayName ?? existing?.storeName,
+        drinkingPlace: _analysisPlace ?? existing?.drinkingPlace,
         sakes: savedSakes,
         imagePath: imagePath,
         analysisStatus:
@@ -1268,6 +1287,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       _pendingHistoryItem = MenuAnalysisHistoryItem(
         id: analysisId,
         date: analysisDate,
+        drinkingPlace: _analysisPlace,
+        storeName: _analysisPlace?.displayName,
         sakes: buildMenuHistorySakes(
           extracted: state.extractedSakes
               .where((sake) => sake.name?.trim().isNotEmpty == true)
@@ -1413,6 +1434,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       storeName: place?.displayName,
     );
     await _historyRepository.upsert(updated);
+    if (historyId == _activeAnalysisId) _analysisPlace = place;
     _scheduleHistorySync();
     if (!mounted) return;
     state = state.copyWith(
