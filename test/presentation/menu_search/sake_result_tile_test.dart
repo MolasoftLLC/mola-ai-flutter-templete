@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/domain/eintities/menu_sake_resolution.dart';
@@ -7,6 +11,27 @@ import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sa
 
 void main() {
   testWidgets('DB候補が複数なら商品を選択でき、未確定のまま詳細扱いにしない', (tester) async {
+    const output = String.fromEnvironment('MENU_UI_OUTPUT');
+    if (output.isNotEmpty) {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.runAsync(() async {
+        final font = FontLoader('Preview')
+          ..addFont(
+            Future.value(
+              ByteData.sublistView(
+                await File('/Library/Fonts/Arial Unicode.ttf').readAsBytes(),
+              ),
+            ),
+          );
+        await font.load();
+        final icons = FontLoader('MaterialIcons')
+          ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+        await icons.load();
+      });
+    }
     MenuSakeCandidate? selected;
     final candidates = [
       const MenuSakeCandidate(
@@ -18,6 +43,9 @@ void main() {
     ];
     await tester.pumpWidget(
       MaterialApp(
+        theme: ThemeData(fontFamily: output.isEmpty ? null : 'Preview'),
+        builder: (_, child) =>
+            RepaintBoundary(key: const ValueKey('preview'), child: child!),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('ja'),
@@ -51,6 +79,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('天吹 雄町 生'), findsOneWidget);
     expect(find.text('天吹 雄町 火入れ'), findsOneWidget);
+    if (output.isNotEmpty) {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('preview')),
+      );
+      await tester.runAsync(() async {
+        final image = await boundary.toImage();
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await Directory(output).create(recursive: true);
+        await File(
+          '$output/menu-candidates.png',
+        ).writeAsBytes(bytes!.buffer.asUint8List());
+        image.dispose();
+      });
+    }
     await tester.tap(find.text('天吹 雄町 火入れ'));
     await tester.pumpAndSettle();
     expect(selected?.sake.sakeId, 2);
