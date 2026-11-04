@@ -35,13 +35,15 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
       final place = widget.pickPlace == null
           ? await PlacePickerSheet.show(context, initialPlace: initial)
           : await widget.pickPlace!(context, initial);
-      if (mounted && place != null)
+      if (mounted && place != null) {
         await widget.notifier.setAnalysisPlace(place);
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.errorSaveToServer)));
+      }
     } finally {
       if (mounted) setState(() => _pickingPlace = false);
     }
@@ -96,8 +98,9 @@ class _MenuPhotoFlowPageState extends State<MenuPhotoFlowPage> {
           if (complete && !_placeInteracted && !_pickingPlace && !_closing) {
             _closing = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_placeInteracted && !_pickingPlace)
+              if (mounted && !_placeInteracted && !_pickingPlace) {
                 Navigator.of(context).pop();
+              }
             });
           }
           final photo = state.sakeImage;
