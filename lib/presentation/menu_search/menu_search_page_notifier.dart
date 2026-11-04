@@ -1,3 +1,4 @@
+import '../../domain/repository/sake_scan_repository.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
@@ -97,6 +98,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   bool _resolvingDetails = false;
   final Set<String> _selectedMenuNames = {};
   final Map<String, Sake> rowDetails = {};
+  final Set<String> discoverableRows = {};
+  final Set<String> _confirmingDiscoveries = {};
 
   final BuildContext context;
   final GlobalKey resultsSectionKey = GlobalKey();
@@ -339,6 +342,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     _resolvingDetails = false;
     _selectedMenuNames.clear();
     rowDetails.clear();
+    discoverableRows.clear();
     _activeAnalysisId = null;
     _activeAnalysisDate = null;
     _pendingHistoryItem = null;
@@ -427,6 +431,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       _resolvingDetails = false;
       _selectedMenuNames.clear();
       rowDetails.clear();
+      discoverableRows.clear();
       _activeAnalysisId =
           'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
       _activeAnalysisDate = DateTime.now();
@@ -798,6 +803,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     required bool loading,
   }) {
     final name = menuRowKey(resolution.inputName, resolution.inputType);
+    if (resolution.canDiscover) {
+      discoverableRows.add(name);
+    } else {
+      discoverableRows.remove(name);
+    }
     final choices = {...state.resolutionCandidates};
     if (resolution.status == MenuSakeResolutionStatus.multiple) {
       choices[name] = resolution.candidates;
@@ -809,6 +819,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             resolution.candidates.length == 1
         ? resolution.candidates.single
         : null;
+    final unverified = {...state.unverifiedNames}..remove(name);
+    if (selected == null && resolution.fallback != null) unverified.add(name);
     final sake = selected?.sake ?? resolution.fallback;
     final profile = selected?.tasteProfile ?? resolution.fallbackTasteProfile;
     final mapped = {...state.nameMapping};
@@ -835,13 +847,19 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       sakes: sakes,
       nameMapping: mapped,
       resolutionCandidates: choices,
+      unverifiedNames: unverified.toList(),
       tasteProfiles: profiles,
       matchPercents: scores,
       sakeLoadingStatus: {...state.sakeLoadingStatus, name: loading},
     );
   }
 
-  void selectMenuCandidate(String inputName, MenuSakeCandidate candidate) {
+  void selectMenuCandidate(
+    String inputName,
+    MenuSakeCandidate candidate, {
+    bool enrich = true,
+  }) {
+    discoverableRows.remove(inputName);
     rowDetails[inputName] = candidate.sake;
     _selectedMenuNames.add(inputName);
     final mapped = Map<String, String>.from(state.nameMapping);
@@ -879,14 +897,96 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       matchPercents: scores,
       tasteProfiles: profiles,
       resolutionCandidates: choices,
+      unverifiedNames: state.unverifiedNames
+          .where((key) => key != inputName)
+          .toList(),
       sakeLoadingStatus: {
         ...state.sakeLoadingStatus,
-        inputName: candidate.tasteProfile == null,
+        inputName: enrich && candidate.tasteProfile == null,
       },
     );
     unawaited(addCurrentAnalysisToHistory());
-    if (candidate.tasteProfile == null) {
+    if (enrich && candidate.tasteProfile == null) {
       unawaited(_enrichSelectedMenuCandidate(inputName, candidate));
+    }
+  }
+
+  Future<void> confirmMenuDiscovery(Sake source) async {
+    final key = menuRowKey(source.name, source.type);
+    if (!_confirmingDiscoveries.add(key)) return;
+    final generation = _detailsGeneration;
+    try {
+      final prepared = await sakeMenuRecognitionRepository.prepareMenuDiscovery(
+        source,
+      );
+      if (!mounted || !context.mounted || generation != _detailsGeneration)
+        return;
+      final candidate = Map<String, dynamic>.from(prepared['candidate'] as Map);
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('新発見のお酒を確認'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  candidate['name']?.toString() ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  [
+                    candidate['type'],
+                    candidate['brewery'],
+                  ].whereType<String>().join('・'),
+                ),
+                const SizedBox(height: 12),
+                const Text('AIが調べた追加候補です。メニューのお酒と合っているか確認してください。'),
+                const SizedBox(height: 8),
+                SelectableText('出典：${candidate['sourceUrl'] ?? ''}'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('戻る'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('このお酒として追加'),
+            ),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted || generation != _detailsGeneration)
+        return;
+      final repository = context.read<SakeScanRepository>();
+      final confirmed = await (repository as LensDiscoveryRepository)
+          .confirmDiscovery(
+            prepared['scanSessionId'] as String,
+            prepared['candidateKey'] as String,
+          );
+      if (!mounted || generation != _detailsGeneration) return;
+      final sake = Sake.fromJson(candidate).copyWith(sakeId: confirmed.sakeId);
+      selectMenuCandidate(key, MenuSakeCandidate(sake: sake), enrich: false);
+      if (repository is LensDetailAnalysisRepository) {
+        try {
+          await (repository as LensDetailAnalysisRepository)
+              .startLensDetailAnalysis(confirmed.sakeId);
+        } catch (e) {
+          logger.warning('メニュー新発見の詳細補完開始に失敗しました: $e');
+        }
+      }
+    } catch (error) {
+      if (mounted && context.mounted && generation == _detailsGeneration) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('追加できませんでした。$error')));
+      }
+    } finally {
+      _confirmingDiscoveries.remove(key);
     }
   }
 

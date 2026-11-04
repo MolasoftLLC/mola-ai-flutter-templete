@@ -214,6 +214,30 @@ class SakeMenuRecognitionRepository {
     }
   }
 
+  Future<Map<String, dynamic>> prepareMenuDiscovery(Sake source) async {
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    final response = await http
+        .post(
+          _apiClient.client.baseUrl.resolve('/api/menu-recognition/discovery'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'analysisId': _menuAnalysisId,
+            'name': source.name,
+            'type': source.type,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode != 200)
+      throw SakeCandidateResolutionException(
+        body['error']?.toString() ?? '確認画面を準備できませんでした。',
+      );
+    return body;
+  }
+
   Future<List<MenuSakeResolution>> resolveMenuSakes(
     List<Sake> sakes, {
     bool masterOnly = false,

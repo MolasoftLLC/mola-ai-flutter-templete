@@ -33,6 +33,8 @@ class SakeResultTile extends StatefulWidget {
     this.tasteProfile,
     this.dark = false,
     this.allowAlternativeSelection = false,
+    this.onDiscover,
+    this.onScanLabel,
     required this.isUnverified,
     required this.candidates,
     required this.onCandidateSelected,
@@ -45,6 +47,8 @@ class SakeResultTile extends StatefulWidget {
 
   final bool dark;
   final bool allowAlternativeSelection;
+  final VoidCallback? onDiscover;
+  final VoidCallback? onScanLabel;
   final Sake sake;
   final Sake? detailedSake;
   final bool hasDetails;
@@ -125,16 +129,29 @@ class _SakeResultTileState extends State<SakeResultTile> {
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                tooltip: '商品詳細を開く',
-                icon: Icon(Icons.open_in_new, size: 21, color: _ink),
-                onPressed: widget.onOpenDetails == null
-                    ? null
-                    : () {
-                        AppAnalytics.instance.event('menu', 'detail');
-                        widget.onOpenDetails!.call();
-                      },
-              ),
+              if (widget.onOpenDetails != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _ink,
+                    side: BorderSide(color: _ink.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                  iconAlignment: IconAlignment.end,
+                  icon: const Icon(Icons.arrow_forward, size: 18),
+                  label: const Text('詳細を見る'),
+                  onPressed: widget.onOpenDetails == null
+                      ? null
+                      : () {
+                          AppAnalytics.instance.event('menu', 'detail');
+                          widget.onOpenDetails!.call();
+                        },
+                ),
               IconButton(
                 tooltip: widget.isSaved
                     ? context.l10n.removeSavedSake
@@ -368,6 +385,35 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         sakeId: widget.detailedSake!.sakeId!,
                         dark: widget.dark,
                         onSelected: widget.onCandidateSelected,
+                      ),
+                    if (!widget.isItemLoading &&
+                        (widget.detailedSake?.sakeId ?? 0) <= 0 &&
+                        widget.candidates.isEmpty &&
+                        widget.onScanLabel != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.onDiscover != null
+                                  ? 'AIが追加候補を見つけました'
+                                  : 'この情報だけでは商品を特定できませんでした',
+                              style: TextStyle(color: _ink),
+                            ),
+                            if (widget.onDiscover != null)
+                              FilledButton.icon(
+                                onPressed: widget.onDiscover,
+                                icon: const Icon(Icons.add),
+                                label: const Text('新発見のお酒を確認'),
+                              ),
+                            OutlinedButton.icon(
+                              onPressed: widget.onScanLabel,
+                              icon: const Icon(Icons.camera_alt_outlined),
+                              label: const Text('ラベルを撮影して確認'),
+                            ),
+                          ],
+                        ),
                       ),
                     Align(alignment: Alignment.centerRight, child: actions),
                     const SizedBox(height: 16),
