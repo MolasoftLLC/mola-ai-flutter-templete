@@ -125,9 +125,21 @@ class _SakeResultTileState extends State<SakeResultTile> {
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                tooltip: '商品詳細を開く',
-                icon: Icon(Icons.open_in_new, size: 21, color: _ink),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _ink,
+                  side: BorderSide(color: _ink.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                iconAlignment: IconAlignment.end,
+                icon: const Icon(Icons.arrow_forward, size: 18),
+                label: const Text('詳細を見る'),
                 onPressed: widget.onOpenDetails == null
                     ? null
                     : () {
