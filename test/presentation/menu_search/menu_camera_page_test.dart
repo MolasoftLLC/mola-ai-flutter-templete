@@ -2,11 +2,28 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
 import 'package:mola_gemini_flutter_template/l10n/generated/app_localizations.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/menu_camera_page.dart';
 import '../../support/fake_menu_camera.dart';
+
+class _GalleryPicker extends ImagePickerPlatform {
+  XFile? result;
+  bool fail = false;
+  int calls = 0;
+  @override
+  Future<XFile?> getImageFromSource({
+    required ImageSource source,
+    ImagePickerOptions options = const ImagePickerOptions(),
+  }) async {
+    expect(source, ImageSource.gallery);
+    calls++;
+    if (fail) throw Exception('picker failed');
+    return result;
+  }
+}
 
 void main() {
   late CameraPlatform original;
@@ -31,6 +48,88 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
   }
+
+  testWidgets(
+    'gallery is left of shutter and returns selected image even without camera permission',
+    (tester) async {
+      final originalPicker = ImagePickerPlatform.instance;
+      final picker = _GalleryPicker()..result = XFile('/tmp/menu-gallery.jpg');
+      ImagePickerPlatform.instance = picker;
+      addTearDown(() => ImagePickerPlatform.instance = originalPicker);
+      camera.denied = true;
+      File? selected;
+      await tester.pumpWidget(
+        app(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                selected = await Navigator.of(context).push<File>(
+                  MaterialPageRoute(builder: (_) => const MenuCameraPage()),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      final gallery = find.byKey(const ValueKey('menu-camera-gallery'));
+      expect(
+        tester.getCenter(gallery).dx,
+        lessThan(
+          tester
+              .getCenter(find.byKey(const ValueKey('menu-camera-shutter')))
+              .dx,
+        ),
+      );
+      await tester.tap(gallery);
+      await tester.pumpAndSettle();
+      expect(selected?.path, '/tmp/menu-gallery.jpg');
+      expect(picker.calls, 1);
+      expect(camera.captures, 0);
+      await close(tester);
+    },
+  );
+
+  testWidgets(
+    'gallery cancellation and failure restore camera and allow retry',
+    (tester) async {
+      final originalPicker = ImagePickerPlatform.instance;
+      final picker = _GalleryPicker();
+      ImagePickerPlatform.instance = picker;
+      addTearDown(() => ImagePickerPlatform.instance = originalPicker);
+      await tester.pumpWidget(app(const MenuCameraPage()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('menu-camera-gallery')));
+      await tester.pumpAndSettle();
+      expect(find.byType(MenuCameraPage), findsOneWidget);
+      expect(camera.created, hasLength(2));
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('menu-camera-shutter')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      picker.fail = true;
+      await tester.tap(find.byKey(const ValueKey('menu-camera-gallery')));
+      await tester.pumpAndSettle();
+      expect(find.text('画像の選択に失敗しました'), findsOneWidget);
+      expect(camera.created, hasLength(3));
+      expect(
+        tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('menu-camera-gallery')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      await close(tester);
+      expect(camera.disposed, camera.created);
+    },
+  );
 
   testWidgets(
     'shutter returns the full image immediately, with no system review and no duplicate captures',
