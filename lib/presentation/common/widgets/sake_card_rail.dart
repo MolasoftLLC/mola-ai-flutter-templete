@@ -23,12 +23,14 @@ class SakeCardRail extends StatelessWidget {
     required this.onTap,
     this.footerBuilder,
     this.compact = false,
+    this.nameMaxLines = 1,
     required this.analyticsTarget,
     this.analyticsScreen = 'home',
   });
 
   final List<Sake> sakes;
   final bool compact;
+  final int nameMaxLines;
   final String analyticsTarget;
   final String analyticsScreen;
   final Future<Map<int, SakeTasteProfileDetails>> profilesFuture;
@@ -43,7 +45,9 @@ class SakeCardRail extends StatelessWidget {
       target: analyticsTarget,
       child: SizedBox(
         height: compact
-            ? 134 + MediaQuery.textScalerOf(context).scale(13) * 4.2
+            ? 134 +
+                  MediaQuery.textScalerOf(context).scale(13) *
+                      (4.2 + nameMaxLines - 1)
             : _sakeCardRailHeight,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
@@ -55,6 +59,7 @@ class SakeCardRail extends StatelessWidget {
             final sake = sakes[index];
             return _SakeCard(
               compact: compact,
+              nameMaxLines: nameMaxLines,
               sake: sake,
               profileFuture: sake.sakeId == null
                   ? null
@@ -87,10 +92,12 @@ class _SakeCard extends StatelessWidget {
     required this.onTap,
     this.footer,
     this.compact = false,
+    this.nameMaxLines = 1,
   });
 
   final Sake sake;
   final bool compact;
+  final int nameMaxLines;
   final Future<SakeTasteProfileDetails?>? profileFuture;
   final String? subtitle;
   final String? footer;
@@ -126,7 +133,7 @@ class _SakeCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               _displayName(context, sake),
-              maxLines: 1,
+              maxLines: nameMaxLines,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: _bodyTextColor,

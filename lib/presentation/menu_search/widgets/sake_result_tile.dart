@@ -14,6 +14,7 @@ import '../../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../../common/sake/taste_match.dart';
 import '../../../common/sake/menu_taste_summary.dart';
 import '../../common/widgets/sake_taste_match_preview.dart';
+import '../../common/widgets/sake_card_rail.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
@@ -168,11 +169,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
             ],
           )
         : widget.candidates.isNotEmpty
-        ? IconButton(
-            tooltip: '候補を選択',
-            icon: Icon(Icons.rule, color: _ink),
-            onPressed: () => _showCandidatePicker(context),
-          )
+        ? const SizedBox.shrink()
         : !widget.hasFailed
         ? SizedBox(
             width: 20,
@@ -311,21 +308,50 @@ class _SakeResultTileState extends State<SakeResultTile> {
                     ),
                     if (widget.candidates.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: InkWell(
-                          onTap: () => _showCandidatePicker(context),
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              '商品詳細の候補を見る',
-                              style: TextStyle(
-                                color: _ink,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                decoration: TextDecoration.underline,
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: Text(
+                                  '該当する商品を選択',
+                                  style: TextStyle(
+                                    color: Color(0xFF143861),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              SakeCardRail(
+                                compact: true,
+                                nameMaxLines: 3,
+                                analyticsTarget: 'menu_candidate',
+                                analyticsScreen: 'menu',
+                                sakes: widget.candidates
+                                    .map((c) => c.sake)
+                                    .toList(),
+                                profilesFuture: Future.value(
+                                  <int, SakeTasteProfileDetails>{},
+                                ),
+                                subtitleBuilder: (sake) => sake.type,
+                                actionBuilder: (_) => const Icon(
+                                  Icons.check_circle_outline,
+                                  color: Color(0xFF143861),
+                                ),
+                                onTap: (sake) => widget.onCandidateSelected(
+                                  widget.candidates.firstWhere(
+                                    (c) => identical(c.sake, sake),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -449,34 +475,5 @@ class _SakeResultTileState extends State<SakeResultTile> {
         ),
       ),
     );
-  }
-
-  Future<void> _showCandidatePicker(BuildContext context) async {
-    final selected = await showModalBottomSheet<MenuSakeCandidate>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const ListTile(
-              title: Text('該当する商品を選択'),
-              subtitle: Text('米・製法・生酒などを確認して選んでください'),
-            ),
-            for (final candidate in widget.candidates)
-              ListTile(
-                title: Text(candidate.sake.name ?? '名称不明'),
-                subtitle: Text(
-                  [candidate.sake.brewery, candidate.sake.type]
-                      .whereType<String>()
-                      .where((value) => value.isNotEmpty)
-                      .join(' / '),
-                ),
-                onTap: () => Navigator.of(context).pop(candidate),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (selected != null) widget.onCandidateSelected(selected);
   }
 }
