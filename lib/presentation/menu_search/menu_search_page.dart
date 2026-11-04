@@ -350,6 +350,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                               return SakeResultTile(
                                 key: ValueKey('${sake.name}\u0000${sake.type}'),
                                 dark: true,
+                                allowAlternativeSelection: true,
                                 sake: sake,
                                 detailedSake: detailedSake,
                                 hasDetails: hasDetails,
@@ -490,11 +491,13 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                       value,
                                       icon,
                                       dark: true,
+                                      allowAlternativeSelection: true,
                                     ),
                                 buildTypesRow: (types) => buildMenuSakeTypesRow(
                                   context,
                                   types,
                                   dark: true,
+                                  allowAlternativeSelection: true,
                                 ),
                               );
                             },

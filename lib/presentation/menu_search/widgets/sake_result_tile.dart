@@ -15,6 +15,7 @@ import '../../../common/sake/taste_match.dart';
 import '../../../common/sake/menu_taste_summary.dart';
 import '../../common/widgets/sake_taste_match_preview.dart';
 import '../../common/widgets/sake_card_rail.dart';
+import 'menu_alternative_candidates.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
@@ -31,6 +32,7 @@ class SakeResultTile extends StatefulWidget {
     required this.matchPercent,
     this.tasteProfile,
     this.dark = false,
+    this.allowAlternativeSelection = false,
     required this.isUnverified,
     required this.candidates,
     required this.onCandidateSelected,
@@ -42,6 +44,7 @@ class SakeResultTile extends StatefulWidget {
   });
 
   final bool dark;
+  final bool allowAlternativeSelection;
   final Sake sake;
   final Sake? detailedSake;
   final bool hasDetails;
@@ -354,6 +357,17 @@ class _SakeResultTileState extends State<SakeResultTile> {
                             ],
                           ),
                         ),
+                      ),
+                    if (widget.allowAlternativeSelection &&
+                        widget.hasDetails &&
+                        (widget.detailedSake?.sakeId ?? 0) > 0)
+                      MenuAlternativeCandidates(
+                        key: ValueKey(
+                          'alternatives-${widget.detailedSake!.sakeId}',
+                        ),
+                        sakeId: widget.detailedSake!.sakeId!,
+                        dark: widget.dark,
+                        onSelected: widget.onCandidateSelected,
                       ),
                     Align(alignment: Alignment.centerRight, child: actions),
                     const SizedBox(height: 16),
