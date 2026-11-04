@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mola_gemini_flutter_template/common/logger.dart';
@@ -28,13 +29,30 @@ class _GalleryPicker extends ImagePickerPlatform {
 void main() {
   late CameraPlatform original;
   late FakeMenuCamera camera;
+  final savedPhotos = <String>[];
+  var saveSucceeds = true;
   setUp(() {
     loggerConfigure();
+    savedPhotos.clear();
+    saveSucceeds = true;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('image_gallery_saver_plus'),
+          (call) async {
+            savedPhotos.add((call.arguments as Map)['file'] as String);
+            return {'isSuccess': saveSucceeds};
+          },
+        );
     original = CameraPlatform.instance;
     camera = FakeMenuCamera();
     CameraPlatform.instance = camera;
   });
   tearDown(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('image_gallery_saver_plus'),
+          null,
+        );
     CameraPlatform.instance = original;
     await camera.close();
   });
@@ -86,6 +104,7 @@ void main() {
       await tester.tap(gallery);
       await tester.pumpAndSettle();
       expect(selected?.path, '/tmp/menu-gallery.jpg');
+      expect(savedPhotos, isEmpty);
       expect(picker.calls, 1);
       expect(camera.captures, 0);
       await close(tester);
@@ -227,9 +246,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(camera.flashes.last, FlashMode.torch);
       camera.failCapture = false;
+      saveSucceeds = false;
       await tester.tap(find.byKey(const ValueKey('menu-camera-shutter')));
       await tester.pumpAndSettle();
       expect(camera.captures, 2);
+      expect(savedPhotos, [camera.path]);
+      expect(find.byType(MenuCameraPage), findsNothing);
       expect(camera.audio, [false]);
       await close(tester);
     },

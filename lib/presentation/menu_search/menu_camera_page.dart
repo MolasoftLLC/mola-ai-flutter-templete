@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import '../../common/utils/custom_image_picker.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/logger.dart';
@@ -163,7 +164,9 @@ class _MenuCameraPageState extends State<MenuCameraPage>
     setState(() => _capturing = true);
     try {
       final photo = await controller.takePicture();
-      if (mounted && generation == _generation) {
+      if (!mounted || generation != _generation) return;
+      await _saveToGallery(File(photo.path));
+      if (mounted) {
         Navigator.of(context).pop(File(photo.path));
       }
     } catch (error) {
@@ -173,6 +176,26 @@ class _MenuCameraPageState extends State<MenuCameraPage>
       }
     } finally {
       if (mounted) setState(() => _capturing = false);
+    }
+  }
+
+  Future<void> _saveToGallery(File photo) async {
+    try {
+      final result = await ImageGallerySaverPlus.saveFile(photo.path);
+      if (result is Map && result['isSuccess'] == true) return;
+    } catch (error) {
+      logger.warning('メニュー写真の端末保存に失敗しました: $error');
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Localizations.localeOf(context).languageCode == 'ja'
+                ? '写真を端末に保存できませんでした。写真への追加を許可してください。解析は続けられます。'
+                : 'Could not save the photo. Allow adding photos in Settings. You can still analyze it.',
+          ),
+        ),
+      );
     }
   }
 
