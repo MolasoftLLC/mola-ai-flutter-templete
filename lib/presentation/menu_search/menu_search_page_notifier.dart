@@ -96,6 +96,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   int _detailsGeneration = 0;
   bool _resolvingDetails = false;
   final Set<String> _selectedMenuNames = {};
+  final Map<String, Sake> rowDetails = {};
 
   final BuildContext context;
   final GlobalKey resultsSectionKey = GlobalKey();
@@ -337,6 +338,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     _detailsGeneration++;
     _resolvingDetails = false;
     _selectedMenuNames.clear();
+    rowDetails.clear();
     _activeAnalysisId = null;
     _activeAnalysisDate = null;
     _pendingHistoryItem = null;
@@ -424,6 +426,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       _detailsGeneration++;
       _resolvingDetails = false;
       _selectedMenuNames.clear();
+      rowDetails.clear();
       _activeAnalysisId =
           'history_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}';
       _activeAnalysisDate = DateTime.now();
@@ -664,7 +667,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       isMasterLookupComplete: false,
       sakeLoadingStatus: {
         for (final sake in extractedSakes)
-          if (sake.name?.isNotEmpty == true) sake.name!: true,
+          if (sake.name?.isNotEmpty == true)
+            menuRowKey(sake.name, sake.type): true,
       },
       resolutionCandidates: const {},
       matchPercents: const {},
@@ -720,17 +724,20 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       unawaited(read<MyPageNotifier>().refreshTasteProfile());
       for (final source in pending) {
         if (!isCurrent()) return;
-        if (_selectedMenuNames.contains(source.name)) continue;
+        if (_selectedMenuNames.contains(menuRowKey(source.name, source.type)))
+          continue;
         try {
           final enriched = await sakeMenuRecognitionRepository.resolveMenuSakes(
             [source],
           );
           if (!isCurrent()) return;
-          if (_selectedMenuNames.contains(source.name)) continue;
+          if (_selectedMenuNames.contains(menuRowKey(source.name, source.type)))
+            continue;
           for (final resolution in enriched) {
             _applyMenuResolution(resolution, loading: false);
           }
-          if (enriched.isEmpty) _finishMenuRow(source.name!);
+          if (enriched.isEmpty)
+            _finishMenuRow(menuRowKey(source.name, source.type));
         } catch (error) {
           if (!isCurrent()) return;
           AppAnalytics.instance.event(
@@ -740,7 +747,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             flowId: usageFlow,
           );
           logger.warning('メニューの商品情報取得に失敗しました: ${source.name}: $error');
-          _finishMenuRow(source.name!);
+          _finishMenuRow(menuRowKey(source.name, source.type));
         }
         await addCurrentAnalysisToHistory(analysisStatus: 'partial');
       }
@@ -771,7 +778,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           isMasterLookupComplete: true,
           sakeLoadingStatus: {
             for (final sake in extractedSakes)
-              if (sake.name?.isNotEmpty == true) sake.name!: false,
+              if (sake.name?.isNotEmpty == true)
+                menuRowKey(sake.name, sake.type): false,
           },
         );
         await addCurrentAnalysisToHistory();
@@ -789,7 +797,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     MenuSakeResolution resolution, {
     required bool loading,
   }) {
-    final name = resolution.inputName;
+    final name = menuRowKey(resolution.inputName, resolution.inputType);
     final choices = {...state.resolutionCandidates};
     if (resolution.status == MenuSakeResolutionStatus.multiple) {
       choices[name] = resolution.candidates;
@@ -806,15 +814,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     final mapped = {...state.nameMapping};
     final profiles = {...state.tasteProfiles};
     final scores = {...state.matchPercents};
-    final sakes = [...?state.sakes];
     if (sake != null) {
-      final previousName = mapped[name];
-      sakes.removeWhere(
-        (item) => previousName != null && item.name == previousName,
-      );
-      sakes.add(sake);
-      mapped[name] = sake.name ?? name;
+      rowDetails[name] = sake;
+      mapped[name] = sake.name ?? resolution.inputName;
     }
+    final sakes = rowDetails.values.toList();
     if (profile != null) {
       profiles[name] = profile;
       final myPage = read<MyPageNotifier>().state;
@@ -838,16 +842,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   }
 
   void selectMenuCandidate(String inputName, MenuSakeCandidate candidate) {
+    rowDetails[inputName] = candidate.sake;
     _selectedMenuNames.add(inputName);
     final mapped = Map<String, String>.from(state.nameMapping);
-    final previousName = mapped[inputName];
     mapped[inputName] = candidate.sake.name ?? inputName;
-    final sakes = [
-      ...(state.sakes ?? const <Sake>[]),
-    ]..removeWhere((sake) => previousName != null && sake.name == previousName);
-    if (!sakes.any((sake) => sake.sakeId == candidate.sake.sakeId)) {
-      sakes.add(candidate.sake);
-    }
+    final sakes = rowDetails.values.toList();
     final scores = Map<String, int>.from(state.matchPercents);
     final profiles = Map<String, SakeTasteProfileDetails>.from(
       state.tasteProfiles,
@@ -897,9 +896,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
   ) async {
     final generation = _detailsGeneration;
     try {
+      final source = state.extractedSakes
+          .where((sake) => menuRowKey(sake.name, sake.type) == inputName)
+          .firstOrNull;
+      if (source == null) return;
       final results = await sakeMenuRecognitionRepository.resolveMenuSakes([
-        candidate.sake,
-      ]);
+        source,
+      ], selectedSakeId: candidate.sake.sakeId);
       if (!mounted ||
           generation != _detailsGeneration ||
           state.nameMapping[inputName] != candidate.sake.name)
@@ -911,7 +914,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       if (selected != null) {
         _applyMenuResolution(
           MenuSakeResolution(
-            inputName: inputName,
+            inputName: source.name!,
+            inputType: source.type,
             status: MenuSakeResolutionStatus.resolved,
             candidates: [selected],
           ),
@@ -973,7 +977,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       final Map<String, bool> initialLoadingStatus = {};
       for (final sake in extractedSakes) {
         if (sake.name != null) {
-          initialLoadingStatus[sake.name!] = false; // false = まだ読み込んでいない
+          initialLoadingStatus[menuRowKey(sake.name, sake.type)] =
+              false; // false = まだ読み込んでいない
         }
       }
 
@@ -1063,7 +1068,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       final Map<String, bool> initialLoadingStatus = {};
       for (final sake in extractedSakes) {
         if (sake.name != null) {
-          initialLoadingStatus[sake.name!] = false; // false = まだ読み込んでいない
+          initialLoadingStatus[menuRowKey(sake.name, sake.type)] =
+              false; // false = まだ読み込んでいない
         }
       }
 
@@ -1236,13 +1242,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             .toList(growable: false),
         nameMapping: state.nameMapping,
         matchPercents: state.matchPercents,
-        details: {
-          for (final source in state.extractedSakes)
-            if (source.name != null)
-              for (final detail in state.sakes ?? const <Sake>[])
-                if (detail.name == state.nameMapping[source.name])
-                  source.name!: detail,
-        },
+        details: rowDetails,
         tasteProfiles: state.tasteProfiles,
       );
       final newHistoryItem = MenuAnalysisHistoryItem(
@@ -1259,8 +1259,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
                     state.extractedSakes
                         .where((sake) => sake.name?.trim().isNotEmpty == true)
                         .every(
-                          (sake) =>
-                              state.nameMapping.containsKey(sake.name!.trim()),
+                          (sake) => state.nameMapping.containsKey(
+                            menuRowKey(sake.name, sake.type),
+                          ),
                         )
                 ? 'complete'
                 : 'partial'),
