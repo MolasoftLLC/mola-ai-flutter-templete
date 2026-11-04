@@ -47,12 +47,14 @@ void main() {
     );
 
     expect(find.byIcon(Icons.bookmark_outline), findsNothing);
-    await tester.tap(find.byTooltip('候補を選択'));
+    expect(find.byType(BottomSheet), findsNothing);
     await tester.pumpAndSettle();
     expect(find.text('天吹 雄町 生'), findsOneWidget);
     expect(find.text('天吹 雄町 火入れ'), findsOneWidget);
     await tester.tap(find.text('天吹 雄町 火入れ'));
     await tester.pumpAndSettle();
     expect(selected?.sake.sakeId, 2);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
   });
 }
