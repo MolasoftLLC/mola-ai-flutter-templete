@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'sake_label_scan.dart';
 import 'response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 
@@ -158,21 +159,24 @@ List<SavedSake> buildMenuHistorySakes({
   Map<String, SakeTasteProfileDetails> tasteProfiles = const {},
 }) => extracted
     .map((source) {
-      final resolvedName = nameMapping[source.name];
+      final key = nameMapping.containsKey(menuRowKey(source.name, source.type))
+          ? menuRowKey(source.name, source.type)
+          : source.name;
+      final resolvedName = nameMapping[key];
       final match = resolved
           .where((item) => item.name == resolvedName)
           .firstOrNull;
-      final percent = matchPercents[source.name];
+      final percent = matchPercents[key];
       return SavedSake(
         extractedName: source.name,
         name: match?.name ?? resolvedName ?? source.name,
-        type: match?.type ?? source.type,
-        sakeId: match?.sakeId,
+        type: details[key]?.type ?? match?.type ?? source.type,
+        sakeId: details[key]?.sakeId ?? match?.sakeId,
         matchPercent: percent,
         recommendationBasis: percent == null ? null : 'taste_profile_v1',
         isRecommended: percent != null && percent >= 70,
-        details: details[source.name],
-        tasteProfile: tasteProfiles[source.name],
+        details: details[key],
+        tasteProfile: tasteProfiles[key],
       );
     })
     .toList(growable: false);
@@ -183,3 +187,6 @@ extension MenuHistoryFirstOrNull<T> on Iterable<T> {
     return iterator.moveNext() ? iterator.current : null;
   }
 }
+
+String menuRowKey(String? name, String? type) =>
+    jsonEncode([name?.trim() ?? '', type?.trim() ?? '']);

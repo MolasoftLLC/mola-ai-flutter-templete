@@ -1,3 +1,4 @@
+import '../../domain/eintities/menu_analysis_history.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
@@ -5,7 +6,6 @@ import 'menu_history_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/menu_search/widgets/sake_result_tile.dart';
 import 'package:provider/provider.dart';
 
-import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../common/logger.dart';
 import '../../common/localization/localization_extensions.dart';
@@ -137,7 +137,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
     final extractedSakes = context.select(
       (MenuSearchPageState state) => state.extractedSakes,
     );
-    final sakes = context.select((MenuSearchPageState state) => state.sakes);
+    context.select((MenuSearchPageState state) => state.sakes);
     final myFavoriteList = context.select(
       (FavoriteState state) => state.myFavoriteList,
     );
@@ -153,9 +153,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
     );
 
     // 名前のマッピング（元の名前 -> 取得した詳細情報の名前）
-    final nameMapping = context.select(
-      (MenuSearchPageState state) => state.nameMapping,
-    );
+
     final resolutionCandidates = context.select(
       (MenuSearchPageState state) => state.resolutionCandidates,
     );
@@ -292,46 +290,39 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 : 0,
                             itemBuilder: (context, index) {
                               final sake = extractedSakes[index];
+                              final rowKey = menuRowKey(sake.name, sake.type);
 
                               // 元の名前から取得した詳細情報の名前を取得
-                              final mappedName =
-                                  nameMapping[sake.name] ?? sake.name;
 
                               // 詳細情報が取得された日本酒を探す
-                              final detailedSake = sakes?.firstWhere(
-                                (s) => s.name == mappedName,
-                                orElse: () =>
-                                    Sake(name: sake.name, type: sake.type),
-                              );
+                              final detailedSake = notifier.rowDetails[rowKey];
 
                               // この日本酒が現在読み込み中かどうか
                               final isItemLoading =
-                                  sakeLoadingStatus[sake.name] ?? false;
+                                  sakeLoadingStatus[rowKey] ?? false;
 
                               // 詳細情報があるかどうか
-                              final hasDetails =
-                                  sakes != null &&
-                                  sakes.any((s) => s.name == mappedName);
+                              final hasDetails = detailedSake != null;
 
-                              final matchPercent = matchPercents[sake.name];
+                              final matchPercent = matchPercents[rowKey];
                               final candidates =
-                                  resolutionCandidates[sake.name] ??
+                                  resolutionCandidates[rowKey] ??
                                   const <MenuSakeCandidate>[];
                               final hasFailed =
                                   !isItemLoading &&
                                   !hasDetails &&
                                   candidates.isEmpty &&
-                                  sakeLoadingStatus.containsKey(sake.name);
+                                  sakeLoadingStatus.containsKey(rowKey);
 
                               final isFavorited = myFavoriteList.any(
                                 (favorite) =>
                                     favorite.name ==
                                         (hasDetails
-                                            ? detailedSake!.name
+                                            ? detailedSake.name
                                             : sake.name) &&
                                     favorite.type ==
                                         (hasDetails
-                                            ? detailedSake!.type
+                                            ? detailedSake.type
                                             : sake.type),
                               );
 
@@ -339,17 +330,18 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 (saved) =>
                                     saved.name ==
                                         (hasDetails
-                                            ? detailedSake!.name
+                                            ? detailedSake.name
                                             : sake.name) &&
                                     saved.type ==
                                         (hasDetails
-                                            ? detailedSake!.type
+                                            ? detailedSake.type
                                             : sake.type),
                               );
 
                               return SakeResultTile(
                                 key: ValueKey('${sake.name}\u0000${sake.type}'),
                                 dark: true,
+                                allowAlternativeSelection: true,
                                 sake: sake,
                                 detailedSake: detailedSake,
                                 hasDetails: hasDetails,
@@ -358,16 +350,13 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 isFavorited: isFavorited,
                                 isLoading: isLoading,
                                 matchPercent: matchPercent,
-                                tasteProfile: tasteProfiles[sake.name],
+                                tasteProfile: tasteProfiles[rowKey],
                                 isUnverified: unverifiedNames.contains(
                                   sake.name,
                                 ),
                                 candidates: candidates,
-                                onCandidateSelected: (candidate) =>
-                                    notifier.selectMenuCandidate(
-                                      sake.name ?? '',
-                                      candidate,
-                                    ),
+                                onCandidateSelected: (candidate) => notifier
+                                    .selectMenuCandidate(rowKey, candidate),
                                 onOpenDetails: (detailedSake?.sakeId ?? 0) > 0
                                     ? () => Navigator.of(context).push(
                                         MaterialPageRoute<void>(
@@ -391,8 +380,9 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                       )
                                     : null,
                                 onToggleFavorite: () async {
+                                  if (detailedSake == null) return;
                                   final favoriteSake = FavoriteSake(
-                                    sakeId: detailedSake!.sakeId,
+                                    sakeId: detailedSake.sakeId,
                                     name: detailedSake.name ?? 'Unknown',
                                     type: detailedSake.type,
                                   );
