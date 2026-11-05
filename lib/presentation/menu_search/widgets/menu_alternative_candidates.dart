@@ -1,3 +1,4 @@
+import 'menu_action_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/eintities/menu_sake_resolution.dart';
@@ -78,17 +79,15 @@ class _MenuAlternativeCandidatesState extends State<MenuAlternativeCandidates> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      TextButton.icon(
-        style: TextButton.styleFrom(
-          foregroundColor: widget.dark ? Colors.white70 : Colors.blueGrey,
-          textStyle: const TextStyle(fontSize: 12),
-        ),
+      MenuActionButton(
+        dark: widget.dark,
+        label: 'この銘柄の他の候補',
+        icon: Icons.grid_view_rounded,
+        trailing: _open ? Icons.expand_less : Icons.expand_more,
         onPressed: () {
           setState(() => _open = !_open);
           if (_open && !_loaded) _load();
         },
-        icon: Icon(_open ? Icons.expand_less : Icons.expand_more, size: 18),
-        label: const Text('この銘柄の他の候補'),
       ),
       if (_open)
         Container(
