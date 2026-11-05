@@ -26,6 +26,7 @@ class MenuSakeResolution {
     required this.status,
     required this.candidates,
     this.inputType,
+    this.alternatives = const [],
     this.canDiscover = false,
     this.fallback,
     this.fallbackTasteProfile,
@@ -42,6 +43,13 @@ class MenuSakeResolution {
         orElse: () => MenuSakeResolutionStatus.unresolved,
       ),
       candidates: (json['candidates'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map(
+            (item) =>
+                MenuSakeCandidate.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList(growable: false),
+      alternatives: (json['alternatives'] as List<dynamic>? ?? const [])
           .whereType<Map>()
           .map(
             (item) =>
@@ -68,6 +76,7 @@ class MenuSakeResolution {
   final bool canDiscover;
   final MenuSakeResolutionStatus status;
   final List<MenuSakeCandidate> candidates;
+  final List<MenuSakeCandidate> alternatives;
   final Sake? fallback;
   final SakeTasteProfileDetails? fallbackTasteProfile;
 }
