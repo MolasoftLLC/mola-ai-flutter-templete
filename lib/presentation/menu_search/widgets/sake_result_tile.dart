@@ -1,3 +1,4 @@
+import 'menu_action_button.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 
@@ -129,42 +130,48 @@ class _SakeResultTileState extends State<SakeResultTile> {
               widget.matchPercent;
 
     final actions = widget.hasDetails
-        ? Wrap(
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 8,
+        ? Row(
             children: [
               if (widget.onOpenDetails != null || widget.onDiscover != null)
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: MenuPhotoStyle.yellow,
-                    foregroundColor: MenuPhotoStyle.ink,
-                    minimumSize: const Size(0, 44),
-                    textStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: MenuPhotoStyle.yellow,
+                      foregroundColor: MenuPhotoStyle.ink,
+                      minimumSize: const Size(0, 48),
+                      textStyle: TextStyle(
+                        fontFamily: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
+                    iconAlignment: IconAlignment.end,
+                    icon: const Icon(Icons.arrow_forward, size: 18),
+                    label: const Text('詳細を見る'),
+                    onPressed:
+                        widget.onOpenDetails == null &&
+                            widget.onDiscover == null
+                        ? null
+                        : () {
+                            AppAnalytics.instance.event('menu', 'detail');
+                            (widget.onOpenDetails ?? widget.onDiscover)!.call();
+                          },
                   ),
-                  iconAlignment: IconAlignment.end,
-                  icon: const Icon(Icons.arrow_forward, size: 18),
-                  label: const Text('詳細を見る'),
-                  onPressed:
-                      widget.onOpenDetails == null && widget.onDiscover == null
-                      ? null
-                      : () {
-                          AppAnalytics.instance.event('menu', 'detail');
-                          (widget.onOpenDetails ?? widget.onDiscover)!.call();
-                        },
                 ),
-              IconButton(
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                style: MenuActionButton.style(widget.dark).copyWith(
+                  padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+                ),
                 tooltip: widget.isSaved
                     ? context.l10n.removeSavedSake
                     : context.l10n.saveSake,
@@ -184,8 +191,11 @@ class _SakeResultTileState extends State<SakeResultTile> {
                   }
                 },
               ),
-              const SizedBox(width: 4),
-              IconButton(
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                style: MenuActionButton.style(widget.dark).copyWith(
+                  padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+                ),
                 tooltip: widget.isFavorited
                     ? context.l10n.removeFavorite
                     : context.l10n.favorite,
@@ -334,10 +344,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-                    Text(
-                      widget.sake.type ?? context.l10n.unknownType,
-                      style: TextStyle(fontSize: 14, color: _muted),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        widget.sake.type ?? context.l10n.unknownType,
+                        style: TextStyle(fontSize: 14, color: _muted),
+                      ),
                     ),
                     if (widget.candidates.isNotEmpty)
                       Padding(
@@ -417,14 +429,12 @@ class _SakeResultTileState extends State<SakeResultTile> {
                       ),
                     if (widget.onSearchByName != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 8),
-                        child: OutlinedButton.icon(
-                          onPressed: widget.onSearchByName,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: _ink,
-                          ),
-                          icon: const Icon(Icons.search),
-                          label: const Text('名前で探して選ぶ'),
+                        padding: const EdgeInsets.only(top: 0, bottom: 8),
+                        child: MenuActionButton(
+                          dark: widget.dark,
+                          onPressed: widget.onSearchByName!,
+                          icon: Icons.search,
+                          label: '名前で探して選ぶ',
                         ),
                       ),
                     if (!widget.isItemLoading &&
@@ -464,7 +474,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         child: actions,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 64),
                   ],
                 ),
                 showTrailingIcon: false,
@@ -554,12 +564,15 @@ class _SakeResultTileState extends State<SakeResultTile> {
             ),
             if (widget.hasDetails)
               Positioned(
-                bottom: 8,
+                bottom: 16,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Material(
-                    color: Colors.transparent,
+                    color: widget.dark
+                        ? const Color(0xFFE6EDF5)
+                        : const Color(0xFF143861),
+                    shape: const CircleBorder(),
                     child: IconButton(
                       tooltip: context.l10n.expand,
                       padding: const EdgeInsets.all(8),
@@ -567,7 +580,13 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         minWidth: 36,
                         minHeight: 36,
                       ),
-                      icon: Icon(Icons.expand_more, color: _ink, size: 28),
+                      icon: Icon(
+                        Icons.expand_more,
+                        color: widget.dark
+                            ? const Color(0xFF143861)
+                            : Colors.white,
+                        size: 24,
+                      ),
                       onPressed: () {
                         if (_expansionController.isExpanded) {
                           _expansionController.collapse();
