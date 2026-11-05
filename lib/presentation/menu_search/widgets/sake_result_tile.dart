@@ -16,6 +16,7 @@ import '../../../common/sake/menu_taste_summary.dart';
 import '../../common/widgets/sake_taste_match_preview.dart';
 import '../../common/widgets/sake_card_rail.dart';
 import 'menu_alternative_candidates.dart';
+import 'menu_photo_style.dart';
 
 /// 検出された日本酒1件分の表示タイルを構築するWidget
 class SakeResultTile extends StatefulWidget {
@@ -35,6 +36,7 @@ class SakeResultTile extends StatefulWidget {
     this.allowAlternativeSelection = false,
     this.onDiscover,
     this.onScanLabel,
+    this.onSearchByName,
     required this.isUnverified,
     required this.candidates,
     required this.onCandidateSelected,
@@ -49,6 +51,7 @@ class SakeResultTile extends StatefulWidget {
   final bool allowAlternativeSelection;
   final VoidCallback? onDiscover;
   final VoidCallback? onScanLabel;
+  final VoidCallback? onSearchByName;
   final Sake sake;
   final Sake? detailedSake;
   final bool hasDetails;
@@ -126,30 +129,39 @@ class _SakeResultTileState extends State<SakeResultTile> {
               widget.matchPercent;
 
     final actions = widget.hasDetails
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
+        ? Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 8,
             children: [
-              if (widget.onOpenDetails != null)
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _ink,
-                    side: BorderSide(color: _ink.withValues(alpha: 0.5)),
+              if (widget.onOpenDetails != null || widget.onDiscover != null)
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: MenuPhotoStyle.yellow,
+                    foregroundColor: MenuPhotoStyle.ink,
+                    minimumSize: const Size(0, 44),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+                      horizontal: 20,
+                      vertical: 12,
                     ),
                   ),
                   iconAlignment: IconAlignment.end,
                   icon: const Icon(Icons.arrow_forward, size: 18),
                   label: const Text('詳細を見る'),
-                  onPressed: widget.onOpenDetails == null
+                  onPressed:
+                      widget.onOpenDetails == null && widget.onDiscover == null
                       ? null
                       : () {
                           AppAnalytics.instance.event('menu', 'detail');
-                          widget.onOpenDetails!.call();
+                          (widget.onOpenDetails ?? widget.onDiscover)!.call();
                         },
                 ),
               IconButton(
@@ -230,10 +242,10 @@ class _SakeResultTileState extends State<SakeResultTile> {
                 initiallyExpanded: false,
                 controller: _expansionController,
                 tilePadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                  horizontal: 20,
+                  vertical: 20,
                 ),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                childrenPadding: const EdgeInsets.fromLTRB(20, 4, 20, 48),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -322,6 +334,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 12),
                     Text(
                       widget.sake.type ?? context.l10n.unknownType,
                       style: TextStyle(fontSize: 14, color: _muted),
@@ -341,7 +354,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 20),
                                 child: Text(
-                                  '該当する商品を選択',
+                                  '候補から変更できます',
                                   style: TextStyle(
                                     color: Color(0xFF143861),
                                     fontWeight: FontWeight.bold,
@@ -361,9 +374,24 @@ class _SakeResultTileState extends State<SakeResultTile> {
                                   <int, SakeTasteProfileDetails>{},
                                 ),
                                 subtitleBuilder: (sake) => sake.type,
-                                actionBuilder: (_) => const Icon(
-                                  Icons.check_circle_outline,
-                                  color: Color(0xFF143861),
+                                actionBuilder: (sake) => Semantics(
+                                  selected:
+                                      sake.sakeId ==
+                                      widget.detailedSake?.sakeId,
+                                  label:
+                                      sake.sakeId == widget.detailedSake?.sakeId
+                                      ? '選択中'
+                                      : 'この商品に変更',
+                                  child: Icon(
+                                    sake.sakeId == widget.detailedSake?.sakeId
+                                        ? Icons.check_circle
+                                        : Icons.radio_button_unchecked,
+                                    color:
+                                        sake.sakeId ==
+                                            widget.detailedSake?.sakeId
+                                        ? const Color(0xFF143861)
+                                        : const Color(0xFF8796A6),
+                                  ),
                                 ),
                                 onTap: (sake) => widget.onCandidateSelected(
                                   widget.candidates.firstWhere(
@@ -376,6 +404,7 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         ),
                       ),
                     if (widget.allowAlternativeSelection &&
+                        widget.candidates.isEmpty &&
                         widget.hasDetails &&
                         (widget.detailedSake?.sakeId ?? 0) > 0)
                       MenuAlternativeCandidates(
@@ -386,10 +415,23 @@ class _SakeResultTileState extends State<SakeResultTile> {
                         dark: widget.dark,
                         onSelected: widget.onCandidateSelected,
                       ),
+                    if (widget.onSearchByName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 8),
+                        child: OutlinedButton.icon(
+                          onPressed: widget.onSearchByName,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _ink,
+                          ),
+                          icon: const Icon(Icons.search),
+                          label: const Text('名前で探して選ぶ'),
+                        ),
+                      ),
                     if (!widget.isItemLoading &&
                         (widget.detailedSake?.sakeId ?? 0) <= 0 &&
                         widget.candidates.isEmpty &&
-                        widget.onScanLabel != null)
+                        widget.onScanLabel != null &&
+                        widget.detailedSake == null)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Column(
@@ -415,8 +457,14 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           ],
                         ),
                       ),
-                    Align(alignment: Alignment.centerRight, child: actions),
-                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: actions,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
                   ],
                 ),
                 showTrailingIcon: false,

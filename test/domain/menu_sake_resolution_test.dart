@@ -9,6 +9,21 @@ import 'package:mola_gemini_flutter_template/domain/eintities/sake_label_scan.da
 import 'package:mola_gemini_flutter_template/domain/repository/saved_sake_sync_repository.dart';
 
 void main() {
+  test('未収録の商品と同銘柄の別商品候補を分けて保持する', () {
+    final result = MenuSakeResolution.fromJson({
+      'inputName': '阿櫻',
+      'inputType': '特純',
+      'status': 'unresolved',
+      'fallback': {'name': '阿櫻 特別純米'},
+      'alternatives': [
+        {'sakeId': 7921, 'name': '阿櫻 純米酒'},
+      ],
+    });
+    expect(result.candidates, isEmpty);
+    expect(result.fallback?.name, '阿櫻 特別純米');
+    expect(result.alternatives.single.sake.sakeId, 7921);
+  });
+
   test('複数のDB候補は商品ID・米や製法を含む商品名を分けたまま保持する', () {
     final resolution = MenuSakeResolution.fromJson({
       'inputName': '天吹 雄町',

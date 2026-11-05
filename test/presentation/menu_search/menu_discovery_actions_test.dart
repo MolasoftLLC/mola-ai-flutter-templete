@@ -24,14 +24,14 @@ void main() {
     );
   });
   testWidgets(
-    'unmatched result offers confirmation or label capture, while a master offers labeled details',
+    'researched product and master both offer details without discovery jargon',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       var discovered = 0;
-      var scanned = 0;
+
       var opened = 0;
       Widget app({bool master = false, bool discover = true}) => MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -55,7 +55,7 @@ void main() {
               onCandidateSelected: (_) {},
               onOpenDetails: master ? () => opened++ : null,
               onDiscover: discover ? () => discovered++ : null,
-              onScanLabel: () => scanned++,
+              onScanLabel: () {},
               onToggleFavorite: () async {},
               onSave: () async => false,
               buildInfoRow: (_, value, _) => Text(value),
@@ -66,15 +66,11 @@ void main() {
       );
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
-      expect(find.text('詳細を見る'), findsNothing);
-      await tester.tap(find.text('新発見のお酒を確認'));
-      expect(discovered, 1);
-      await tester.tap(find.text('ラベルを撮影して確認'));
-      expect(scanned, 1);
-      await tester.pumpWidget(app(discover: false));
-      await tester.pumpAndSettle();
+      expect(find.text('詳細を見る'), findsOneWidget);
       expect(find.text('新発見のお酒を確認'), findsNothing);
-      expect(find.text('ラベルを撮影して確認'), findsOneWidget);
+      expect(find.text('AIが追加候補を見つけました'), findsNothing);
+      await tester.tap(find.text('詳細を見る'));
+      expect(discovered, 1);
       await tester.pumpWidget(app(master: true));
       await tester.pumpAndSettle();
       expect(find.text('詳細を見る'), findsOneWidget);

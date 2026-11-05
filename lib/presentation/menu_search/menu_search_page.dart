@@ -1,3 +1,5 @@
+import 'widgets/menu_sake_search_sheet.dart';
+import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../sake_scan/sake_scan_page.dart';
 import '../../domain/eintities/menu_analysis_history.dart';
 import 'dart:io';
@@ -345,8 +347,69 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 allowAlternativeSelection: true,
                                 onDiscover:
                                     notifier.discoverableRows.contains(rowKey)
-                                    ? () => notifier.confirmMenuDiscovery(sake)
+                                    ? () async {
+                                        await notifier.confirmMenuDiscovery(
+                                          sake,
+                                        );
+                                        if (!context.mounted) return;
+                                        final discovered =
+                                            notifier.rowDetails[rowKey];
+                                        if ((discovered?.sakeId ?? 0) <= 0)
+                                          return;
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                SakeMasterDetailPage(
+                                                  venueSake: VenueSake(
+                                                    sakeId: discovered!.sakeId,
+                                                    name:
+                                                        discovered.name ??
+                                                        sake.name ??
+                                                        '',
+                                                    brewery: discovered.brewery,
+                                                    type: discovered.type,
+                                                    recordCount: 0,
+                                                    primaryImageUrl: discovered
+                                                        .primaryImageUrl,
+                                                  ),
+                                                ),
+                                          ),
+                                        );
+                                      }
                                     : null,
+                                onSearchByName: () async {
+                                  final selected =
+                                      await showModalBottomSheet<
+                                        SakeMapSearchResult
+                                      >(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        useSafeArea: true,
+                                        showDragHandle: true,
+                                        builder: (_) => MenuSakeSearchSheet(
+                                          initialQuery: sake.name ?? '',
+                                          search: (query) => context
+                                              .read<PlaceMapRepository>()
+                                              .searchSakeMasters(query),
+                                        ),
+                                      );
+                                  if (!mounted || selected == null) return;
+                                  notifier.selectMenuCandidate(
+                                    rowKey,
+                                    MenuSakeCandidate(
+                                      sake: Sake(
+                                        sakeId: selected.sakeId,
+                                        name: selected.name,
+                                        brewery: selected.brewery,
+                                        type: selected.type,
+                                        primaryImageUrl:
+                                            selected.primaryImageUrl,
+                                        thumbnailImageUrl:
+                                            selected.thumbnailImageUrl,
+                                      ),
+                                    ),
+                                  );
+                                },
                                 onScanLabel: () => Navigator.of(context).push(
                                   MaterialPageRoute<void>(
                                     builder: (_) => SakeScanPage.wrapped(),

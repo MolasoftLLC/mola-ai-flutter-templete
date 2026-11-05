@@ -701,12 +701,9 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
             .firstOrNull;
         final hasTaste =
             resolution != null &&
-            resolution.status == MenuSakeResolutionStatus.resolved &&
-            resolution.candidates.length == 1 &&
-            resolution.candidates.single.tasteProfile != null;
-        final isKnown =
-            resolution?.status == MenuSakeResolutionStatus.resolved &&
-            resolution!.candidates.length == 1;
+            resolution.candidates.isNotEmpty &&
+            resolution.candidates.first.tasteProfile != null;
+        final isKnown = resolution != null && resolution.candidates.isNotEmpty;
         if (hasTaste) {
           ready.add(source);
         } else if (isKnown) {
@@ -734,6 +731,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
         try {
           final enriched = await sakeMenuRecognitionRepository.resolveMenuSakes(
             [source],
+            selectedSakeId:
+                rowDetails[menuRowKey(source.name, source.type)]?.sakeId,
           );
           if (!isCurrent()) return;
           if (_selectedMenuNames.contains(menuRowKey(source.name, source.type)))
@@ -809,23 +808,32 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       discoverableRows.remove(name);
     }
     final choices = {...state.resolutionCandidates};
+    if (resolution.alternatives.isNotEmpty) {
+      choices[name] = resolution.alternatives;
+    }
     if (resolution.status == MenuSakeResolutionStatus.multiple) {
       choices[name] = resolution.candidates;
-    } else {
-      choices.remove(name);
     }
-    final selected =
-        resolution.status == MenuSakeResolutionStatus.resolved &&
-            resolution.candidates.length == 1
-        ? resolution.candidates.single
+    final selected = resolution.candidates.isNotEmpty
+        ? resolution.candidates.first
         : null;
+    // Keep alternatives visible after a choice or its profile enrichment.
+    if (selected != null && choices[name] != null) {
+      choices[name] = choices[name]!
+          .map(
+            (candidate) => candidate.sake.sakeId == selected.sake.sakeId
+                ? selected
+                : candidate,
+          )
+          .toList();
+    }
     final unverified = {...state.unverifiedNames}..remove(name);
     if (selected == null && resolution.fallback != null) unverified.add(name);
     final sake = selected?.sake ?? resolution.fallback;
     final profile = selected?.tasteProfile ?? resolution.fallbackTasteProfile;
     final mapped = {...state.nameMapping};
-    final profiles = {...state.tasteProfiles};
-    final scores = {...state.matchPercents};
+    final profiles = {...state.tasteProfiles}..remove(name);
+    final scores = {...state.matchPercents}..remove(name);
     if (sake != null) {
       rowDetails[name] = sake;
       mapped[name] = sake.name ?? resolution.inputName;
@@ -890,7 +898,13 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     }
     final choices = Map<String, List<MenuSakeCandidate>>.from(
       state.resolutionCandidates,
-    )..remove(inputName);
+    );
+    if (choices[inputName] != null &&
+        !choices[inputName]!.any(
+          (item) => item.sake.sakeId == candidate.sake.sakeId,
+        )) {
+      choices[inputName] = [...choices[inputName]!, candidate];
+    }
     state = state.copyWith(
       sakes: sakes,
       nameMapping: mapped,
@@ -922,46 +936,6 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       if (!mounted || !context.mounted || generation != _detailsGeneration)
         return;
       final candidate = Map<String, dynamic>.from(prepared['candidate'] as Map);
-      final accepted = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('新発見のお酒を確認'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  candidate['name']?.toString() ?? '',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  [
-                    candidate['type'],
-                    candidate['brewery'],
-                  ].whereType<String>().join('・'),
-                ),
-                const SizedBox(height: 12),
-                const Text('AIが調べた追加候補です。メニューのお酒と合っているか確認してください。'),
-                const SizedBox(height: 8),
-                SelectableText('出典：${candidate['sourceUrl'] ?? ''}'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('戻る'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('このお酒として追加'),
-            ),
-          ],
-        ),
-      );
-      if (accepted != true || !mounted || generation != _detailsGeneration)
-        return;
       final repository = context.read<SakeScanRepository>();
       final confirmed = await (repository as LensDiscoveryRepository)
           .confirmDiscovery(
@@ -970,7 +944,11 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
           );
       if (!mounted || generation != _detailsGeneration) return;
       final sake = Sake.fromJson(candidate).copyWith(sakeId: confirmed.sakeId);
-      selectMenuCandidate(key, MenuSakeCandidate(sake: sake), enrich: false);
+      selectMenuCandidate(
+        key,
+        MenuSakeCandidate(sake: sake, tasteProfile: state.tasteProfiles[key]),
+        enrich: false,
+      );
       if (repository is LensDetailAnalysisRepository) {
         try {
           await (repository as LensDetailAnalysisRepository)
@@ -1005,7 +983,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       ], selectedSakeId: candidate.sake.sakeId);
       if (!mounted ||
           generation != _detailsGeneration ||
-          state.nameMapping[inputName] != candidate.sake.name)
+          rowDetails[inputName]?.sakeId != candidate.sake.sakeId)
         return;
       final selected = results
           .expand((result) => result.candidates)
@@ -1027,7 +1005,7 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     } finally {
       if (mounted &&
           generation == _detailsGeneration &&
-          state.nameMapping[inputName] == candidate.sake.name) {
+          rowDetails[inputName]?.sakeId == candidate.sake.sakeId) {
         _finishMenuRow(inputName);
         await addCurrentAnalysisToHistory();
       }
