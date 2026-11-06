@@ -382,6 +382,12 @@ class PlaceMapRepository implements SakeMapDataSource {
 
   Future<List<SakeMapSearchResult>> searchSakeMasters(String query) async {
     final response = await _apiClient.searchSakeMasters(query);
+    if (!response.isSuccessful) {
+      throw PlaceMapException(
+        statusCode: response.statusCode,
+        message: '日本酒の候補を取得できませんでした。',
+      );
+    }
     return _parseList(response.body, 'sakes', SakeMapSearchResult.fromJson);
   }
 

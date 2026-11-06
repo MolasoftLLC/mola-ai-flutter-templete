@@ -178,7 +178,7 @@ Future<void> _openCapture(
       MaterialPageRoute(
         builder: (_) => const AnalyticsScreen(
           name: 'sake_comparison',
-          child: SakeComparisonPage(),
+          child: SakeComparisonPage(startScanning: true),
         ),
       ),
     );
