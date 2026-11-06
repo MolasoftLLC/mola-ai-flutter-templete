@@ -2,6 +2,8 @@
 日本語で簡潔かつ丁寧に回答してください
 
 ## iOS TestFlight delivery on this Mac
+- API signing is configured in the external `/Users/mukae-mini/Documents/Develop/key/rockjoint/sakepedia-upload.env`. Never print or commit that file or private keys. For an already completed archive, use `ASC_CONFIG_PATH=<that path> REUSE_ARCHIVE=1 RELEASE_CONFIRM=1 bash command/ios_upload.sh`. Verify the archive version and Maps key first. This config uses a local Apple Distribution certificate and a dedicated SAKEPEDIA provisioning profile; do not fall back to Xcode personal login on an API export failure.
+- An initial macOS keychain confirmation may require the user to approve codesign access to the new signing key. Do not ask for their Mac password in chat or modify access for unrelated keys. Report upload status only after Apple confirms completion.
 - Release clones must include the ignored `ios/Flutter/MapsKeys.xcconfig`, as well as `.env` and `ios/Runner/GoogleService-Info.plist`. Build 137 crashed in Google Maps because the maps configuration was omitted. Never print or commit secret values.
 - Before any Organizer or CLI upload, verify the archive's `Runner.app/Info.plist` contains a nonempty, resolved `GOOGLE_MAPS_API_KEY`. A successful archive alone is insufficient. The Xcode build phase also rejects missing map configuration; do not bypass it.
 - For App Store / production submission, choose Organizer `Distribute App` → `App Store Connect` → upload. Never select `TestFlight Internal Only` for a production-intended build: Apple permanently restricts that uploaded build to internal testing. If one was already uploaded internally, use a new build number for normal App Store Connect delivery.
