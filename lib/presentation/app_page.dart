@@ -15,6 +15,7 @@ import '../common/utils/snack_bar_utils.dart';
 import '../domain/eintities/app_content.dart';
 import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
+import 'sake_comparison/sake_comparison_page.dart';
 import 'my_page/my_page.dart';
 import 'new_home/widgets/sake_bottom_navigation.dart';
 import 'new_home/widgets/capture_radial_menu.dart';
@@ -172,7 +173,16 @@ Future<void> _openCapture(
     anchorKey: notifier.homeFeatureGuide.bottomScanKey,
   );
   if (action == null || !context.mounted) return;
-  if (action == CaptureAction.menu) {
+  if (action == CaptureAction.comparison) {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => const AnalyticsScreen(
+          name: 'sake_comparison',
+          child: SakeComparisonPage(),
+        ),
+      ),
+    );
+  } else if (action == CaptureAction.menu) {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => AnalyticsScreen(

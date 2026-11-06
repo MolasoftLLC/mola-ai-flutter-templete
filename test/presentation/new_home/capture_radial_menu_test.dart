@@ -59,12 +59,19 @@ void main() {
         expect(top.top, lessThan(left.top));
         expect(left.center.dx, lessThan(top.center.dx));
         expect(right.center.dx, greaterThan(top.center.dx));
+        expect(find.text('NEW'), findsOneWidget);
+        final cart = tester.getRect(
+          find.byKey(const ValueKey('capture-action-comparison')),
+        );
+        expect(cart.right, lessThanOrEqualTo(width));
+        expect(cart.overlaps(right), isFalse, reason: 'cart=$cart menu=$right');
+        expect(top.overlaps(right), isFalse);
         expect(tester.takeException(), isNull);
         await tester.tap(find.byKey(ValueKey('capture-action-${action.name}')));
         await tester.pumpAndSettle();
         expect(result, action);
       }
-      expect(completions, 3);
+      expect(completions, 4);
       await tester.tap(find.byKey(anchor));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('capture-menu-close')));
@@ -75,7 +82,7 @@ void main() {
       await tester.tapAt(const Offset(20, 100));
       await tester.pumpAndSettle();
       expect(result, isNull);
-      expect(completions, 5);
+      expect(completions, 6);
       expect(find.byType(CaptureRadialMenu), findsNothing);
     });
   }

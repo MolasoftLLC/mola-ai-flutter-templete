@@ -4,9 +4,11 @@ import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../common/widgets/sake_taste_match_preview.dart';
 import 'comparison_item.dart';
+import 'comparison_sketch_icon.dart';
+import '../new_home/widgets/capture_sketch_icon.dart';
 
 const _navy = Color(0xFF143861);
-const _paleBlue = Color(0xFFE6EDF6);
+const _paleBlue = Color(0xFFFFF6DE);
 
 /// The cart stays central; buying preferences are chosen only when needed.
 class ComparisonCartView extends StatelessWidget {
@@ -54,7 +56,7 @@ class ComparisonCartView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF3F5F9),
+    backgroundColor: const Color(0xFFF5F8F7),
     appBar: PrimaryAppBar(
       title: 'お酒えらび',
       actions: [
@@ -79,7 +81,7 @@ class ComparisonCartView extends StatelessWidget {
             backgroundColor: _paleBlue,
             textColor: _navy,
             label: Text('${items.length}'),
-            child: const Icon(Icons.shopping_basket_outlined),
+            child: const ComparisonSketchIcon(),
           ),
         ),
         const SizedBox(width: 8),
@@ -98,10 +100,7 @@ class ComparisonCartView extends StatelessWidget {
                     if (items.isNotEmpty) ...[
                       Row(
                         children: [
-                          const Icon(
-                            Icons.shopping_basket_outlined,
-                            color: _navy,
-                          ),
+                          const ComparisonSketchIcon(),
                           const SizedBox(width: 8),
                           const Expanded(
                             child: Text(
@@ -135,7 +134,9 @@ class ComparisonCartView extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.auto_awesome, color: _navy),
+                            const ComparisonSketchIcon(
+                              kind: ComparisonSketch.sparkle,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -191,7 +192,7 @@ class ComparisonCartView extends StatelessWidget {
                 width: 146,
                 height: 146,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE6EDF6),
+                  color: Color(0xFFFFF6DE),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -217,7 +218,7 @@ class ComparisonCartView extends StatelessWidget {
                     child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.article_outlined, size: 48, color: _navy),
+                        CaptureSketchIcon(isMenu: true),
                         SizedBox(height: 8),
                         Text(
                           'メニュー',
@@ -238,19 +239,14 @@ class ComparisonCartView extends StatelessWidget {
                     color: _paleBlue,
                     borderRadius: BorderRadius.circular(26),
                   ),
-                  child: const Icon(
-                    Icons.shopping_basket_outlined,
-                    size: 52,
-                    color: _navy,
-                  ),
+                  child: const ComparisonSketchIcon(size: 68),
                 ),
               ),
               const Positioned(
                 right: 24,
                 top: 9,
-                child: Icon(
-                  Icons.auto_awesome,
-                  color: Color(0xFF6B8DB3),
+                child: ComparisonSketchIcon(
+                  kind: ComparisonSketch.sparkle,
                   size: 29,
                 ),
               ),
@@ -441,7 +437,7 @@ class ComparisonCartView extends StatelessWidget {
               const LinearProgressIndicator(
                 minHeight: 3,
                 color: _navy,
-                backgroundColor: Color(0xFFE6EDF6),
+                backgroundColor: Color(0xFFFFF6DE),
               ),
               const SizedBox(height: 8),
               Text(
@@ -459,10 +455,13 @@ class ComparisonCartView extends StatelessWidget {
                       key: readKey,
                       onPressed: busy ? null : onCamera,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _navy,
-                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFFFFD84D),
+                        foregroundColor: _navy,
                         minimumSize: const Size(0, 54),
-                        textStyle: const TextStyle(
+                        textStyle: TextStyle(
+                          fontFamily: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.fontFamily,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -487,10 +486,15 @@ class ComparisonCartView extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: busy ? null : onRecommend,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _navy,
-                        foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFFFFD84D),
+                        foregroundColor: _navy,
                         minimumSize: const Size(0, 54),
-                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                        textStyle: TextStyle(
+                          fontFamily: Theme.of(
+                            context,
+                          ).textTheme.labelLarge?.fontFamily,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       icon: const Icon(Icons.tune, size: 19),
                       label: Text(
@@ -523,7 +527,17 @@ class _Step extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      Icon(icon, color: _navy, size: 28),
+      icon == Icons.document_scanner_outlined
+          ? const SizedBox.square(
+              dimension: 32,
+              child: CaptureSketchIcon(isMenu: true),
+            )
+          : ComparisonSketchIcon(
+              kind: icon == Icons.auto_awesome
+                  ? ComparisonSketch.sparkle
+                  : ComparisonSketch.basket,
+              size: 32,
+            ),
       const SizedBox(height: 8),
       Text(
         label,
@@ -624,7 +638,7 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
                   }),
                   selected: mood == option,
                   showCheckmark: false,
-                  selectedColor: const Color(0xFFE3ECF8),
+                  selectedColor: const Color(0xFFFFE89A),
                   onSelected: (_) => setState(() => mood = option),
                 ),
             ],
@@ -696,10 +710,13 @@ class _ComparisonPreferenceSheetState extends State<ComparisonPreferenceSheet> {
                       limited: limited,
                     )),
               style: FilledButton.styleFrom(
-                backgroundColor: _navy,
-                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFFFFD84D),
+                foregroundColor: _navy,
                 minimumSize: const Size(0, 54),
-                textStyle: const TextStyle(
+                textStyle: TextStyle(
+                  fontFamily: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.fontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
