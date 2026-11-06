@@ -134,7 +134,7 @@ xcodebuild \
   -archivePath "${archive_path}" \
   -exportPath "${upload_dir}/export" \
   -exportOptionsPlist "${export_options}" \
-  "${provision_args[@]}" \
-  "${auth_args[@]}"
+  ${provision_args[@]+"${provision_args[@]}"} \
+  ${auth_args[@]+"${auth_args[@]}"}
 
 echo "App Store Connectへのアップロードが完了しました: ${version_name} (${build_number})"
