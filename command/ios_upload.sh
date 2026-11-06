@@ -9,12 +9,29 @@ cd "${PROJECT_DIR}"
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-for required_command in flutter pod xcodebuild plutil; do
+for required_command in xcodebuild plutil; do
   if ! command -v "${required_command}" >/dev/null 2>&1; then
     echo "必要なコマンドが見つかりません: ${required_command}" >&2
     exit 1
   fi
 done
+
+# Keep credentials outside the checkout. Do not enable shell tracing here.
+if [[ -n "${ASC_CONFIG_PATH:-}" ]]; then
+  if [[ ! -f "${ASC_CONFIG_PATH}" ]]; then
+    echo "配信用の認証設定が見つかりません。" >&2
+    exit 1
+  fi
+  source "${ASC_CONFIG_PATH}"
+fi
+auth_args=()
+if [[ -n "${ASC_KEY_PATH:-}${ASC_KEY_ID:-}${ASC_ISSUER_ID:-}" ]]; then
+  if [[ ! -f "${ASC_KEY_PATH:-}" || -z "${ASC_KEY_ID:-}" || -z "${ASC_ISSUER_ID:-}" ]]; then
+    echo "APIキーのパス・Key ID・Issuer IDをすべて設定してください。" >&2
+    exit 1
+  fi
+  auth_args=(-authenticationKeyPath "${ASC_KEY_PATH}" -authenticationKeyID "${ASC_KEY_ID}" -authenticationKeyIssuerID "${ASC_ISSUER_ID}")
+fi
 
 release_version="$(awk '/^version:/ {print $2; exit}' pubspec.yaml)"
 if [[ ! "${release_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$ ]]; then
@@ -40,15 +57,14 @@ if [[ "${RELEASE_CONFIRM:-0}" != "1" ]]; then
   fi
 fi
 
-flutter pub get
-(
-  cd ios
-  pod install
-)
-
-flutter build ipa \
-  --release \
-  --dart-define=FLAVOR=production
+if [[ "${REUSE_ARCHIVE:-0}" != "1" ]]; then
+  flutter pub get
+  (
+    cd ios
+    pod install
+  )
+  flutter build ipa --release --dart-define=FLAVOR=production
+fi
 
 archive_path="build/ios/archive/Runner.xcarchive"
 app_info="${archive_path}/Products/Applications/Runner.app/Info.plist"
@@ -83,6 +99,13 @@ cleanup() {
 trap cleanup EXIT
 
 export_options="${upload_dir}/ExportOptions.plist"
+provision_args=(-allowProvisioningUpdates)
+if [[ -n "${ASC_EXPORT_OPTIONS_PLIST:-}" ]]; then
+  cp "${ASC_EXPORT_OPTIONS_PLIST}" "${export_options}"
+  if [[ "$(plutil -extract signingStyle raw "${export_options}")" == "manual" ]]; then
+    provision_args=()
+  fi
+else
 cat >"${export_options}" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -103,6 +126,7 @@ cat >"${export_options}" <<PLIST
 </dict>
 </plist>
 PLIST
+fi
 
 plutil -lint "${export_options}"
 xcodebuild \
@@ -110,6 +134,7 @@ xcodebuild \
   -archivePath "${archive_path}" \
   -exportPath "${upload_dir}/export" \
   -exportOptionsPlist "${export_options}" \
-  -allowProvisioningUpdates
+  "${provision_args[@]}" \
+  "${auth_args[@]}"
 
 echo "App Store Connectへのアップロードが完了しました: ${version_name} (${build_number})"
