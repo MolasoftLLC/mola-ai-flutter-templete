@@ -100,7 +100,12 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(DeviceTextReader.channel, (call) async {
             methods.add(call.method);
-            expect((call.arguments as Map)['rotation'], 90);
+            expect((call.arguments as Map)['rotation'], 0);
+            final region = (call.arguments as Map)['region'] as Map;
+            expect(region['x'], closeTo(.06, .00001));
+            // 390x320.72 viewport center-crops a 1080x1920 portrait frame.
+            expect(region['y'], greaterThan(.06));
+            expect(region['height'], lessThan(.88));
             return reading;
           });
       addTearDown(
@@ -140,6 +145,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      final viewport = tester.getRect(
+        find.byKey(const ValueKey('scan-viewport')),
+      );
+      final guide = tester.getRect(find.byKey(const ValueKey('scan-guide')));
+      expect(guide.left, closeTo(viewport.left + viewport.width * .06, .001));
+      expect(guide.top, closeTo(viewport.top + viewport.height * .06, .001));
+      expect(guide.bottom, lessThan(viewport.bottom));
       expect(camera.audio, [false]);
       expect(camera.flashes, [FlashMode.off]);
       final image = CameraImageData(

@@ -29,6 +29,15 @@ class MainActivity: FlutterActivity() {
                     val width = call.argument<Int>("width") ?: 0
                     val height = call.argument<Int>("height") ?: 0
                     val rotation = call.argument<Int>("rotation") ?: 0
+                    val region = if (frame) requireNotNull(call.argument<Map<String, Double>>("region")) else null
+                    if (region != null) {
+                        val x = requireNotNull(region["x"])
+                        val y = requireNotNull(region["y"])
+                        val w = requireNotNull(region["width"])
+                        val h = requireNotNull(region["height"])
+                        require(listOf(x, y, w, h).all { it.isFinite() } &&
+                            x >= 0 && y >= 0 && w > 0 && h > 0 && x + w <= 1.000001 && y + h <= 1.000001)
+                    }
                     val image = if (frame) {
                         InputImage.fromByteArray(requireNotNull(call.argument<ByteArray>("bytes")), width, height, rotation, InputImage.IMAGE_FORMAT_NV21)
                     } else {
@@ -39,9 +48,10 @@ class MainActivity: FlutterActivity() {
                         val uprightHeight = if (rotation == 90 || rotation == 270) width else height
                         val lines = recognized.textBlocks.flatMap { it.lines }.filter { line ->
                             val bounds = line.boundingBox
-                            !frame || (bounds != null && bounds.exactCenterX() >= uprightWidth * .06 &&
-                                bounds.exactCenterX() <= uprightWidth * .94 && bounds.exactCenterY() >= uprightHeight * .28 &&
-                                bounds.exactCenterY() <= uprightHeight * .72)
+                            !frame || (bounds != null && bounds.exactCenterX() >= uprightWidth * region!!.getValue("x") &&
+                                bounds.exactCenterX() <= uprightWidth * (region.getValue("x") + region.getValue("width")) &&
+                                bounds.exactCenterY() >= uprightHeight * region.getValue("y") &&
+                                bounds.exactCenterY() <= uprightHeight * (region.getValue("y") + region.getValue("height")))
                         }
                         result.success(lines.joinToString("\n") { it.text })
                     }.addOnFailureListener { result.error("OCR_FAILED", "文字を読み取れませんでした", null) }

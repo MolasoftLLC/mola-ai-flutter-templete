@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// Frames stay on this device; the channel only runs the platform's text OCR.
 class DeviceTextReader {
   static const channel = MethodChannel('okinawa.molasoft.sakepedia/text_ocr');
-  Future<String> frame(CameraImage image, int rotation) async {
+  Future<String> frame(CameraImage image, int rotation, Rect region) async {
     final android = defaultTargetPlatform == TargetPlatform.android;
     if (image.planes.length != 1 ||
         (android && image.format.group != ImageFormatGroup.nv21) ||
@@ -21,6 +21,12 @@ class DeviceTextReader {
           'height': image.height,
           'bytesPerRow': image.planes.first.bytesPerRow,
           'rotation': rotation,
+          'region': {
+            'x': region.left,
+            'y': region.top,
+            'width': region.width,
+            'height': region.height,
+          },
         }) ??
         '';
   }

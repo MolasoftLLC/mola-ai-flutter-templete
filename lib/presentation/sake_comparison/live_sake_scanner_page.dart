@@ -11,6 +11,7 @@ import 'comparison_item.dart';
 import 'comparison_sketch_icon.dart';
 import 'device_text_reader.dart';
 import 'live_sake_search.dart';
+import 'scan_geometry.dart';
 
 const _navy = Color(0xFF143861);
 
@@ -49,6 +50,7 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
       _starting = true,
       _closed = false;
   int _cameraGeneration = 0;
+  ScanGeometry? _geometry;
   String _reading = '';
   String? _error;
 
@@ -155,6 +157,7 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
         _editing ||
         _saving ||
         camera == null ||
+        _geometry == null ||
         now.difference(_lastFrame).inMilliseconds < 450) {
       return;
     }
@@ -169,12 +172,13 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
       };
       final sensor = _description!.sensorOrientation;
       final rotation = defaultTargetPlatform == TargetPlatform.iOS
-          ? sensor
+          // camera_avfoundation already rotates stream buffers upright.
+          ? 0
           : (sensor -
                     (orientations[camera.value.deviceOrientation] ?? 0) +
                     360) %
                 360;
-      final text = await _reader.frame(image, rotation);
+      final text = await _reader.frame(image, rotation, _geometry!.region);
       if (!mounted || _closed || camera != _camera || _editing || _saving) {
         return;
       }
@@ -294,66 +298,76 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
     super.dispose();
   }
 
-  Widget _preview() => LayoutBuilder(
-    builder: (_, viewport) {
-      final height = viewport.maxWidth * _camera!.value.aspectRatio;
-      return ClipRect(
-        child: OverflowBox(
-          minWidth: viewport.maxWidth,
-          maxWidth: viewport.maxWidth,
-          minHeight: height,
-          maxHeight: height,
-          child: SizedBox(
-            width: viewport.maxWidth,
-            height: height,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                GestureDetector(
-                  onTapDown: (tap) async {
-                    final camera = _camera;
-                    if (camera == null || !camera.value.focusPointSupported) {
-                      return;
-                    }
-                    try {
-                      await camera.setFocusPoint(
-                        Offset(
-                          (tap.localPosition.dx / viewport.maxWidth).clamp(
-                            0,
-                            1,
+  Widget _preview() => ValueListenableBuilder<CameraValue>(
+    valueListenable: _camera!,
+    builder: (_, value, _) => LayoutBuilder(
+      builder: (_, viewport) {
+        final landscape = {
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        }.contains(value.lockedCaptureOrientation ?? value.deviceOrientation);
+        final size = value.previewSize!;
+        final geometry = ScanGeometry(
+          viewport: Size(viewport.maxWidth, viewport.maxHeight),
+          imageSize: landscape ? size : Size(size.height, size.width),
+        );
+        _geometry = geometry;
+        return Stack(
+          key: const ValueKey('scan-viewport'),
+          fit: StackFit.expand,
+          children: [
+            ClipRect(
+              child: OverflowBox(
+                minWidth: geometry.preview.width,
+                maxWidth: geometry.preview.width,
+                minHeight: geometry.preview.height,
+                maxHeight: geometry.preview.height,
+                child: SizedBox(
+                  width: geometry.preview.width,
+                  height: geometry.preview.height,
+                  child: GestureDetector(
+                    onTapDown: (tap) async {
+                      final camera = _camera;
+                      if (camera == null || !camera.value.focusPointSupported) {
+                        return;
+                      }
+                      try {
+                        await camera.setFocusPoint(
+                          Offset(
+                            (tap.localPosition.dx / geometry.preview.width)
+                                .clamp(0, 1),
+                            (tap.localPosition.dy / geometry.preview.height)
+                                .clamp(0, 1),
                           ),
-                          (tap.localPosition.dy / height).clamp(0, 1),
-                        ),
-                      );
-                    } catch (_) {
-                      /* Focus is optional. */
-                    }
-                  },
-                  child: CameraPreview(_camera!),
-                ),
-                IgnorePointer(
-                  child: Center(
-                    child: FractionallySizedBox(
-                      widthFactor: .88,
-                      heightFactor: .44,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: const Color(0xFFFFD84D),
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
+                        );
+                      } catch (_) {
+                        /* Focus is optional. */
+                      }
+                    },
+                    child: CameraPreview(_camera!),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      );
-    },
+            Positioned.fromRect(
+              rect: geometry.guide,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  key: const ValueKey('scan-guide'),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: const Color(0xFFFFD84D),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
   );
 
   @override

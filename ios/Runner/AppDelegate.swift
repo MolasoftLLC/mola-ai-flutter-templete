@@ -61,9 +61,20 @@ import ImageIO
             let rotation = args["rotation"] as? Int ?? 90
             let orientation: CGImagePropertyOrientation = rotation == 90 ? .right : rotation == 180 ? .down : rotation == 270 ? .left : .up
             handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:])
-            request.regionOfInterest = CGRect(x: 0.06, y: 0.28, width: 0.88, height: 0.44)
+            guard let region = args["region"] as? [String: Double],
+                  let x = region["x"], let y = region["y"],
+                  let w = region["width"], let h = region["height"],
+                  [x, y, w, h].allSatisfy({ $0.isFinite }),
+                  x >= 0, y >= 0, w > 0, h > 0, x + w <= 1.000001, y + h <= 1.000001 else {
+              throw NSError(domain: "TextOCR", code: 4)
+            }
+            // Flutter uses a top-left origin; Vision uses a bottom-left origin.
+            let rect = CGRect(x: x, y: 1 - y - h, width: w, height: h)
+            request.regionOfInterest = rect
           }
           try handler.perform([request])
+          // Vision observation boxes are relative to the cropped ROI, not the
+          // original frame. regionOfInterest already excludes outside pixels.
           let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
           DispatchQueue.main.async { result(text) }
         } catch {
