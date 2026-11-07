@@ -1,5 +1,6 @@
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
+import '../../../common/journey/sake_journey.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -247,7 +248,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
   // お酒診断の結果を取得する
   Future<void> analyzeSakePreference(List<FavoriteSake> sakes) async {
     if (state.isLoading || state.isSavingPreferences) return;
-    if (sakes.isEmpty) {
+    if (sakes.length < favoriteDiagnosisMinimum) {
       logger.info('お気に入りが空のため、好み分析は実行されません');
       return;
     }
@@ -257,6 +258,7 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return;
     }
 
+    final journeyOwner = _authRepository.currentUser?.uid ?? 'guest';
     state = state.copyWith(
       isLoading: true,
       sakePreferenceAnalysis: null,
@@ -301,6 +303,12 @@ class MyPageNotifier extends StateNotifier<MyPageState>
               ? preferenceText!.trim()
               : null,
         );
+        unawaited(
+          SakeJourneyStore.instance.complete(
+            journeyOwner,
+            JourneyStep.diagnosis,
+          ),
+        );
         return;
       }
 
@@ -319,6 +327,9 @@ class MyPageNotifier extends StateNotifier<MyPageState>
             : null,
       );
     } on MonthlyTasteAnalysisLimitException {
+      unawaited(
+        SakeJourneyStore.instance.complete(journeyOwner, JourneyStep.diagnosis),
+      );
       state = state.copyWith(
         isLoading: false,
         sakePreferenceAnalysis: null,
@@ -343,7 +354,15 @@ class MyPageNotifier extends StateNotifier<MyPageState>
       return false;
     if (state.sakePreferenceAnalysis?.trim().isNotEmpty == true) {
       setPreferences(state.sakePreferenceAnalysis!);
-      return savePreferences();
+      final saved = await savePreferences();
+      if (saved)
+        unawaited(
+          SakeJourneyStore.instance.complete(
+            _authRepository.currentUser?.uid ?? 'guest',
+            JourneyStep.diagnosis,
+          ),
+        );
+      return saved;
     }
     return false;
   }

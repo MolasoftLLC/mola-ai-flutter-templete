@@ -105,11 +105,13 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
     required SakeScanRepository scanRepository,
     required SakeScanAnalysisService analysisService,
     required SakeScanPersistenceService persistenceService,
+    this.onSuccessfulScan,
   }) : _scanRepository = scanRepository,
        _analysisService = analysisService,
        _persistenceService = persistenceService,
        super(const SakeScanState());
 
+  final void Function()? onSuccessfulScan;
   final SakeScanRepository _scanRepository;
   final SakeScanAnalysisService _analysisService;
   final SakeScanPersistenceService _persistenceService;
@@ -753,6 +755,7 @@ class SakeScanNotifier extends StateNotifier<SakeScanState> {
       }
       if (next.status == SakeScanViewStatus.completed && !_usageComplete) {
         _usageComplete = true;
+        onSuccessfulScan?.call();
         AppAnalytics.instance.event(
           'scan',
           'label_analysis',

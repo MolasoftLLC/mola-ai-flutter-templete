@@ -19,6 +19,8 @@ import '../../domain/repository/mola_api_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import '../app_page_notifier.dart';
+import '../app_page.dart' show openAppCapture;
+import 'widgets/home_taste_journey.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../main_search/main_search_page.dart';
 import '../my_page/saved_sake_detail_page.dart';
@@ -154,6 +156,26 @@ class _NewHomePageState extends State<NewHomePage> {
                   ),
                   padding: const EdgeInsets.only(top: 24, bottom: 32),
                   children: [
+                    HomeTasteJourney(
+                      onSearch: () => _openSearch(context),
+                      onScan: () => openAppCapture(
+                        context,
+                        context.read<AppPageNotifier>(),
+                      ),
+                      onRecommendations: () {
+                        final target = context
+                            .read<AppPageNotifier>()
+                            .homeFeatureGuide
+                            .recommendationsKey
+                            .currentContext;
+                        if (target != null)
+                          Scrollable.ensureVisible(
+                            target,
+                            alignment: .1,
+                            duration: const Duration(milliseconds: 350),
+                          );
+                      },
+                    ),
                     HomeSectionTitle(
                       title: context.l10n.newHomeRecentSakes,
                       onMoreTap: () {

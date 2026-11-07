@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../common/journey/sake_journey.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -204,6 +205,10 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
               return false;
             }
             final saved = await _changeCart((items) => [...items, item]);
+            if (saved)
+              unawaited(
+                SakeJourneyStore.instance.complete(_owner, JourneyStep.scan),
+              );
             if (saved && item.profile == null) {
               unawaited(_loadCartProfile(item.sake.sakeId!, profiles));
             }
