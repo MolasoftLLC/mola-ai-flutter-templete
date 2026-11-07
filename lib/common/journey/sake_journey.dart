@@ -165,6 +165,7 @@ class SakeJourneyStore {
     'preference' => 'profile_edit',
     'like' || 'firstLike' || 'moreLikes' => 'favorite',
     'scan' => 'scan',
+    'complete' => 'home_recommendations',
     _ => 'profile',
   };
   static void track(String step, String kind) => AppAnalytics.instance.event(
@@ -172,6 +173,5 @@ class SakeJourneyStore {
     target(step),
     kind: kind,
     source: 'profile',
-    labelVariant: 'journey_$step',
   );
 }

@@ -3,6 +3,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mola_gemini_flutter_template/common/journey/sake_journey.dart';
 
 void main() {
+  test('guide uses existing server-accepted analytics targets', () {
+    expect(SakeJourneyStore.target('preference'), 'profile_edit');
+    expect(SakeJourneyStore.target('like'), 'favorite');
+    expect(SakeJourneyStore.target('diagnosis'), 'profile');
+    expect(SakeJourneyStore.target('scan'), 'scan');
+    expect(SakeJourneyStore.target('complete'), 'home_recommendations');
+  });
+
   test(
     'next action reflects unset, zero, one, eligible, diagnosed and completed states',
     () {
