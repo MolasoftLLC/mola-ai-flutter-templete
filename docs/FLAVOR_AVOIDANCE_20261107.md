@@ -23,4 +23,4 @@
 
 変更10ソースの静的解析でエラーなし。既存のdeprecated/protected/unused等の警告・infoは残存し、リポジトリ全体の解析成功とは扱わない。ネイティブ端末・本番API連携は未検証。
 
-配信保留の指示を維持し、バージョン更新・archive・Appleアップロードは未実施。作業は独立cloneの `codex/flavor-avoidance` に保存。元checkoutは変更していない。
+その後の「配信」の依頼により、5.0.58（197）へバージョン更新してアーカイブを作成。アップロード結果は `docs/releases/20261107-build197.md` に記録する。元checkoutは変更していない。
