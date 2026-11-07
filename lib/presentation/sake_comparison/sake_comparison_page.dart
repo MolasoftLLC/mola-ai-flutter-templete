@@ -1,3 +1,5 @@
+import 'dart:async';
+import '../../common/journey/sake_journey.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -7,25 +9,24 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/utils/custom_image_picker.dart';
-import '../../common/utils/image_cropper_service.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
-import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
-import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/repository/auth_repository.dart';
+import '../../domain/repository/sake_scan_repository.dart';
 import '../../domain/repository/place_map_repository.dart';
-import '../../domain/repository/sake_menu_recognition_repository.dart';
-import '../common/dialogs/ai_data_consent_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
 import '../sake_map/sake_master_detail_page.dart';
 import 'comparison_item.dart';
 import 'comparison_cart_view.dart';
 import 'comparison_detail_page.dart';
+import 'live_sake_scanner_page.dart';
+import 'live_sake_search.dart';
 
 const _navy = Color(0xFF143861);
 
 class SakeComparisonPage extends StatefulWidget {
-  const SakeComparisonPage({super.key});
+  const SakeComparisonPage({super.key, this.startScanning = false});
+  final bool startScanning;
   @override
   State<SakeComparisonPage> createState() => _SakeComparisonPageState();
 }
@@ -36,14 +37,14 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
   final _readKey = GlobalKey();
   final _scroll = ScrollController();
   late final AnimationController _flight;
-  late final SakeMenuRecognitionRepository _repository;
   late final String _owner;
   List<ComparisonItem> _items = [];
   Set<String> _recommended = {};
   bool _ready = false;
   bool _busy = false;
   String? _error;
-  String _progress = '';
+  final String _progress = '';
+  Future<void> _cartWrites = Future.value();
   int _bottles = 1;
   ComparisonMood _mood = ComparisonMood.any;
   bool _limited = false;
@@ -59,7 +60,6 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
   void initState() {
     super.initState();
     _owner = context.read<AuthRepository>().currentUser?.uid ?? 'guest';
-    _repository = context.read<SakeMenuRecognitionRepository>().forkSession();
     _flight = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
@@ -86,6 +86,11 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
           _items = loaded;
           _ready = true;
         });
+        if (widget.startScanning) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_sameOwner) unawaited(_openTextScanner());
+          });
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -97,22 +102,61 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
     }
   }
 
-  Future<bool> _store(List<ComparisonItem> next) async {
-    if (!_sameOwner) return false;
-    final prefs = await SharedPreferences.getInstance();
-    if (!_sameOwner) return false;
-    final saved = await prefs.setStringList(
-      _storageKey,
-      next.map((i) => jsonEncode(i.toJson())).toList(),
-    );
-    if (!saved) throw StateError('保存に失敗しました');
-    if (!_sameOwner) return false;
-    setState(() {
-      _items = next;
-      _recommended = {};
-      _error = null;
+  Future<bool> _store(List<ComparisonItem> next) => _changeCart((_) => next);
+
+  Future<bool> _changeCart(
+    List<ComparisonItem> Function(List<ComparisonItem>) change,
+  ) {
+    final job = _cartWrites.then((_) async {
+      if (!_sameOwner) return false;
+      final prefs = await SharedPreferences.getInstance();
+      if (!_sameOwner) return false;
+      final next = change(_items);
+      final saved = await prefs.setStringList(
+        _storageKey,
+        next.map((i) => jsonEncode(i.toJson())).toList(),
+      );
+      if (!saved) throw StateError('保存に失敗しました');
+      if (!_sameOwner) return false;
+      setState(() {
+        _items = next;
+        _recommended = {};
+        _error = null;
+      });
+      return true;
     });
-    return true;
+    _cartWrites = job.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return job;
+  }
+
+  Future<void> _loadCartProfile(int id, SakeScanRepository repository) async {
+    try {
+      final profiles = await repository
+          .fetchTasteProfiles([id])
+          .timeout(const Duration(seconds: 6));
+      final profile = profiles[id];
+      if (profile == null || !_sameOwner) return;
+      await _changeCart(
+        (items) => items
+            .map(
+              (item) => item.sake.sakeId == id && item.profile == null
+                  ? ComparisonItem(
+                      id: item.id,
+                      sake: item.sake,
+                      text: item.text,
+                      profile: profile,
+                      estimated:
+                          item.estimated ||
+                          (profile.sourceType?.contains('ai') ?? false),
+                      sample: item.sample,
+                    )
+                  : item,
+            )
+            .toList(),
+      );
+    } catch (_) {
+      /* Selection is preserved even when taste data is unavailable. */
+    }
   }
 
   void _message(String value) {
@@ -123,238 +167,56 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
     }
   }
 
-  Future<void> _capture(ImageSource source) async {
+  Future<void> _openTextScanner({bool fromGallery = false}) async {
     if (_busy || !_ready || !_sameOwner) return;
     if (_items.length >= 20) {
       _message('比較カートは20件までです。不要な候補を外してください。');
       return;
     }
-    if (_owner == 'guest') {
-      _message('写真の読み取りにはログインが必要です。マイページからログインしてください。');
-      return;
-    }
-    final session = _repository.forkSession();
-    setState(() {
-      _busy = true;
-      _error = null;
-      _progress = '文字を読み取る範囲を選んでください';
-    });
-    try {
-      if (!await ensureAiDataConsent(context) || !_sameOwner) return;
-      final picked = await CustomImagePicker.pickImage(source: source);
-      if (picked == null || !_sameOwner) return;
-      final cropped = await ImageCropperService.cropAndRotateImage(picked.path);
-      if (cropped == null || !_sameOwner) return;
-      List<Sake>? extracted;
-      try {
-        setState(() => _progress = '商品名と説明文を読み取り中…');
-        extracted = await session
-            .extractSakeInfo(cropped)
-            .timeout(const Duration(seconds: 90));
-      } finally {
-        if (cropped.path != picked.path) {
-          try {
-            await cropped.delete();
-          } catch (_) {
-            /* OS may already remove its cache. */
-          }
-        }
-      }
-      if (!mounted || !_sameOwner) return;
-      if (extracted == null || extracted.isEmpty) {
-        throw StateError('商品名を読み取れませんでした。範囲を絞って撮り直してください。');
-      }
-      Sake? selected;
-      if (extracted.length == 1) {
-        selected = extracted.single;
-      } else {
-        selected = await showModalBottomSheet<Sake>(
-          context: context,
-          isScrollControlled: true,
-          builder: (sheetContext) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(sheetContext).height * .65,
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'どのお酒を追加する？',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        for (final sake in extracted!)
-                          ListTile(
-                            title: Text(sake.name ?? ''),
-                            subtitle: Text(
-                              sake.type ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.pop(sheetContext, sake),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-      if (selected == null || !mounted || !_sameOwner) return;
-      // One clear recognition goes straight into the cart; only ambiguity needs a choice.
-      final reviewed = selected;
-      setState(() => _progress = '味わいとマッチ度を確認中…');
-      List<MenuSakeResolution> resolved;
-      try {
-        resolved = await session
-            .resolveMenuSakes([reviewed], includeDescription: true)
-            .timeout(const Duration(seconds: 90));
-      } catch (_) {
-        resolved = [];
-        _message('味わい情報を取得できなかったため、文字だけを追加します。マッチ度は未算出です。');
-      }
-      if (!mounted || !_sameOwner) return;
-      final resolution = resolved.isEmpty ? null : resolved.first;
-      MenuSakeCandidate? candidate;
-      if (resolution?.status == MenuSakeResolutionStatus.resolved &&
-          resolution!.candidates.length == 1) {
-        candidate = resolution.candidates.single;
-      } else if (resolution?.candidates.isNotEmpty == true) {
-        candidate = await showModalBottomSheet<MenuSakeCandidate>(
-          context: context,
-          isScrollControlled: true,
-          builder: (sheetContext) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(sheetContext).height * .65,
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'どのお酒ですか？',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        for (final choice in resolution!.candidates)
-                          ListTile(
-                            title: Text(choice.sake.name ?? ''),
-                            subtitle: Text(choice.sake.type ?? ''),
-                            onTap: () => Navigator.pop(sheetContext, choice),
-                          ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(
-                      sheetContext,
-                      MenuSakeCandidate(sake: reviewed),
-                    ),
-                    child: const Text('この中にない・そのまま追加'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-        if (candidate == null) return;
-      }
-      if (!mounted || !_sameOwner) return;
-      final registered = (candidate?.sake.sakeId ?? 0) > 0;
-      final fallback = resolution?.fallback;
-      var item = ComparisonItem(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        sake: registered
-            ? candidate!.sake
-            : reviewed.copyWith(
-                // The printed explanation is retained separately as OCR evidence.
-                description: fallback?.description,
-                type: reviewed.type ?? fallback?.type,
-                brewery: reviewed.brewery ?? fallback?.brewery,
-              ),
-        text: reviewed.description ?? '',
-        profile:
-            candidate?.tasteProfile ??
-            (!registered ? resolution?.fallbackTasteProfile : null),
-        estimated:
-            !registered ||
-            (candidate?.tasteProfile?.sourceType?.contains('ai') ?? false),
+    String? imagePath;
+    if (fromGallery) {
+      final image = await CustomImagePicker.pickImage(
+        source: ImageSource.gallery,
       );
-      if (registered &&
-          resolution?.status == MenuSakeResolutionStatus.multiple &&
-          (item.profile == null ||
-              item.sake.description?.trim().isNotEmpty != true)) {
-        item = await _enrichItem(item, session, reviewed);
-      }
-      if (!mounted || !_sameOwner) return;
-      await _add(item);
-    } on SakeCandidateResolutionException catch (error) {
-      if (_sameOwner) setState(() => _error = error.message);
-    } catch (_) {
-      if (_sameOwner) {
-        setState(() => _error = '読み取りまたは保存ができませんでした。通信状況を確認して、もう一度お試しください。');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _progress = '';
-        });
-      }
+      if (image == null || !_sameOwner) return;
+      imagePath = image.path;
     }
-  }
-
-  Future<ComparisonItem> _enrichItem(
-    ComparisonItem item,
-    SakeMenuRecognitionRepository session,
-    Sake input,
-  ) async {
-    try {
-      final results = await session
-          .resolveMenuSakes(
-            [input],
-            includeDescription: true,
-            selectedSakeId: (item.sake.sakeId ?? 0) > 0
-                ? item.sake.sakeId
-                : null,
-          )
-          .timeout(const Duration(seconds: 90));
-      if (results.isEmpty) return item;
-      final result = results.first;
-      final registered = (item.sake.sakeId ?? 0) > 0;
-      MenuSakeCandidate? exact;
-      if (registered) {
-        for (final candidate in result.candidates) {
-          if (candidate.sake.sakeId == item.sake.sakeId) exact = candidate;
-        }
-      }
-      // A selected product must never acquire another candidate's analysis.
-      final info = registered ? exact?.sake : result.fallback;
-      final profile = registered
-          ? exact?.tasteProfile
-          : result.fallbackTasteProfile;
-      return ComparisonItem(
-        id: item.id,
-        sake: item.sake.copyWith(
-          description: info?.description ?? item.sake.description,
+    if (!mounted || !_sameOwner) return;
+    final catalog = context.read<PlaceMapRepository>();
+    final profiles = context.read<SakeScanRepository>();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LiveSakeScannerPage(
+          search: LiveSakeSearch(
+            search: (query) => catalog.searchSakeMasters(query, limit: 50),
+            loadProfiles: profiles.fetchTasteProfiles,
+          ),
+          imagePath: imagePath,
+          initialIds: _items
+              .map((item) => item.sake.sakeId)
+              .whereType<int>()
+              .toSet(),
+          initialCount: _items.length,
+          preference: _preference,
+          onAdd: (item) async {
+            if (!_sameOwner ||
+                _items.length >= 20 ||
+                _items.any((i) => i.identity == item.identity)) {
+              return false;
+            }
+            final saved = await _changeCart((items) => [...items, item]);
+            if (saved)
+              unawaited(
+                SakeJourneyStore.instance.complete(_owner, JourneyStep.scan),
+              );
+            if (saved && item.profile == null) {
+              unawaited(_loadCartProfile(item.sake.sakeId!, profiles));
+            }
+            return saved;
+          },
         ),
-        text: item.text,
-        profile: item.profile ?? profile,
-        estimated:
-            item.estimated || (profile?.sourceType?.contains('ai') ?? false),
-        sample: item.sample,
-      );
-    } catch (_) {
-      return item;
-    }
+      ),
+    );
   }
 
   void _openDetail(ComparisonItem item) {
@@ -375,18 +237,6 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
             : ComparisonDetailPage(item: item, preference: _preference),
       ),
     );
-  }
-
-  Future<void> _add(ComparisonItem item) async {
-    if (_items.any((i) => i.identity == item.identity)) {
-      _message('このお酒はすでにカートに入っています。');
-      return;
-    }
-    if (_items.length >= 20) {
-      _message('比較カートは20件までです。');
-      return;
-    }
-    if (await _store([..._items, item])) await _animateIntoCart();
   }
 
   Future<void> _animateIntoCart() async {
@@ -440,7 +290,9 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await _store(_items.where((i) => i.id != item.id).toList());
+      await _changeCart(
+        (items) => items.where((i) => i.id != item.id).toList(),
+      );
     } catch (_) {
       _message('カートを保存できませんでした。');
     } finally {
@@ -555,7 +407,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'お酒えらび・デモ',
+                '文字でお酒えらび',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -566,12 +418,12 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.document_scanner_outlined),
-                title: Text('説明カードやメニューを1件ずつ撮影'),
+                title: Text('お酒の名前にカメラをかざす'),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.shopping_basket_outlined),
-                title: Text('気になるお酒を集めて比較'),
+                title: Text('表示された候補をタップして、続けて追加'),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -580,12 +432,12 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
               ),
               SizedBox(height: 16),
               Text(
-                '読み取りはメニュー解析の利用回数に含まれます。カートは20本まで。写真はカートに保存しません。',
+                '文字は端末内で読み取り、登録済みの商品から候補を探します。シャッター音は鳴りません。カートは20本まで。',
                 style: TextStyle(fontSize: 12, color: Colors.blueGrey),
               ),
               SizedBox(height: 12),
               Text(
-                'AI推定の説明・味わい・マッチ度は参考情報です。限定品は説明の記載を参考にし、希少性を保証するものではありません。サンプルは架空の商品です。',
+                'マッチ度は登録されている味わいと好みをもとに計算します。サンプルは架空の商品です。',
                 style: TextStyle(fontSize: 12, color: Colors.blueGrey),
               ),
             ],
@@ -627,8 +479,8 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
       scrollController: _scroll,
       cartKey: _cartKey,
       readKey: _readKey,
-      onCamera: () => _capture(ImageSource.camera),
-      onGallery: () => _capture(ImageSource.gallery),
+      onCamera: () => _openTextScanner(),
+      onGallery: () => _openTextScanner(fromGallery: true),
       onSamples: _samples,
       onRecommend: _chooseRecommendations,
       onReset: () => setState(() => _recommended = {}),

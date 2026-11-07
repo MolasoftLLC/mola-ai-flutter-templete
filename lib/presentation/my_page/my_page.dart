@@ -17,6 +17,7 @@ import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../common/assets.dart';
+import '../../common/journey/sake_journey.dart';
 import '../../common/localization/app_locale_controller.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/sake_image_utils.dart';
@@ -52,14 +53,27 @@ enum _SavedSakeOrder {
 }
 
 class MyPage extends StatefulWidget {
-  const MyPage._({Key? key, this.isTab = false, this.isActive = true})
-    : super(key: key);
+  const MyPage._({
+    Key? key,
+    this.isTab = false,
+    this.isActive = true,
+    this.focusPreferences = false,
+  }) : super(key: key);
 
+  final bool focusPreferences;
   final bool isTab;
   final bool isActive;
 
-  static Widget wrapped({bool isTab = false, bool isActive = true}) {
-    return MyPage._(isTab: isTab, isActive: isActive);
+  static Widget wrapped({
+    bool isTab = false,
+    bool isActive = true,
+    bool focusPreferences = false,
+  }) {
+    return MyPage._(
+      isTab: isTab,
+      isActive: isActive,
+      focusPreferences: focusPreferences,
+    );
   }
 
   @override
@@ -79,7 +93,18 @@ class _MyPageState extends State<MyPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && widget.isActive) _guide.showIfNeeded(context);
+      if (!mounted || !widget.isActive) return;
+      if (widget.focusPreferences) {
+        final target = _guide.preferencesKey.currentContext;
+        if (target != null)
+          Scrollable.ensureVisible(
+            target,
+            alignment: .02,
+            duration: const Duration(milliseconds: 350),
+          );
+      } else {
+        _guide.showIfNeeded(context);
+      }
     });
   }
 
@@ -893,7 +918,8 @@ class _MyPageState extends State<MyPage> {
                                     : () async {
                                         if (_preferenceAnalysisOpen) return;
                                         // お気に入りの日本酒が2つ以上あるか確認
-                                        if (myFavoriteSakeList.length >= 2) {
+                                        if (myFavoriteSakeList.length >=
+                                            favoriteDiagnosisMinimum) {
                                           if (!notifier.hasAnalysisQuota) {
                                             ScaffoldMessenger.of(
                                               context,

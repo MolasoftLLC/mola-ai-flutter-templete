@@ -63,6 +63,7 @@ void main() {
       notifier.setPreferences('すっきりした味が好き');
       await notifier.analyzeSakePreference([
         FavoriteSake(name: 'テスト', type: '純米'),
+        FavoriteSake(name: '別のテスト', type: '吟醸'),
       ]);
       expect(notifier.state.sakePreferenceAnalysis, isNull);
       expect(notifier.state.sakePreferenceAnalysisError, isNotEmpty);

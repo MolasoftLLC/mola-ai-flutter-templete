@@ -255,7 +255,7 @@ class ComparisonCartView extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         const Text(
-          '気になるお酒を撮ろう',
+          '文字を読んで、比べよう',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 25,
@@ -265,14 +265,14 @@ class ComparisonCartView extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          '説明カードも、メニューも。',
+          'お酒の名前に、カメラをかざすだけ。',
           style: TextStyle(color: Colors.blueGrey, fontSize: 15),
         ),
         const SizedBox(height: 28),
         const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Step(icon: Icons.document_scanner_outlined, label: '撮る'),
+            _Step(icon: Icons.document_scanner_outlined, label: '読む'),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Icon(Icons.chevron_right, color: Colors.blueGrey),
@@ -467,7 +467,7 @@ class ComparisonCartView extends StatelessWidget {
                         ),
                       ),
                       icon: const Icon(Icons.document_scanner_outlined),
-                      label: const Text('撮影して追加'),
+                      label: const Text('文字を読んで追加'),
                     ),
                   )
                 else ...[
@@ -507,7 +507,7 @@ class ComparisonCartView extends StatelessWidget {
                 ],
                 const SizedBox(width: 6),
                 IconButton(
-                  tooltip: '写真から追加',
+                  tooltip: '画像の文字から追加',
                   onPressed: busy ? null : onGallery,
                   icon: const Icon(Icons.photo_library_outlined, color: _navy),
                 ),

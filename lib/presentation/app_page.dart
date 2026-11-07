@@ -153,7 +153,7 @@ class AppPage extends StatelessWidget {
               notifier.onTabTapped(index);
             }
           },
-          onScanTap: () => _openCapture(context, notifier),
+          onScanTap: () => openAppCapture(context, notifier),
           scanKey: notifier.homeFeatureGuide.bottomScanKey,
           menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
           mapKey: notifier.homeFeatureGuide.mapKey,
@@ -164,7 +164,7 @@ class AppPage extends StatelessWidget {
   }
 }
 
-Future<void> _openCapture(
+Future<void> openAppCapture(
   BuildContext context,
   AppPageNotifier notifier,
 ) async {
@@ -178,7 +178,7 @@ Future<void> _openCapture(
       MaterialPageRoute(
         builder: (_) => const AnalyticsScreen(
           name: 'sake_comparison',
-          child: SakeComparisonPage(),
+          child: SakeComparisonPage(startScanning: true),
         ),
       ),
     );
