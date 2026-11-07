@@ -16,6 +16,7 @@ import '../../common/utils/personal_map_camera.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../common/utils/sake_image_utils.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/venue_favorites_repository.dart';
 import '../../domain/repository/auth_repository.dart';
 import '../../domain/eintities/menu_analysis_history.dart';
 import '../../infrastructure/api_client/api_client.dart';
@@ -25,6 +26,8 @@ import 'sake_map_marker_icon.dart';
 import 'sake_map_page_notifier.dart';
 import 'sake_master_detail_page.dart';
 import 'venue_menu_carousel.dart';
+import 'venue_favorites_controller.dart';
+import 'venue_favorites_sheet.dart';
 
 class SakeMapPage extends StatefulWidget {
   const SakeMapPage._({
@@ -48,10 +51,20 @@ class SakeMapPage extends StatefulWidget {
       ownVenuesLoader: (sake) =>
           context.read<PlaceMapRepository>().fetchMyVenues(sake: sake),
     ),
-    child: SakeMapPage._(
-      initialSake: initialSake,
-      myMapRequests: myMapRequests,
-      communityMapRequests: communityMapRequests,
+    child: ChangeNotifierProvider<VenueFavoritesController>(
+      create: (context) {
+        final auth = context.read<AuthRepository>();
+        return VenueFavoritesController(
+          store: VenueFavoritesRepository(),
+          accountId: auth.currentUser?.uid,
+          accountChanges: auth.authStateChanges().map((user) => user?.uid),
+        );
+      },
+      child: SakeMapPage._(
+        initialSake: initialSake,
+        myMapRequests: myMapRequests,
+        communityMapRequests: communityMapRequests,
+      ),
     ),
   );
 
@@ -81,6 +94,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
   LatLng? _lastKnownLocation;
   double _zoom = _initialCamera.zoom;
   bool _didApplyInitialSake = false;
+  MapVenue? _pendingFavoriteVenue;
 
   @override
   void initState() {
@@ -244,6 +258,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final state = context.watch<SakeMapState>();
     final notifier = context.read<SakeMapPageNotifier>();
+    final favorites = context.watch<VenueFavoritesController>();
     _requestMarkerIcons(state.venues);
     final markerLayout = _layoutNearbyMarkers(state.venues, _zoom);
     final markers = state.venues
@@ -261,7 +276,8 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
                 : const Offset(0.5, 1),
             infoWindow: InfoWindow(
               title: venue.displayName,
-              snippet: '${venue.sakeCount}種類・${venue.recordCount}件の登録',
+              snippet:
+                  '${favorites.isFavorite(venue.venueId) ? '★ ' : ''}${venue.sakeCount}種類・${venue.recordCount}件の登録',
             ),
             onTap: () => _showVenueSakes(context, notifier, venue),
           ),
@@ -269,7 +285,17 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
         .toSet();
 
     return Scaffold(
-      appBar: const PrimaryAppBar(title: '日本酒マップ', titleFontSize: 21),
+      appBar: PrimaryAppBar(
+        title: '日本酒マップ',
+        titleFontSize: 21,
+        actions: [
+          IconButton(
+            tooltip: 'お気に入りのお店',
+            onPressed: _openFavorites,
+            icon: const Icon(Icons.star_rounded, color: Color(0xFFFFCC32)),
+          ),
+        ],
+      ),
       body: Stack(
         children: [
           GoogleMap(
@@ -281,6 +307,18 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
             zoomControlsEnabled: false,
             onMapCreated: (controller) async {
               _mapController = controller;
+              final favorite = _pendingFavoriteVenue;
+              if (favorite != null) {
+                _pendingFavoriteVenue = null;
+                notifier.focusVenue(favorite);
+                await controller.animateCamera(
+                  CameraUpdate.newLatLngZoom(
+                    LatLng(favorite.latitude, favorite.longitude),
+                    16,
+                  ),
+                );
+                return;
+              }
               if ((widget.communityMapRequests?.value ?? 0) > 0) {
                 await _openCommunityMap();
               } else if ((widget.myMapRequests?.value ?? 0) > 0) {
@@ -670,6 +708,32 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
     ).showSnackBar(const SnackBar(content: Text('地図を開けませんでした。もう一度お試しください。')));
   }
 
+  Future<void> _openFavorites() async {
+    final favorites = context.read<VenueFavoritesController>();
+    final venue = await showModalBottomSheet<MapVenue>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => VenueFavoritesSheet(
+        controller: favorites,
+        onShowVenue: (venue) => Navigator.of(sheetContext).pop(venue),
+        onOpenMaps: _openVenueInMaps,
+      ),
+    );
+    if (venue == null || !mounted) return;
+    final notifier = context.read<SakeMapPageNotifier>();
+    _searchController.clear();
+    notifier.focusVenue(venue);
+    final controller = _mapController;
+    if (controller != null) {
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(venue.latitude, venue.longitude), 16),
+      );
+    } else {
+      _pendingFavoriteVenue = venue;
+    }
+    if (mounted) await _showVenueSakes(context, notifier, venue);
+  }
+
   void _requestMarkerIcons(List<MapVenue> venues) {
     for (final venue in venues) {
       final key = _markerKey(venue);
@@ -778,6 +842,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
     MapVenue venue,
   ) async {
     AppAnalytics.instance.event('map', 'place');
+    final favorites = context.read<VenueFavoritesController>();
     // Keep one request while the sheet is resized or rebuilt.
     final sakesFuture = notifier.loadVenueSakes(venue.venueId);
     final menusStream = _watchVenueMenus(
@@ -876,6 +941,10 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
                                     ),
                                   ],
                                 ),
+                              ),
+                              VenueFavoriteButton(
+                                controller: favorites,
+                                venue: venue,
                               ),
                               IconButton(
                                 tooltip: '閉じる',

@@ -6,6 +6,49 @@ import 'package:mola_gemini_flutter_template/domain/repository/place_map_reposit
 import 'package:mola_gemini_flutter_template/presentation/sake_map/sake_map_page_notifier.dart';
 
 void main() {
+  const favorite = MapVenue(
+    venueId: 'favorite-away-from-current-bounds',
+    displayName: '旅先のお気に入り',
+    latitude: 43,
+    longitude: 141,
+    sakeCount: 2,
+    recordCount: 2,
+  );
+  test('お気に入りへの移動は酒名・自分の登録の絞り込みを解除する', () async {
+    final notifier = SakeMapPageNotifier(
+      _FakeMapDataSource(),
+      ownVenuesLoader: (_) async => [],
+    );
+    await notifier.setOwnOnly(true);
+    await notifier.selectSake(
+      const SakeMapSearchResult(sakeId: 1, name: '獺祭', isMaster: true),
+      origin: const LatLng(35, 135),
+    );
+    notifier.focusVenue(favorite);
+    expect(notifier.state.ownOnly, false);
+    expect(notifier.state.selectedSake, isNull);
+    expect(notifier.state.venues.single, favorite);
+    expect(notifier.state.isLoading, false);
+    notifier.dispose();
+  });
+
+  test('お気に入りに移動した後の古い読込結果は位置候補を上書きしない', () async {
+    final source = _FakeMapDataSource();
+    final notifier = SakeMapPageNotifier(source);
+    final loading = notifier.loadBounds(
+      LatLngBounds(
+        southwest: const LatLng(26, 127),
+        northeast: const LatLng(27, 128),
+      ),
+      12,
+    );
+    notifier.focusVenue(favorite);
+    source.first.complete([]);
+    await loading;
+    expect(notifier.state.venues.single, favorite);
+    notifier.dispose();
+  });
+
   test('古い地図レスポンスで新しい表示範囲を上書きしない', () async {
     final source = _FakeMapDataSource();
     final notifier = SakeMapPageNotifier(source);
