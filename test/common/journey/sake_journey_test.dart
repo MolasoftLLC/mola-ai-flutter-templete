@@ -3,6 +3,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mola_gemini_flutter_template/common/journey/sake_journey.dart';
 
 void main() {
+  test(
+    'only all four achieved stages can display completion, even after unliking everything',
+    () {
+      for (var mask = 0; mask < 16; mask++) {
+        final steps = JourneyStep.values
+            .where((s) => mask & (1 << s.index) != 0)
+            .toSet();
+        for (final likes in [0, 1, 2]) {
+          expect(
+            JourneySnapshot(steps: steps).action(likes) ==
+                JourneyAction.complete,
+            mask == 15,
+            reason: 'stages=$mask likes=$likes',
+          );
+        }
+      }
+    },
+  );
+
   test('guide uses existing server-accepted analytics targets', () {
     expect(SakeJourneyStore.target('preference'), 'profile_edit');
     expect(SakeJourneyStore.target('like'), 'favorite');

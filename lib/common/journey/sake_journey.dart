@@ -51,8 +51,7 @@ class JourneySnapshot {
     if (!steps.contains(JourneyStep.preference))
       return JourneyAction.preference;
     if (!steps.contains(JourneyStep.diagnosis)) {
-      if (favorites == 0 && !steps.contains(JourneyStep.like))
-        return JourneyAction.firstLike;
+      if (favorites == 0) return JourneyAction.firstLike;
       if (favorites > 0 && favorites < favoriteDiagnosisMinimum)
         return JourneyAction.moreLikes;
       if (favorites >= favoriteDiagnosisMinimum) return JourneyAction.diagnosis;
