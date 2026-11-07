@@ -23,6 +23,7 @@ import 'package:mola_gemini_flutter_template/presentation/sake_comparison/device
 import 'package:mola_gemini_flutter_template/presentation/sake_comparison/live_sake_scanner_page.dart';
 import 'package:mola_gemini_flutter_template/presentation/sake_comparison/live_sake_search.dart';
 import '../../support/fake_menu_camera.dart';
+import '../../support/fake_network_images.dart';
 
 class StreamingCamera extends FakeMenuCamera {
   final frames = StreamController<CameraImageData>.broadcast();
@@ -61,6 +62,21 @@ void main() {
     'candidate sheet pauses OCR, closes without selection, and adds twice with haptics and cart flights',
     (tester) async {
       const output = String.fromEnvironment('LIVE_SAKE_UI_OUTPUT');
+      const photoPath = String.fromEnvironment('LIVE_SAKE_PHOTO');
+      final photoBytes = await tester.runAsync(
+        () => File(
+          photoPath.isEmpty
+              ? 'assets/images/sake_catalog_illustration.png'
+              : photoPath,
+        ).readAsBytes(),
+      );
+      final images = FakeImageClient(photoBytes!);
+      debugNetworkImageHttpClientProvider = () => images;
+      addTearDown(() {
+        debugNetworkImageHttpClientProvider = null;
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+      });
       final original = CameraPlatform.instance;
       final camera = StreamingCamera();
       CameraPlatform.instance = camera;
@@ -134,6 +150,10 @@ void main() {
               sakeId: query.contains('阿櫻') ? 2 : 1,
               name: query.contains('阿櫻') ? '阿櫻 特別純米' : '酔鯨 特別純米酒',
               isMaster: true,
+              thumbnailImageUrl: 'https://example.invalid/missing-thumb.jpg',
+              primaryImageUrl: query.contains('阿櫻')
+                  ? null
+                  : 'https://item-shopping.c.yimg.jp/i/g/fukumasu-ya_19533x001',
             ),
             if (!query.contains('阿櫻')) ...[
               const SakeMapSearchResult(
@@ -264,6 +284,22 @@ void main() {
       );
       expect(haptics, hasLength(2));
       expect(searches, isNotEmpty);
+      await tester.runAsync(
+        () async => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        images.requested.map((u) => u.path),
+        containsAllInOrder([
+          '/missing-thumb.jpg',
+          '/i/g/fukumasu-ya_19533x001',
+        ]),
+      );
+      expect(
+        find.byKey(const ValueKey('sake-catalog-illustration')),
+        findsNWidgets(2),
+      );
+      expect(find.byIcon(Icons.liquor), findsNothing);
       await shot('01-candidates');
       await tester.tap(find.byIcon(Icons.add_circle_outline).first);
       await tester.pump();
@@ -294,6 +330,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
       expect(camera.disposed, isNotEmpty);
+      debugNetworkImageHttpClientProvider = null;
       debugDefaultTargetPlatformOverride = null;
     },
   );

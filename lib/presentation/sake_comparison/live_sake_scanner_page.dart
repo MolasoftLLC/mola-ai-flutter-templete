@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../new_home/widgets/sake_catalog_thumbnail.dart';
 import 'comparison_item.dart';
 import 'comparison_sketch_icon.dart';
 import 'device_text_reader.dart';
@@ -609,7 +610,6 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
         text: '',
         profile: profile,
       ).match(widget.preference);
-      final image = candidate.thumbnailImageUrl ?? candidate.primaryImageUrl;
       return Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -623,17 +623,10 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                SizedBox(
-                  width: 48,
-                  height: 64,
-                  child: image == null
-                      ? const Icon(Icons.liquor, color: _navy)
-                      : Image.network(
-                          image,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.liquor, color: _navy),
-                        ),
+                SakeCatalogThumbnail(
+                  thumbnailImageUrl: candidate.thumbnailImageUrl,
+                  primaryImageUrl: candidate.primaryImageUrl,
+                  size: 64,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
