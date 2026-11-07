@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -36,8 +37,16 @@ class LiveSakeScannerPage extends StatefulWidget {
 }
 
 class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final _reader = DeviceTextReader();
+  final _cartKey = GlobalKey();
+  final _sheetUpdates = ValueNotifier<int>(0);
+  late final AnimationController _flight;
+  OverlayEntry? _flyingCard;
+  Offset? _flightFrom;
+  BuildContext? _sheetContext;
+  bool _sheetOpen = false;
+  bool _animating = false;
   final _manualField = TextEditingController();
   CameraController? _camera;
   CameraDescription? _description;
@@ -57,6 +66,10 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
   @override
   void initState() {
     super.initState();
+    _flight = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
     WidgetsBinding.instance.addObserver(this);
     widget.search.addListener(_changed);
     if (widget.imagePath != null) {
@@ -67,7 +80,19 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
   }
 
   void _changed() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    _sheetUpdates.value++;
+    if (!_sheetOpen &&
+        !_animating &&
+        !_editing &&
+        widget.search.candidates.isNotEmpty) {
+      _sheetOpen =
+          true; // Gate frames immediately, including an OCR already in flight.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_closed) unawaited(_showCandidates());
+      });
+    }
   }
 
   Future<void> _readFile() async {
@@ -154,6 +179,8 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
     final now = DateTime.now();
     if (_closed ||
         _processing ||
+        _sheetOpen ||
+        _animating ||
         _editing ||
         _saving ||
         camera == null ||
@@ -179,7 +206,13 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
                     360) %
                 360;
       final text = await _reader.frame(image, rotation, _geometry!.region);
-      if (!mounted || _closed || camera != _camera || _editing || _saving) {
+      if (!mounted ||
+          _closed ||
+          camera != _camera ||
+          _editing ||
+          _saving ||
+          _sheetOpen ||
+          _animating) {
         return;
       }
       setState(() {
@@ -200,6 +233,7 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
     final id = candidate.sakeId!;
     if (_saving || _added.contains(id) || _count >= 20) return;
     setState(() => _saving = true);
+    _sheetUpdates.value++;
     try {
       final item = ComparisonItem(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -222,6 +256,10 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
           _added.add(id);
           _count++;
         });
+        unawaited(HapticFeedback.mediumImpact());
+        _sheetUpdates.value++;
+        final sheet = _sheetContext;
+        if (sheet != null && sheet.mounted) Navigator.of(sheet).pop(true);
       }
     } catch (_) {
       if (mounted) {
@@ -230,7 +268,10 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
         );
       }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        setState(() => _saving = false);
+        _sheetUpdates.value++;
+      }
     }
   }
 
@@ -267,6 +308,7 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
       await widget.search.find(query!.trim());
     }
     _editing = false;
+    if (mounted) _changed();
   }
 
   @override
@@ -292,6 +334,10 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
     widget.search.removeListener(_changed);
     widget.search.dispose();
     _manualField.dispose();
+    _flight.dispose();
+    _flyingCard?.remove();
+    _flyingCard = null;
+    _sheetUpdates.dispose();
     final camera = _camera;
     _camera = null;
     if (camera != null) unawaited(camera.dispose());
@@ -370,6 +416,273 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
     ),
   );
 
+  Future<void> _showCandidates() async {
+    var added = false;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    unawaited(HapticFeedback.mediumImpact());
+    try {
+      added =
+          await showModalBottomSheet<bool>(
+            context: context,
+            isScrollControlled: true,
+            isDismissible: false,
+            enableDrag: false,
+            backgroundColor: const Color(0xFFF5F8F7),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            sheetAnimationStyle: reduceMotion
+                ? AnimationStyle.noAnimation
+                : const AnimationStyle(
+                    duration: Duration(milliseconds: 360),
+                    curve: Curves.easeOutBack,
+                    reverseCurve: Curves.easeInCubic,
+                    reverseDuration: Duration(milliseconds: 180),
+                  ),
+            builder: (context) {
+              _sheetContext = context;
+              return PopScope(
+                canPop: !_saving,
+                child: SafeArea(
+                  top: false,
+                  child: SizedBox(
+                    key: const ValueKey('sake-candidate-sheet'),
+                    height: MediaQuery.sizeOf(context).height * .65,
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([
+                        widget.search,
+                        _sheetUpdates,
+                      ]),
+                      builder: (_, _) => Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 12, 8, 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '読み取ったお酒',
+                                        style: TextStyle(
+                                          color: Colors.blueGrey,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.search.displayText,
+                                        key: const ValueKey(
+                                          'recognized-sake-name',
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: _navy,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  key: const ValueKey('close-sake-candidates'),
+                                  tooltip: '選ばずに撮影へ戻る',
+                                  onPressed: _saving
+                                      ? null
+                                      : () => Navigator.of(context).pop(false),
+                                  icon: const Icon(Icons.close, color: _navy),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (widget.search.searching)
+                            const LinearProgressIndicator(minHeight: 2),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '候補をタップしてカートに追加',
+                                style: TextStyle(
+                                  color: Colors.blueGrey,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(child: _candidates()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ) ??
+          false;
+      _sheetContext = null;
+      // Remain gated until the sheet is no longer visible, including on ×.
+      if (!reduceMotion) {
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+      }
+      if (added && mounted && !_closed) {
+        _animating = true;
+        if (mounted && !_closed) await _animateIntoCart();
+      }
+    } finally {
+      _sheetContext = null;
+      if (mounted && !_closed) {
+        // Clear while still gated so a late catalog response cannot open a sheet.
+        widget.search.resumeScanning();
+        setState(() {
+          _sheetOpen = false;
+          _animating = false;
+          _reading = '';
+        });
+      }
+    }
+  }
+
+  Future<void> _animateIntoCart() async {
+    if (MediaQuery.disableAnimationsOf(context)) return;
+    final target = _cartKey.currentContext?.findRenderObject();
+    if (target is! RenderBox) return;
+    final from = _flightFrom ?? MediaQuery.sizeOf(context).center(Offset.zero);
+    final to = target.localToGlobal(target.size.center(Offset.zero));
+    _flyingCard = OverlayEntry(
+      builder: (_) => AnimatedBuilder(
+        animation: _flight,
+        builder: (_, _) {
+          final t = Curves.easeInOut.transform(_flight.value);
+          final point =
+              Offset.lerp(from, to, t)! +
+              Offset(0, -math.sin(t * math.pi) * 60);
+          return Positioned(
+            left: point.dx - 22,
+            top: point.dy - 22,
+            child: IgnorePointer(
+              child: Transform.scale(
+                scale: 1 - t * .5,
+                child: Material(
+                  key: const ValueKey('flying-sake-to-cart'),
+                  elevation: 8,
+                  color: const Color(0xFFE6EDF6),
+                  borderRadius: BorderRadius.circular(12),
+                  child: const SizedBox.square(
+                    dimension: 44,
+                    child: Icon(Icons.description_outlined, color: _navy),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(_flyingCard!);
+    try {
+      await _flight.forward(from: 0).orCancel;
+    } on TickerCanceled {
+      // Closing the scanner cancels its animation.
+    } finally {
+      _flyingCard?.remove();
+      _flyingCard = null;
+    }
+  }
+
+  Widget _candidates() => ListView.separated(
+    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+    itemCount: widget.search.candidates.length,
+    separatorBuilder: (_, _) => const SizedBox(height: 8),
+    itemBuilder: (_, index) {
+      final candidate = widget.search.candidates[index];
+      final added = _added.contains(candidate.sakeId);
+      final profile = widget.search.profiles[candidate.sakeId];
+      final percent = ComparisonItem(
+        id: '',
+        sake: const Sake(),
+        text: '',
+        profile: profile,
+      ).match(widget.preference);
+      final image = candidate.thumbnailImageUrl ?? candidate.primaryImageUrl;
+      return Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTapDown: (details) => _flightFrom = details.globalPosition,
+          onTap: _saving || added || _count >= 20
+              ? null
+              : () => _add(candidate),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 64,
+                  child: image == null
+                      ? const Icon(Icons.liquor, color: _navy)
+                      : Image.network(
+                          image,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.liquor, color: _navy),
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        candidate.name,
+                        style: const TextStyle(
+                          color: _navy,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        [
+                          candidate.type,
+                          candidate.brewery,
+                        ].whereType<String>().join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.blueGrey,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (percent != null)
+                        Text(
+                          'マッチ度 $percent%',
+                          style: const TextStyle(
+                            color: _navy,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  added ? Icons.check_circle : Icons.add_circle_outline,
+                  color: added ? Colors.green : _navy,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFFF5F8F7),
@@ -427,117 +740,40 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
           ),
         ),
         Expanded(
-          child: widget.search.candidates.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      widget.search.error ??
-                          (widget.search.searching
-                              ? '候補を探しています…'
-                              : widget.search.text.isEmpty
-                              ? '文字を読み取ると候補が出ます'
-                              : '該当するお酒が見つかりませんでした'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.blueGrey),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.document_scanner_outlined,
+                    color: _navy,
+                    size: 40,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.search.error ??
+                        (widget.search.searching
+                            ? '候補を探しています…'
+                            : 'お酒の名前にかざしてください'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: _navy,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+                  const SizedBox(height: 8),
+                  const Text(
+                    '見つかると振動して候補が開きます。\nカートに追加したら、そのまま次のお酒へ。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.blueGrey, height: 1.7),
                   ),
-                  itemCount: widget.search.candidates.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (_, index) {
-                    final candidate = widget.search.candidates[index];
-                    final added = _added.contains(candidate.sakeId);
-                    final profile = widget.search.profiles[candidate.sakeId];
-                    final percent = ComparisonItem(
-                      id: '',
-                      sake: const Sake(),
-                      text: '',
-                      profile: profile,
-                    ).match(widget.preference);
-                    final image =
-                        candidate.thumbnailImageUrl ??
-                        candidate.primaryImageUrl;
-                    return Material(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: _saving || added || _count >= 20
-                            ? null
-                            : () => _add(candidate),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 48,
-                                height: 64,
-                                child: image == null
-                                    ? const Icon(Icons.liquor, color: _navy)
-                                    : Image.network(
-                                        image,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (_, _, _) => const Icon(
-                                          Icons.liquor,
-                                          color: _navy,
-                                        ),
-                                      ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      candidate.name,
-                                      style: const TextStyle(
-                                        color: _navy,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      [
-                                        candidate.type,
-                                        candidate.brewery,
-                                      ].whereType<String>().join(' · '),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.blueGrey,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    if (percent != null)
-                                      Text(
-                                        'マッチ度 $percent%',
-                                        style: const TextStyle(
-                                          color: _navy,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                added
-                                    ? Icons.check_circle
-                                    : Icons.add_circle_outline,
-                                color: added ? Colors.green : _navy,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                ],
+              ),
+            ),
+          ),
         ),
         SafeArea(
           top: false,
@@ -546,6 +782,7 @@ class _LiveSakeScannerPageState extends State<LiveSakeScannerPage>
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
+                key: _cartKey,
                 onPressed: () => Navigator.pop(context),
                 icon: const ComparisonSketchIcon(size: 24),
                 style: FilledButton.styleFrom(

@@ -22,7 +22,10 @@ class _FakePlaceMapRepository extends PlaceMapRepository {
   int aiSearchCount = 0;
 
   @override
-  Future<List<SakeMapSearchResult>> searchSakeMasters(String query) {
+  Future<List<SakeMapSearchResult>> searchSakeMasters(
+    String query, {
+    int limit = 20,
+  }) {
     normalSearchCount++;
     return normalCompleter?.future ?? Future.value(normalResults);
   }

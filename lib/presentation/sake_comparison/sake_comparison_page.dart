@@ -187,7 +187,7 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
       MaterialPageRoute<void>(
         builder: (_) => LiveSakeScannerPage(
           search: LiveSakeSearch(
-            search: catalog.searchSakeMasters,
+            search: (query) => catalog.searchSakeMasters(query, limit: 50),
             loadProfiles: profiles.fetchTasteProfiles,
           ),
           imagePath: imagePath,

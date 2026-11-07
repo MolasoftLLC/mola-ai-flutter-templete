@@ -17,7 +17,7 @@ void main() {
       expect(liveSakeQueries('作'), ['作']);
       expect(liveSakeQueries('七賢純米'), ['七賢純米', '七賢']);
       expect(liveSakeQueries('阿櫻特別純米'), ['阿櫻特別純米', '阿櫻']);
-      expect(liveSakeQueries('あべ 野田 2024 720ml ￥2,420'), ['あべ 野田 2024']);
+      expect(liveSakeQueries('あべ 野田 2024 720ml ￥2,420'), ['あべ 野田 2024', 'あべ']);
     },
   );
   test('two stable readings search; repeated frames reuse results', () async {
@@ -149,4 +149,85 @@ void main() {
     await model.find('七賢');
     expect(model.candidates.map((s) => s.sakeId), [1]);
   });
+  test(
+    'standalone classification including 酒 is joined to the brand and displayed',
+    () async {
+      final model = LiveSakeSearch(
+        search: (_) async => [],
+        loadProfiles: noProfiles,
+      );
+      addTearDown(model.dispose);
+      expect(liveSakeQueries('酔鯨\n特別純米酒\n720ml\n1,353円'), ['酔鯨 特別純米酒', '酔鯨']);
+      await model.find('酔鯨\n特別純米酒\n720ml\n1,353円');
+      expect(model.displayText, '酔鯨 特別純米酒');
+    },
+  );
+  test(
+    'classification changes only order; more than 20 brand candidates survive',
+    () async {
+      final products = [
+        sake(1, '酔鯨 純米大吟醸'),
+        sake(2, '酔鯨 特別純米酒'),
+        sake(3, '酔鯨 特別純米酒 しぼりたて 生酒'),
+        ...List.generate(25, (i) => sake(i + 4, '酔鯨 純米吟醸 シリーズ$i')),
+      ];
+      final model = LiveSakeSearch(
+        search: (q) async => q == '酔鯨' ? products : [],
+        loadProfiles: noProfiles,
+      );
+      addTearDown(model.dispose);
+      await model.find('酔鯨\n特別純米酒');
+      expect(model.candidates.map((s) => s.sakeId).take(2), [2, 3]);
+      expect(model.candidates, hasLength(products.length));
+      expect(
+        model.candidates.map((s) => s.sakeId).toSet(),
+        products.map((s) => s.sakeId).toSet(),
+      );
+    },
+  );
+  test(
+    'resume ignores the closed label but recognizes another reading',
+    () async {
+      final model = LiveSakeSearch(
+        search: (_) async => [sake(1, '酔鯨')],
+        loadProfiles: noProfiles,
+      );
+      addTearDown(model.dispose);
+      await model.find('酔鯨 特別純米酒');
+      model.resumeScanning();
+      model.observe('酔鯨 特別純米酒');
+      model.observe('酔鯨 特別純米酒');
+      await Future<void>.delayed(Duration.zero);
+      expect(model.candidates, isEmpty);
+      model.observe('七賢');
+      model.observe('七賢');
+      await Future<void>.delayed(Duration.zero);
+      expect(model.candidates, isNotEmpty);
+      expect(model.displayText, '七賢');
+    },
+  );
+  test('closing a sheet invalidates its pending search response', () async {
+    final pending = Completer<List<SakeMapSearchResult>>();
+    final model = LiveSakeSearch(
+      search: (q) =>
+          q == '酔鯨' ? pending.future : Future.value([sake(1, '酔鯨 特別純米酒')]),
+      loadProfiles: noProfiles,
+    );
+    addTearDown(model.dispose);
+    final done = model.find('酔鯨 特別純米酒');
+    await Future<void>.delayed(Duration.zero);
+    expect(model.candidates, isNotEmpty);
+    model.resumeScanning();
+    pending.complete([sake(2, '酔鯨 吟醸')]);
+    await done;
+    expect(model.candidates, isEmpty);
+  });
+  test(
+    'shelf metadata and classification-first labels retain the complete name',
+    () {
+      expect(liveSakeQueries('高知県\n酔鯨酒造\n酔鯨\n特別純米酒').first, '酔鯨 特別純米酒');
+      expect(liveSakeQueries('特別純米酒 酔鯨'), ['特別純米酒 酔鯨', '酔鯨']);
+      expect(liveSakeQueries('七賢\n純米 風凛美山').first, '七賢 純米 風凛美山');
+    },
+  );
 }

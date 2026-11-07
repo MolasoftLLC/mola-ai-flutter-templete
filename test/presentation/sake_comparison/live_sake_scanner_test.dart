@@ -58,7 +58,7 @@ class _Profiles implements SakeScanRepository {
 
 void main() {
   testWidgets(
-    'silent stream adds two master candidates without closing camera; duplicate is checked',
+    'candidate sheet pauses OCR, closes without selection, and adds twice with haptics and cart flights',
     (tester) async {
       const output = String.fromEnvironment('LIVE_SAKE_UI_OUTPUT');
       final original = CameraPlatform.instance;
@@ -95,7 +95,19 @@ void main() {
               .load();
         });
       }
-      String reading = '七賢 純米';
+      final haptics = <Object?>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              haptics.add(call.arguments);
+            }
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      String reading = '酔鯨\n特別純米酒';
       final methods = <String>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(DeviceTextReader.channel, (call) async {
@@ -120,19 +132,36 @@ void main() {
           return [
             SakeMapSearchResult(
               sakeId: query.contains('阿櫻') ? 2 : 1,
-              name: query.contains('阿櫻') ? '阿櫻 特別純米' : '七賢 純米',
+              name: query.contains('阿櫻') ? '阿櫻 特別純米' : '酔鯨 特別純米酒',
               isMaster: true,
             ),
+            if (!query.contains('阿櫻')) ...[
+              const SakeMapSearchResult(
+                sakeId: 3,
+                name: '酔鯨 純米吟醸 吟麗',
+                type: '純米吟醸',
+                brewery: '酔鯨酒造',
+                isMaster: true,
+              ),
+              const SakeMapSearchResult(
+                sakeId: 4,
+                name: '酔鯨 純米大吟醸 兵庫山田錦50%',
+                type: '純米大吟醸',
+                brewery: '酔鯨酒造',
+                isMaster: true,
+              ),
+            ],
           ];
         },
         loadProfiles: (_) async => {},
       );
       await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(fontFamily: output.isEmpty ? null : 'Preview'),
-          home: RepaintBoundary(
-            key: const ValueKey('scanner-shot'),
-            child: LiveSakeScannerPage(
+        RepaintBoundary(
+          key: const ValueKey('scanner-shot'),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(fontFamily: output.isEmpty ? null : 'Preview'),
+            home: LiveSakeScannerPage(
               search: model,
               onAdd: (item) async {
                 saved.add(item);
@@ -188,13 +217,64 @@ void main() {
 
       await frame();
       await frame();
-      expect(find.text('七賢 純米'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('sake-candidate-sheet')),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('recognized-sake-name')))
+            .data,
+        '酔鯨 特別純米酒',
+      );
+      expect(haptics, hasLength(1));
+      final paused = methods.length;
+      reading = '阿櫻 特純';
+      await frame();
+      await frame();
+      expect(methods, hasLength(paused));
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('recognized-sake-name')))
+            .data,
+        '酔鯨 特別純米酒',
+      );
+      await tester.tap(find.byKey(const ValueKey('close-sake-candidates')));
+      await tester.pump(const Duration(milliseconds: 50));
+      camera.frames.add(image);
+      await tester.pump();
+      expect(methods, hasLength(paused)); // Closing animation is still paused.
+      await tester.pumpAndSettle();
+      expect(saved, isEmpty);
+      expect(find.byKey(const ValueKey('sake-candidate-sheet')), findsNothing);
+      reading = '酔鯨\n特別純米酒';
+      await frame();
+      await frame();
+      expect(methods.length, greaterThan(paused));
+      expect(find.byKey(const ValueKey('sake-candidate-sheet')), findsNothing);
+      // Moving off the label re-arms it; no repeated vibration on the same text.
+      reading = '';
+      await frame();
+      reading = '酔鯨\n特別純米酒';
+      await frame();
+      await frame();
+      expect(
+        find.byKey(const ValueKey('sake-candidate-sheet')),
+        findsOneWidget,
+      );
+      expect(haptics, hasLength(2));
       expect(searches, isNotEmpty);
       await shot('01-candidates');
       await tester.tap(find.byIcon(Icons.add_circle_outline).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byKey(const ValueKey('flying-sake-to-cart')), findsOneWidget);
+      await shot('02-cart-flight');
       await tester.pumpAndSettle();
       expect(saved.single.sake.sakeId, 1);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(haptics, hasLength(3));
+      expect(find.byKey(const ValueKey('sake-candidate-sheet')), findsNothing);
+      expect(find.byType(LiveSakeScannerPage), findsOneWidget);
       expect(find.text('カートを見る（1）'), findsOneWidget);
       expect(camera.disposed, isEmpty);
       await shot('02-added');
@@ -204,6 +284,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.add_circle_outline).first);
       await tester.pumpAndSettle();
       expect(saved.map((item) => item.sake.sakeId), [1, 2]);
+      expect(haptics, hasLength(5));
+      expect(find.byKey(const ValueKey('sake-candidate-sheet')), findsNothing);
       expect(find.text('カートを見る（2）'), findsOneWidget);
       expect(camera.captures, 0);
       expect(methods, everyElement('recognizeFrame'));

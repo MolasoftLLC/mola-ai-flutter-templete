@@ -4,6 +4,17 @@ import 'package:flutter/foundation.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/repository/place_map_repository.dart';
 
+final _classification = RegExp(
+  r'特別純米(?:酒)?|純米大吟醸(?:酒)?|純米吟醸(?:酒)?|特別本醸造(?:酒)?|本醸造(?:酒)?|大吟醸(?:酒)?|吟醸(?:酒)?|純米(?:酒)?|特純',
+);
+
+String? _sakeClass(String text) {
+  final value = _classification.firstMatch(text)?.group(0);
+  return value == '特純' ? '特別純米' : value?.replaceFirst(RegExp(r'酒$'), '');
+}
+
+String _compact(String text) => text.replaceAll(RegExp(r'[\s・|｜：:]'), '');
+
 /// Only printed text is sent to the existing catalog search. No image/AI path.
 List<String> liveSakeQueries(String text) {
   final lines = text
@@ -28,7 +39,7 @@ List<String> liveSakeQueries(String text) {
       )
       .toList();
   final generic = RegExp(
-    r'^(?:日本酒|お品書き|メニュー|純米|純米酒|純米吟醸|純米大吟醸|吟醸|大吟醸|本醸造|特純|特別純米|生酒|辛口|甘口|価格|おすすめ|グラス|ボトル)$',
+    r'^(?:日本酒|お品書き|メニュー|純米(?:酒)?|純米吟醸(?:酒)?|純米大吟醸(?:酒)?|吟醸(?:酒)?|大吟醸(?:酒)?|本醸造(?:酒)?|特別本醸造(?:酒)?|特純|特別純米(?:酒)?|生酒|辛口|甘口|価格|おすすめ|グラス|ボトル)$',
   );
   final result = <String>[];
   void add(String value) {
@@ -39,18 +50,32 @@ List<String> liveSakeQueries(String text) {
     }
   }
 
-  for (var i = 0; i < lines.length && result.length < 4; i++) {
+  // Put a name accompanied by its printed classification ahead of shelf metadata.
+  final namedLines = <String>[];
+  final otherLines = <String>[];
+  for (var i = 0; i < lines.length; i++) {
     final line = lines[i];
-    if (generic.hasMatch(line)) continue;
-    if (i + 1 < lines.length && generic.hasMatch(lines[i + 1])) {
-      add('$line ${lines[i + 1]}');
+    if (generic.hasMatch(line) || RegExp(r'^.{2,3}[都道府県]$').hasMatch(line)) {
+      continue;
     }
+    if (i + 1 < lines.length &&
+        _classification.matchAsPrefix(lines[i + 1]) != null &&
+        !_classification.hasMatch(line)) {
+      namedLines.add('$line ${lines[i + 1]}');
+    }
+    (_classification.hasMatch(line) ? namedLines : otherLines).add(line);
+  }
+  for (final line in [...namedLines, ...otherLines]) {
     add(line);
-    // Printed classification is useful evidence, but must not hide the brand.
+    // A classification narrows ranking, never the available brand candidates.
     final name = line
-        .split(RegExp(r'\s*(?=純米|特純|特別純米|本醸造|吟醸|大吟醸|生酒|山廃|生酛)'))
-        .first;
+        .replaceFirst(_classification, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     if (name != line) add(name);
+    final brand = name.split(' ').first;
+    if (brand != name) add(brand);
+    if (result.length >= 4) break;
   }
   return result.take(4).toList();
 }
@@ -66,6 +91,21 @@ class LiveSakeSearch extends ChangeNotifier {
   List<SakeMapSearchResult> candidates = [];
   Map<int, SakeTasteProfileDetails> get profiles => _profileCache;
   String text = '';
+  String get displayText => liveSakeQueries(text).firstOrNull ?? text;
+  String? _suppressedReading;
+
+  /// Keep OCR running after closing a sheet, without reopening the same label.
+  void resumeScanning() {
+    _suppressedReading = liveSakeQueries(text).join('\n');
+    _previous = '';
+    _accepted = '';
+    _generation++;
+    candidates = [];
+    searching = false;
+    error = null;
+    notifyListeners();
+  }
+
   String? error;
   bool searching = false;
   bool _disposed = false;
@@ -78,8 +118,11 @@ class LiveSakeSearch extends ChangeNotifier {
     final key = liveSakeQueries(reading).join('\n');
     if (key.isEmpty) {
       _previous = '';
+      _suppressedReading = null;
       return;
     }
+    if (key == _suppressedReading) return;
+    _suppressedReading = null;
     if (key != _previous) {
       _previous = key;
       return;
@@ -97,6 +140,7 @@ class LiveSakeSearch extends ChangeNotifier {
     final generation = ++_generation;
     _accepted = key;
     text = reading;
+    _suppressedReading = null;
     error = null;
     searching = queries.isNotEmpty;
     candidates = [];
@@ -126,7 +170,30 @@ class LiveSakeSearch extends ChangeNotifier {
               }
             }
           }
-          candidates = found.values.take(20).toList();
+          final originalOrder = found.keys.toList();
+          final wantedClass = _sakeClass(displayText);
+          final wanted = _compact(displayText);
+          int rank(SakeMapSearchResult candidate) {
+            final name = _compact(candidate.name);
+            final kind =
+                _sakeClass(candidate.name) ?? _sakeClass(candidate.type ?? '');
+            return (name == wanted
+                    ? 100
+                    : name.contains(wanted)
+                    ? 50
+                    : 0) +
+                (wantedClass != null && kind == wantedClass ? 20 : 0);
+          }
+
+          candidates = found.values.toList()
+            ..sort((a, b) {
+              final priority = rank(b).compareTo(rank(a));
+              return priority != 0
+                  ? priority
+                  : originalOrder
+                        .indexOf(a.sakeId!)
+                        .compareTo(originalOrder.indexOf(b.sakeId!));
+            });
           notifyListeners(); // Show the first catalog response immediately.
           unawaited(_loadTasteProfiles(found.keys.toList(), generation));
         } catch (_) {

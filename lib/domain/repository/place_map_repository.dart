@@ -380,8 +380,11 @@ class PlaceMapRepository implements SakeMapDataSource {
     ).where((sake) => sake.venueCount > 0).toList(growable: false);
   }
 
-  Future<List<SakeMapSearchResult>> searchSakeMasters(String query) async {
-    final response = await _apiClient.searchSakeMasters(query);
+  Future<List<SakeMapSearchResult>> searchSakeMasters(
+    String query, {
+    int limit = 20,
+  }) async {
+    final response = await _apiClient.searchSakeMasters(query, limit: limit);
     if (!response.isSuccessful) {
       throw PlaceMapException(
         statusCode: response.statusCode,
