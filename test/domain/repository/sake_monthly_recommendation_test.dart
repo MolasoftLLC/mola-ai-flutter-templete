@@ -9,6 +9,55 @@ import 'package:mola_gemini_flutter_template/domain/repository/user_preference_r
 import 'package:mola_gemini_flutter_template/infrastructure/api_client/api_client.dart';
 
 void main() {
+  for (final status in [200, 500]) {
+    test('苦手設定の根拠は既存詳細の一括読取のみ、取得失敗は不明: $status', () async {
+      final api = ApiClient.create();
+      final client = ChopperClient(
+        baseUrl: Uri.parse('https://example.com'),
+        services: <ChopperService>[api],
+        converter: const JsonConverter(),
+        client: MockClient((request) async {
+          expect(request.url.path, '/menu-analysis-history/details');
+          expect(request.method, 'POST');
+          expect(jsonDecode(request.body)['sakeIds'], [10]);
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'details': [
+                  {
+                    'sake': {
+                      'id': 10,
+                      'name': 'テスト',
+                      'aromaTags': ['熟成香'],
+                    },
+                  },
+                  {
+                    'sake': {
+                      'id': 99,
+                      'name': '対象外',
+                      'aromaTags': ['熟成香'],
+                    },
+                  },
+                ],
+              }),
+            ),
+            status,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      addTearDown(client.dispose);
+      final result = await MolaApiRepository(
+        api,
+      ).fetchRecommendationFlavorEvidence([10, 10, -1]);
+      if (status == 200) {
+        expect(result.keys, [10]);
+        expect(result[10]!.evidence, isNotEmpty);
+      } else {
+        expect(result, isEmpty);
+      }
+    });
+  }
   test('保存済みのおすすめを10件取得し、再選定APIで入れ替える', () async {
     final requests = <http.Request>[];
     final api = ApiClient.create();

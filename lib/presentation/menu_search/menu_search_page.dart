@@ -11,6 +11,8 @@ import 'package:provider/provider.dart';
 
 import '../../domain/eintities/menu_sake_resolution.dart';
 import '../../common/logger.dart';
+import '../../common/sake/flavor_characteristics.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
@@ -163,6 +165,15 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
     final matchPercents = context.select(
       (MenuSearchPageState state) => state.matchPercents,
     );
+    final flavorPreferences = Provider.of<MyPageState?>(context)?.preferences;
+    final displayedSakes = prioritizeFlavorPreferences(
+      extractedSakes,
+      preferences: flavorPreferences,
+      evidenceFor: (sake) => SakeFlavorEvidence.fromProduct(
+        description:
+            notifier.rowDetails[menuRowKey(sake.name, sake.type)]?.description,
+      ),
+    );
     final tasteProfiles = context.select(
       (MenuSearchPageState state) => state.tasteProfiles,
     );
@@ -292,7 +303,7 @@ class _MenuSearchPageState extends State<MenuSearchPage> {
                                 ? extractedSakes.length
                                 : 0,
                             itemBuilder: (context, index) {
-                              final sake = extractedSakes[index];
+                              final sake = displayedSakes[index];
                               final rowKey = menuRowKey(sake.name, sake.type);
 
                               // 元の名前から取得した詳細情報の名前を取得

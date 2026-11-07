@@ -6,6 +6,8 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../common/exception/exception.dart';
 import '../../common/logger.dart';
+import '../../common/sake/flavor_characteristics.dart';
+import '../eintities/sake_label_scan.dart';
 import '../../common/utils/image_utils.dart';
 import '../../infrastructure/api_client/api_client.dart';
 import '../eintities/request/favorite_body.dart';
@@ -191,6 +193,37 @@ class MolaApiRepository {
       throw StateError('おすすめの再選定に失敗しました。');
     }
     return _parseHomeRecommendations(response);
+  }
+
+  /// Read existing catalog data in one batch; never trigger AI enrichment.
+  Future<Map<int, SakeFlavorEvidence>> fetchRecommendationFlavorEvidence(
+    Iterable<int> ids,
+  ) async {
+    final requested = ids.where((id) => id > 0).toSet().take(50).toList();
+    if (requested.isEmpty) return const {};
+    try {
+      final response = await _apiClient.fetchMenuHistoryDetails({
+        'sakeIds': requested,
+        'locale': 'ja',
+      });
+      if (!response.isSuccessful || response.body is! Map) return const {};
+      final details = (response.body as Map)['details'];
+      if (details is! List) return const {};
+      final result = <int, SakeFlavorEvidence>{};
+      for (final row in details.whereType<Map>()) {
+        final overview = SakeOverview.fromJson(Map<String, dynamic>.from(row));
+        final id = overview.sake.sakeId;
+        if (id == null || !requested.contains(id)) continue;
+        result[id] = SakeFlavorEvidence.fromProduct(
+          tags: [...overview.master.aromaTags, ...overview.master.tasteTags],
+          description: overview.sake.description,
+        );
+      }
+      return result;
+    } catch (_) {
+      // Unknown evidence must not remove recommendations or imply safety.
+      return const {};
+    }
   }
 
   List<HomeSakeRecommendation> _parseHomeRecommendations(Response response) {

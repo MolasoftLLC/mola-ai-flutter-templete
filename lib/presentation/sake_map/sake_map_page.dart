@@ -919,32 +919,8 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
                                         height: 1.3,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
-                                    TextButton.icon(
-                                      onPressed: () => _openVenueInMaps(venue),
-                                      icon: const Icon(
-                                        Icons.open_in_new,
-                                        size: 14,
-                                      ),
-                                      label: const Text('マップで開く'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: const Color(
-                                          0xFF143861,
-                                        ),
-                                        textStyle: const TextStyle(
-                                          fontSize: 12,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        minimumSize: const Size(0, 48),
-                                        alignment: Alignment.centerLeft,
-                                      ),
-                                    ),
                                   ],
                                 ),
-                              ),
-                              VenueFavoriteButton(
-                                controller: favorites,
-                                venue: venue,
                               ),
                               IconButton(
                                 tooltip: '閉じる',
@@ -957,6 +933,12 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 12),
+                          VenueHeaderActions(
+                            controller: favorites,
+                            venue: venue,
+                            onOpenMaps: () => _openVenueInMaps(venue),
                           ),
                         ],
                       ),

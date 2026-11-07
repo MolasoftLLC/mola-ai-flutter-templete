@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/localization/localization_extensions.dart';
 import '../../../domain/notifier/my_page/my_page_notifier.dart';
+import '../widgets/sake_flavor_characteristics.dart';
 
 class _SakePreferenceOption {
   const _SakePreferenceOption(this.value, this.label);
@@ -53,58 +54,72 @@ Future<bool> showSakePreferencesSelectionDialog({
                 ),
                 content: SizedBox(
                   width: double.maxFinite,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        context.l10n.selectPreferenceFeatures,
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: options.map((_SakePreferenceOption option) {
-                          final bool isSelected = selectedPreferences.contains(
-                            option.value,
-                          );
-                          return FilterChip(
-                            label: Text(option.label),
-                            selected: isSelected,
-                            selectedColor: const Color(
-                              0xFF1D3567,
-                            ).withOpacity(0.2),
-                            checkmarkColor: const Color(0xFF1D3567),
-                            backgroundColor: Colors.grey.shade200,
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? const Color(0xFF1D3567)
-                                  : Colors.black87,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            onSelected: saving
-                                ? null
-                                : (bool selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        if (!selectedPreferences.contains(
-                                          option.value,
-                                        )) {
-                                          selectedPreferences.add(option.value);
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          context.l10n.selectPreferenceFeatures,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: options.map((_SakePreferenceOption option) {
+                            final bool isSelected = selectedPreferences
+                                .contains(option.value);
+                            return FilterChip(
+                              label: Text(option.label),
+                              selected: isSelected,
+                              selectedColor: const Color(
+                                0xFF1D3567,
+                              ).withOpacity(0.2),
+                              checkmarkColor: const Color(0xFF1D3567),
+                              backgroundColor: Colors.grey.shade200,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? const Color(0xFF1D3567)
+                                    : Colors.black87,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              onSelected: saving
+                                  ? null
+                                  : (bool selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          if (!selectedPreferences.contains(
+                                            option.value,
+                                          )) {
+                                            selectedPreferences.add(
+                                              option.value,
+                                            );
+                                          }
+                                        } else {
+                                          selectedPreferences.remove(
+                                            option.value,
+                                          );
                                         }
-                                      } else {
-                                        selectedPreferences.remove(
-                                          option.value,
-                                        );
-                                      }
-                                    });
-                                  },
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                                      });
+                                    },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                        SakeFlavorAvoidanceChoices(
+                          selected: selectedPreferences,
+                          onChanged: saving
+                              ? null
+                              : (next) => setState(() {
+                                  selectedPreferences
+                                    ..clear()
+                                    ..addAll(next);
+                                }),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 actions: <Widget>[
@@ -112,7 +127,8 @@ Future<bool> showSakePreferencesSelectionDialog({
                     onPressed: saving
                         ? null
                         : () async {
-                            if (selectedPreferences.isEmpty) {
+                            if (selectedPreferences.isEmpty &&
+                                existing.isEmpty) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

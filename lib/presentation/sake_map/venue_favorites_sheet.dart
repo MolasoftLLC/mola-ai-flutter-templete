@@ -20,34 +20,95 @@ class VenueFavoriteButton extends StatelessWidget {
       final selected = controller.isFavorite(venue.venueId);
       return Semantics(
         toggled: selected,
-        child: IconButton(
-          tooltip: selected ? 'お気に入りから外す' : 'お気に入りに追加',
-          icon: Icon(selected ? Icons.star_rounded : Icons.star_border_rounded),
-          color: selected ? const Color(0xFFE8A600) : const Color(0xFF143861),
-          onPressed: controller.isLoading || controller.isSaving
-              ? null
-              : () async {
-                  if (controller.errorMessage != null) {
-                    await controller.reload();
-                    return;
-                  }
-                  final saved = await controller.toggle(venue);
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        saved
-                            ? (controller.isFavorite(venue.venueId)
-                                  ? 'お気に入りに追加しました'
-                                  : 'お気に入りから外しました')
-                            : 'お気に入りを保存できませんでした。もう一度お試しください。',
+        child: Tooltip(
+          message: selected ? 'お気に入りから外す' : 'お気に入りに登録',
+          child: OutlinedButton.icon(
+            icon: Icon(
+              selected ? Icons.star_rounded : Icons.star_border_rounded,
+            ),
+            label: Text(selected ? '解除' : 'お気に入りに登録'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF143861),
+              iconColor: selected
+                  ? const Color(0xFFE8A600)
+                  : const Color(0xFF143861),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              side: const BorderSide(color: Color(0xFFCBD2DC)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: controller.isLoading || controller.isSaving
+                ? null
+                : () async {
+                    if (controller.errorMessage != null) {
+                      await controller.reload();
+                      return;
+                    }
+                    final saved = await controller.toggle(venue);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          saved
+                              ? (controller.isFavorite(venue.venueId)
+                                    ? 'お気に入りに追加しました'
+                                    : 'お気に入りから外しました')
+                              : 'お気に入りを保存できませんでした。もう一度お試しください。',
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+          ),
         ),
       );
     },
+  );
+}
+
+class VenueHeaderActions extends StatelessWidget {
+  const VenueHeaderActions({
+    super.key,
+    required this.controller,
+    required this.venue,
+    required this.onOpenMaps,
+  });
+
+  final VenueFavoritesController controller;
+  final MapVenue venue;
+  final VoidCallback onOpenMaps;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 10,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      VenueFavoriteButton(controller: controller, venue: venue),
+      FilledButton.icon(
+        onPressed: onOpenMaps,
+        icon: const Icon(Icons.open_in_new, size: 17),
+        label: const Text('マップで開く'),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF143861),
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ],
   );
 }
 

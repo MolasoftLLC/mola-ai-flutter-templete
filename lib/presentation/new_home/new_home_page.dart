@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/localization/localization_extensions.dart';
+import '../../common/sake/flavor_characteristics.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/app_content.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
@@ -529,19 +530,41 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
   Future<List<HomeSakeRecommendation>>? _future;
   bool _isRefreshing = false;
   Object? _lastTasteProfile;
+  String? _lastFlavorPreferences;
+  Map<int, SakeFlavorEvidence> _flavors = {};
   bool _initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final tasteProfile = Provider.of<MyPageState?>(context)?.tasteProfile;
-    if (!_initialized || tasteProfile != _lastTasteProfile) {
+    final myPage = Provider.of<MyPageState?>(context);
+    final tasteProfile = myPage?.tasteProfile;
+    final flavorPreferences = myPage?.preferences;
+    if (!_initialized ||
+        tasteProfile != _lastTasteProfile ||
+        flavorPreferences != _lastFlavorPreferences) {
       _initialized = true;
       _lastTasteProfile = tasteProfile;
-      _future = context.read<MolaApiRepository>().fetchHomeSakeRecommendations(
-        limit: 10,
-      );
+      _lastFlavorPreferences = flavorPreferences;
+      _future = _loadRecommendations();
     }
+  }
+
+  Future<List<HomeSakeRecommendation>> _loadRecommendations({
+    bool refresh = false,
+  }) async {
+    final repo = context.read<MolaApiRepository>();
+    final preferences = _lastFlavorPreferences;
+    final items = refresh
+        ? await repo.refreshHomeSakeRecommendations()
+        : await repo.fetchHomeSakeRecommendations(limit: 10);
+    final evidence = hasFlavorAvoidance(preferences)
+        ? await repo.fetchRecommendationFlavorEvidence(
+            items.map((item) => item.sakeId),
+          )
+        : <int, SakeFlavorEvidence>{};
+    if (mounted && preferences == _lastFlavorPreferences) _flavors = evidence;
+    return items;
   }
 
   Future<void> _refresh() async {
@@ -549,9 +572,7 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     try {
-      final recommendations = await context
-          .read<MolaApiRepository>()
-          .refreshHomeSakeRecommendations();
+      final recommendations = await _loadRecommendations(refresh: true);
       if (!mounted) return;
       setState(() => _future = Future.value(recommendations));
     } on MonthlyRecommendationLimitException {
@@ -582,7 +603,12 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
       FutureBuilder<List<HomeSakeRecommendation>>(
         future: _future,
         builder: (context, snapshot) {
-          final recommendations = snapshot.data ?? const [];
+          final recommendations = prioritizeFlavorPreferences(
+            snapshot.data ?? const <HomeSakeRecommendation>[],
+            preferences: _lastFlavorPreferences,
+            evidenceFor: (item) =>
+                _flavors[item.sakeId] ?? SakeFlavorEvidence.fromProduct(),
+          );
           final sakes = recommendations
               .map(
                 (item) => Sake(
@@ -614,6 +640,14 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                     style: TextStyle(color: Color(0xFF777777), fontSize: 13),
                   ),
                 ),
+                if (hasFlavorAvoidance(_lastFlavorPreferences))
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(29, 4, 20, 8),
+                    child: Text(
+                      '苦手な風味の記載があるお酒は後ろに表示します。記載がないお酒の風味は不明です。',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF777777)),
+                    ),
+                  ),
                 if (snapshot.connectionState != ConnectionState.done)
                   const SizedBox(
                     height: 110,
@@ -628,6 +662,13 @@ class _HomeRecommendationsState extends State<_HomeRecommendations> {
                     sakes: sakes,
                     profilesFuture: widget.profilesFor(sakes),
                     subtitleBuilder: (sake) => sake.brewery,
+                    footerBuilder: (sake) =>
+                        _flavors[sake.sakeId]
+                                ?.conflicts(_lastFlavorPreferences)
+                                .isNotEmpty ==
+                            true
+                        ? '苦手な風味の記載あり'
+                        : null,
                     actionBuilder: (_) => const SizedBox.shrink(),
                     onTap: (sake) => Navigator.of(context).push(
                       MaterialPageRoute<void>(

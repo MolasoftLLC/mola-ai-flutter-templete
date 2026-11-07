@@ -6,6 +6,7 @@ import 'package:mola_gemini_flutter_template/domain/notifier/favorite/favorite_n
 import 'package:mola_gemini_flutter_template/domain/repository/auth_repository.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/sake_menu_recognition_repository.dart';
 import 'package:mola_gemini_flutter_template/domain/repository/user_preference_repository.dart';
+import 'package:mola_gemini_flutter_template/common/sake/flavor_characteristics.dart';
 
 class _Guest implements AuthRepository {
   @override
@@ -35,6 +36,27 @@ class _Notifier extends MyPageNotifier {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loggerConfigure);
+  test('苦手設定だけを保存・再起動で復元・解除でき六軸は捏造しない', () async {
+    SharedPreferences.setMockInitialValues({});
+    final notifier = _Notifier(StateError('unused'))
+      ..read = (<T>() => _Guest() as T);
+    await Future<void>.delayed(Duration.zero);
+    final choice = SakeFlavorCharacteristic.agedAroma.preference;
+    expect(await notifier.saveSelectedPreferences([choice]), isTrue);
+    expect(notifier.state.tasteProfile, isNull);
+    notifier.dispose();
+    final restored = _Notifier(StateError('unused'))
+      ..read = (<T>() => _Guest() as T);
+    await Future<void>.delayed(Duration.zero);
+    expect(restored.currentPreferences, choice);
+    expect(restored.state.tasteProfile, isNull);
+    expect(await restored.saveSelectedPreferences([]), isTrue);
+    expect(
+      (await SharedPreferences.getInstance()).getString('sake_preferences'),
+      '',
+    );
+    restored.dispose();
+  });
   test('初回選択はゲストでも即反映し、再起動で復元する', () async {
     SharedPreferences.setMockInitialValues({});
     final notifier = _Notifier(StateError('unused'))
