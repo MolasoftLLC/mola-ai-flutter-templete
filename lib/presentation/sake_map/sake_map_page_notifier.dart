@@ -163,6 +163,14 @@ class SakeMapPageNotifier extends StateNotifier<SakeMapState> {
     await refresh();
   }
 
+  /// Stars remain reachable even outside the viewport or current sake filter.
+  void focusVenue(MapVenue venue) {
+    _searchDebounce?.cancel();
+    _searchRequestId++;
+    _venueRequestId++;
+    state = SakeMapState(venues: [venue]);
+  }
+
   Future<void> loadBounds(LatLngBounds bounds, double zoom) async {
     _lastBounds = bounds;
     _lastZoom = zoom;
