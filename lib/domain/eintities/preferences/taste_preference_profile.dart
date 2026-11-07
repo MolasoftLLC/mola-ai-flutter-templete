@@ -1,3 +1,5 @@
+import '../../../common/sake/flavor_characteristics.dart';
+
 class TastePreferenceProfile {
   const TastePreferenceProfile({
     required this.fruity,
@@ -47,7 +49,11 @@ class TastePreferenceProfile {
       '微発泡': {'acidity': .65, 'kire': .7},
       '酸味': {'acidity': .8},
     };
-    final chosen = selections.toSet();
+    final chosen = selections
+        .where(
+          (s) => !SakeFlavorCharacteristic.values.any((f) => f.preference == s),
+        )
+        .toSet();
     if (chosen.isEmpty || chosen.any((key) => !effects.containsKey(key)))
       return null;
     double axis(String key) {
