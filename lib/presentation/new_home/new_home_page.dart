@@ -163,17 +163,10 @@ class _NewHomePageState extends State<NewHomePage> {
                         context.read<AppPageNotifier>(),
                       ),
                       onRecommendations: () {
-                        final target = context
+                        context
                             .read<AppPageNotifier>()
                             .homeFeatureGuide
-                            .recommendationsKey
-                            .currentContext;
-                        if (target != null)
-                          Scrollable.ensureVisible(
-                            target,
-                            alignment: .1,
-                            duration: const Duration(milliseconds: 350),
-                          );
+                            .scrollToRecommendations();
                       },
                     ),
                     HomeSectionTitle(

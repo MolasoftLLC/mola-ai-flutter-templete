@@ -33,6 +33,10 @@ class HomeFeatureGuide {
     visibility.dispose();
   }
 
+  Future<void> scrollToRecommendations() async {
+    await _scrollToSection(recommendationsKey);
+  }
+
   Future<Rect?> _scrollToSection(GlobalKey targetKey) async {
     if (!homeScrollController.hasClients) return null;
     // Rebuild earlier sections as well when the user goes back through the guide.

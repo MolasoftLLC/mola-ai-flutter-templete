@@ -116,6 +116,48 @@ void main() {
   }
 
   testWidgets(
+    'recommendation action reaches a section that was not built yet',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final guide = HomeFeatureGuide();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ListView(
+              controller: guide.homeScrollController,
+              children: [
+                ...List.generate(8, (_) => const SizedBox(height: 300)),
+                SizedBox(
+                  key: guide.recommendationsKey,
+                  height: 200,
+                  child: const Text('おすすめの欄'),
+                ),
+                const SizedBox(height: 600),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(guide.recommendationsKey.currentContext, isNull);
+      final pending = guide.scrollToRecommendations();
+      await tester.pumpAndSettle();
+      // Each lazy section may need a frame and a subsequent scroll animation.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+      }
+      await pending;
+      expect(guide.recommendationsKey.currentContext, isNotNull);
+      expect(
+        tester.getRect(find.byKey(guide.recommendationsKey)).top,
+        lessThan(120),
+      );
+      await tester.pumpWidget(const SizedBox());
+      guide.dispose();
+    },
+  );
+
+  testWidgets(
     'home tutorial scrolls to the new final sake journey step and can be replayed',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
