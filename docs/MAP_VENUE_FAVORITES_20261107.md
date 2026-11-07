@@ -14,3 +14,5 @@
 - 変更9ファイルのflutter analyzeは問題なし。全体解析も実行し、既存の他ファイルの警告/非推奨情報が残るため全体の終了コードは1。既存の無関係な警告を今回の変更で修正しない。
 - [保存済み一覧](images/map_favorites_20261107/saved-venue.png) / [解除後の空一覧](images/map_favorites_20261107/empty-list.png)。実際の一覧ウィジェットを390×844でレンダリングして目視。日本語プレビュー用フォントを明示読込。ネイティブGoogle Mapsの実機操作とApp Store/TestFlight配信は未実施。
 - 元checkoutの未関連iOSプロジェクト/Info.plistの変更は保全し、独立コピーで実装。
+
+配信：5.0.57 (196) のAppleアップロード成功。[配信記録](releases/20261107-build196.md)。ユーザー指定によりTestFlight利用可能までの追跡は行わない。
