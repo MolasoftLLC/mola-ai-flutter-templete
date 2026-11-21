@@ -24,8 +24,6 @@ import '../../common/utils/sake_image_utils.dart';
 import '../../common/utils/snack_bar_utils.dart';
 import '../../domain/eintities/sake_label_scan.dart';
 import '../../domain/eintities/preferences/taste_preference_profile.dart';
-import '../../common/sake/flavor_characteristics.dart';
-import '../common/widgets/sake_flavor_characteristics.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/auth/auth_notifier.dart';
 import '../../domain/notifier/recent_sake_history.dart';
@@ -1925,15 +1923,6 @@ class _Details extends StatelessWidget {
                   ],
                 ),
               ),
-            _Section(
-              child: SakeFlavorCharacteristics(
-                evidence: SakeFlavorEvidence.fromProduct(
-                  tags: [...master.tasteTags, ...master.aromaTags],
-                  description: description,
-                ),
-                preferences: Provider.of<MyPageState?>(context)?.preferences,
-              ),
-            ),
             if (description != null && description.trim().isNotEmpty)
               _Section(
                 title: 'このお酒について',
@@ -4247,7 +4236,7 @@ class _ShopPriceTitle extends StatelessWidget {
           ),
         ),
         Spacer(),
-        Text('参考価格', style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 11)),
+        Text('広告・参考価格', style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 11)),
       ],
     ),
   );

@@ -182,6 +182,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
     );
   }
 
+  Future<void> syncHistoryNow() => _syncHistory();
+
   Future<void> _syncHistory() async {
     if (!mounted || state.isExtractingInfo || state.isGettingDetails) return;
     final uid = _historyRepository.ownerId;

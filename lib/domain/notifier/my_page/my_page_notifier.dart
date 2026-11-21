@@ -1,6 +1,5 @@
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
-import '../../../common/sake/flavor_characteristics.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -182,21 +181,9 @@ class MyPageNotifier extends StateNotifier<MyPageState>
 
   Future<bool> saveSelectedPreferences(List<String> selections) async {
     final initial = TastePreferenceProfile.fromSelections(selections);
-    final onlyAvoidance =
-        selections.isNotEmpty &&
-        selections.every(
-          (s) => SakeFlavorCharacteristic.values.any((f) => f.preference == s),
-        );
-    final clearing =
-        selections.isEmpty && state.preferences?.isNotEmpty == true;
-    if ((initial == null && !onlyAvoidance && !clearing) ||
-        state.isSavingPreferences) {
-      return false;
-    }
+    if (initial == null || state.isSavingPreferences) return false;
     setPreferences(selections.join('、'));
     if (!await savePreferences() || !mounted) return false;
-    // Avoidance alone must not fabricate a neutral six-axis profile.
-    if (initial == null) return true;
     // Preserve a profile already edited or analyzed by the user.
     if (state.tasteProfile != null) return true;
     if (_isGuest) {
