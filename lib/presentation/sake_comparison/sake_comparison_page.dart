@@ -1,3 +1,5 @@
+import 'dart:async';
+import '../../common/journey/sake_journey.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -386,7 +388,10 @@ class _SakeComparisonPageState extends State<SakeComparisonPage>
       _message('比較カートは20件までです。');
       return;
     }
-    if (await _store([..._items, item])) await _animateIntoCart();
+    if (await _store([..._items, item])) {
+      unawaited(SakeJourneyStore.instance.complete(_owner, JourneyStep.scan));
+      await _animateIntoCart();
+    }
   }
 
   Future<void> _animateIntoCart() async {

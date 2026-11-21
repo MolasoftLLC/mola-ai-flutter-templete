@@ -1,3 +1,4 @@
+import '../../common/journey/sake_journey.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
@@ -61,8 +62,16 @@ class SakeScanPage extends StatefulWidget {
   }) {
     return Builder(
       builder: (context) {
+        final journeyOwner =
+            context.read<AuthRepository>().currentUser?.uid ?? 'guest';
         return StateNotifierProvider<SakeScanNotifier, SakeScanState>(
           create: (_) => SakeScanNotifier(
+            onSuccessfulScan: () => unawaited(
+              SakeJourneyStore.instance.complete(
+                journeyOwner,
+                JourneyStep.scan,
+              ),
+            ),
             scanRepository: context.read<SakeScanRepository>(),
             analysisService: DefaultSakeScanAnalysisService(
               context.read<SakeMenuRecognitionRepository>(),

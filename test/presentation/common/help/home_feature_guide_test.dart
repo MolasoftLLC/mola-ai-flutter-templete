@@ -89,6 +89,8 @@ void main() {
                         ),
                         const SizedBox(height: 500),
                         JapanSakeSection(key: guide.japanSakeKey),
+                        // Leave room for the guide to align the last section.
+                        const SizedBox(height: 240),
                       ],
                     ),
                   ),
