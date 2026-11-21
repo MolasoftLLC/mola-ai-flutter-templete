@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../common/review/review_request_coordinator.dart';
 import 'dart:async';
 import 'dart:io';
@@ -254,6 +255,52 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
     }
   }
 
+  Future<void> _showPhoto(PlaceRegistrationItem item) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: SafeArea(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              InteractiveViewer(
+                minScale: 1,
+                maxScale: 5,
+                child: SizedBox.expand(
+                  child: _RecordImage(item: item, fit: BoxFit.contain),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filledTonal(
+                  tooltip: MaterialLocalizations.of(
+                    dialogContext,
+                  ).closeButtonTooltip,
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _dateLabel(DateTime date) {
+    final english = Localizations.localeOf(context).languageCode == 'en';
+    final weekdays = english
+        ? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : const ['月', '火', '水', '木', '金', '土', '日'];
+    return '${date.year}/${date.month}/${date.day}（${weekdays[date.weekday - 1]}）';
+  }
+
   @override
   Widget build(BuildContext context) {
     final owner = Provider.of<AuthState?>(context)?.user?.uid ?? 'guest';
@@ -281,15 +328,6 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
                 '飲んだお酒や見つけたメニューを、地図に残してみませんか。',
                 style: TextStyle(color: _navy, fontSize: 15, height: 1.6),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                '覚えていない記録は、写真や履歴を残したまま一覧から外せます。',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 12,
-                  height: 1.6,
-                ),
-              ),
               const SizedBox(height: 20),
               if (items.isEmpty)
                 const Padding(
@@ -313,55 +351,79 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          InkWell(
-                            onTap: _busy == null ? () => _register(item) : null,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Row(
-                              children: [
-                                ClipRRect(
+                          Row(
+                            children: [
+                              Semantics(
+                                button: item.hasPhoto,
+                                label: '写真を拡大',
+                                child: InkWell(
+                                  key: ValueKey('place-photo-${item.key}'),
+                                  onTap: _busy == null && item.hasPhoto
+                                      ? () => _showPhoto(item)
+                                      : null,
                                   borderRadius: BorderRadius.circular(8),
-                                  child: SizedBox(
-                                    width: 58,
-                                    height: 72,
-                                    child: _RecordImage(item: item),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: SizedBox(
+                                      width: 58,
+                                      height: 72,
+                                      child: _RecordImage(item: item),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.isMenu ? 'メニュー' : '酒瓶',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        item.title,
-                                        style: const TextStyle(
-                                          color: _navy,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      if (item.menu != null)
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 2,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
                                         Text(
-                                          '${item.menu!.sakes.length}種類のお酒',
+                                          item.isMenu ? 'メニュー' : '酒瓶',
                                           style: const TextStyle(
                                             color: Colors.black54,
-                                            fontSize: 12,
+                                            fontSize: 11,
                                           ),
                                         ),
-                                    ],
-                                  ),
+                                        if (item.recordedAt case final date?)
+                                          Text(
+                                            _dateLabel(date),
+                                            key: ValueKey(
+                                              'place-date-${item.key}',
+                                            ),
+                                            style: const TextStyle(
+                                              color: Color(0xFF7A8591),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.title,
+                                      style: const TextStyle(
+                                        color: _navy,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (item.menu != null)
+                                      Text(
+                                        '${item.menu!.sakes.length}種類のお酒',
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                                const Icon(Icons.chevron_right, color: _navy),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -422,29 +484,57 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
 }
 
 class _RecordImage extends StatelessWidget {
-  const _RecordImage({required this.item});
+  const _RecordImage({required this.item, this.fit = BoxFit.cover});
   final PlaceRegistrationItem item;
+  final BoxFit fit;
   @override
   Widget build(BuildContext context) {
     final path = item.imagePath;
     Widget fallback() => ColoredBox(
-      color: const Color(0xFFEDF1F5),
-      child: Icon(
-        item.isMenu ? Icons.restaurant_menu : Icons.wine_bar_outlined,
-        color: _navy,
+      color: fit == BoxFit.contain ? Colors.black : const Color(0xFFEDF1F5),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              item.isMenu ? Icons.restaurant_menu : Icons.wine_bar_outlined,
+              color: fit == BoxFit.contain ? Colors.white54 : _navy,
+            ),
+            if (fit == BoxFit.contain)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  '写真を読み込めませんでした',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+          ],
+        ),
       ),
     );
+    final base64 = item.menu?.base64Image;
+    if (base64?.isNotEmpty == true) {
+      try {
+        return Image.memory(
+          base64Decode(base64!),
+          fit: fit,
+          errorBuilder: (_, __, ___) => fallback(),
+        );
+      } catch (_) {
+        /* Fall through to the stored image path. */
+      }
+    }
     if (path == null || path.isEmpty) return fallback();
     if (!path.startsWith('http') && !File(path).existsSync()) return fallback();
     return path.startsWith('http')
         ? Image.network(
             path,
-            fit: BoxFit.cover,
+            fit: fit,
             errorBuilder: (_, __, ___) => fallback(),
           )
         : Image.file(
             File(path),
-            fit: BoxFit.cover,
+            fit: fit,
             errorBuilder: (_, __, ___) => fallback(),
           );
   }

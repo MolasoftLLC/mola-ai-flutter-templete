@@ -137,6 +137,70 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('説明文と矢印を出さず記録日と曜日を小さく表示する', (tester) async {
+    final saved = _Saved(),
+        menus = _Menus(),
+        store = PlaceRegistrationDismissals('guest');
+    addTearDown(saved.dispose);
+    addTearDown(menus.dispose);
+    addTearDown(store.dispose);
+    await store.load();
+    final date = DateTime(2026, 11, 19, 12);
+    await saved.updateSavedSake(
+      saved.savedSakes.single.copyWith(
+        savedId: 'saved_${date.millisecondsSinceEpoch}_123',
+      ),
+    );
+    await pump(tester, saved, menus, PlaceRegistrationPage(store: store));
+    expect(find.textContaining('覚えていない記録は'), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(find.text('2026/11/19（木）'), findsOneWidget);
+    expect(find.text('2026/11/21（土）'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('2026/11/19（木）')).style?.fontSize, 11);
+  });
+
+  testWidgets('写真タップは場所選択ではなく拡大を開き、閉じても記録を変更しない', (tester) async {
+    final saved = _Saved(),
+        menus = _Menus(),
+        store = PlaceRegistrationDismissals('guest');
+    addTearDown(saved.dispose);
+    addTearDown(menus.dispose);
+    addTearDown(store.dispose);
+    await store.load();
+    final directory = Directory.systemTemp.createTempSync('place-preview-test');
+    final file = File('${directory.path}/photo.png');
+    file.writeAsBytesSync(
+      File('assets/images/sake_placeholder.png').readAsBytesSync(),
+    );
+    addTearDown(() => directory.deleteSync(recursive: true));
+    await saved.updateSavedSake(
+      saved.savedSakes.single.copyWith(imagePaths: [file.path]),
+    );
+    final before = saved.savedSakes.single;
+    var placePickerCalls = 0;
+    await pump(
+      tester,
+      saved,
+      menus,
+      PlaceRegistrationPage(
+        store: store,
+        pickPlace: (_, __) async {
+          placePickerCalls++;
+          return place;
+        },
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('place-photo-bottle:1')));
+    await tester.pumpAndSettle();
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(placePickerCalls, 0);
+    await tester.tap(find.byTooltip('閉じる'));
+    await tester.pumpAndSettle();
+    expect(find.byType(InteractiveViewer), findsNothing);
+    expect(saved.savedSakes.single, before);
+    expect(store.ids, isEmpty);
+  });
+
   testWidgets('地図左上の赤バッジはメニュー内の商品数ではなく記録2件を表示する', (tester) async {
     final saved = _Saved(), menus = _Menus();
     addTearDown(saved.dispose);
@@ -324,6 +388,13 @@ void main() {
     addTearDown(saved.dispose);
     addTearDown(menus.dispose);
     addTearDown(store.dispose);
+    await saved.updateSavedSake(
+      saved.savedSakes.single.copyWith(
+        savedId:
+            'saved_${DateTime(2026, 11, 19, 12).millisecondsSinceEpoch}_123',
+        imagePaths: ['/missing-bottle.jpg'],
+      ),
+    );
     final key = GlobalKey();
     Future<void> shot(Widget child, String name) async {
       await pump(
