@@ -125,7 +125,7 @@ class _SakeCard extends StatelessWidget {
                   Positioned(
                     left: 6,
                     top: 6,
-                    child: _SakeMatchBadge(profileFuture: profileFuture!),
+                    child: SakeMatchBadge(profileFuture: profileFuture!),
                   ),
                 Positioned(right: 2, bottom: 4, child: action),
               ],
@@ -214,10 +214,15 @@ class _SakeImage extends StatelessWidget {
   }
 }
 
-class _SakeMatchBadge extends StatelessWidget {
-  const _SakeMatchBadge({required this.profileFuture});
+class SakeMatchBadge extends StatelessWidget {
+  const SakeMatchBadge({
+    super.key,
+    required this.profileFuture,
+    this.fontSize = 11,
+  });
 
   final Future<SakeTasteProfileDetails?> profileFuture;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -232,16 +237,17 @@ class _SakeMatchBadge extends StatelessWidget {
           profile: profile,
           preference: preference,
         );
-        return _MatchPercentBadge(percent: percent);
+        return _MatchPercentBadge(percent: percent, fontSize: fontSize);
       },
     );
   }
 }
 
 class _MatchPercentBadge extends StatelessWidget {
-  const _MatchPercentBadge({required this.percent});
+  const _MatchPercentBadge({required this.percent, required this.fontSize});
 
   final int percent;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -255,9 +261,9 @@ class _MatchPercentBadge extends StatelessWidget {
     ),
     child: Text(
       '$percent%',
-      style: const TextStyle(
+      style: TextStyle(
         color: Colors.white,
-        fontSize: 11,
+        fontSize: fontSize,
         height: 1,
         fontWeight: FontWeight.w800,
       ),

@@ -28,6 +28,7 @@ import 'sake_master_detail_page.dart';
 import 'venue_menu_carousel.dart';
 import 'venue_favorites_controller.dart';
 import 'venue_favorites_sheet.dart';
+import 'venue_favorites_action.dart';
 
 class SakeMapPage extends StatefulWidget {
   const SakeMapPage._({
@@ -288,13 +289,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
       appBar: PrimaryAppBar(
         title: '日本酒マップ',
         titleFontSize: 21,
-        actions: [
-          IconButton(
-            tooltip: 'お気に入りのお店',
-            onPressed: _openFavorites,
-            icon: const Icon(Icons.star_rounded, color: Color(0xFFFFCC32)),
-          ),
-        ],
+        actions: [VenueFavoritesAction(onPressed: _openFavorites)],
       ),
       body: Stack(
         children: [
