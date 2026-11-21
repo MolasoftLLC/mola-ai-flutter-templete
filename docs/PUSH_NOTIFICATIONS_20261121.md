@@ -25,3 +25,5 @@
 - 本番の既存Firebase資格情報でFCM dry-run成功。通知の実送信なし。
 - Flutter通知固有3件成功。既存マップ/導線16件成功。全体399成功/13失敗は変更前の独立worktreeでも同じ399成功/13失敗（既存UIテスト）。静的解析エラー0。
 - iOS Simulatorのarm64単一構成でXcode BUILD SUCCEEDED。Flutter CLIの全Simulator構成はSDK側のarchitecture文字列判定で失敗したため、Xcodeで単一構成を確認。APNs実機配送と配布版署名は未検証。
+
+- Android debug APKビルド成功。APNsキー作成・登録はユーザーの回答待ち。PR保存済み、main統合・本番反映・アプリ配信は未実施。
