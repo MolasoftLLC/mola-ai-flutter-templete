@@ -728,6 +728,7 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
     final favorites = context.read<VenueFavoritesController>();
     final venue = await showModalBottomSheet<MapVenue>(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) => VenueFavoritesSheet(
         controller: favorites,
