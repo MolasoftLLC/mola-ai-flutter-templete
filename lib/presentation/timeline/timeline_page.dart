@@ -12,8 +12,12 @@ import '../../common/utils/snack_bar_utils.dart';
 import '../../common/localization/localization_extensions.dart';
 import '../../domain/eintities/response/sake_menu_recognition_response/sake_menu_recognition_response.dart';
 import '../../domain/notifier/favorite/favorite_notifier.dart';
+import '../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../domain/notifier/saved_sake/saved_sake_notifier.dart';
 import '../../domain/repository/place_map_repository.dart';
+import '../../domain/repository/sake_scan_repository.dart';
+import '../../domain/eintities/sake_label_scan.dart';
+import '../common/widgets/sake_card_rail.dart';
 import '../app_page_notifier.dart';
 import '../common/widgets/guest_limit_dialog.dart';
 import '../common/widgets/primary_app_bar.dart';
@@ -71,6 +75,33 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
   bool _isTutorialScheduled = false;
   bool _hasLoadedTutorialPreference = false;
   final Set<String> _deletingPostIds = {};
+  final Map<int, Future<SakeTasteProfileDetails?>> _tasteProfiles = {};
+
+  // Only fetch newly loaded IDs, in the profile API's supported batch size.
+  // This never invokes detail enrichment or AI analysis.
+  void _loadTasteProfiles(List<Sake> sakes) {
+    final missing = sakes
+        .map((sake) => sake.sakeId ?? 0)
+        .where((id) => id > 0 && !_tasteProfiles.containsKey(id))
+        .toSet()
+        .toList();
+    for (var start = 0; start < missing.length; start += 50) {
+      final ids = missing.skip(start).take(50).toList();
+      final batch = context
+          .read<SakeScanRepository>()
+          .fetchTasteProfiles(ids)
+          .catchError((Object _) => <int, SakeTasteProfileDetails>{});
+      for (final id in ids) {
+        _tasteProfiles[id] = batch.then((profiles) => profiles[id]);
+      }
+    }
+  }
+
+  Future<void> _refreshTimeline() async {
+    _tasteProfiles.clear();
+    await context.read<TimelinePageNotifier>().refresh();
+    if (mounted) setState(() {});
+  }
 
   Future<void> _deletePost(Sake sake) async {
     final id = sake.savedId;
@@ -290,6 +321,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
       (TimelinePageState state) => state.isRefreshing,
     );
     final sakes = context.select((TimelinePageState state) => state.sakes);
+    if (Provider.of<MyPageState?>(context)?.tasteProfile != null) {
+      _loadTasteProfiles(sakes);
+    }
     final errorMessage = context.select(
       (TimelinePageState state) => state.errorMessage,
     );
@@ -403,8 +437,9 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
           savedId != null &&
           savedId.isNotEmpty;
 
-      return _TimelineSakeCard(
+      return TimelineSakeCard(
         sake: sake,
+        profileFuture: _tasteProfiles[sake.sakeId],
         onDelete: isMyPosts && savedId != null && savedId.isNotEmpty
             ? () => _deletePost(sake)
             : null,
@@ -790,7 +825,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
                     ),
                   )
                 : const Icon(Icons.refresh, color: Colors.white),
-            onPressed: isRefreshing || isLoading ? null : notifier.refresh,
+            onPressed: isRefreshing || isLoading ? null : _refreshTimeline,
           ),
         ],
       ),
@@ -799,7 +834,7 @@ class _TimelinePageContentState extends State<_TimelinePageContent> {
         child: RefreshIndicator(
           color: Colors.white,
           backgroundColor: const Color(0xFF1D3567),
-          onRefresh: notifier.refresh,
+          onRefresh: _refreshTimeline,
           child: scrollable,
         ),
       ),
@@ -908,8 +943,9 @@ class _TimelineRankingShortcut extends StatelessWidget {
   }
 }
 
-class _TimelineSakeCard extends StatefulWidget {
-  const _TimelineSakeCard({
+class TimelineSakeCard extends StatefulWidget {
+  const TimelineSakeCard({
+    super.key,
     required this.sake,
     required this.isSaved,
     required this.isFavorite,
@@ -926,9 +962,11 @@ class _TimelineSakeCard extends StatefulWidget {
     this.onOpenDetails,
     this.onDelete,
     this.isDeleting = false,
+    this.profileFuture,
   });
 
   final Sake sake;
+  final Future<SakeTasteProfileDetails?>? profileFuture;
   final bool isSaved;
   final bool isFavorite;
   final int envyCount;
@@ -946,10 +984,10 @@ class _TimelineSakeCard extends StatefulWidget {
   final bool isDeleting;
 
   @override
-  State<_TimelineSakeCard> createState() => _TimelineSakeCardState();
+  State<TimelineSakeCard> createState() => _TimelineSakeCardState();
 }
 
-class _TimelineSakeCardState extends State<_TimelineSakeCard> {
+class _TimelineSakeCardState extends State<TimelineSakeCard> {
   bool _isTasteExpanded = false;
 
   @override
@@ -1190,15 +1228,30 @@ class _TimelineSakeCardState extends State<_TimelineSakeCard> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              sake.name?.trim().isNotEmpty == true
-                  ? sake.name!.trim()
-                  : context.l10n.unknownName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    sake.name?.trim().isNotEmpty == true
+                        ? sake.name!.trim()
+                        : context.l10n.unknownName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (widget.profileFuture != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, top: 2),
+                    child: SakeMatchBadge(
+                      profileFuture: widget.profileFuture!,
+                      fontSize: 16,
+                    ),
+                  ),
+              ],
             ),
             if (typeText != null && typeText.trim().isNotEmpty)
               Padding(

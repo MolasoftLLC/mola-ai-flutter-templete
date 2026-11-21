@@ -9,6 +9,7 @@ import 'package:mola_gemini_flutter_template/domain/eintities/response/sake_menu
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_key.dart';
 import 'package:mola_gemini_flutter_template/infrastructure/local_database/shared_preference.dart';
 import 'package:state_notifier/state_notifier.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../repository/auth_repository.dart';
 import '../../../common/utils/async_action_gate.dart';
@@ -282,6 +283,29 @@ class SavedSakeNotifier extends StateNotifier<SavedSakeState>
         kind: 'success',
       );
     }
+  }
+
+  /// Persist a place before removing its reminder from the map inbox.
+  Future<void> setSavedSakePlace(String savedId, DrinkingPlace place) async {
+    final owner = _authRepository.currentUser?.uid;
+    final prefs = await SharedPreferences.getInstance();
+    if (_authRepository.currentUser?.uid != owner)
+      throw StateError('Account changed');
+    final index = state.savedSakeList.indexWhere((s) => s.savedId == savedId);
+    if (index < 0) throw StateError('Record no longer exists');
+    final next = [...state.savedSakeList];
+    next[index] = next[index].copyWith(
+      place: place.displayName,
+      drinkingPlace: place,
+      syncStatus: SavedSakeSyncStatus.localOnly,
+    );
+    final saved = await prefs.setStringList(
+      SAVED_SAKE_LIST,
+      next.map((s) => jsonEncode(s.toJson())).toList(),
+    );
+    if (!saved) throw StateError('Place could not be persisted');
+    if (!mounted || _authRepository.currentUser?.uid != owner) return;
+    state = state.copyWith(savedSakeList: next);
   }
 
   Future<void> updateSavedSake(Sake sake) async {

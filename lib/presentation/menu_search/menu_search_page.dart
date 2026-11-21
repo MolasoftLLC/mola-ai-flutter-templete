@@ -32,6 +32,9 @@ class MenuSearchPage extends StatefulWidget {
 
   final bool startWithCamera;
 
+  /// Uses the account-scoped history shared by the menu, map and home tabs.
+  static Widget shared() => const MenuSearchPage._();
+
   static Widget wrapped({File? initialImage, bool startWithCamera = false}) {
     return MultiProvider(
       providers: [

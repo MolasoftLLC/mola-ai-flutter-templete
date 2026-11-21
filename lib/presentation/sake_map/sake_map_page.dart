@@ -28,6 +28,10 @@ import 'sake_master_detail_page.dart';
 import 'venue_menu_carousel.dart';
 import 'venue_favorites_controller.dart';
 import 'venue_favorites_sheet.dart';
+import 'venue_favorites_action.dart';
+import 'place_registration_page.dart';
+import '../menu_search/menu_search_page_notifier.dart';
+import '../../domain/notifier/auth/auth_notifier.dart';
 
 class SakeMapPage extends StatefulWidget {
   const SakeMapPage._({
@@ -45,27 +49,39 @@ class SakeMapPage extends StatefulWidget {
     SakeMapSearchResult? initialSake,
     ValueNotifier<int>? myMapRequests,
     ValueNotifier<int>? communityMapRequests,
-  }) => StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
-    create: (context) => SakeMapPageNotifier(
-      context.read<PlaceMapRepository>(),
-      ownVenuesLoader: (sake) =>
-          context.read<PlaceMapRepository>().fetchMyVenues(sake: sake),
-    ),
-    child: ChangeNotifierProvider<VenueFavoritesController>(
-      create: (context) {
-        final auth = context.read<AuthRepository>();
-        return VenueFavoritesController(
-          store: VenueFavoritesRepository(),
-          accountId: auth.currentUser?.uid,
-          accountChanges: auth.authStateChanges().map((user) => user?.uid),
-        );
-      },
-      child: SakeMapPage._(
-        initialSake: initialSake,
-        myMapRequests: myMapRequests,
-        communityMapRequests: communityMapRequests,
-      ),
-    ),
+  }) => Builder(
+    builder: (context) {
+      final map = StateNotifierProvider<SakeMapPageNotifier, SakeMapState>(
+        create: (context) => SakeMapPageNotifier(
+          context.read<PlaceMapRepository>(),
+          ownVenuesLoader: (sake) =>
+              context.read<PlaceMapRepository>().fetchMyVenues(sake: sake),
+        ),
+        child: ChangeNotifierProvider<VenueFavoritesController>(
+          create: (context) {
+            final auth = context.read<AuthRepository>();
+            return VenueFavoritesController(
+              store: VenueFavoritesRepository(),
+              accountId: auth.currentUser?.uid,
+              accountChanges: auth.authStateChanges().map((user) => user?.uid),
+            );
+          },
+          child: SakeMapPage._(
+            initialSake: initialSake,
+            myMapRequests: myMapRequests,
+            communityMapRequests: communityMapRequests,
+          ),
+        ),
+      );
+      if (Provider.of<MenuSearchPageNotifier?>(context, listen: false) != null)
+        return map;
+      final owner = Provider.of<AuthState?>(context)?.user?.uid ?? 'guest';
+      return StateNotifierProvider<MenuSearchPageNotifier, MenuSearchPageState>(
+        key: ValueKey('map-menu-history-$owner'),
+        create: (context) => MenuSearchPageNotifier(context: context),
+        child: map,
+      );
+    },
   );
 
   @override
@@ -288,13 +304,13 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
       appBar: PrimaryAppBar(
         title: '日本酒マップ',
         titleFontSize: 21,
-        actions: [
-          IconButton(
-            tooltip: 'お気に入りのお店',
-            onPressed: _openFavorites,
-            icon: const Icon(Icons.star_rounded, color: Color(0xFFFFCC32)),
-          ),
-        ],
+        leading: PlaceRegistrationAction(
+          onClosed: () async {
+            await context.read<MenuSearchPageNotifier>().syncHistoryNow();
+            if (mounted) await notifier.refresh();
+          },
+        ),
+        actions: [VenueFavoritesAction(onPressed: _openFavorites)],
       ),
       body: Stack(
         children: [

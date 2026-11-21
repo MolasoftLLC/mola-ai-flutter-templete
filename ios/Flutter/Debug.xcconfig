@@ -1,3 +1,5 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include? "MapsKeys.xcconfig"
 #include "Generated.xcconfig"
+
+APS_ENVIRONMENT = development

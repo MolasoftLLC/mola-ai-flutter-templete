@@ -1,5 +1,6 @@
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_state_notifier/flutter_state_notifier.dart';
@@ -17,6 +18,7 @@ import '../domain/notifier/auth/auth_notifier.dart';
 import 'app_page_notifier.dart';
 import 'sake_comparison/sake_comparison_page.dart';
 import 'my_page/my_page.dart';
+import 'menu_search/menu_search_page_notifier.dart';
 import 'new_home/widgets/sake_bottom_navigation.dart';
 import 'new_home/widgets/capture_radial_menu.dart';
 import 'new_home/sake_stamp_book_page.dart';
@@ -64,107 +66,124 @@ class AppPage extends StatelessWidget {
       return requireUpdate(context, notifier, release);
     }
 
-    return PopScope(
-      canPop: currentIndex == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          notifier.onTabTapped(0);
-        }
-      },
-      child: Scaffold(
-        body: SnackBarAvoidanceScope(
-          // All navigation items stay within the bottom bar.
-          bottomObstacleHeight: snackBarBottomObstacleHeight,
-          child: IndexedStack(
-            index: currentIndex,
-            children: [
-              AnalyticsScreen(
-                name: 'home',
-                active: currentIndex == 0,
-                child: NewHomePage.wrapped(),
-              ),
-              KeyedSubtree(
-                key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
-                child: AnalyticsScreen(
-                  name: 'menu',
-                  active: currentIndex == 1,
-                  child: MenuSearchPage.wrapped(),
-                ),
-              ),
-              KeyedSubtree(
-                key: ValueKey('map-tab-${historyOwner ?? 'guest'}'),
-                child: AnalyticsScreen(
-                  name: 'map',
-                  active: currentIndex == 2,
-                  child: SakeMapPage.wrapped(
-                    myMapRequests: notifier.myMapRequests,
-                    communityMapRequests: notifier.communityMapRequests,
-                  ),
-                ),
-              ),
-              // Preserve timeline links and its intro while the rightmost tab is My Page.
-              AnalyticsScreen(
-                name: 'timeline',
-                active: currentIndex == 3,
-                child: TimelinePage.wrapped(),
-              ),
-              AnalyticsScreen(
-                name: 'my_page',
-                active: currentIndex == 4,
-                child: MyPage.wrapped(isTab: true, isActive: currentIndex == 4),
-              ),
-              // Retired Explore index retained for stable existing tab IDs.
-              const SizedBox.shrink(),
-              _DeferredTab(
-                key: ValueKey('stamp-tab-${historyOwner ?? 'guest'}'),
-                active: currentIndex == 6,
-                builder: () => const SakeStampBookPage(isTab: true),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: SakeBottomNavigation(
-          currentPageIndex: currentIndex,
-          onPageSelected: (index) {
-            final target = const {
-              0: 'home',
-              1: 'menu',
-              2: 'map',
-              3: 'timeline',
-              4: 'my_page',
-            }[index];
-            if (target != null) AppAnalytics.instance.event('app', target);
-            if (index == 6) {
-              AppAnalytics.instance.event('home', 'sake_stamp_book');
-            }
-            if (index == 0 && currentIndex == 0) {
-              final controller = notifier.homeFeatureGuide.homeScrollController;
-              if (controller.hasClients) {
-                controller.animateTo(
-                  controller.position.minScrollExtent,
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOutCubic,
-                );
-              }
-            }
-            if (index == 2) {
-              notifier.openCommunityMap();
-            } else {
-              notifier.onTabTapped(index);
+    return StateNotifierProvider<MenuSearchPageNotifier, MenuSearchPageState>(
+      key: ValueKey('shared-menu-history-${historyOwner ?? 'guest'}'),
+      create: (context) => MenuSearchPageNotifier(context: context),
+      child: Builder(
+        builder: (context) => PopScope(
+          canPop: currentIndex == 0,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) {
+              notifier.onTabTapped(0);
             }
           },
-          onScanTap: () => _openCapture(context, notifier),
-          scanKey: notifier.homeFeatureGuide.bottomScanKey,
-          menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
-          mapKey: notifier.homeFeatureGuide.mapKey,
-          myPageKey: notifier.homeFeatureGuide.myPageKey,
+          child: Scaffold(
+            body: SnackBarAvoidanceScope(
+              // All navigation items stay within the bottom bar.
+              bottomObstacleHeight: snackBarBottomObstacleHeight,
+              child: IndexedStack(
+                index: currentIndex,
+                children: [
+                  AnalyticsScreen(
+                    name: 'home',
+                    active: currentIndex == 0,
+                    child: NewHomePage.wrapped(),
+                  ),
+                  KeyedSubtree(
+                    key: ValueKey('menu-tab-${historyOwner ?? 'guest'}'),
+                    child: AnalyticsScreen(
+                      name: 'menu',
+                      active: currentIndex == 1,
+                      child: MenuSearchPage.shared(),
+                    ),
+                  ),
+                  KeyedSubtree(
+                    key: ValueKey('map-tab-${historyOwner ?? 'guest'}'),
+                    child: AnalyticsScreen(
+                      name: 'map',
+                      active: currentIndex == 2,
+                      child: SakeMapPage.wrapped(
+                        myMapRequests: notifier.myMapRequests,
+                        communityMapRequests: notifier.communityMapRequests,
+                      ),
+                    ),
+                  ),
+                  // Preserve timeline links and its intro while the rightmost tab is My Page.
+                  AnalyticsScreen(
+                    name: 'timeline',
+                    active: currentIndex == 3,
+                    child: TimelinePage.wrapped(),
+                  ),
+                  AnalyticsScreen(
+                    name: 'my_page',
+                    active: currentIndex == 4,
+                    child: MyPage.wrapped(
+                      isTab: true,
+                      isActive: currentIndex == 4,
+                    ),
+                  ),
+                  // Retired Explore index retained for stable existing tab IDs.
+                  const SizedBox.shrink(),
+                  _DeferredTab(
+                    key: ValueKey('stamp-tab-${historyOwner ?? 'guest'}'),
+                    active: currentIndex == 6,
+                    builder: () => const SakeStampBookPage(isTab: true),
+                  ),
+                ],
+              ),
+            ),
+            bottomNavigationBar: SakeBottomNavigation(
+              currentPageIndex: currentIndex,
+              onPageSelected: (index) {
+                final target = const {
+                  0: 'home',
+                  1: 'menu',
+                  2: 'map',
+                  3: 'timeline',
+                  4: 'my_page',
+                }[index];
+                if (target != null) AppAnalytics.instance.event('app', target);
+                if (index == 6) {
+                  AppAnalytics.instance.event('home', 'sake_stamp_book');
+                }
+                if (index == 0 && currentIndex == 0) {
+                  final controller =
+                      notifier.homeFeatureGuide.homeScrollController;
+                  if (controller.hasClients) {
+                    controller.animateTo(
+                      controller.position.minScrollExtent,
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  }
+                }
+                if (index == 0 || index == 2) {
+                  unawaited(
+                    context
+                        .read<MenuSearchPageNotifier>()
+                        .loadMenuAnalysisHistory(),
+                  );
+                }
+                if (index == 2) {
+                  notifier.openCommunityMap();
+                } else {
+                  notifier.onTabTapped(index);
+                }
+              },
+              onScanTap: () => openAppCapture(context, notifier),
+              scanKey: notifier.homeFeatureGuide.bottomScanKey,
+              menuAnalysisKey: notifier.homeFeatureGuide.menuAnalysisKey,
+              mapKey: notifier.homeFeatureGuide.mapKey,
+              myPageKey: notifier.homeFeatureGuide.myPageKey,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-Future<void> _openCapture(
+Future<void> openAppCapture(
   BuildContext context,
   AppPageNotifier notifier,
 ) async {
@@ -191,6 +210,8 @@ Future<void> _openCapture(
         ),
       ),
     );
+    if (context.mounted)
+      await context.read<MenuSearchPageNotifier>().loadMenuAnalysisHistory();
   } else {
     await openNewHomeScanner(
       context,

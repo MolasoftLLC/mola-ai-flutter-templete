@@ -1,3 +1,4 @@
+import '../../common/journey/sake_journey.dart';
 import '../../domain/repository/sake_scan_repository.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
@@ -181,6 +182,8 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
       () => unawaited(_syncHistory()),
     );
   }
+
+  Future<void> syncHistoryNow() => _syncHistory();
 
   Future<void> _syncHistory() async {
     if (!mounted || state.isExtractingInfo || state.isGettingDetails) return;
@@ -1027,6 +1030,12 @@ class MenuSearchPageNotifier extends StateNotifier<MenuSearchPageState>
 
       if (extractedSakes == null || extractedSakes.isEmpty) {
         if (_usageFlow == usageFlow) _usageExtractionDone = true;
+        unawaited(
+          SakeJourneyStore.instance.complete(
+            _historyRepository.ownerId ?? 'guest',
+            JourneyStep.scan,
+          ),
+        );
         AppAnalytics.instance.event(
           'menu',
           'search_empty',

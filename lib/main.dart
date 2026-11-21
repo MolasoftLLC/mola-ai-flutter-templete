@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'common/notifications/announcement_notifications.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 
@@ -78,6 +80,8 @@ void main() async {
   final recentSakeHistory = RecentSakeHistory();
   await recentSakeHistory.load();
 
+  unawaited(AnnouncementNotifications.instance.initialize());
+
   runApp(
     MultiProvider(
       providers: [
@@ -110,6 +114,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = context.watch<AppLocaleController>().locale;
     return MaterialApp(
+      scaffoldMessengerKey: AnnouncementNotifications.instance.messengerKey,
       navigatorObservers: [analyticsRouteObserver],
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       locale: locale,

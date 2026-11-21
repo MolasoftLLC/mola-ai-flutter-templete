@@ -18,10 +18,24 @@ class HomeFeatureGuide {
   final timelineKey = GlobalKey();
   final japanSakeKey = GlobalKey();
   final homeScrollController = ScrollController();
-  bool _showing = false;
+  bool _disposed = false;
+  final visibility = ValueNotifier<bool>(false);
+  bool get _showing => visibility.value;
+  set _showing(bool value) {
+    if (!_disposed) visibility.value = value;
+  }
+
   static const _preferenceKey = 'home_feature_guide_shown_v5';
 
-  void dispose() => homeScrollController.dispose();
+  void dispose() {
+    _disposed = true;
+    homeScrollController.dispose();
+    visibility.dispose();
+  }
+
+  Future<void> scrollToRecommendations() async {
+    await _scrollToSection(recommendationsKey);
+  }
 
   Future<Rect?> _scrollToSection(GlobalKey targetKey) async {
     if (!homeScrollController.hasClients) return null;
