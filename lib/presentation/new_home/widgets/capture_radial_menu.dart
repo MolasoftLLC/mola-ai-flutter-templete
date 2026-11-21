@@ -1,11 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'capture_sketch_icon.dart';
-import '../../sake_comparison/comparison_sketch_icon.dart';
 
-enum CaptureAction { gallery, label, menu, comparison }
+enum CaptureAction { gallery, label, menu }
 
-/// Opens capture and comparison actions above the actual capture button, including its safe area.
+/// Opens three actions above the actual capture button, including its safe area.
 Future<CaptureAction?> showCaptureRadialMenu(
   BuildContext context, {
   required GlobalKey anchorKey,
@@ -59,11 +58,10 @@ class CaptureRadialMenu extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final spread = math.min(116.0, (constraints.maxWidth - 112) / 2);
-      final actionWidth = math.min(108.0, spread);
       final center = Offset(
         constraints.maxWidth / 2,
         anchor.dy.clamp(
-          math.min(280.0, constraints.maxHeight - 30),
+          math.min(210.0, constraints.maxHeight - 30),
           constraints.maxHeight - 30,
         ),
       );
@@ -78,18 +76,12 @@ class CaptureRadialMenu extends StatelessWidget {
           CaptureAction.label,
           Icons.camera_alt_outlined,
           english ? 'Scan a label' : 'ラベルを撮る',
-          Offset(-spread / 2, -228),
+          const Offset(0, -180),
         ),
         (
           CaptureAction.menu,
           Icons.document_scanner_outlined,
           english ? 'Scan a menu' : 'メニューを撮る',
-          Offset(spread / 2, -228),
-        ),
-        (
-          CaptureAction.comparison,
-          Icons.shopping_basket_outlined,
-          english ? 'Compare sake' : 'お酒えらび',
           Offset(spread, -94),
         ),
       ];
@@ -107,18 +99,16 @@ class CaptureRadialMenu extends StatelessWidget {
             ),
             for (final (action, icon, label, delta) in actions)
               Positioned(
-                left: center.dx + delta.dx * progress - actionWidth / 2,
+                left: center.dx + delta.dx * progress - 54,
                 top: center.dy + delta.dy * progress - 32,
-                width: actionWidth,
+                width: 108,
                 child: Opacity(
                   opacity: progress,
                   child: IgnorePointer(
                     ignoring: progress < .95,
                     child: Semantics(
                       button: true,
-                      label: action == CaptureAction.comparison
-                          ? 'NEW $label'
-                          : label,
+                      label: label,
                       onTap: progress >= .95 ? () => onSelected(action) : null,
                       child: ExcludeSemantics(
                         child: GestureDetector(
@@ -128,48 +118,20 @@ class CaptureRadialMenu extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Badge(
-                                isLabelVisible:
-                                    action == CaptureAction.comparison,
-                                label: const Text(
-                                  'NEW',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                backgroundColor: const Color(0xFFFFD84D),
-                                textColor: navy,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2,
-                                ),
-                                child: Material(
-                                  elevation: 6,
-                                  shadowColor: Colors.black38,
-                                  color: action == CaptureAction.label
-                                      ? orange
-                                      : Colors.white,
-                                  shape: const CircleBorder(),
-                                  child: SizedBox.square(
-                                    dimension: 64,
-                                    child:
-                                        action == CaptureAction.gallery ||
-                                            action == CaptureAction.comparison
-                                        ? action == CaptureAction.comparison
-                                              ? const ComparisonSketchIcon(
-                                                  size: 48,
-                                                )
-                                              : Icon(
-                                                  icon,
-                                                  size: 30,
-                                                  color: navy,
-                                                )
-                                        : CaptureSketchIcon(
-                                            isMenu:
-                                                action == CaptureAction.menu,
-                                          ),
-                                  ),
+                              Material(
+                                elevation: 6,
+                                shadowColor: Colors.black38,
+                                color: action == CaptureAction.label
+                                    ? orange
+                                    : Colors.white,
+                                shape: const CircleBorder(),
+                                child: SizedBox.square(
+                                  dimension: 64,
+                                  child: action == CaptureAction.gallery
+                                      ? Icon(icon, size: 30, color: navy)
+                                      : CaptureSketchIcon(
+                                          isMenu: action == CaptureAction.menu,
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 9),

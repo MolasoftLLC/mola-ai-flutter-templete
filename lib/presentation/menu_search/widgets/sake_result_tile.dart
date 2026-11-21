@@ -13,8 +13,6 @@ import 'package:provider/provider.dart';
 import '../../../domain/eintities/sake_label_scan.dart';
 import '../../../domain/notifier/my_page/my_page_notifier.dart';
 import '../../../common/sake/taste_match.dart';
-import '../../../common/sake/flavor_characteristics.dart';
-import '../../common/widgets/sake_flavor_characteristics.dart';
 import '../../../common/sake/menu_taste_summary.dart';
 import '../../common/widgets/sake_taste_match_preview.dart';
 import '../../common/widgets/sake_card_rail.dart';
@@ -341,13 +339,6 @@ class _SakeResultTileState extends State<SakeResultTile> {
                           ),
                         ),
                       ),
-                    SakeFlavorCharacteristics(
-                      compact: true,
-                      evidence: SakeFlavorEvidence.fromProduct(
-                        description: widget.detailedSake?.description,
-                      ),
-                      preferences: myPage?.preferences,
-                    ),
                   ],
                 ),
                 subtitle: Column(
