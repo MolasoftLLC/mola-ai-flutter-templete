@@ -1,3 +1,4 @@
+import '../../common/review/review_request_coordinator.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -171,6 +172,7 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
     final saved = context.read<SavedSakeNotifier>();
     final menus = context.read<MenuSearchPageNotifier>();
     setState(() => _busy = item.key);
+    var savedSuccessfully = false;
     try {
       final place = widget.pickPlace != null
           ? await widget.pickPlace!(context, item.initialPlace)
@@ -200,12 +202,26 @@ class _PlaceRegistrationPageState extends State<PlaceRegistrationPage> {
               const SnackBar(content: Text('端末に保存しました。同期は記録画面から再試行できます。')),
             );
           }
+          if (result == null) return;
         }
       }
+      savedSuccessfully = true;
     } catch (_) {
       _error();
     } finally {
       if (mounted) setState(() => _busy = null);
+    }
+    if (savedSuccessfully && mounted && _sameOwner) {
+      unawaited(
+        ReviewRequestCoordinator.instance.afterSuccessfulRecord(
+          context,
+          recordKey: item.isMenu
+              ? 'menu:${item.menu!.id}'
+              : 'record:${item.sake!.savedId}',
+          owner: widget.store.owner,
+          isIdle: () => _busy == null && _sameOwner,
+        ),
+      );
     }
   }
 

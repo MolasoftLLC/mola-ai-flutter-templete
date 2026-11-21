@@ -1,3 +1,4 @@
+import '../../../common/review/review_request_coordinator.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -83,7 +84,10 @@ Future<void> showAppReviewDialog(BuildContext context) async {
           APP_STORE_URL,
         ).replace(queryParameters: {'action': 'write-review'});
   try {
-    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      await ReviewRequestCoordinator.instance.recordManualRequest();
+      return;
+    }
   } catch (_) {
     // Keep the user on My Page and show a recoverable launch error below.
   }

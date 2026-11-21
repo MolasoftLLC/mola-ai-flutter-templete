@@ -1,3 +1,4 @@
+import '../../common/review/review_request_coordinator.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
@@ -2712,6 +2713,7 @@ Future<bool> showSakeRecordEditorSheet(
   String? draftMemo,
   DrinkingPlace? draftPlace,
 }) async {
+  final reviewOwner = ReviewRequestCoordinator.instance.owner;
   final stampSession = await SakeStampAwardSession.prepare(context);
   if (!context.mounted) return false;
   if (sake.syncStatus == SavedSakeSyncStatus.serverSynced &&
@@ -2809,6 +2811,15 @@ Future<bool> showSakeRecordEditorSheet(
         .where((record) => record.savedId == sake.savedId)
         .firstOrNull;
     if (updated != null) await stampSession?.record(context, updated);
+    if (context.mounted && sake.savedId?.isNotEmpty == true) {
+      unawaited(
+        ReviewRequestCoordinator.instance.afterSuccessfulRecord(
+          context,
+          recordKey: 'record:${sake.savedId}',
+          owner: reviewOwner,
+        ),
+      );
+    }
   }
   return saved == true;
 }
