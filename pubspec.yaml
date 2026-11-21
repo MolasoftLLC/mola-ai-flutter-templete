@@ -1,11 +1,12 @@
 name: mola_gemini_flutter_template
 description: "A new Flutter project with Gemini."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 5.0.59+198
+version: 5.1.2+199
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
 dependencies:
+  in_app_review: ^2.0.12
   flutter:
     sdk: flutter
   flutter_localizations:

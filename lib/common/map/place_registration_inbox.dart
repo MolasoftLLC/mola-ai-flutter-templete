@@ -25,6 +25,20 @@ class PlaceRegistrationItem {
   final Sake? sake;
   final MenuAnalysisHistoryItem? menu;
   bool get isMenu => menu != null;
+  DateTime? get recordedAt {
+    if (menu != null) return menu!.date.toLocal();
+    final match = RegExp(
+      r'^saved_([0-9]{13})_',
+    ).firstMatch(sake?.savedId ?? '');
+    final millis = match == null ? null : int.tryParse(match.group(1)!);
+    return millis == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true).toLocal();
+  }
+
+  bool get hasPhoto =>
+      imagePath?.trim().isNotEmpty == true ||
+      menu?.base64Image?.isNotEmpty == true;
   String? get imagePath => menu?.imagePath ?? sake?.imagePaths?.firstOrNull;
   String? get initialPlace =>
       menu?.drinkingPlace?.displayName ??

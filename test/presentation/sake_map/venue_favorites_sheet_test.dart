@@ -147,7 +147,7 @@ void main() {
     await tester.pumpAndSettle();
     await screenshot(tester, 'saved-venue');
     expect(find.text('日本酒のお店'), findsOneWidget);
-    expect(find.text('解除'), findsOneWidget);
+    expect(find.byTooltip('お気に入りから外す'), findsOneWidget);
     await tester.tap(find.text('日本酒マップで見る'));
     expect(focused?.venueId, 'v1');
     await tester.tap(find.text('Googleマップ'));
@@ -182,6 +182,124 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('保存できませんでした'), findsOneWidget);
     expect(find.text('日本酒のお店'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+  testWidgets('お気に入り一覧のデザイン確認画像', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final store = MemoryStore()
+      ..data[null] = [
+        const MapVenue(
+          venueId: 'sample-a',
+          displayName: 'ニュー日本酒うさぎ',
+          latitude: 35,
+          longitude: 139,
+          sakeCount: 0,
+          recordCount: 0,
+        ),
+        const MapVenue(
+          venueId: 'sample-b',
+          displayName: '魚頂天',
+          latitude: 35,
+          longitude: 139,
+          sakeCount: 0,
+          recordCount: 0,
+        ),
+      ];
+    final controller = VenueFavoritesController(store: store);
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: previewFont.isEmpty ? null : 'VenuePreview',
+          colorSchemeSeed: const Color(0xFF143861),
+        ),
+        home: Scaffold(
+          appBar: AppBar(
+            title: const Text('日本酒マップ'),
+            centerTitle: true,
+            backgroundColor: const Color(0xFF1D3567),
+            foregroundColor: Colors.white,
+          ),
+          backgroundColor: const Color(0xFFF5F7FA),
+          body: Builder(
+            builder: (context) => Center(
+              child: TextButton(
+                child: const Text('お気に入りのお店を開く'),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => RepaintBoundary(
+                    key: const ValueKey('preview'),
+                    child: VenueFavoritesSheet(
+                      controller: controller,
+                      onShowVenue: (_) {},
+                      onOpenMaps: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('お気に入りのお店を開く'));
+    await tester.pumpAndSettle();
+    expect(find.text('ニュー日本酒うさぎ'), findsOneWidget);
+    expect(find.text('魚頂天'), findsOneWidget);
+    expect(find.text('解除'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await screenshot(tester, 'favorites-design');
+    await tester.tap(find.byTooltip('閉じる'));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
+
+  testWidgets('一覧は小さい画面と大きな文字でも長い店名と地図ボタンを表示する', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final store = MemoryStore()
+      ..data[null] = [
+        const MapVenue(
+          venueId: 'long',
+          displayName: 'ニュー日本酒うさぎ とても長い名前のお店',
+          latitude: 35,
+          longitude: 139,
+          sakeCount: 0,
+          recordCount: 0,
+        ),
+      ];
+    final controller = VenueFavoritesController(store: store);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 568),
+            textScaler: TextScaler.linear(1.6),
+          ),
+          child: Scaffold(
+            body: VenueFavoritesSheet(
+              controller: controller,
+              onShowVenue: (_) {},
+              onOpenMaps: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('日本酒マップで見る'), findsOneWidget);
+    expect(find.text('Googleマップ'), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
   });

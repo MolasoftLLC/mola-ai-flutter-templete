@@ -1,3 +1,4 @@
+import '../../common/review/review_request_coordinator.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:async';
 import 'dart:io';
@@ -1372,6 +1373,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
   }
 
   Future<void> _saveMemo() async {
+    final reviewOwner = ReviewRequestCoordinator.instance.owner;
     AppAnalytics.instance.event('detail', 'impression');
     FocusScope.of(context).unfocus();
     final isLoggedIn = context.read<AuthState>().user != null;
@@ -1417,6 +1419,7 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
 
     if (!isLoggedIn) {
       await stampSession?.record(context, updatedSake);
+      _requestReviewAfterSave(reviewOwner, updatedSake.savedId);
       return;
     }
 
@@ -1461,7 +1464,22 @@ class _SavedSakeDetailPageState extends State<SavedSakeDetailPage> {
     if (_placeDirty) {
       await _syncDirtyPlace(savedId);
     }
-    if (mounted && !_placeDirty) await stampSession?.record(context, synced);
+    if (mounted && !_placeDirty) {
+      await stampSession?.record(context, synced);
+      _requestReviewAfterSave(reviewOwner, synced.savedId);
+    }
+  }
+
+  void _requestReviewAfterSave(String owner, String? savedId) {
+    if (!mounted || savedId == null || savedId.isEmpty) return;
+    unawaited(
+      ReviewRequestCoordinator.instance.afterSuccessfulRecord(
+        context,
+        recordKey: 'record:$savedId',
+        owner: owner,
+        isIdle: () => !_isSyncing && !_isImageProcessing && !_placeDirty,
+      ),
+    );
   }
 
   Future<void> _syncDirtyPlace(String savedId) async {
