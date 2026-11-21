@@ -36,6 +36,7 @@ import '../../domain/notifier/auth/auth_notifier.dart';
 class SakeMapPage extends StatefulWidget {
   const SakeMapPage._({
     this.initialSake,
+    this.showBackButton = false,
     this.myMapRequests,
     this.communityMapRequests,
   });
@@ -44,9 +45,11 @@ class SakeMapPage extends StatefulWidget {
   final ValueNotifier<int>? communityMapRequests;
 
   final SakeMapSearchResult? initialSake;
+  final bool showBackButton;
 
   static Widget wrapped({
     SakeMapSearchResult? initialSake,
+    bool showBackButton = false,
     ValueNotifier<int>? myMapRequests,
     ValueNotifier<int>? communityMapRequests,
   }) => Builder(
@@ -68,6 +71,7 @@ class SakeMapPage extends StatefulWidget {
           },
           child: SakeMapPage._(
             initialSake: initialSake,
+            showBackButton: showBackButton,
             myMapRequests: myMapRequests,
             communityMapRequests: communityMapRequests,
           ),
@@ -304,12 +308,14 @@ class _SakeMapPageState extends State<SakeMapPage> with WidgetsBindingObserver {
       appBar: PrimaryAppBar(
         title: '日本酒マップ',
         titleFontSize: 21,
-        leading: PlaceRegistrationAction(
-          onClosed: () async {
-            await context.read<MenuSearchPageNotifier>().syncHistoryNow();
-            if (mounted) await notifier.refresh();
-          },
-        ),
+        leading: widget.showBackButton
+            ? const BackButton()
+            : PlaceRegistrationAction(
+                onClosed: () async {
+                  await context.read<MenuSearchPageNotifier>().syncHistoryNow();
+                  if (mounted) await notifier.refresh();
+                },
+              ),
         actions: [VenueFavoritesAction(onPressed: _openFavorites)],
       ),
       body: Stack(
