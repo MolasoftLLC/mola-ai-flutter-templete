@@ -2143,6 +2143,7 @@ class _NearbyVenueButton extends StatelessWidget {
     onPressed: () => Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SakeMapPage.wrapped(
+          showBackButton: true,
           initialSake: SakeMapSearchResult(
             sakeId: sake.sakeId,
             name: displayName,
@@ -4247,7 +4248,10 @@ class _ShopPriceTitle extends StatelessWidget {
           ),
         ),
         Spacer(),
-        Text('広告・参考価格', style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 11)),
+        Text(
+          '広告・参考価格',
+          style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 11),
+        ),
       ],
     ),
   );
