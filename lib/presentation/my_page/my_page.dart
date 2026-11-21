@@ -1,3 +1,4 @@
+import 'notification_settings_page.dart';
 import 'package:mola_gemini_flutter_template/common/analytics/app_analytics.dart';
 import 'dart:io';
 import 'dart:math' as math;
@@ -1588,6 +1589,21 @@ class _MyPageState extends State<MyPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(
+                    Icons.notifications_outlined,
+                    color: Color(0xFF1D3567),
+                  ),
+                  title: const Text('お知らせ通知'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.of(context, rootNavigator: true).push<void>(
+                      CupertinoPageRoute(
+                        builder: (_) => const NotificationSettingsPage(),
+                      ),
+                    );
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.language, color: Color(0xFF1D3567)),
                   title: Text(context.l10n.language),
